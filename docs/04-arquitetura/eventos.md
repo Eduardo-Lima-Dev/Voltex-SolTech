@@ -13,6 +13,10 @@ Eventos publicados pelos módulos (seção 37 da modelagem). Os nomes e payloads
 
 `UserInvited` · `UserActivated` · `DocumentUploaded`
 
+## Project Guard (planejados, Fase 7B)
+
+`ProjectGuardEvaluated` · `ProjectGuardOverridden`
+
 ## Comercial
 
 `LeadCreated` · `LeadQualified` · `EnergyBillRequested` · `EnergyBillParsed` · `EnergyBillValidated` · `OpportunityCreated` · `OpportunityStageChanged`

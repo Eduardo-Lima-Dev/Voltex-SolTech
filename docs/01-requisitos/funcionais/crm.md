@@ -98,3 +98,16 @@
 | ID         | Requisito                                                                                              | Fase |
 | ---------- | ------------------------------------------------------------------------------------------------------ | ---- |
 | RF-CRM-100 | Leads por origem, conversão por etapa, propostas enviadas/visualizadas, ticket médio, forecast simples | MVP1 |
+
+## Project Guard (triagem técnico-comercial) — [ADR-0014](../../04-arquitetura/adr/0014-project-guard.md)
+
+| ID           | Requisito                                                                                                                                                                     | Fase      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| RF-GUARD-001 | Avaliar a oportunidade com os estados verde (apto à proposta preliminar), amarelo (revisão necessária) e vermelho (bloqueio configurado)                                      | MVP1 (7B) |
+| RF-GUARD-002 | Entradas: dados do cliente/local, distribuidora, fatura validada, premissas e resultado do Calculator, equipamentos e custos, margem e regras aplicáveis com fonte e vigência | MVP1 (7B) |
+| RF-GUARD-003 | Listar alertas (código, severidade, origem), campos faltantes e a necessidade de revisão humana ou de engenharia                                                              | MVP1 (7B) |
+| RF-GUARD-004 | Bloquear a proposta em vermelho e exigir aprovação formal, com justificativa e auditoria, para prosseguir                                                                     | MVP1 (7B) |
+| RF-GUARD-005 | Gerar relatório consolidado de triagem como snapshot imutável, com premissas, versões de algoritmo e de regras e responsável                                                  | MVP1 (7B) |
+| RF-GUARD-006 | Invalidar a avaliação e gerar nova quando fatura, equipamento, custo ou premissa mudarem, mantendo as anteriores acessíveis                                                   | MVP1 (7B) |
+| RF-GUARD-007 | Exibir sempre que é triagem e não homologação nem aprovação técnica                                                                                                           | MVP1 (7B) |
+| RF-GUARD-008 | Margin Guard obrigatório: a proposta só é liberada com margem dentro da política ou aprovada                                                                                  | MVP1 (7B) |

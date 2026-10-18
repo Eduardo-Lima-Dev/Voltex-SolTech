@@ -23,6 +23,14 @@
 | EPIC-CRM-015 | Financeiro de projeto | 11                           |
 | EPIC-CRM-016 | Portal do cliente     | 11                           |
 
+## Project Guard (adendo)
+
+| Épico          | Nome                                                    | Fase |
+| -------------- | ------------------------------------------------------- | ---- |
+| EPIC-GUARD-001 | Triagem técnico-comercial (estados, alertas, bloqueios) | 7B   |
+| EPIC-GUARD-002 | Relatório consolidado e snapshot de triagem             | 7B   |
+| EPIC-GUARD-003 | Invalidação e reavaliação por mudança de premissas      | 7B   |
+
 ## Solar Calculator
 
 | Épico         | Nome               | Fase |
