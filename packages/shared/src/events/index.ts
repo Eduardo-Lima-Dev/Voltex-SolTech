@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 /** Catálogo de eventos de domínio (seção 37 da modelagem). */
 export const DomainEvent = {
+  // Plataforma
+  USER_INVITED: 'UserInvited',
+  USER_ACTIVATED: 'UserActivated',
+  DOCUMENT_UPLOADED: 'DocumentUploaded',
   // Comercial
   LEAD_CREATED: 'LeadCreated',
   LEAD_QUALIFIED: 'LeadQualified',
