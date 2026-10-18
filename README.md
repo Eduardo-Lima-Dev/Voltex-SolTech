@@ -1,5 +1,7 @@
 # Voltex SolTech
 
+<p align="center"><img src="docs/assets/brand/logo-banner.png" alt="Voltex SolTech" width="640" /></p>
+
 Suíte de software para integradores fotovoltaicos, reunindo quatro produtos sobre uma plataforma compartilhada:
 
 - **CRM Solar** — comercial, propostas, contratos, projetos e pós-venda

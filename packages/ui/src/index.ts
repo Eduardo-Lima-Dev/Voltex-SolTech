@@ -1,4 +1,5 @@
 export { cn } from './lib/utils';
+export { BRAND_COLORS, type BrandColor } from './brand';
 export * from './components/button';
 export * from './components/input';
 export * from './components/label';

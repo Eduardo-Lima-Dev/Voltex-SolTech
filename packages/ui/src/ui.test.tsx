@@ -21,6 +21,7 @@ import {
   FormMessage,
   Input,
   Logo,
+  LogoMark,
   SidebarMenuButton,
   Table,
   TableBody,
@@ -107,8 +108,41 @@ describe('Badge, Card, Table, Logo, Sidebar', () => {
     );
     expect(screen.getByText('Resumo')).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Lead' })).toBeInTheDocument();
-    expect(screen.getAllByLabelText('Voltex SolTech').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', { name: 'Voltex SolTech' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Leads' })).toHaveAttribute('data-active', 'true');
+  });
+});
+
+describe('Logo', () => {
+  it('usa as cores exatas da marca nos tons fixos e o tema no tom automático', () => {
+    const { container, rerender } = render(<Logo tone="on-dark" />);
+    const fills = () => [...container.querySelectorAll('path')].map((p) => p.getAttribute('fill'));
+    expect(new Set(fills())).toEqual(new Set(['#E3EBF0', '#8CDDF4']));
+
+    rerender(<Logo tone="on-light" />);
+    expect(new Set(fills())).toEqual(new Set(['#002362', '#007A96']));
+
+    rerender(<Logo />);
+    expect(new Set(fills())).toEqual(new Set(['var(--logo-primary)', 'var(--logo-accent)']));
+  });
+
+  it('é um svg com nome acessível, ou decorativo quando title é vazio', () => {
+    const { rerender } = render(<Logo />);
+    expect(screen.getByRole('img', { name: 'Voltex SolTech' })).toBeInTheDocument();
+    rerender(<LogoMark title="" data-testid="mark" />);
+    expect(screen.getByTestId('mark')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('o logo completo tem mais formas que o símbolo e usa corte (evenodd) nos miolos das letras', () => {
+    const full = render(<Logo />).container.querySelectorAll('path').length;
+    const mark = render(<LogoMark />).container.querySelectorAll('path').length;
+    expect(full).toBeGreaterThan(mark);
+    expect(
+      render(<Logo />)
+        .container.querySelector('path')
+        ?.getAttribute('fill-rule'),
+    ).toBe('evenodd');
   });
 });
 
