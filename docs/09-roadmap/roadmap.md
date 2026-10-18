@@ -2,21 +2,21 @@
 
 Plano de implementação por fases. Cada fase termina em um checkpoint verificável. A ordem segue a seção 76 da modelagem: CRM + Calculator primeiro, depois Engine, Off-Grid e, por fim, execução e lifecycle.
 
-| Fase | Entrega                                                                                    | Status          |
-| ---- | ------------------------------------------------------------------------------------------ | --------------- |
-| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)           | ✅ Concluída    |
-| 1    | Documentação (`docs/`)                                                                     | 🚧 Em andamento |
-| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                    | ⏳              |
-| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                 | ⏳              |
-| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                       | ⏳              |
-| 5    | Web React: casca da suíte, login, navegação, admin                                         | ⏳              |
-| 6    | **MVP1** — Solar Calculator                                                                | ⏳              |
-| 7    | **MVP1** — CRM Solar (leads → fatura/OCR → cotação/margem → proposta → contrato → projeto) | ⏳              |
-| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                           | ⏳              |
-| 9    | **MVP2** — Solar Engine Studio                                                             | ⏳              |
-| 10   | **MVP3** — Off-Grid Designer                                                               | ⏳              |
-| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)           | ⏳              |
-| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                    | ⏳              |
+| Fase | Entrega                                                                                    | Status       |
+| ---- | ------------------------------------------------------------------------------------------ | ------------ |
+| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)           | ✅ Concluída |
+| 1    | Documentação (`docs/`)                                                                     | ✅ Concluída |
+| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                    | ⏳           |
+| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                 | ⏳           |
+| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                       | ⏳           |
+| 5    | Web React: casca da suíte, login, navegação, admin                                         | ⏳           |
+| 6    | **MVP1** — Solar Calculator                                                                | ⏳           |
+| 7    | **MVP1** — CRM Solar (leads → fatura/OCR → cotação/margem → proposta → contrato → projeto) | ⏳           |
+| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                           | ⏳           |
+| 9    | **MVP2** — Solar Engine Studio                                                             | ⏳           |
+| 10   | **MVP3** — Off-Grid Designer                                                               | ⏳           |
+| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)           | ⏳           |
+| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                    | ⏳           |
 
 ## Fase 0 — Descoberta (negócio, paralela ao desenvolvimento)
 
