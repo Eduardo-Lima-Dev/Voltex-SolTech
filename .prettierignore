@@ -5,3 +5,5 @@ build
 coverage
 pnpm-lock.yaml
 docs/00-visao-geral/modelagem-completa.md
+packages/ui/src/assets/logo-paths.ts
+docs/assets/brand/*.svg
