@@ -1,30 +1,35 @@
 # Docker
 
-Duas composições, conforme o [ADR-0008](../04-arquitetura/adr/0008-dev-hibrido-docker.md). Os arquivos são criados na Fase 3 (infra) e finalizados na Fase 8 (imagens de produção).
+Duas composições, conforme o [ADR-0008](../04-arquitetura/adr/0008-dev-hibrido-docker.md).
 
 ## Desenvolvimento — `docker/compose.dev.yml`
 
-Somente infraestrutura, com `healthcheck` para o `--wait` funcionar:
+Somente infraestrutura, todos os serviços com `healthcheck` (por isso `up --wait` funciona). Projeto Docker: `voltex-dev`.
 
-| Serviço    | Imagem                                   | Porta       |
-| ---------- | ---------------------------------------- | ----------- |
-| `postgres` | `postgres:17-alpine`                     | 5432        |
-| `redis`    | `redis:7-alpine`                         | 6379        |
-| `minio`    | `minio/minio` (+ job `mc` cria o bucket) | 9000 / 9001 |
-| `mailpit`  | `axllent/mailpit`                        | 8025 / 1025 |
+| Serviço    | Imagem               | Porta no host               | Observação                                                                                                                                                                                 |
+| ---------- | -------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `postgres` | `postgres:17-alpine` | **5433**                    | A 5433 evita conflito com um PostgreSQL local na 5432; configurável por `POSTGRES_PORT`. `docker/postgres/init.sql` cria as extensões `pg_trgm` e `unaccent` na primeira criação do volume |
+| `redis`    | `redis:7-alpine`     | 6379                        | Persistência AOF                                                                                                                                                                           |
+| `s3`       | `rustfs/rustfs`      | 9000 (API) / 9001 (console) | S3-compatível ([ADR-0010](../04-arquitetura/adr/0010-rustfs-no-lugar-do-minio.md))                                                                                                         |
+| `s3-init`  | `amazon/aws-cli`     | —                           | Job único: cria o bucket `S3_BUCKET` e termina                                                                                                                                             |
+| `mailpit`  | `axllent/mailpit`    | 8025 (UI) / 1025 (SMTP)     | Captura e-mails de desenvolvimento                                                                                                                                                         |
 
-`pnpm dev` executa `docker compose -f docker/compose.dev.yml up -d --wait` e depois o Turborepo sobe API e Web localmente com hot reload.
+As variáveis vêm do `.env` da raiz (os comandos usam `--project-directory .`); sem `.env`, valem os padrões do arquivo. Os dados ficam em volumes nomeados e sobrevivem a `pnpm infra:down`. Para apagar os dados: `docker compose --project-directory . -f docker/compose.dev.yml down -v`.
 
-## Produção — `docker/compose.prod.yml`
+`pnpm dev` executa: criar `.env` se não existir → `docker compose up -d --wait` → `turbo run dev` (watchers dos pacotes; API e Web entram nas Fases 4 e 5).
 
-| Serviço                      | Descrição                                                                       |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| `migrate`                    | Job único: `prisma migrate deploy` antes da API                                 |
-| `api`                        | Imagem multi-stage (`turbo prune --docker`), `node:24-alpine`, usuário não-root |
-| `web`                        | Build Vite servido por `nginx:alpine`, fallback SPA e proxy `/api`              |
-| `postgres`, `redis`, `minio` | Infraestrutura (em produção real, preferir serviços gerenciados)                |
+## Produção/homologação — `docker/compose.prod.yml`
 
-Comandos: `pnpm docker:build` e `pnpm docker:up`.
+Projeto Docker: `voltex`. **Nenhuma porta é publicada no host**; os segredos são obrigatórios (`${VAR:?}`, sem valor padrão).
+
+| Serviço                              | Descrição                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`, `redis`, `s3`, `s3-init` | Infraestrutura (em produção real, preferir serviços gerenciados)                                                                      |
+| `migrate`                            | Job único (`docker/migrate.Dockerfile`, `node:24-alpine` + Prisma CLI 7.10.1) que roda `prisma migrate deploy` e termina com código 0 |
+
+Estado atual: infraestrutura + `migrate`, **validado de ponta a ponta** (build da imagem, banco novo, migrations aplicadas). Os serviços `api` e `web` (imagens multi-stage, `nginx` com proxy `/api`, `depends_on: migrate: service_completed_successfully`) são adicionados na **Fase 8**.
+
+Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 
 ## Ambientes
 

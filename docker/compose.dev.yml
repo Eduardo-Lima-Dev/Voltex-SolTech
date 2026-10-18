@@ -1,0 +1,91 @@
+# Infraestrutura de DESENVOLVIMENTO. As aplicações (API e Web) rodam localmente pelo Turborepo.
+# Uso: `pnpm infra:up` / `pnpm infra:down` (ou `pnpm dev`, que já sobe a infra).
+# As variáveis vêm do .env da raiz (veja .env.example); os padrões abaixo valem se ele não existir.
+name: voltex-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-voltex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voltex}
+      POSTGRES_DB: ${POSTGRES_DB:-voltex}
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Armazenamento S3-compatível (RustFS). Em produção usa-se S3 real; a API fala S3 em ambos.
+  s3:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-voltex}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-voltex-secret}
+    ports:
+      - '${S3_API_PORT:-9000}:9000'
+      - '${S3_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9000/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Tarefa única: cria o bucket de documentos e sai com código 0.
+  s3-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      s3:
+        condition: service_healthy
+    restart: 'no'
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-voltex}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-voltex-secret}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-voltex-documents}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >
+        aws --endpoint-url http://s3:9000 s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null
+        || aws --endpoint-url http://s3:9000 s3api create-bucket --bucket "$${S3_BUCKET}";
+        echo "bucket $${S3_BUCKET} pronto"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+      - '${SMTP_PORT:-1025}:1025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:
+  s3-data:

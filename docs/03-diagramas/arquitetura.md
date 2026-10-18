@@ -43,7 +43,7 @@ flowchart TB
     subgraph INFRA[Infraestrutura]
         PG[(PostgreSQL)]
         REDIS[(Redis / BullMQ)]
-        S3[(MinIO / S3)]
+        S3[(S3: RustFS em dev / S3 em prod)]
     end
 
     FCRM & FCALC & FENG & FOFF & FADM --> API

@@ -11,7 +11,7 @@
 | RF-PLAT-005 | Perfis e permissões granulares (RBAC) conforme [personas](../../00-visao-geral/personas-e-perfis.md) | MVP1 |
 | RF-PLAT-006 | Isolamento lógico de dados por tenant em todas as consultas                                          | MVP1 |
 | RF-PLAT-007 | Audit log de ações críticas (quem, quando, o quê, antes/depois)                                      | MVP1 |
-| RF-PLAT-008 | Upload, versionamento e download seguro de documentos (S3/MinIO)                                     | MVP1 |
+| RF-PLAT-008 | Upload, versionamento e download seguro de documentos (S3)                                           | MVP1 |
 | RF-PLAT-009 | Event bus interno com outbox transacional                                                            | MVP1 |
 | RF-PLAT-010 | Rules Engine versionado (regra, vigência, fonte, versão aplicada) — base                             | MVP1 |
 | RF-PLAT-011 | Rules Engine completo com impacto em projetos existentes                                             | MVP2 |
