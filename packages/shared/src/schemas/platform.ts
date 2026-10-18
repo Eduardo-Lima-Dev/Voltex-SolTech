@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Role } from '../enums/index.js';
-import { emailSchema, paginationQuerySchema } from './common.js';
+import { emailSchema, isoDateTimeSchema, paginationQuerySchema } from './common.js';
 
 const nameSchema = z.string().trim().min(2).max(120);
 
@@ -89,11 +89,6 @@ export const listDocumentsQuerySchema = paginationQuerySchema.extend({
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>;
 
 // ---- Auditoria ----
-/** Data/hora ISO 8601 (ou só a data) recebida como string e convertida em `Date`. Representável no OpenAPI. */
-const isoDateTimeSchema = z
-  .union([z.iso.datetime({ offset: true }), z.iso.date()])
-  .transform((value) => new Date(value));
-
 export const listAuditLogsQuerySchema = paginationQuerySchema.extend({
   entity: z.string().trim().optional(),
   entityId: z.string().trim().optional(),

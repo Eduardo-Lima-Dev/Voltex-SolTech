@@ -2,8 +2,10 @@ import { z } from 'zod';
 import {
   CustomerGroup,
   ProjectType,
+  thresholdsSchema,
   type AlertSeverity,
   type GenerationClass,
+  type Thresholds,
   type TrafficLight,
 } from '@voltex/shared';
 
@@ -11,28 +13,9 @@ export const ALGORITHM_VERSION = 'calc-1.1.0';
 
 export const hspSourceSchema = z.enum(['DATASET', 'MANUAL']);
 
-/** Limites usados pelo semáforo. Valores padrão são sugestões; o Rules Engine pode sobrescrevê-los. */
-export const thresholdsSchema = z.object({
-  performanceRatioMin: z.number().default(0.6),
-  performanceRatioMax: z.number().default(0.9),
-  hspMin: z.number().default(2),
-  hspMax: z.number().default(8),
-  /** Fração máxima de geração sobre o consumo antes de alertar sobredimensionamento. */
-  maxGenerationToConsumptionRatio: z.number().default(1.3),
-  /** PR usado quando nem o PR nem as perdas são informados. Hipótese de engenharia, sem fonte validada (EF-G01). */
-  defaultPerformanceRatio: z.number().default(0.8),
-  /** Faixa típica de HSP no Brasil (EnergIF EF-M01, p. 16): fora dela só avisa. */
-  typicalHspMin: z.number().default(4),
-  typicalHspMax: z.number().default(6.5),
-  /** Inclinação mínima recomendada (EnergIF EF-M03, p. 18). */
-  minRecommendedTiltDegrees: z.number().default(10),
-  /** Desvio tolerado da orientação ideal antes de avisar. Hipótese do produto (o livro só diz "sempre que possível"). */
-  orientationToleranceDegrees: z.number().default(45),
-  /** Limites de classe da geração (EnergIF EF-M06, p. 67), em kW. A confirmar com a regulação vigente. */
-  microgenerationMaxKw: z.number().default(75),
-  minigenerationMaxKw: z.number().default(5000),
-});
-export type Thresholds = z.infer<typeof thresholdsSchema>;
+// Os limites (`thresholds`) são definidos em @voltex/shared: API, Web e motor usam o mesmo schema.
+export { thresholdsSchema };
+export type { Thresholds };
 
 export const quickCalculationInputSchema = z
   .object({

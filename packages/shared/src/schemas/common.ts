@@ -3,6 +3,14 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../constants/index.js';
 
 export const idSchema = z.string().min(1);
 
+/**
+ * Data/hora ISO 8601 (ou só a data) recebida como string e convertida em `Date`.
+ * Não usamos `z.coerce.date()`: ele não pode ser representado no OpenAPI.
+ */
+export const isoDateTimeSchema = z
+  .union([z.iso.datetime({ offset: true }), z.iso.date()])
+  .transform((value) => new Date(value));
+
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),

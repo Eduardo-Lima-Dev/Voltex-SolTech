@@ -102,6 +102,56 @@ export interface DocumentDto {
   createdAt: string;
 }
 
+export interface DistributorDto {
+  id: string;
+  tenantId: string;
+  name: string;
+  state: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TariffDto {
+  id: string;
+  tenantId: string;
+  distributorId: string;
+  customerGroup: CustomerGroup;
+  modality: string | null;
+  energyCentsPerKwh: number;
+  validFrom: string;
+  validTo: string | null;
+  source: string;
+  createdAt: string;
+}
+
+export interface SolarResourceDto {
+  id: string;
+  tenantId: string;
+  name: string;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  hspMonthly: number[];
+  source: string;
+  plane: string;
+  createdAt: string;
+}
+
+export interface RuleSetDto {
+  id: string;
+  key: string;
+  version: number;
+  status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
+  validFrom: string | null;
+  validTo: string | null;
+  definition: Record<string, unknown>;
+  sources: { type: string; reference: string; url?: string; notes?: string }[];
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
 export interface SessionResponse {
   accessToken: string;
   /** Validade do access token, em segundos. */
