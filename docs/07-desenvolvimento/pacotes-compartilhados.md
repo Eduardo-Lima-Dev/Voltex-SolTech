@@ -31,6 +31,7 @@ createLeadSchema.parse({ name: 'Maria Silva', state: 'ce' }); // state → 'CE'
 formatBrlFromCents(1_980_000); // "R$ 19.800,00"
 ```
 
+- Tipos das respostas da API (`UserSummary`, `BranchDto`, `AuditLogDto`...), `ROUTES` e a política de perfis (`canManageRole`, `assignableRoles`) são compartilhados: API e Web aplicam a mesma regra.
 - Dinheiro sempre em **centavos** (inteiro). Tarifa em centavos por kWh (admite fração).
 - Enums são objetos `as const` + tipo derivado, usáveis em `z.enum(...)`.
 - Permissões seguem `<produto>.<recurso>.<ação>`; o mapeamento perfil → permissões fica em `ROLE_PERMISSIONS`.
@@ -74,6 +75,7 @@ import { Button, Card, Badge, Toaster } from '@voltex/ui';
 
 - Tema claro/escuro por classe `.dark` no `<html>`.
 - A paleta vem do **logo oficial** (azul-marinho `#002362`, ciano `#8CDDF4`, gelo `#E3EBF0`); as cores vivem só em `src/styles.css`. Veja [identidade visual](../00-visao-geral/identidade-visual.md).
+- Componentes de apoio às telas: `NativeSelect`, `Switch`, `AlertDialog`, `Alert`, `Avatar`, `Skeleton`, `Separator`, `Spinner`. `CardTitle` é um `h3` (estrutura de títulos acessível).
 - `Logo` e `LogoMark` são o logo oficial em SVG (tons `auto`, `on-dark` e `on-light`), gerados por `scripts/build-brand-assets.mjs`.
 - `theme.test.ts` garante contraste WCAG AA e que os tokens derivam das cores do logo.
 - Componentes de formulário integram com `react-hook-form` (`Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`) e um resolver Zod com os schemas de `@voltex/shared`.
