@@ -7,3 +7,5 @@ export * from './financial.js';
 export * from './traffic-light.js';
 export * from './confidence.js';
 export * from './run.js';
+export * from './classification.js';
+export * from './orientation.js';
