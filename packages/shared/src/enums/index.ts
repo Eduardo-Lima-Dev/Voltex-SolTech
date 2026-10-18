@@ -1,0 +1,155 @@
+/**
+ * Enums de domínio. Usamos objetos `as const` + tipo derivado (em vez de `enum` do TS)
+ * para que funcionem igual em runtime, em tipos e em `z.enum(...)`.
+ */
+
+export const Role = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  SALES_MANAGER: 'SALES_MANAGER',
+  SDR: 'SDR',
+  SALESPERSON: 'SALESPERSON',
+  ENGINEERING: 'ENGINEERING',
+  TECHNICAL_LEAD: 'TECHNICAL_LEAD',
+  OPERATIONS: 'OPERATIONS',
+  INSTALLER: 'INSTALLER',
+  FINANCE: 'FINANCE',
+  OM: 'OM',
+  PARTNER: 'PARTNER',
+  CUSTOMER: 'CUSTOMER',
+} as const;
+export type Role = (typeof Role)[keyof typeof Role];
+
+export const Product = {
+  CRM: 'CRM',
+  CALCULATOR: 'CALCULATOR',
+  ENGINE: 'ENGINE',
+  OFFGRID: 'OFFGRID',
+} as const;
+export type Product = (typeof Product)[keyof typeof Product];
+
+/** Etapas do pipeline padrão (seção 8.5 da modelagem). O pipeline é personalizável por tenant. */
+export const OpportunityStage = {
+  NEW_LEAD: 'NEW_LEAD',
+  FIRST_CONTACT: 'FIRST_CONTACT',
+  QUALIFICATION: 'QUALIFICATION',
+  BILL_PENDING: 'BILL_PENDING',
+  PRE_SIZING: 'PRE_SIZING',
+  TECHNICAL_VISIT_REQUIRED: 'TECHNICAL_VISIT_REQUIRED',
+  ENGINEERING_REQUIRED: 'ENGINEERING_REQUIRED',
+  QUOTING: 'QUOTING',
+  PROPOSAL_READY: 'PROPOSAL_READY',
+  PROPOSAL_SENT: 'PROPOSAL_SENT',
+  NEGOTIATION: 'NEGOTIATION',
+  CREDIT_FINANCING: 'CREDIT_FINANCING',
+  CONTRACT: 'CONTRACT',
+  WON: 'WON',
+  LOST: 'LOST',
+} as const;
+export type OpportunityStage = (typeof OpportunityStage)[keyof typeof OpportunityStage];
+
+export const LeadSource = {
+  FORM: 'FORM',
+  LANDING_PAGE: 'LANDING_PAGE',
+  WHATSAPP: 'WHATSAPP',
+  API: 'API',
+  REFERRAL: 'REFERRAL',
+  CSV_IMPORT: 'CSV_IMPORT',
+  MARKETPLACE: 'MARKETPLACE',
+  CAMPAIGN: 'CAMPAIGN',
+  MANUAL: 'MANUAL',
+  PARTNER_PORTAL: 'PARTNER_PORTAL',
+} as const;
+export type LeadSource = (typeof LeadSource)[keyof typeof LeadSource];
+
+export const CustomerSegment = {
+  RESIDENTIAL: 'RESIDENTIAL',
+  RURAL: 'RURAL',
+  COMMERCIAL: 'COMMERCIAL',
+  INDUSTRIAL: 'INDUSTRIAL',
+} as const;
+export type CustomerSegment = (typeof CustomerSegment)[keyof typeof CustomerSegment];
+
+/** Grupo tarifário: A (média/alta tensão, com demanda) ou B (baixa tensão). */
+export const CustomerGroup = {
+  A: 'A',
+  B: 'B',
+} as const;
+export type CustomerGroup = (typeof CustomerGroup)[keyof typeof CustomerGroup];
+
+export const PhaseSystem = {
+  SINGLE_PHASE: 'SINGLE_PHASE',
+  TWO_PHASE: 'TWO_PHASE',
+  THREE_PHASE: 'THREE_PHASE',
+} as const;
+export type PhaseSystem = (typeof PhaseSystem)[keyof typeof PhaseSystem];
+
+export const ProjectType = {
+  ON_GRID: 'ON_GRID',
+  HYBRID: 'HYBRID',
+  OFF_GRID: 'OFF_GRID',
+} as const;
+export type ProjectType = (typeof ProjectType)[keyof typeof ProjectType];
+
+/** Semáforo de pré-viabilidade do Solar Calculator (seção 14). */
+export const TrafficLight = {
+  GREEN: 'GREEN',
+  YELLOW: 'YELLOW',
+  RED: 'RED',
+} as const;
+export type TrafficLight = (typeof TrafficLight)[keyof typeof TrafficLight];
+
+export const AlertSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  BLOCKING: 'BLOCKING',
+} as const;
+export type AlertSeverity = (typeof AlertSeverity)[keyof typeof AlertSeverity];
+
+/** Resultado do Compatibility Engine (seção 17.7). */
+export const CompatibilityStatus = {
+  VALID: 'VALID',
+  VALID_WITH_WARNINGS: 'VALID_WITH_WARNINGS',
+  INVALID: 'INVALID',
+} as const;
+export type CompatibilityStatus = (typeof CompatibilityStatus)[keyof typeof CompatibilityStatus];
+
+export const SnapshotType = {
+  QUICK_CALCULATION: 'QUICK_CALCULATION',
+  ENGINEERING: 'ENGINEERING',
+  OFF_GRID: 'OFF_GRID',
+  QUOTE: 'QUOTE',
+  PROPOSAL: 'PROPOSAL',
+} as const;
+export type SnapshotType = (typeof SnapshotType)[keyof typeof SnapshotType];
+
+export const EnergyBillStatus = {
+  UPLOADED: 'UPLOADED',
+  PARSED: 'PARSED',
+  VALIDATED: 'VALIDATED',
+  REJECTED: 'REJECTED',
+} as const;
+export type EnergyBillStatus = (typeof EnergyBillStatus)[keyof typeof EnergyBillStatus];
+
+export const ApprovalStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type ApprovalStatus = (typeof ApprovalStatus)[keyof typeof ApprovalStatus];
+
+/** Etapas da instalação (seção 8.15). */
+export const InstallationStatus = {
+  AWAITING_ENGINEERING: 'AWAITING_ENGINEERING',
+  AWAITING_MATERIAL: 'AWAITING_MATERIAL',
+  MATERIAL_SEPARATED: 'MATERIAL_SEPARATED',
+  SCHEDULING: 'SCHEDULING',
+  CREW_ASSIGNED: 'CREW_ASSIGNED',
+  IN_INSTALLATION: 'IN_INSTALLATION',
+  FIELD_ISSUE: 'FIELD_ISSUE',
+  INSTALLATION_DONE: 'INSTALLATION_DONE',
+  COMMISSIONING: 'COMMISSIONING',
+  CUSTOMER_ACCEPTANCE: 'CUSTOMER_ACCEPTANCE',
+  FINISHED: 'FINISHED',
+} as const;
+export type InstallationStatus = (typeof InstallationStatus)[keyof typeof InstallationStatus];

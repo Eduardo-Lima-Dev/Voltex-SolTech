@@ -6,7 +6,7 @@ Plano de implementação por fases. Cada fase termina em um checkpoint verificá
 | ---- | ------------------------------------------------------------------------------------------ | ------------ |
 | 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)           | ✅ Concluída |
 | 1    | Documentação (`docs/`)                                                                     | ✅ Concluída |
-| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                    | ⏳           |
+| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                    | ✅ Concluída |
 | 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                 | ⏳           |
 | 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                       | ⏳           |
 | 5    | Web React: casca da suíte, login, navegação, admin                                         | ⏳           |
