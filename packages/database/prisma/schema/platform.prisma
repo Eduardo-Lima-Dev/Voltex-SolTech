@@ -45,6 +45,8 @@ model Tenant {
   refreshTokens RefreshToken[]
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
+  invitations  Invitation[]
+  documents    Document[]
 
   @@map("tenants")
 }
@@ -181,4 +183,52 @@ model OutboxEvent {
   @@index([publishedAt, occurredAt])
   @@index([tenantId, type])
   @@map("outbox_events")
+}
+
+/// Convite para um novo usuário entrar no tenant. Só o hash do token é guardado.
+model Invitation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  email       String
+  role        Role
+  branchId    String?   @map("branch_id") @db.Uuid
+  teamId      String?   @map("team_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  invitedById String    @map("invited_by_id") @db.Uuid
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, email])
+  @@map("invitations")
+}
+
+/// Metadados de um arquivo guardado no S3 (faturas, contratos, fotos...). O vínculo é polimórfico:
+/// `entityType`/`entityId` apontam para lead, oportunidade, projeto etc. Cada novo envio sobre um
+/// documento existente cria uma nova versão no mesmo `groupId`.
+model Document {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  uploadedById   String?   @map("uploaded_by_id") @db.Uuid
+  groupId        String    @map("group_id") @db.Uuid
+  version        Int       @default(1)
+  filename       String
+  mimeType       String    @map("mime_type")
+  sizeBytes      Int       @map("size_bytes")
+  storageKey     String    @unique @map("storage_key")
+  checksumSha256 String    @map("checksum_sha256")
+  entityType     String?   @map("entity_type")
+  entityId       String?   @map("entity_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([groupId, version])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("documents")
 }

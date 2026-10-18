@@ -4,16 +4,16 @@ Base: `/api/v1`. Documentação interativa (Swagger/OpenAPI, gerada a partir dos
 
 ## Convenções
 
-- **REST + JSON**, recursos no plural em `kebab-case`: `/leads`, `/opportunities`, `/energy-bills`.
+- **REST + JSON**, recursos no plural em `kebab-case`: `/users`, `/branches`, `/audit-logs`.
 - **Versionamento** no caminho (`/api/v1`). Mudanças incompatíveis geram `/api/v2`.
-- **Autenticação:** `Authorization: Bearer <access token>`; refresh token em cookie `httpOnly`. Rotas públicas são marcadas explicitamente (`@Public()`).
-- **Autorização:** toda rota exige permissão (`@RequirePermissions('crm.lead.read')`); negado por padrão.
-- **Tenant:** derivado do token. Nunca é enviado pelo cliente.
-- **Validação:** schemas Zod de `@voltex/shared`; erro de validação retorna `422`.
-- **Datas** em ISO 8601 UTC; **valores monetários** em centavos (inteiro) com moeda explícita quando não for BRL; **unidades físicas** sempre explícitas no nome do campo (`powerKwp`, `energyKwh`, `voltageV`).
-- **Paginação** obrigatória em listas: `?page=1&pageSize=20` → `{ data, meta: { page, pageSize, total } }`.
-- **Filtros e ordenação:** `?filter[campo]=valor&sort=-createdAt`.
-- **Idempotência:** `POST` críticos aceitam `Idempotency-Key`.
+- **Autenticação:** `Authorization: Bearer <accessToken>`. O refresh token vai somente em cookie `httpOnly` (`voltex_refresh`, `Path=/api/v1/auth`). O front deve enviar as requisições de `/auth/*` com `credentials: 'include'`. Detalhes: [ADR-0011](../04-arquitetura/adr/0011-sessao-jwt-e-refresh-rotativo.md).
+- **Autorização:** negado por padrão; cada rota declara `@Public()`, `@Authenticated()` ou `@RequirePermissions(...)`.
+- **Tenant:** derivado do token; qualquer `tenantId` enviado pelo cliente é ignorado. Dado de outro tenant responde **404** (não 403), para não revelar que existe.
+- **Validação:** schemas Zod de `@voltex/shared`; erro de validação retorna **422** com `details` por campo. UUID inválido em `:id` retorna 400.
+- **Datas** em ISO 8601 UTC; **dinheiro** em centavos (inteiro); **unidades físicas** no nome do campo (`powerKwp`, `energyKwh`).
+- **Paginação** obrigatória em listas: `?page=1&pageSize=20` (máx. 100) → `{ data, meta: { page, pageSize, total } }`.
+- **Limite de requisições:** 120/min por IP (padrão) e 5/min em `POST /auth/login`; excedido → **429**.
+- **Rastreamento:** toda resposta traz `x-request-id` (aceita o do cliente se seguro); o mesmo ID vai nos logs, na auditoria e no corpo dos erros.
 - **Erros** no formato único `ApiError`:
 
 ```json
@@ -22,11 +22,37 @@ Base: `/api/v1`. Documentação interativa (Swagger/OpenAPI, gerada a partir dos
   "code": "VALIDATION_ERROR",
   "message": "Dados inválidos",
   "details": [{ "path": "email", "message": "E-mail inválido" }],
-  "requestId": "…"
+  "requestId": "6f1c…"
 }
 ```
 
-## Contrato conceitual (modelagem, seção 39)
+Códigos: `BAD_REQUEST` 400 · `UNAUTHORIZED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 · `CONFLICT` 409 · `PAYLOAD_TOO_LARGE` 413 · `UNSUPPORTED_MEDIA_TYPE` 415 · `VALIDATION_ERROR` 422 · `TOO_MANY_REQUESTS` 429 · `INTERNAL_ERROR` 500 (sem detalhes internos).
+
+## Endpoints implementados (Fase 4)
+
+| Método e rota                                                           | Acesso                                 | Descrição                                                                   |
+| ----------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
+| `POST /auth/login`                                                      | público                                | Login; devolve `accessToken`, `expiresIn`, `user`; seta o cookie de refresh |
+| `POST /auth/refresh`                                                    | público (cookie)                       | Rotaciona o refresh token e emite novo access token                         |
+| `POST /auth/logout`                                                     | público (cookie)                       | Revoga a sessão; 204, idempotente                                           |
+| `GET /auth/me`                                                          | autenticado                            | Usuário atual e permissões                                                  |
+| `GET /tenant` · `PATCH /tenant`                                         | autenticado · `platform.tenant.manage` | Dados da empresa                                                            |
+| `GET/POST /branches` · `PATCH/DELETE /branches/:id`                     | autenticado · `platform.tenant.manage` | Filiais                                                                     |
+| `GET/POST /teams` · `PATCH/DELETE /teams/:id`                           | autenticado · `platform.tenant.manage` | Times                                                                       |
+| `GET /users` · `GET /users/:id`                                         | `platform.user.read`                   | Usuários (filtros `search`, `role`, `isActive`)                             |
+| `PATCH /users/:id` · `DELETE /users/:id`                                | `platform.user.manage`                 | Editar / excluir (lógico)                                                   |
+| `POST/GET /invitations` · `DELETE /invitations/:id`                     | `platform.user.manage`                 | Convites                                                                    |
+| `POST /invitations/accept`                                              | público                                | Aceita o convite, cria o usuário e já abre a sessão                         |
+| `POST /documents`                                                       | `platform.document.write`              | Upload multipart (`file`, `entityType`+`entityId`, `replacesDocumentId`)    |
+| `GET /documents` · `GET /documents/:id` · `GET /documents/:id/versions` | `platform.document.read`               | Consulta                                                                    |
+| `GET /documents/:id/download-url`                                       | `platform.document.read`               | URL pré-assinada (5 min)                                                    |
+| `DELETE /documents/:id`                                                 | `platform.document.write`              | Exclusão lógica                                                             |
+| `GET /audit-logs`                                                       | `platform.audit.read`                  | Auditoria (filtros `entity`, `entityId`, `actorId`, `action`, `from`, `to`) |
+| `GET /health`                                                           | público                                | Banco, Redis e armazenamento; 503 se algum falhar                           |
+
+Documentação interativa: `/api/docs`. Visão do código: [API (NestJS)](../07-desenvolvimento/api.md).
+
+## Contrato conceitual dos demais produtos (modelagem, seção 39)
 
 ```http
 # CRM

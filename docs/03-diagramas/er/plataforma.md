@@ -13,6 +13,8 @@ erDiagram
     USER ||--o{ REFRESH_TOKEN : emite
     TENANT ||--o{ AUDIT_LOG : registra
     TENANT ||--o{ OUTBOX_EVENT : publica
+    TENANT ||--o{ INVITATION : convida
+    TENANT ||--o{ DOCUMENT : guarda
 
     TENANT {
         uuid id PK
@@ -45,6 +47,26 @@ erDiagram
         json after
         string requestId
     }
+    INVITATION {
+        uuid id PK
+        string email
+        enum role
+        string tokenHash UK
+        datetime expiresAt
+        datetime acceptedAt
+        datetime revokedAt
+    }
+    DOCUMENT {
+        uuid id PK
+        uuid groupId
+        int version
+        string filename
+        string storageKey UK
+        string checksumSha256
+        string entityType
+        string entityId
+        datetime deletedAt
+    }
     OUTBOX_EVENT {
         uuid id PK
         string type
@@ -56,5 +78,7 @@ erDiagram
 ```
 
 - `AUDIT_LOG` é imutável (trigger no banco).
+- `INVITATION` guarda só o hash do token; o convite expira, pode ser revogado e só é usado uma vez.
+- `DOCUMENT` é versionado por `groupId` + `version`; o vínculo (`entityType`/`entityId`) é polimórfico (lead, oportunidade, projeto...).
 - `OUTBOX_EVENT` é gravado na mesma transação do dado de negócio e entregue por um worker ([eventos](../../04-arquitetura/eventos.md)).
 - `REFRESH_TOKEN` guarda só o hash; `familyId` permite revogar a cadeia inteira se um token já usado reaparecer.

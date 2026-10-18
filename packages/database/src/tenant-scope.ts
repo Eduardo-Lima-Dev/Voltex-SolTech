@@ -10,6 +10,8 @@ export const TENANT_SCOPED_MODELS = [
   'RefreshToken',
   'AuditLog',
   'OutboxEvent',
+  'Invitation',
+  'Document',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
