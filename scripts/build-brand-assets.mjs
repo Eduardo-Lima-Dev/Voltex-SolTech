@@ -3,10 +3,11 @@
  * Gera os ativos de marca a partir do logo original (docs/assets/brand/voltex-soltech-logo-original.svg):
  *  - packages/ui/src/assets/logo-paths.ts   (paths usados pelo componente <Logo />)
  *  - docs/assets/brand/*.svg e *.png        (variantes para fundo escuro/claro, favicon, ícones)
+ *  - apps/web/public/                       (favicon e ícones copiados)
  * Rode `node scripts/build-brand-assets.mjs` sempre que o logo original mudar. Os PNGs exigem `rsvg-convert`.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));

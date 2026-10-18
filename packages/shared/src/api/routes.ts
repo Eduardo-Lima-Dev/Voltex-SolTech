@@ -8,6 +8,13 @@ export const ROUTES = {
   },
   users: '/users',
   tenant: '/tenant',
+  branches: '/branches',
+  teams: '/teams',
+  invitations: {
+    base: '/invitations',
+    accept: '/invitations/accept',
+  },
+  auditLogs: '/audit-logs',
   documents: '/documents',
   leads: '/leads',
   opportunities: '/opportunities',

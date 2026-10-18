@@ -13,16 +13,16 @@
 git clone git@github.com:Eduardo-Lima-Dev/Voltex-SolTech.git
 cd Voltex-SolTech
 pnpm setup     # cria o .env, instala, sobe a infra, aplica migrations e popula o banco
-pnpm dev       # infra (Docker) + watchers dos pacotes + API (o Web entra na Fase 5)
+pnpm dev       # infra (Docker) + watchers dos pacotes + API + Web
 ```
 
-`pnpm dev` e `npm run dev` fazem a mesma coisa. Usuários de demonstração: [banco de dados](banco-de-dados.md#seed-de-demonstração).
+`pnpm dev` e `npm run dev` fazem a mesma coisa. Abra http://localhost:5173 e entre com um usuário de demonstração (por exemplo `owner@voltex.demo` / `Voltex@2026`): veja a lista em [banco de dados](banco-de-dados.md#seed-de-demonstração).
 
 ## Endereços em desenvolvimento
 
 | Serviço                  | URL / porta                                                                |
 | ------------------------ | -------------------------------------------------------------------------- |
-| Web (React) — Fase 5     | http://localhost:5173                                                      |
+| Web (React)              | http://localhost:5173                                                      |
 | API — Fase 4             | http://localhost:3000/api/v1                                               |
 | Swagger — Fase 4         | http://localhost:3000/api/docs                                             |
 | PostgreSQL               | localhost:**5433**                                                         |
@@ -49,4 +49,5 @@ Se alguma porta já estiver em uso na sua máquina, altere-a no `.env` (`POSTGRE
 
 - **Porta 5432 ocupada:** já é evitada (usamos 5433). Para outras portas, veja acima.
 - **`prisma generate` falha após clonar:** rode `pnpm install` (o `postinstall` gera o client).
+- **"Muitas tentativas de login":** a API limita o login a 5 por minuto por IP; espere um minuto (ou, só em desenvolvimento, use `THROTTLE_DISABLED=true`).
 - **Erro `DATABASE_URL-nao-definida.invalid`:** o `.env` não foi carregado; rode `node scripts/ensure-env.mjs`.

@@ -26,7 +26,7 @@ pnpm setup   # cria o .env, instala, sobe a infra, aplica as migrations e popula
 pnpm dev     # sobe a infra (Docker) e os apps/pacotes em modo watch
 ```
 
-> Hoje `pnpm dev` sobe a infra (PostgreSQL, Redis, S3 local, Mailpit), a API (http://localhost:3000/api/docs) e os watchers dos pacotes; o Web entra na Fase 5 do [roadmap](docs/09-roadmap/roadmap.md). Detalhes em [setup local](docs/07-desenvolvimento/setup-local.md).
+> Hoje `pnpm dev` sobe a infra (PostgreSQL, Redis, S3 local, Mailpit), a API (http://localhost:3000/api/docs), o front (http://localhost:5173) e os watchers dos pacotes. Detalhes em [setup local](docs/07-desenvolvimento/setup-local.md).
 
 ## Estrutura
 

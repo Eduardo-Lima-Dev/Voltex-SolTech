@@ -9,7 +9,7 @@ Base: `/api/v1`. Documentação interativa (Swagger/OpenAPI, gerada a partir dos
 - **Autenticação:** `Authorization: Bearer <accessToken>`. O refresh token vai somente em cookie `httpOnly` (`voltex_refresh`, `Path=/api/v1/auth`). O front deve enviar as requisições de `/auth/*` com `credentials: 'include'`. Detalhes: [ADR-0011](../04-arquitetura/adr/0011-sessao-jwt-e-refresh-rotativo.md).
 - **Autorização:** negado por padrão; cada rota declara `@Public()`, `@Authenticated()` ou `@RequirePermissions(...)`.
 - **Tenant:** derivado do token; qualquer `tenantId` enviado pelo cliente é ignorado. Dado de outro tenant responde **404** (não 403), para não revelar que existe.
-- **Validação:** schemas Zod de `@voltex/shared`; erro de validação retorna **422** com `details` por campo. UUID inválido em `:id` retorna 400.
+- **Validação:** schemas Zod de `@voltex/shared`; erro de validação retorna **422** com `details` por campo, com mensagens em **português do Brasil**. UUID inválido em `:id` retorna 400.
 - **Datas** em ISO 8601 UTC; **dinheiro** em centavos (inteiro); **unidades físicas** no nome do campo (`powerKwp`, `energyKwh`).
 - **Paginação** obrigatória em listas: `?page=1&pageSize=20` (máx. 100) → `{ data, meta: { page, pageSize, total } }`.
 - **Limite de requisições:** 120/min por IP (padrão) e 5/min em `POST /auth/login`; excedido → **429**.

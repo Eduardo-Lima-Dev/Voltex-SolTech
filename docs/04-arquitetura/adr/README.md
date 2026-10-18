@@ -18,6 +18,7 @@ Status possíveis: `Proposta` · `Aceita` · `Substituída` · `Rejeitada`.
 | [0010](0010-rustfs-no-lugar-do-minio.md)      | RustFS como S3 local no lugar do MinIO                   | Aceita |
 | [0011](0011-sessao-jwt-e-refresh-rotativo.md) | Sessão com JWT de acesso e refresh token opaco rotativo  | Aceita |
 | [0012](0012-acesso-a-dados-por-tenant.md)     | Acesso a dados escopado por tenant com falha fechada     | Aceita |
+| [0013](0013-arquitetura-do-front-end.md)      | Arquitetura do front-end                                 | Aceita |
 
 ## Modelo
 

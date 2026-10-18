@@ -24,13 +24,10 @@ export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
   );
 }
 
-export function CardTitle({ className, ...props }: ComponentProps<'div'>) {
+/** Título semântico (h3): leitores de tela navegam pelos cards como seções da página. */
+export function CardTitle({ className, ...props }: ComponentProps<'h3'>) {
   return (
-    <div
-      data-slot="card-title"
-      className={cn('font-semibold leading-none', className)}
-      {...props}
-    />
+    <h3 data-slot="card-title" className={cn('font-semibold leading-none', className)} {...props} />
   );
 }
 
