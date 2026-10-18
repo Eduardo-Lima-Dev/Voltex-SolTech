@@ -80,6 +80,9 @@ importers:
       '@voltex/shared':
         specifier: workspace:^
         version: link:../../packages/shared
+      '@voltex/solar-engine':
+        specifier: workspace:^
+        version: link:../../packages/solar-engine
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7

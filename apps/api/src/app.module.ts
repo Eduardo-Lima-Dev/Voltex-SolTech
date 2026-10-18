@@ -22,6 +22,9 @@ import { EventsModule } from './platform/events/events.module';
 import { HealthModule } from './platform/health/health.module';
 import { MailModule } from './platform/mail/mail.module';
 import { PrismaModule } from './platform/prisma/prisma.module';
+import { ReferenceDataModule } from './platform/reference-data/reference-data.module';
+import { RulesModule } from './platform/rules/rules.module';
+import { CalculatorModule } from './products/calculator/calculator.module';
 import { TenancyModule } from './platform/tenancy/tenancy.module';
 import { UsersModule } from './platform/users/users.module';
 
@@ -97,6 +100,9 @@ import { UsersModule } from './platform/users/users.module';
     TenancyModule,
     UsersModule,
     DocumentsModule,
+    RulesModule,
+    ReferenceDataModule,
+    CalculatorModule,
     HealthModule,
   ],
   providers: [
