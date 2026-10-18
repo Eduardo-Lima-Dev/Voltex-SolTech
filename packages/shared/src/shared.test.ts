@@ -15,6 +15,8 @@ import {
   formatKwp,
   formatPercent,
   formatYears,
+  assignableRoles,
+  canManageRole,
   hasPermission,
   loginSchema,
   paginationQuerySchema,
@@ -130,5 +132,15 @@ describe('formatação pt-BR', () => {
     expect(normalize(formatPercent(0.25))).toBe('25%');
     expect(normalize(formatYears(3.695))).toBe('3,7 anos');
     expect(formatYears(null)).toBe('—');
+  });
+});
+
+describe('política de perfis', () => {
+  it('OWNER atribui qualquer perfil; ADMIN atribui todos menos OWNER; demais nenhum', () => {
+    expect(assignableRoles(Role.OWNER)).toHaveLength(Object.values(Role).length);
+    expect(assignableRoles(Role.ADMIN)).not.toContain(Role.OWNER);
+    expect(assignableRoles(Role.ADMIN)).toHaveLength(Object.values(Role).length - 1);
+    expect(assignableRoles(Role.SALES_MANAGER)).toEqual([]);
+    expect(canManageRole(Role.ADMIN, Role.OWNER)).toBe(false);
   });
 });
