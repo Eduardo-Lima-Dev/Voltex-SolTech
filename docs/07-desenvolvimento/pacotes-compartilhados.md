@@ -73,6 +73,7 @@ import { Button, Card, Badge, Toaster } from '@voltex/ui';
 ```
 
 - Tema claro/escuro por classe `.dark` no `<html>`.
-- A paleta é **provisória** (âmbar solar + azul-marinho) até o logo oficial; as cores vivem só em `src/styles.css`.
-- `LogoMark`/`Logo` são placeholders a serem trocados pelo logo oficial.
+- A paleta vem do **logo oficial** (azul-marinho `#002362`, ciano `#8CDDF4`, gelo `#E3EBF0`); as cores vivem só em `src/styles.css`. Veja [identidade visual](../00-visao-geral/identidade-visual.md).
+- `Logo` e `LogoMark` são o logo oficial em SVG (tons `auto`, `on-dark` e `on-light`), gerados por `scripts/build-brand-assets.mjs`.
+- `theme.test.ts` garante contraste WCAG AA e que os tokens derivam das cores do logo.
 - Componentes de formulário integram com `react-hook-form` (`Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`) e um resolver Zod com os schemas de `@voltex/shared`.
