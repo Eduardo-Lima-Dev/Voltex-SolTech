@@ -9,6 +9,10 @@ Eventos publicados pelos módulos (seção 37 da modelagem). Os nomes e payloads
 - Publicação via **outbox transacional**: o evento é gravado na mesma transação do dado de negócio e um worker o entrega aos consumidores (entrega _at-least-once_; consumidores devem ser idempotentes).
 - Eventos são imutáveis e versionados (`schemaVersion`).
 
+## Plataforma
+
+`UserInvited` · `UserActivated` · `DocumentUploaded`
+
 ## Comercial
 
 `LeadCreated` · `LeadQualified` · `EnergyBillRequested` · `EnergyBillParsed` · `EnergyBillValidated` · `OpportunityCreated` · `OpportunityStageChanged`

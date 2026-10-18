@@ -13,7 +13,7 @@
 git clone git@github.com:Eduardo-Lima-Dev/Voltex-SolTech.git
 cd Voltex-SolTech
 pnpm setup     # cria o .env, instala, sobe a infra, aplica migrations e popula o banco
-pnpm dev       # infra (Docker) + watchers dos pacotes (+ API e Web a partir das Fases 4 e 5)
+pnpm dev       # infra (Docker) + watchers dos pacotes + API (o Web entra na Fase 5)
 ```
 
 `pnpm dev` e `npm run dev` fazem a mesma coisa. Usuários de demonstração: [banco de dados](banco-de-dados.md#seed-de-demonstração).
@@ -34,15 +34,16 @@ Se alguma porta já estiver em uso na sua máquina, altere-a no `.env` (`POSTGRE
 
 ## Scripts da raiz
 
-| Script                                                                    | O que faz                                                       |
-| ------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `pnpm dev`                                                                | Garante o `.env`, sobe a infra e roda os watchers via Turborepo |
-| `pnpm setup`                                                              | Primeira configuração completa (idempotente)                    |
-| `pnpm infra:up` / `infra:down` / `infra:ps` / `infra:logs`                | Gerencia PostgreSQL, Redis, S3 local e Mailpit                  |
-| `pnpm build` / `lint` / `typecheck` / `test`                              | Qualidade, via Turborepo                                        |
-| `pnpm format` / `format:check`                                            | Prettier                                                        |
-| `pnpm db:generate` / `db:migrate` / `db:deploy` / `db:seed` / `db:studio` | Banco ([guia](banco-de-dados.md))                               |
-| `pnpm docker:build` / `docker:up` / `docker:down`                         | Composição de produção ([Docker](../08-deploy/docker.md))       |
+| Script                                                                    | O que faz                                                                             |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `pnpm dev`                                                                | Garante o `.env`, sobe a infra e roda os watchers via Turborepo                       |
+| `pnpm setup`                                                              | Primeira configuração completa (idempotente)                                          |
+| `pnpm infra:up` / `infra:down` / `infra:ps` / `infra:logs`                | Gerencia PostgreSQL, Redis, S3 local e Mailpit                                        |
+| `pnpm build` / `lint` / `typecheck` / `test`                              | Qualidade, via Turborepo                                                              |
+| `pnpm test:e2e`                                                           | Testes e2e da API (sobe a infra; usa o banco `voltex_test`, recriado a cada execução) |
+| `pnpm format` / `format:check`                                            | Prettier                                                                              |
+| `pnpm db:generate` / `db:migrate` / `db:deploy` / `db:seed` / `db:studio` | Banco ([guia](banco-de-dados.md))                                                     |
+| `pnpm docker:build` / `docker:up` / `docker:down`                         | Composição de produção ([Docker](../08-deploy/docker.md))                             |
 
 ## Problemas comuns
 

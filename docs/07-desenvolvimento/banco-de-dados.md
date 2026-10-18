@@ -10,7 +10,7 @@ packages/database/
 ├── prisma/
 │   ├── schema/               # um .prisma por domínio
 │   │   ├── schema.prisma     # generator + datasource
-│   │   └── platform.prisma   # Tenant, Branch, Team, User, RefreshToken, AuditLog, OutboxEvent
+│   │   └── platform.prisma   # Tenant, Branch, Team, User, RefreshToken, AuditLog, OutboxEvent, Invitation, Document
 │   ├── migrations/           # versionadas no Git
 │   └── seed.ts               # dados de demonstração (somente dev)
 └── src/
@@ -82,4 +82,4 @@ const prisma = createPrismaClient(); // usa DATABASE_URL
 const user = await prisma.user.findUnique({ where: { email } });
 ```
 
-A API NestJS (Fase 4) cria uma única instância via `PrismaService`, com a extensão de tenant aplicada sobre `TENANT_SCOPED_MODELS`.
+A API NestJS usa `PrismaService` com duas portas — `db` (extensão de tenant sobre `TENANT_SCOPED_MODELS`, falha sem tenant) e `system` (sem filtro, só para login/convite/outbox). Veja [API](api.md#acesso-a-dados-e-tenant-adr-0012).

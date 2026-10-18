@@ -8,7 +8,7 @@ Plano de implementação por fases. Cada fase termina em um checkpoint verificá
 | 1    | Documentação (`docs/`)                                                                     | ✅ Concluída |
 | 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                    | ✅ Concluída |
 | 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                 | ✅ Concluída |
-| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                       | ⏳           |
+| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                       | ✅ Concluída |
 | 5    | Web React: casca da suíte, login, navegação, admin                                         | ⏳           |
 | 6    | **MVP1** — Solar Calculator                                                                | ⏳           |
 | 7    | **MVP1** — CRM Solar (leads → fatura/OCR → cotação/margem → proposta → contrato → projeto) | ⏳           |
@@ -19,6 +19,8 @@ Plano de implementação por fases. Cada fase termina em um checkpoint verificá
 | 12   | Inteligência e ecossistema (IA, procurement, previsões)                                    | ⏳           |
 
 > **Notas da Fase 3:** (1) o Prisma é o 7.x e o armazenamento S3 local é o RustFS — ver [ADR-0009](../04-arquitetura/adr/0009-prisma-7.md) e [ADR-0010](../04-arquitetura/adr/0010-rustfs-no-lugar-do-minio.md); (2) o `compose.prod.yml` traz infraestrutura + `migrate`, e os serviços `api`/`web` entram na Fase 8; (3) o pipeline padrão entra no seed junto das tabelas do CRM (Fase 7).
+
+> **Notas da Fase 4:** (1) NestJS **11** (o 12 ainda não é suportado pelo `nestjs-zod`) — ver [API](../07-desenvolvimento/api.md); (2) o worker do outbox é um _poller_ com `FOR UPDATE SKIP LOCKED`; as filas BullMQ entram com as automações (Fase 7); (3) o registro de contas e o MFA ficam para depois: usuários entram por convite; (4) testes e2e rodam em banco `voltex_test` próprio (`pnpm test:e2e`).
 
 ## Fase 0 — Descoberta (negócio, paralela ao desenvolvimento)
 
