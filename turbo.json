@@ -35,6 +35,10 @@
     },
     "db:studio": {
       "cache": false
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   },
   "globalDependencies": [".env.example"]
