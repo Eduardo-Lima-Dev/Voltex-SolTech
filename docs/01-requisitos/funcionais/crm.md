@@ -67,14 +67,17 @@
 
 ## Contrato, projeto e homologação (EPIC-CRM-009/011)
 
-| ID         | Requisito                                                                                | Fase |
-| ---------- | ---------------------------------------------------------------------------------------- | ---- |
-| RF-CRM-070 | Gerar contrato por template com variáveis automáticas                                    | MVP1 |
-| RF-CRM-071 | Registrar contrato assinado (upload) e emitir `ContractSigned`                           | MVP1 |
-| RF-CRM-072 | Assinatura eletrônica integrada                                                          | F11  |
-| RF-CRM-073 | `DealWon` cria projeto automaticamente com o mesmo `projectCode`                         | MVP1 |
-| RF-CRM-074 | Projeto com responsável técnico, status, datas e SLA                                     | MVP1 |
-| RF-CRM-075 | Checklist de documentos de homologação por concessionária (dado versionado) e pendências | MVP1 |
+| ID         | Requisito                                                                                                                                                                                                                    | Fase      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| RF-CRM-070 | Gerar contrato por template com variáveis automáticas                                                                                                                                                                        | MVP1      |
+| RF-CRM-071 | Registrar contrato assinado (upload) e emitir `ContractSigned`                                                                                                                                                               | MVP1      |
+| RF-CRM-072 | Assinatura eletrônica integrada                                                                                                                                                                                              | F11       |
+| RF-CRM-073 | `DealWon` cria projeto automaticamente com o mesmo `projectCode`                                                                                                                                                             | MVP1      |
+| RF-CRM-074 | Projeto com responsável técnico, status, datas e SLA                                                                                                                                                                         | MVP1      |
+| RF-CRM-075 | Checklist de documentos de homologação por concessionária (dado versionado) e pendências                                                                                                                                     | MVP1      |
+| RF-CRM-076 | Checklist de documentos do acesso à rede por distribuidora e classe de geração, como dado versionado. Origem: [EF-R04](../../referencias/energif-2023/regras-e-medidas.md)                                                   | MVP1 (7C) |
+| RF-CRM-077 | Etapas e responsáveis da conexão e prazos (SLA) como dado versionado, com fonte e vigência. Origem: [EF-R03, EF-R06](../../referencias/energif-2023/regras-e-medidas.md)                                                     | MVP1 (7C) |
+| RF-CRM-078 | Intake técnico: visita técnica, padrão de entrada (disjuntor e aterramento), orientação, inclinação e sombreamento do telhado. Origem: [EF-R05, EF-R09, EF-M02 a EF-M05](../../referencias/energif-2023/regras-e-medidas.md) | MVP1 (7A) |
 
 ## Financiamento, execução e lifecycle
 

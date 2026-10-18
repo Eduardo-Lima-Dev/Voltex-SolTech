@@ -21,6 +21,11 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
 - Compatibility Engine (módulo × inversor) — MVP2
 - Off-Grid (perfil de carga, banco de baterias, autonomia) — MVP3
 
+## Fontes
+
+- [Base EnergIF 2023: regras e medidas](../referencias/energif-2023/regras-e-medidas.md) (orientação, inclinação, classificação micro/mini, módulos de referência).
+- O livro **não traz** as fórmulas de dimensionamento comercial (PR, payback, custo de disponibilidade...): veja "O que o livro não fornece" no documento acima. Até a validação por especialista, as fórmulas do Calculator são **rascunho de engenharia padrão**.
+
 ## Aviso regulatório
 
 O material técnico que fundamenta o projeto é de 2023. Conceitos físicos e elétricos são estáveis e vão para o motor de cálculo. Normas, tarifas e exigências de concessionárias **não** são constantes no código: vivem no Rules Engine, com fonte e vigência.

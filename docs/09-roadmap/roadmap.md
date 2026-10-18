@@ -24,6 +24,8 @@ Plano de implementação por fases. Cada fase termina em um checkpoint verificá
 
 > **Notas da Fase 5:** (1) React Router **8** (a API de rotas é a da v7) e Vite 8 — ver [ADR-0013](../04-arquitetura/adr/0013-arquitetura-do-front-end.md) e [Web](../07-desenvolvimento/web.md); (2) os quatro produtos aparecem no menu e no painel, cada um com uma página "em desenvolvimento" até a sua fase; (3) a identidade visual oficial (logo e paleta) foi aplicada antes da fase — ver [identidade visual](../00-visao-geral/identidade-visual.md); (4) i18n: textos em pt-BR centralizados em `i18n/labels.ts` (sem biblioteca de i18n por ora).
 
+> **Base técnica:** o desenvolvimento até a **Fase 8** usa o livro EnergIF 2023 como referência ([regras e medidas](../referencias/energif-2023/regras-e-medidas.md)); o que as Fases 6 a 8 extraem dele está mapeado na seção 6 desse documento. O restante fica inventariado para as Fases 9 a 12.
+
 ## Fase 0 — Descoberta (negócio, paralela ao desenvolvimento)
 
 Da seção 63: entrevistar 10–15 integradores, mapear processos reais, coletar exemplos anonimizados de contas e propostas, mapear concessionárias e fornecedores prioritários, escolher o ICP e identificar 5 clientes piloto. Resultado alimenta os dados iniciais de tarifas, HSP e parser de fatura.
