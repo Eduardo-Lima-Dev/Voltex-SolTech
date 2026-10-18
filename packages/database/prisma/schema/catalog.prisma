@@ -1,0 +1,70 @@
+// Dados de referência do tenant usados pelos cálculos: concessionárias, tarifas e recurso solar.
+
+enum CustomerGroup {
+  A
+  B
+
+  @@map("customer_group")
+}
+
+model Distributor {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  name      String
+  state     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  tariffs Tariff[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("distributors")
+}
+
+/// Tarifa de energia com vigência. Valores antigos permanecem: propostas já feitas guardam o que usaram.
+model Tariff {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  distributorId     String        @map("distributor_id") @db.Uuid
+  customerGroup     CustomerGroup @map("customer_group")
+  modality          String?
+  /// Centavos por kWh (admite fração de centavo).
+  energyCentsPerKwh Float         @map("energy_cents_per_kwh")
+  validFrom         DateTime      @map("valid_from")
+  validTo           DateTime?     @map("valid_to")
+  source            String
+  createdAt         DateTime      @default(now()) @map("created_at")
+  deletedAt         DateTime?     @map("deleted_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  distributor Distributor @relation(fields: [distributorId], references: [id])
+
+  @@index([tenantId, distributorId, validFrom])
+  @@map("tariffs")
+}
+
+/// HSP mensal de um local, com a origem declarada. Nenhum dado entra sem `source` (RN-017).
+model SolarResource {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  name       String
+  state      String?
+  latitude   Float?
+  longitude  Float?
+  /// 12 valores (jan a dez) em kWh/m²·dia.
+  hspMonthly Json      @map("hsp_monthly")
+  source     String
+  plane      String    @default("Plano horizontal")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name, state])
+  @@index([tenantId, name])
+  @@map("solar_resources")
+}
