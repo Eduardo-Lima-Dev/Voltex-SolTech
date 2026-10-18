@@ -2,6 +2,7 @@
   "name": "voltex-soltech",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Voltex SolTech — suíte para integradores fotovoltaicos (CRM Solar, Solar Calculator, Solar Engine Studio e Off-Grid Designer)",
   "packageManager": "pnpm@9.15.9",
   "engines": {
