@@ -1,6 +1,6 @@
 # ADR-0003: PostgreSQL com Prisma
 
-- **Status:** Aceita
+- **Status:** Aceita (a versão do Prisma foi atualizada pela [ADR-0009](0009-prisma-7.md))
 - **Data:** 2026-10-18
 
 ## Contexto

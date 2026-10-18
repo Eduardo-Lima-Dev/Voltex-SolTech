@@ -20,11 +20,11 @@ Monorepo **Turborepo + pnpm** · **NestJS** (API) · **PostgreSQL + Prisma** · 
 ## Como rodar
 
 ```bash
-pnpm setup   # instala dependências, sobe a infra, migra e popula o banco
-pnpm dev     # sobe infra (Docker) + API + Web
+pnpm setup   # cria o .env, instala, sobe a infra, aplica as migrations e popula o banco
+pnpm dev     # sobe a infra (Docker) e os apps/pacotes em modo watch
 ```
 
-> `pnpm setup` e a infra Docker ficam disponíveis a partir da Fase 3 do [roadmap](docs/09-roadmap/).
+> Hoje `pnpm dev` sobe a infra (PostgreSQL, Redis, S3 local, Mailpit) e os watchers dos pacotes; API e Web entram nas Fases 4 e 5 do [roadmap](docs/09-roadmap/roadmap.md). Detalhes em [setup local](docs/07-desenvolvimento/setup-local.md).
 
 ## Estrutura
 

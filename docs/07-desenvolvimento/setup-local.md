@@ -3,7 +3,7 @@
 ## Pré-requisitos
 
 - Node.js >= 24 (`nvm use` lê o `.nvmrc`)
-- pnpm >= 9 (`npm i -g pnpm` ou Corepack)
+- pnpm >= 9
 - Docker e Docker Compose
 - Git
 
@@ -12,33 +12,40 @@
 ```bash
 git clone git@github.com:Eduardo-Lima-Dev/Voltex-SolTech.git
 cd Voltex-SolTech
-cp .env.example .env     # disponível a partir da Fase 3
-pnpm setup               # instala, sobe infra, migra e popula o banco
-pnpm dev                 # infra + API + Web
+pnpm setup     # cria o .env, instala, sobe a infra, aplica migrations e popula o banco
+pnpm dev       # infra (Docker) + watchers dos pacotes (+ API e Web a partir das Fases 4 e 5)
 ```
 
-> `pnpm setup`, `pnpm dev` completo e o Docker de infra ficam disponíveis a partir da Fase 3; `apps/api` e `apps/web` a partir das Fases 4 e 5. Veja o [roadmap](../09-roadmap/roadmap.md).
+`pnpm dev` e `npm run dev` fazem a mesma coisa. Usuários de demonstração: [banco de dados](banco-de-dados.md#seed-de-demonstração).
 
 ## Endereços em desenvolvimento
 
-| Serviço               | URL                             |
-| --------------------- | ------------------------------- |
-| Web (React)           | http://localhost:5173           |
-| API                   | http://localhost:3000/api/v1    |
-| Swagger               | http://localhost:3000/api/docs  |
-| PostgreSQL            | localhost:5432                  |
-| Redis                 | localhost:6379                  |
-| MinIO (API / console) | localhost:9000 / localhost:9001 |
-| Mailpit               | http://localhost:8025           |
+| Serviço                  | URL / porta                                                                |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Web (React) — Fase 5     | http://localhost:5173                                                      |
+| API — Fase 4             | http://localhost:3000/api/v1                                               |
+| Swagger — Fase 4         | http://localhost:3000/api/docs                                             |
+| PostgreSQL               | localhost:**5433**                                                         |
+| Redis                    | localhost:6379                                                             |
+| S3 local (API / console) | http://localhost:9000 / http://localhost:9001 (`voltex` / `voltex-secret`) |
+| Mailpit                  | http://localhost:8025                                                      |
+
+Se alguma porta já estiver em uso na sua máquina, altere-a no `.env` (`POSTGRES_PORT`, `REDIS_PORT`, `S3_API_PORT`...) e ajuste as URLs correspondentes.
 
 ## Scripts da raiz
 
-| Script                                      | O que faz                                                                        |
-| ------------------------------------------- | -------------------------------------------------------------------------------- |
-| `pnpm dev`                                  | Sobe infra (Docker) e roda API + Web em paralelo (`npm run dev` também funciona) |
-| `pnpm infra:up` / `infra:down`              | Sobe/derruba PostgreSQL, Redis, MinIO e Mailpit                                  |
-| `pnpm build`                                | Build de todos os pacotes e apps                                                 |
-| `pnpm lint` / `typecheck` / `test`          | Qualidade, via Turborepo                                                         |
-| `pnpm format` / `format:check`              | Prettier                                                                         |
-| `pnpm db:migrate` / `db:seed` / `db:studio` | Banco (Fase 3)                                                                   |
-| `pnpm docker:build` / `docker:up`           | Imagens e execução de produção (Fase 3/8)                                        |
+| Script                                                                    | O que faz                                                       |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `pnpm dev`                                                                | Garante o `.env`, sobe a infra e roda os watchers via Turborepo |
+| `pnpm setup`                                                              | Primeira configuração completa (idempotente)                    |
+| `pnpm infra:up` / `infra:down` / `infra:ps` / `infra:logs`                | Gerencia PostgreSQL, Redis, S3 local e Mailpit                  |
+| `pnpm build` / `lint` / `typecheck` / `test`                              | Qualidade, via Turborepo                                        |
+| `pnpm format` / `format:check`                                            | Prettier                                                        |
+| `pnpm db:generate` / `db:migrate` / `db:deploy` / `db:seed` / `db:studio` | Banco ([guia](banco-de-dados.md))                               |
+| `pnpm docker:build` / `docker:up` / `docker:down`                         | Composição de produção ([Docker](../08-deploy/docker.md))       |
+
+## Problemas comuns
+
+- **Porta 5432 ocupada:** já é evitada (usamos 5433). Para outras portas, veja acima.
+- **`prisma generate` falha após clonar:** rode `pnpm install` (o `postinstall` gera o client).
+- **Erro `DATABASE_URL-nao-definida.invalid`:** o `.env` não foi carregado; rode `node scripts/ensure-env.mjs`.

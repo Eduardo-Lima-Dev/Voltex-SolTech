@@ -9,7 +9,7 @@ Queremos um único comando para subir tudo, com hot reload rápido, e imagens Do
 
 ## Decisão
 
-`pnpm dev` sobe PostgreSQL, Redis, MinIO e Mailpit via Docker Compose (`docker/compose.dev.yml`) e roda API e Web localmente pelo Turborepo. Um Compose separado (`docker/compose.prod.yml`) builda e executa tudo em containers.
+`pnpm dev` sobe PostgreSQL, Redis, um armazenamento S3-compatível (RustFS, ver [ADR-0010](0010-rustfs-no-lugar-do-minio.md)) e Mailpit via Docker Compose (`docker/compose.dev.yml`) e roda API e Web localmente pelo Turborepo. Um Compose separado (`docker/compose.prod.yml`) builda e executa tudo em containers.
 
 ## Consequências
 
