@@ -1,0 +1,38 @@
+{
+  "name": "voltex-soltech",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Voltex SolTech — suíte para integradores fotovoltaicos (CRM Solar, Solar Calculator, Solar Engine Studio e Off-Grid Designer)",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm infra:up && turbo run dev",
+    "infra:up": "docker compose -f docker/compose.dev.yml up -d --wait",
+    "infra:down": "docker compose -f docker/compose.dev.yml down",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml,css}": "prettier --write"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@voltex/eslint-config": "workspace:^",
+    "@voltex/tsconfig": "workspace:^",
+    "eslint": "^10.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.9",
+    "typescript": "^5.9.3"
+  }
+}
