@@ -1,0 +1,13 @@
+// Schema multi-arquivo: cada domínio tem seu próprio .prisma nesta pasta.
+// Convenções (ADR-0003): ids UUID v7, `tenantId` em toda tabela de negócio, `createdAt/updatedAt`,
+// `deletedAt` para soft delete, tabelas e colunas em snake_case via @@map/@map.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../../src/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
