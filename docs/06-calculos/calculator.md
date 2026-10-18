@@ -92,3 +92,8 @@ Valores para conferir a implementação (a validar por especialista). Este caso 
 ## Versionamento
 
 Qualquer mudança de fórmula incrementa `algorithmVersion`. Snapshots antigos preservam a versão com que foram gerados (ADR-0006).
+
+## Fontes e lacunas
+
+- **Do EnergIF 2023 (usado):** faixa típica de HSP (EF-M01), orientação ao Norte (EF-M02), inclinação mínima de 10° e inclinação por latitude (EF-M03, EF-M04), classes micro/mini/usina (EF-M06), módulos de referência e área típica (EF-M07), a ideia de cálculo **preliminar × preciso** (EF-R02) e o conteúdo do relatório com fatores de perda (EF-R08). Detalhes e páginas em [regras e medidas](../referencias/energif-2023/regras-e-medidas.md).
+- **Sem fonte no livro (hipóteses a validar):** PR de 0,80, degradação de 0,5% a.a., custo de disponibilidade, método de payback e fluxo de caixa, fator de correção por orientação/inclinação (EF-G01 a EF-G08). Obter o _Manual de Engenharia para Sistemas Fotovoltaicos_ (CEPEL/CRESESB, 2014) e a regulação tarifária vigente antes da revisão do especialista.
