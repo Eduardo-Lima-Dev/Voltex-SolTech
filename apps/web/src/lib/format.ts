@@ -18,3 +18,25 @@ export function formatRelativeTime(iso: string | Date, now: Date = new Date()): 
 }
 
 export const shortId = (id: string): string => id.slice(0, 8);
+
+const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const brlCompact = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/** Valores monetários trafegam em centavos; aqui viram "R$ 1.234,56". */
+export const formatCents = (cents: number): string => brl.format(cents / 100);
+export const formatCentsCompact = (cents: number): string => brlCompact.format(cents / 100);
+
+export const formatNumber = (value: number, digits = 1): string =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: digits });
+export const formatKwh = (value: number, digits = 0): string =>
+  `${formatNumber(value, digits)} kWh`;
+export const formatKwp = (value: number): string => `${formatNumber(value, 2)} kWp`;
+export const formatPercent = (ratio: number, digits = 0): string =>
+  `${formatNumber(ratio * 100, digits)}%`;
+export const formatYears = (years: number | null): string =>
+  years === null ? 'Sem retorno no horizonte' : `${formatNumber(years, 1)} anos`;

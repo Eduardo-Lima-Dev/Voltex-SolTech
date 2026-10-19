@@ -5,7 +5,7 @@ import { RootLayout } from './root-layout';
 import { GuestOnly, RequireAuth, RequirePermission } from './guards';
 import { NotFoundPage } from './pages/not-found-page';
 import { RouteErrorPage } from './pages/route-error-page';
-import { ADMIN_TABS } from '@/features/admin/admin-nav';
+import { ADMIN_TABS, adminTab } from '@/features/admin/admin-nav';
 import { PRODUCTS } from '@/features/products/registry';
 
 /**
@@ -48,20 +48,69 @@ const pageRoutes: RouteObject[] = [
               return { Component: DashboardPage, handle: { title: 'Início' } };
             },
           },
-          ...PRODUCTS.map((product) => ({
-            path: `${product.path.slice(1)}/*`,
+          ...PRODUCTS.filter((product) => product.availability.status === 'soon').map(
+            (product) => ({
+              path: `${product.path.slice(1)}/*`,
+              lazy: async () => {
+                const { ProductPage } = await import('@/features/products/product-page');
+                return {
+                  element: (
+                    <RequirePermission permission={product.permission}>
+                      <ProductPage id={product.id as Product} />
+                    </RequirePermission>
+                  ),
+                  handle: { title: product.name },
+                };
+              },
+            }),
+          ),
+          {
+            path: 'calculator',
+            handle: { title: 'Solar Calculator' },
             lazy: async () => {
-              const { ProductPage } = await import('@/features/products/product-page');
-              return {
-                element: (
-                  <RequirePermission permission={product.permission}>
-                    <ProductPage id={product.id as Product} />
-                  </RequirePermission>
-                ),
-                handle: { title: product.name },
-              };
+              const { CalculatorLayout } = await import('@/features/calculator/layout');
+              return { Component: CalculatorLayout };
             },
-          })),
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { CalculatorListPage } = await import('@/features/calculator/list-page');
+                  return { Component: CalculatorListPage };
+                },
+              },
+              {
+                path: 'new',
+                lazy: async () => {
+                  const { CalculatorWizardPage } =
+                    await import('@/features/calculator/wizard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="calculator.session.create">
+                        <CalculatorWizardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Novo cálculo' },
+                  };
+                },
+              },
+              {
+                path: 'snapshots/:snapshotId',
+                lazy: async () => {
+                  const { SnapshotPage } = await import('@/features/calculator/detail-page');
+                  return { Component: SnapshotPage, handle: { title: 'Snapshot de cálculo' } };
+                },
+              },
+              {
+                path: ':id',
+                lazy: async () => {
+                  const { CalculationDetailPage } =
+                    await import('@/features/calculator/detail-page');
+                  return { Component: CalculationDetailPage, handle: { title: 'Cálculo' } };
+                },
+              },
+            ],
+          },
           {
             path: 'admin',
             lazy: async () => {
@@ -115,6 +164,49 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Perfis' },
+                  };
+                },
+              },
+              {
+                path: 'tarifas',
+                lazy: async () => {
+                  const { TariffsPage } = await import('@/features/admin/reference/tariffs-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('tarifas').anyOf}>
+                        <TariffsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Tarifas' },
+                  };
+                },
+              },
+              {
+                path: 'irradiacao',
+                lazy: async () => {
+                  const { SolarResourcesPage } =
+                    await import('@/features/admin/reference/solar-resources-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('irradiacao').anyOf}>
+                        <SolarResourcesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Irradiação' },
+                  };
+                },
+              },
+              {
+                path: 'regras',
+                lazy: async () => {
+                  const { RulesPage } = await import('@/features/admin/reference/rules-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('regras').anyOf}>
+                        <RulesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Regras' },
                   };
                 },
               },

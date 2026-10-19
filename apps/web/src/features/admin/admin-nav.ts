@@ -1,8 +1,17 @@
-import { Building2, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react';
+import {
+  Building2,
+  Receipt,
+  Scale,
+  ScrollText,
+  ShieldCheck,
+  Sun,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Permission } from '@voltex/shared';
 
 export interface AdminTab {
-  path: 'empresa' | 'usuarios' | 'perfis' | 'auditoria';
+  path: 'empresa' | 'usuarios' | 'perfis' | 'auditoria' | 'tarifas' | 'irradiacao' | 'regras';
   label: string;
   description: string;
   icon: LucideIcon;
@@ -39,7 +48,34 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     icon: ScrollText,
     anyOf: ['platform.audit.read'],
   },
+  {
+    path: 'tarifas',
+    label: 'Tarifas',
+    description: 'Concessionárias e tarifas de energia',
+    icon: Receipt,
+    anyOf: ['platform.rule.manage'],
+  },
+  {
+    path: 'irradiacao',
+    label: 'Irradiação',
+    description: 'HSP mensal por local, com fonte',
+    icon: Sun,
+    anyOf: ['platform.rule.manage'],
+  },
+  {
+    path: 'regras',
+    label: 'Regras',
+    description: 'Limites e parâmetros do Solar Calculator',
+    icon: Scale,
+    anyOf: ['platform.rule.read'],
+  },
 ];
+
+export const adminTab = (path: AdminTab['path']): AdminTab => {
+  const tab = ADMIN_TABS.find((t) => t.path === path);
+  if (!tab) throw new Error(`Aba de administração desconhecida: ${path}`);
+  return tab;
+};
 
 /** Qualquer uma destas dá acesso à área de administração. */
 export const ADMIN_PERMISSIONS: readonly Permission[] = [

@@ -2,7 +2,7 @@
   "name": "@voltex/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Aplica\u00e7\u00e3o web (React) da su\u00edte Voltex SolTech",
+  "description": "Aplicação web (React) da suíte Voltex SolTech",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,6 +24,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.90.0",
     "react-router": "^8.4.0",
+    "recharts": "3",
     "zod": "^4.6.7"
   },
   "devDependencies": {

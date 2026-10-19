@@ -97,16 +97,16 @@ describe('permissões nas rotas', () => {
   });
 
   it('a página de um produto indica a fase em que ele chega', async () => {
-    renderApp('/calculator', { session: makeSession('SALESPERSON') });
+    renderApp('/engine');
     expect(
-      await screen.findByRole('heading', { name: 'Solar Calculator', level: 1 }),
+      await screen.findByRole('heading', { name: 'Solar Engine Studio', level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Fase 6')).toBeInTheDocument();
+    expect(screen.getByText('Fase 9')).toBeInTheDocument();
     expect(screen.getByText('Em desenvolvimento')).toBeInTheDocument();
   });
 
   it('o menu só lista os produtos e áreas permitidos ao perfil', async () => {
-    renderApp('/calculator', { session: makeSession('SALESPERSON') });
+    renderApp('/', { session: makeSession('SALESPERSON') });
     const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
     const links = Array.from(nav.querySelectorAll('a')).map((a) =>
       a.textContent?.replace(/\(em breve\)/, '').trim(),
