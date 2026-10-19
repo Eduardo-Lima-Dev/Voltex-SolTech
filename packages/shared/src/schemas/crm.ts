@@ -225,8 +225,25 @@ export type UpdateConsumerUnitInput = z.input<typeof updateConsumerUnitSchema>;
 export const updatePipelineStageSchema = z.object({
   name: z.string().trim().min(2).max(60).optional(),
   order: z.number().int().min(1).max(99).optional(),
+  hidden: z.boolean().optional(),
 });
 export type UpdatePipelineStageInput = z.input<typeof updatePipelineStageSchema>;
+
+/** Etapas-base que aceitam colunas personalizadas (ganho e perdido são fixos). */
+export const CUSTOM_STAGE_BASES = Object.values(OpportunityStage).filter(
+  (s) => s !== OpportunityStage.WON && s !== OpportunityStage.LOST,
+);
+
+export const createCustomStageSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  baseStage: z.enum(CUSTOM_STAGE_BASES),
+});
+export type CreateCustomStageInput = z.input<typeof createCustomStageSchema>;
+
+export const updateCustomStageSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+});
+export type UpdateCustomStageInput = z.input<typeof updateCustomStageSchema>;
 
 export const createOpportunitySchema = z.object({
   accountId: z.uuid(),
@@ -254,6 +271,8 @@ export type UpdateOpportunityInput = z.input<typeof updateOpportunitySchema>;
 export const changeStageSchema = z
   .object({
     stage: z.enum(OpportunityStage),
+    /** Coluna personalizada de destino; `stage` é a etapa-base dela. */
+    customStageId: z.uuid().optional(),
     lostReason: z.string().trim().min(3).max(500).optional(),
   })
   .refine((v) => v.stage !== OpportunityStage.LOST || !!v.lostReason, {

@@ -13,6 +13,7 @@ import {
   canTransition,
   OPPORTUNITY_TRANSITIONS,
   type ChangeStageInput,
+  type CustomStageDto,
   type CreateOpportunityData,
   type ListOpportunitiesQuery,
   type OpportunityBoardDto,
@@ -199,7 +200,10 @@ export class OpportunitiesService {
     filters: { ownerId?: string; search?: string; status?: OpportunityStatus } = {},
   ): Promise<OpportunityBoardDto> {
     const { ownerId, search, status } = filters;
-    const stages = await this.pipeline.list();
+    const [stages, customStages] = await Promise.all([
+      this.pipeline.list(),
+      this.pipeline.customStages(),
+    ]);
     const since = new Date(Date.now() - BOARD_CLOSED_WINDOW_DAYS * 86_400_000);
     const base = {
       deletedAt: null,
@@ -220,17 +224,11 @@ export class OpportunitiesService {
           : []),
       ],
     };
-    const counts = await this.prisma.db.opportunity.groupBy({
-      by: ['stage'],
-      where: base,
-      _count: { _all: true },
-    });
-    const totals = new Map(counts.map((c) => [c.stage, c._count._all]));
 
-    // Valor por etapa: preço da cotação mais recente de cada oportunidade, somado (inclui as não exibidas).
+    // Contagem e valor por coluna (etapa padrão + coluna personalizada), incluindo os cartões não exibidos.
     const everyone = await this.prisma.db.opportunity.findMany({
       where: base,
-      select: { id: true, stage: true },
+      select: { id: true, stage: true, customStageId: true },
     });
     const latestPrice = new Map<string, number>();
     if (everyone.length > 0) {
@@ -243,26 +241,42 @@ export class OpportunitiesService {
         if (!latestPrice.has(quote.opportunityId))
           latestPrice.set(quote.opportunityId, quote.priceCents);
     }
-    const valueByStage = new Map<string, number>();
-    for (const o of everyone)
-      valueByStage.set(o.stage, (valueByStage.get(o.stage) ?? 0) + (latestPrice.get(o.id) ?? 0));
+    const slot = (stage: OpportunityStage, customId: string | null) => `${stage}:${customId ?? ''}`;
+    const totals = new Map<string, { count: number; value: number }>();
+    for (const o of everyone) {
+      const key = slot(o.stage, o.customStageId);
+      const entry = totals.get(key) ?? { count: 0, value: 0 };
+      entry.count += 1;
+      entry.value += latestPrice.get(o.id) ?? 0;
+      totals.set(key, entry);
+    }
 
-    const columns = await Promise.all(
-      stages.map(async (stage) => {
-        const rows = await this.prisma.db.opportunity.findMany({
-          where: { ...base, stage: stage.key },
-          include: { account: { select: { name: true } } },
-          orderBy: { stageChangedAt: 'desc' },
-          take: BOARD_CARDS_PER_STAGE,
-        });
-        return {
-          stage,
-          total: totals.get(stage.key) ?? 0,
-          totalValueCents: valueByStage.get(stage.key) ?? 0,
-          items: await this.toDtos(rows),
-        };
-      }),
-    );
+    const layout = stages.flatMap((stage) => [
+      { stage, custom: null as CustomStageDto | null },
+      ...customStages.filter((c) => c.baseStage === stage.key).map((custom) => ({ stage, custom })),
+    ]);
+    const columns = (
+      await Promise.all(
+        layout.map(async ({ stage, custom }) => {
+          const total = totals.get(slot(stage.key, custom?.id ?? null)) ?? { count: 0, value: 0 };
+          // Etapa escondida só some do quadro enquanto estiver vazia.
+          if (!custom && stage.hidden && total.count === 0) return null;
+          const rows = await this.prisma.db.opportunity.findMany({
+            where: { ...base, stage: stage.key, customStageId: custom?.id ?? null },
+            include: { account: { select: { name: true } } },
+            orderBy: { stageChangedAt: 'desc' },
+            take: BOARD_CARDS_PER_STAGE,
+          });
+          return {
+            stage,
+            customStage: custom,
+            total: total.count,
+            totalValueCents: total.value,
+            items: await this.toDtos(rows),
+          };
+        }),
+      )
+    ).filter((c): c is NonNullable<typeof c> => c !== null);
     return { columns };
   }
 
@@ -383,15 +397,24 @@ export class OpportunitiesService {
   async changeStage(id: string, input: ChangeStageInput): Promise<OpportunityDto> {
     const opportunity = await this.findOrThrow(id);
     const to = input.stage;
+    const custom = input.customStageId ? await this.pipeline.findCustom(input.customStageId) : null;
+    if (custom && custom.baseStage !== to)
+      throw new UnprocessableEntityException('A coluna escolhida não pertence a esta etapa');
     if (opportunity.status === OpportunityStatus.WON)
       throw this.invalidTransition('Oportunidade ganha não muda de etapa', opportunity.stage);
-    if (to === opportunity.stage)
-      throw this.invalidTransition('A oportunidade já está nesta etapa', opportunity.stage);
     if (to === OpportunityStage.WON)
       throw this.invalidTransition(
         'O ganho é registrado quando o contrato é assinado',
         opportunity.stage,
       );
+
+    if (to === opportunity.stage) {
+      // Mesma etapa: só troca a coluna (personalizada ou padrão), sem mexer nas regras do funil.
+      if ((opportunity.customStageId ?? null) === (custom?.id ?? null))
+        throw this.invalidTransition('A oportunidade já está nesta etapa', opportunity.stage);
+      await this.prisma.db.$transaction((tx) => this.moveColumnWithin(tx, opportunity, custom));
+      return this.get(id);
+    }
     if (!canTransition(opportunity.stage, to))
       throw this.invalidTransition(
         'Não é possível ir direto para esta etapa a partir da etapa atual',
@@ -400,9 +423,47 @@ export class OpportunitiesService {
     for (const gate of this.gates) await gate.assertCanEnter(opportunity, to);
 
     await this.prisma.db.$transaction((tx) =>
-      this.moveStageWithin(tx, opportunity, to, input.lostReason ?? null),
+      this.moveStageWithin(tx, opportunity, to, input.lostReason ?? null, undefined, custom?.id),
     );
     return this.get(id);
+  }
+
+  /** Troca só a coluna dentro da mesma etapa. */
+  private async moveColumnWithin(
+    tx: Tx,
+    opportunity: Opportunity,
+    custom: CustomStageDto | null,
+  ): Promise<void> {
+    const [stages, customs] = await Promise.all([
+      this.pipeline.list(),
+      this.pipeline.customStages(),
+    ]);
+    const stageName = stages.find((s) => s.key === opportunity.stage)?.name ?? opportunity.stage;
+    const label = (customId: string | null) =>
+      customId ? (customs.find((c) => c.id === customId)?.name ?? stageName) : stageName;
+    await tx.opportunity.update({
+      where: { id: opportunity.id },
+      data: { customStageId: custom?.id ?? null, stageChangedAt: new Date() },
+    });
+    await this.timeline.record(
+      {
+        opportunityId: opportunity.id,
+        type: TimelineEventType.STAGE_CHANGED,
+        summary: `Coluna: ${label(opportunity.customStageId)} → ${label(custom?.id ?? null)}`,
+        data: { stage: opportunity.stage, customStageId: custom?.id ?? null },
+      },
+      tx,
+    );
+    await this.audit.record(
+      {
+        action: 'opportunity.column_changed',
+        entity: 'Opportunity',
+        entityId: opportunity.id,
+        before: { customStageId: opportunity.customStageId },
+        after: { customStageId: custom?.id ?? null },
+      },
+      tx,
+    );
   }
 
   /** Muda a etapa dentro de uma transação, sem validar (quem chama já validou). */
@@ -412,6 +473,7 @@ export class OpportunitiesService {
     to: OpportunityStage,
     lostReason: string | null = null,
     reason?: string,
+    customStageId?: string | null,
   ): Promise<void> {
     const stages = await this.pipeline.list();
     const name = (key: OpportunityStage) => stages.find((s) => s.key === key)?.name ?? key;
@@ -421,6 +483,8 @@ export class OpportunitiesService {
       where: { id: opportunity.id },
       data: {
         stage: to,
+        // Mudança de etapa sempre sai da coluna personalizada, salvo quando o destino é uma delas.
+        customStageId: customStageId ?? null,
         stageChangedAt: new Date(),
         status: lost
           ? OpportunityStatus.LOST
@@ -716,7 +780,8 @@ export class OpportunitiesService {
 
   private async toDtos(rows: OpportunityWithAccount[]): Promise<OpportunityDto[]> {
     const ids = rows.map((r) => r.id);
-    const [names, openTasks, quotes] = await Promise.all([
+    const customIds = [...new Set(rows.map((r) => r.customStageId).filter((c) => !!c))] as string[];
+    const [names, openTasks, quotes, customs] = await Promise.all([
       this.users.names(rows.map((r) => r.ownerId)),
       ids.length
         ? this.prisma.db.task.findMany({
@@ -731,7 +796,14 @@ export class OpportunitiesService {
             select: { opportunityId: true, priceCents: true },
           })
         : [],
+      customIds.length
+        ? this.prisma.db.customPipelineStage.findMany({
+            where: { id: { in: customIds } },
+            select: { id: true, name: true },
+          })
+        : [],
     ]);
+    const customNames = new Map(customs.map((c) => [c.id, c.name]));
     // Valor do negócio = preço da cotação mais recente.
     const value = new Map<string, number>();
     for (const quote of quotes)
@@ -750,6 +822,8 @@ export class OpportunitiesService {
       projectCode: r.projectCode,
       title: r.title,
       stage: r.stage,
+      customStageId: r.customStageId,
+      customStageName: r.customStageId ? (customNames.get(r.customStageId) ?? null) : null,
       status: r.status,
       projectType: r.projectType,
       accountId: r.accountId,

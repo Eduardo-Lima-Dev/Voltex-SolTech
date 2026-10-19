@@ -16,6 +16,7 @@ import { Link } from 'react-router';
 import {
   OpportunityStage,
   canTransition,
+  type CustomStageDto,
   type OpportunityBoardColumnDto,
   type OpportunityDto,
   type PipelineStageDto,
@@ -24,7 +25,7 @@ import { NativeSelect, cn } from '@voltex/ui';
 import { PROJECT_TYPE_LABELS } from '@/i18n/labels';
 import { formatCents, formatDate } from '@/lib/format';
 import { LostDialog } from './lost-dialog';
-import { allowedStages, stageName, useStageChange } from './stage-change';
+import { moveOptions, useStageChange, type StageTarget } from './stage-change';
 
 /** Parado: sem mudar de etapa há tanto tempo (regra simples e visível, não um palpite). */
 export const STALE_AFTER_DAYS = 14;
@@ -99,18 +100,20 @@ function CardBody({ opportunity }: { opportunity: OpportunityDto }) {
 function OpportunityCard({
   opportunity,
   stages,
+  customs,
   onMove,
 }: {
   opportunity: OpportunityDto;
   stages: PipelineStageDto[];
-  onMove: (to: OpportunityStage) => void;
+  customs: CustomStageDto[];
+  onMove: (to: StageTarget) => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: opportunity.id,
     data: { opportunity },
     disabled: opportunity.status === 'WON',
   });
-  const targets = allowedStages(opportunity.stage);
+  const targets = moveOptions(opportunity, stages, customs);
 
   return (
     <li
@@ -142,12 +145,15 @@ function OpportunityCard({
             aria-label={`Mover ${opportunity.title} para`}
             className="h-8 text-xs"
             value=""
-            onChange={(e) => e.target.value && onMove(e.target.value as OpportunityStage)}
+            onChange={(e) => {
+              const chosen = targets.find((t) => t.value === e.target.value);
+              if (chosen) onMove(chosen.target);
+            }}
           >
             <option value="">Mover para…</option>
-            {targets.map((s) => (
-              <option key={s} value={s}>
-                {stageName(stages, s)}
+            {targets.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </NativeSelect>
@@ -160,23 +166,35 @@ function OpportunityCard({
 function Column({
   column,
   stages,
+  customs,
   dragging,
   onMove,
 }: {
   column: OpportunityBoardColumnDto;
   stages: PipelineStageDto[];
+  customs: CustomStageDto[];
   dragging: OpportunityDto | null;
-  onMove: (opportunity: OpportunityDto, to: OpportunityStage) => void;
+  onMove: (opportunity: OpportunityDto, to: StageTarget) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.stage.key });
+  const target: StageTarget = {
+    stage: column.stage.key,
+    customStageId: column.customStage?.id ?? null,
+  };
+  const { setNodeRef, isOver } = useDroppable({
+    id: target.customStageId ? `custom:${target.customStageId}` : target.stage,
+    data: { target },
+  });
+  const title = column.customStage?.name ?? column.stage.name;
   const valid = dragging
-    ? column.stage.key !== OpportunityStage.WON && canTransition(dragging.stage, column.stage.key)
+    ? target.stage === dragging.stage
+      ? target.customStageId !== dragging.customStageId
+      : target.stage !== OpportunityStage.WON && canTransition(dragging.stage, target.stage)
     : null;
 
   return (
     <section
       ref={setNodeRef}
-      aria-label={`Etapa ${column.stage.name}`}
+      aria-label={`Etapa ${title}`}
       className={cn(
         'flex w-60 shrink-0 flex-col rounded-xl border bg-muted/40 transition-colors',
         valid === true && 'border-brand-cyan-strong/60',
@@ -185,7 +203,10 @@ function Column({
       )}
     >
       <header className="space-y-0.5 px-3 py-2.5">
-        <h3 className="truncate text-sm font-semibold">{column.stage.name}</h3>
+        <h3 className="truncate text-sm font-semibold">{title}</h3>
+        {column.customStage ? (
+          <p className="truncate text-[11px] text-muted-foreground">Etapa: {column.stage.name}</p>
+        ) : null}
         <p className="text-xs text-muted-foreground">
           {column.total === 1 ? '1 oportunidade' : `${column.total} oportunidades`}
           {' · '}
@@ -200,6 +221,7 @@ function Column({
             key={o.id}
             opportunity={o}
             stages={stages}
+            customs={customs}
             onMove={(to) => onMove(o, to)}
           />
         ))}
@@ -223,6 +245,7 @@ export function KanbanBoard({
 }) {
   const [dragging, setDragging] = useState<OpportunityDto | null>(null);
   const stageChange = useStageChange(stages);
+  const customs = columns.flatMap((c) => (c.customStage ? [c.customStage] : []));
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor),
@@ -233,8 +256,8 @@ export function KanbanBoard({
   const onDragEnd = (event: DragEndEvent) => {
     const opportunity = event.active.data.current?.opportunity as OpportunityDto | undefined;
     setDragging(null);
-    if (opportunity && event.over)
-      stageChange.request(opportunity, event.over.id as OpportunityStage);
+    const target = event.over?.data.current?.target as StageTarget | undefined;
+    if (opportunity && target) stageChange.request(opportunity, target.stage, target.customStageId);
   };
 
   return (
@@ -249,11 +272,14 @@ export function KanbanBoard({
           <div className="flex min-h-[calc(100dvh-15rem)] items-stretch gap-3">
             {columns.map((column) => (
               <Column
-                key={column.stage.id}
+                key={column.customStage?.id ?? column.stage.id}
                 column={column}
                 stages={stages}
+                customs={customs}
                 dragging={dragging}
-                onMove={stageChange.request}
+                onMove={(opportunity, to) =>
+                  stageChange.request(opportunity, to.stage, to.customStageId)
+                }
               />
             ))}
           </div>

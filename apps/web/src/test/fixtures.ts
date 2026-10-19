@@ -269,6 +269,7 @@ export const stages = (): PipelineStageDto[] =>
     name: s.name,
     order: s.order,
     terminal: s.terminal,
+    hidden: false,
   }));
 
 export const makeOpportunity = (overrides: Partial<OpportunityDto> = {}): OpportunityDto => ({
@@ -291,6 +292,8 @@ export const makeOpportunity = (overrides: Partial<OpportunityDto> = {}): Opport
   valueCents: null,
   openTaskCount: 0,
   nextTaskDueAt: null,
+  customStageId: null,
+  customStageName: null,
   stageChangedAt: now,
   createdAt: now,
   updatedAt: now,
@@ -301,7 +304,7 @@ export const makeBoard = (items: OpportunityDto[] = []): OpportunityBoardDto => 
   columns: stages().map((stage) => {
     const inStage = items.filter((o) => o.stage === stage.key);
     const totalValueCents = inStage.reduce((sum, o) => sum + (o.valueCents ?? 0), 0);
-    return { stage, total: inStage.length, totalValueCents, items: inStage };
+    return { stage, customStage: null, total: inStage.length, totalValueCents, items: inStage };
   }),
 });
 

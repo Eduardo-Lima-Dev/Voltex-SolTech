@@ -55,4 +55,27 @@ test.describe('CRM · do lead à oportunidade', () => {
     expect(options).not.toContain('Contrato');
     expect(options).not.toContain('Ganho');
   });
+
+  test('o administrador cria uma coluna própria e esconde uma etapa no funil da empresa', async ({
+    page,
+  }) => {
+    await loginAs(page, USERS.admin);
+    await page.goto('/crm/oportunidades');
+    await page.getByRole('button', { name: /Configurar etapas/ }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Nome da nova coluna').fill('Visita agendada');
+    await dialog.getByLabel('Etapa da nova coluna').selectOption({ label: 'Qualificação' });
+    await dialog.getByRole('button', { name: 'Adicionar' }).click();
+    await expect(dialog.getByLabel('Nome da coluna Visita agendada')).toBeVisible();
+
+    await dialog.getByRole('switch', { name: 'Mostrar Pré-dimensionamento no quadro' }).click();
+    await dialog.getByRole('button', { name: 'Salvar alterações' }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(page.getByRole('region', { name: 'Etapa Visita agendada' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Etapa Pré-dimensionamento' })).toHaveCount(0);
+    // A personalização fica guardada na empresa: continua depois de recarregar.
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Etapa Visita agendada' })).toBeVisible();
+  });
 });
