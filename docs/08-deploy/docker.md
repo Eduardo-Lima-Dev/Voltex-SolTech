@@ -58,3 +58,12 @@ Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 | Desenvolvimento | `develop`    | Máquinas dos desenvolvedores                 |
 | Homologação     | `homologate` | Mesma composição de produção, dados de teste |
 | Produção        | `main`       | Imagens versionadas por tag                  |
+
+## Tipos de deploy
+
+A composição `compose.prod.yml` é a base de todos. Cada tipo de deploy acrescenta o que precisa:
+
+| Tipo                                        | Para quê                                           | Guia                                      |
+| ------------------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| **1. Servidor de teste em casa** (notebook) | Demonstrar e testar com dados fictícios, sem custo | [Servidor de teste](servidor-de-teste.md) |
+| 2. Servidor pago ou gerenciado              | Cliente real, backup fora de casa                  | _a definir_                               |
