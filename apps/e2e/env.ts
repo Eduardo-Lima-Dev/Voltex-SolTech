@@ -6,6 +6,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 export const API_PORT = 3100;
 export const WEB_PORT = 4173;
 export const SITE_PORT = 4174;
+/** Chave de captação fixa do banco de testes: o site é compilado com ela, e o formulário cai como lead no CRM. */
+export const LEAD_KEY = 'lk_e2e_jornada';
 export const PASSWORD = process.env.SEED_PASSWORD ?? 'Voltex@2026';
 
 /** Banco próprio dos testes e2e: nunca o de desenvolvimento. */
