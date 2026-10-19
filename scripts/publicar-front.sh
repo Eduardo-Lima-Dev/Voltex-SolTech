@@ -26,12 +26,13 @@ pasta="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/voltex-deploy/voltex-$alvo"
 rm -rf "$pasta" && mkdir -p "$pasta"
 
 if [[ "$alvo" == "app" ]]; then
-  VITE_API_URL=/api/v1 VITE_SITE_URL="${SITE_URL:-}" pnpm --filter @voltex/web build
+  # `turbo run build` compila antes os pacotes do workspace de que a aplicação depende (ui, shared, solar-engine).
+  VITE_API_URL=/api/v1 VITE_SITE_URL="${SITE_URL:-}" pnpm turbo run build --filter=@voltex/web
   cp -r apps/web/dist/. "$pasta/"
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-app.json.template > "$pasta/vercel.json"
 else
   VITE_APP_URL="${APP_URL:?defina APP_URL (endereço público da aplicação)}" VITE_LEAD_KEY="${LEAD_KEY:-}" \
-    pnpm --filter @voltex/site build
+    pnpm turbo run build --filter=@voltex/site
   cp -r apps/site/dist/. "$pasta/"
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-site.json.template > "$pasta/vercel.json"
 fi
