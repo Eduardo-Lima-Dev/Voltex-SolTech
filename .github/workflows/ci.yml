@@ -45,6 +45,18 @@ jobs:
       - name: Testes e2e da API
         run: pnpm --filter @voltex/api test:e2e
 
+      - name: Navegador (Playwright)
+        run: |
+          pnpm --filter @voltex/e2e exec playwright install --with-deps chromium
+          pnpm --filter @voltex/e2e test
+      - name: Relatório do Playwright (só se falhar)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report
+          retention-days: 7
+
       - name: Logs da infraestrutura (só se falhar)
         if: failure()
         run: docker compose --project-directory . -f docker/compose.dev.yml logs --tail=200 || true

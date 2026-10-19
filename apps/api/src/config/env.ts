@@ -65,6 +65,8 @@ export const envSchema = z
      * torna esses dados ilegíveis, então guarde cópia separada do backup do banco. Gere com `openssl rand -base64 32`.
      */
     DATA_ENCRYPTION_KEY: z.string().default(DEV_DATA_ENCRYPTION_KEY),
+    /** Liga `GET /api/v1/metrics` (Prometheus) para quem enviar `Authorization: Bearer <token>`. Vazio = desligado. */
+    METRICS_TOKEN: z.string().min(16).optional(),
     THROTTLE_DISABLED: booleanFromString.default(false),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
     /** 0 desliga o worker do outbox (usado nos testes, que o acionam manualmente). */

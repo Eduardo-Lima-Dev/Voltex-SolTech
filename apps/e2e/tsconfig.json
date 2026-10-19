@@ -1,0 +1,10 @@
+{
+  "extends": "@voltex/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["*.ts", "tests"]
+}

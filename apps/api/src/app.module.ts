@@ -20,6 +20,7 @@ import { PermissionsGuard } from './platform/auth/permissions.guard';
 import { DocumentsModule } from './platform/documents/documents.module';
 import { EventsModule } from './platform/events/events.module';
 import { HealthModule } from './platform/health/health.module';
+import { MetricsModule } from './platform/metrics/metrics.module';
 import { MailModule } from './platform/mail/mail.module';
 import { PrismaModule } from './platform/prisma/prisma.module';
 import { ReferenceDataModule } from './platform/reference-data/reference-data.module';
@@ -106,6 +107,7 @@ import { UsersModule } from './platform/users/users.module';
     CalculatorModule,
     CrmModule,
     HealthModule,
+    MetricsModule,
   ],
   providers: [
     // A ordem importa: limite de requisições → autenticação → autorização.
