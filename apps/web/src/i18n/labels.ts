@@ -1,4 +1,11 @@
-import { PERMISSIONS, type Permission, type Product, type Role } from '@voltex/shared';
+import {
+  PERMISSIONS,
+  type Permission,
+  type Product,
+  type Role,
+  type Thresholds,
+} from '@voltex/shared';
+import type { AlertCode } from '@voltex/solar-engine';
 
 /** Textos da interface em pt-BR. Toda enumeração do domínio passa por aqui; nunca exibimos o código cru. */
 
@@ -107,6 +114,12 @@ export const ENTITY_LABELS: Record<string, string> = {
   Team: 'Time',
   Invitation: 'Convite',
   Document: 'Documento',
+  CalculationSession: 'Cálculo',
+  QuickCalculationSnapshot: 'Snapshot de cálculo',
+  RuleSet: 'Regra',
+  SolarResource: 'Irradiação',
+  Tariff: 'Tarifa',
+  Distributor: 'Concessionária',
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -129,6 +142,19 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.uploaded': 'Documento enviado',
   'document.deleted': 'Documento excluído',
   'document.download_url_issued': 'Link de download gerado',
+  'calculation.created': 'Cálculo criado',
+  'calculation.snapshot_created': 'Snapshot de cálculo salvo',
+  'rule.created': 'Regra criada (rascunho)',
+  'rule.activated': 'Regra ativada',
+  'rule.deleted': 'Regra excluída',
+  'distributor.created': 'Concessionária criada',
+  'distributor.updated': 'Concessionária atualizada',
+  'distributor.deleted': 'Concessionária excluída',
+  'tariff.created': 'Tarifa cadastrada',
+  'tariff.deleted': 'Tarifa excluída',
+  'solar_resource.upserted': 'Irradiação cadastrada',
+  'solar_resource.imported': 'Irradiação importada',
+  'solar_resource.deleted': 'Irradiação excluída',
 };
 
 export const auditActionLabel = (action: string): string => AUDIT_ACTION_LABELS[action] ?? action;
@@ -170,4 +196,123 @@ export const BRAZILIAN_STATES = [
   'SP',
   'SE',
   'TO',
+] as const;
+
+// ---- Solar Calculator ----
+
+export const TRAFFIC_LIGHT_LABELS = {
+  GREEN: 'Pré-viável',
+  YELLOW: 'Requer atenção',
+  RED: 'Não recomendado',
+} as const;
+
+export const TRAFFIC_LIGHT_DESCRIPTIONS = {
+  GREEN: 'Nenhum impedimento encontrado na pré-análise.',
+  YELLOW: 'Há pontos a confirmar; pode exigir validação de engenharia.',
+  RED: 'Há impedimentos. Não siga para a proposta sem resolver.',
+} as const;
+
+export const ALERT_SEVERITY_LABELS = {
+  INFO: 'Informação',
+  WARNING: 'Atenção',
+  BLOCKING: 'Impedimento',
+} as const;
+
+/** Título curto de cada alerta do motor. A mensagem completa vem do próprio resultado. */
+export const ALERT_TITLES: Record<AlertCode, string> = {
+  MISSING_CRITICAL_DATA: 'Dado crítico ausente',
+  GROUP_A_COMPLEX: 'Cliente do Grupo A',
+  CONTRACTED_DEMAND_RELEVANT: 'Demanda contratada relevante',
+  POSSIBLE_GRID_ZERO: 'Possível Grid Zero',
+  SHADING_RELEVANT: 'Sombreamento relevante',
+  HYBRID_REQUESTED: 'Sistema híbrido solicitado',
+  OFF_GRID_REQUESTED: 'Sistema off-grid solicitado',
+  INSUFFICIENT_AREA: 'Área insuficiente',
+  INCONSISTENT_INPUT: 'Dados inconsistentes',
+  ASSUMPTION_OUT_OF_RANGE: 'Premissa fora da faixa',
+  OVERSIZED_SYSTEM: 'Sistema sobredimensionado',
+  NO_PAYBACK_IN_HORIZON: 'Sem retorno no horizonte',
+  DEFAULT_PERFORMANCE_RATIO: 'PR padrão em uso',
+  HSP_OUTSIDE_TYPICAL_RANGE: 'HSP fora da faixa típica',
+  TILT_BELOW_RECOMMENDED: 'Inclinação abaixo da recomendada',
+  ORIENTATION_NOT_OPTIMAL: 'Orientação distante da ideal',
+  MINIGENERATION_CLASS: 'Minigeração',
+  UTILITY_SCALE_OUT_OF_SCOPE: 'Usina fora do escopo',
+};
+
+export const GENERATION_CLASS_LABELS = {
+  MICRO: 'Microgeração',
+  MINI: 'Minigeração',
+  UTILITY: 'Usina',
+} as const;
+
+export const CUSTOMER_GROUP_LABELS = {
+  A: 'Grupo A (alta tensão)',
+  B: 'Grupo B (baixa tensão)',
+} as const;
+
+export const PHASE_SYSTEM_LABELS = {
+  SINGLE_PHASE: 'Monofásico',
+  TWO_PHASE: 'Bifásico',
+  THREE_PHASE: 'Trifásico',
+} as const;
+
+export const PROJECT_TYPE_LABELS = {
+  ON_GRID: 'On-grid',
+  HYBRID: 'Híbrido',
+  OFF_GRID: 'Off-grid',
+} as const;
+
+export const PERFORMANCE_RATIO_SOURCE_LABELS = {
+  INPUT: 'Informado',
+  LOSSES: 'Calculado pelas perdas',
+  DEFAULT: 'Padrão da regra',
+} as const;
+
+export const HSP_SOURCE_LABELS = {
+  DATASET: 'Base de irradiação',
+  MANUAL: 'Entrada manual',
+} as const;
+
+export const RULE_STATUS_LABELS = {
+  DRAFT: 'Rascunho',
+  ACTIVE: 'Ativa',
+  RETIRED: 'Aposentada',
+} as const;
+
+export const RULE_SOURCE_TYPE_LABELS = {
+  REGULATION: 'Regulação',
+  STANDARD: 'Norma técnica',
+  BOOK: 'Livro técnico',
+  INTERNAL_POLICY: 'Política interna',
+} as const;
+
+export const THRESHOLD_LABELS: Record<keyof Thresholds, { label: string; unit?: string }> = {
+  performanceRatioMin: { label: 'PR mínimo aceito' },
+  performanceRatioMax: { label: 'PR máximo aceito' },
+  hspMin: { label: 'HSP mínimo aceito', unit: 'kWh/m²·dia' },
+  hspMax: { label: 'HSP máximo aceito', unit: 'kWh/m²·dia' },
+  maxGenerationToConsumptionRatio: { label: 'Geração máxima sobre o consumo' },
+  defaultPerformanceRatio: { label: 'PR padrão' },
+  typicalHspMin: { label: 'HSP típico mínimo', unit: 'kWh/m²·dia' },
+  typicalHspMax: { label: 'HSP típico máximo', unit: 'kWh/m²·dia' },
+  minRecommendedTiltDegrees: { label: 'Inclinação mínima recomendada', unit: '°' },
+  orientationToleranceDegrees: { label: 'Tolerância de orientação', unit: '°' },
+  microgenerationMaxKw: { label: 'Limite da microgeração', unit: 'kW' },
+  minigenerationMaxKw: { label: 'Limite da minigeração', unit: 'kW' },
+};
+
+export const MONTH_LABELS = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
 ] as const;

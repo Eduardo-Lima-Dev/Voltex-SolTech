@@ -26,6 +26,14 @@ export const TenantStatus = {
 } as const;
 export type TenantStatus = (typeof TenantStatus)[keyof typeof TenantStatus];
 
+/** Classe da geração distribuída por potência instalada (EnergIF EF-M06; limites parametrizados no Rules Engine). */
+export const GenerationClass = {
+  MICRO: 'MICRO',
+  MINI: 'MINI',
+  UTILITY: 'UTILITY',
+} as const;
+export type GenerationClass = (typeof GenerationClass)[keyof typeof GenerationClass];
+
 export const Product = {
   CRM: 'CRM',
   CALCULATOR: 'CALCULATOR',

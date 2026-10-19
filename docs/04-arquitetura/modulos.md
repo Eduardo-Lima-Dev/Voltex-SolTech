@@ -2,24 +2,25 @@
 
 ## Mapa de módulos da API (`apps/api/src`)
 
-| Módulo                | Camada     | Responsabilidade                                                                                         |
-| --------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| `config`              | base       | Variáveis de ambiente validadas por Zod                                                                  |
-| `common`              | base       | Guards, interceptors, filtros, decorators e pipes                                                        |
-| `platform/prisma`     | plataforma | Acesso ao banco e extensão de tenant                                                                     |
-| `platform/auth`       | plataforma | Login, refresh token, JWT, guard global                                                                  |
-| `platform/tenancy`    | plataforma | Tenant, filiais, times e contexto da requisição                                                          |
-| `platform/users`      | plataforma | Usuários, perfis e permissões (RBAC)                                                                     |
-| `platform/audit`      | plataforma | Trilha de auditoria                                                                                      |
-| `platform/events`     | plataforma | Event bus interno e outbox                                                                               |
-| `platform/documents`  | plataforma | Upload/download, metadados e vínculos                                                                    |
-| `platform/rules`      | plataforma | Rules Engine versionado                                                                                  |
-| `platform/catalog`    | plataforma | Catálogo técnico de equipamentos                                                                         |
-| `platform/health`     | plataforma | Health checks                                                                                            |
-| `products/crm`        | produto    | Leads, contas, oportunidades, pipeline, tarefas, fatura, cotação, margem, propostas, contratos, projetos |
-| `products/calculator` | produto    | Sessões de cálculo rápido e snapshots                                                                    |
-| `products/engine`     | produto    | Projeto técnico fotovoltaico (MVP2)                                                                      |
-| `products/offgrid`    | produto    | Dimensionamento off-grid (MVP3)                                                                          |
+| Módulo                    | Camada     | Responsabilidade                                                                                         |
+| ------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| `config`                  | base       | Variáveis de ambiente validadas por Zod                                                                  |
+| `common`                  | base       | Guards, interceptors, filtros, decorators e pipes                                                        |
+| `platform/prisma`         | plataforma | Acesso ao banco e extensão de tenant                                                                     |
+| `platform/auth`           | plataforma | Login, refresh token, JWT, guard global                                                                  |
+| `platform/tenancy`        | plataforma | Tenant, filiais, times e contexto da requisição                                                          |
+| `platform/users`          | plataforma | Usuários, perfis e permissões (RBAC)                                                                     |
+| `platform/audit`          | plataforma | Trilha de auditoria                                                                                      |
+| `platform/events`         | plataforma | Event bus interno e outbox                                                                               |
+| `platform/documents`      | plataforma | Upload/download, metadados e vínculos                                                                    |
+| `platform/rules`          | plataforma | Rules Engine versionado ([base](rules-engine.md))                                                        |
+| `platform/reference-data` | plataforma | Concessionárias, tarifas e irradiação por empresa, com fonte e vigência                                  |
+| `platform/catalog`        | plataforma | Catálogo técnico de equipamentos                                                                         |
+| `platform/health`         | plataforma | Health checks                                                                                            |
+| `products/crm`            | produto    | Leads, contas, oportunidades, pipeline, tarefas, fatura, cotação, margem, propostas, contratos, projetos |
+| `products/calculator`     | produto    | Cálculo rápido no servidor, sessões e snapshots imutáveis                                                |
+| `products/engine`         | produto    | Projeto técnico fotovoltaico (MVP2)                                                                      |
+| `products/offgrid`        | produto    | Dimensionamento off-grid (MVP3)                                                                          |
 
 Regras de dependência: [arquitetura](../03-diagramas/arquitetura.md#regras-de-dependência).
 

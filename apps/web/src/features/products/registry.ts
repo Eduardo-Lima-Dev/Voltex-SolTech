@@ -45,7 +45,7 @@ export const PRODUCTS: readonly ProductDef[] = [
     icon: Calculator,
     tagline: 'Pré-viabilidade solar em minutos.',
     permission: 'calculator.session.read',
-    availability: { status: 'soon', phase: 'Fase 6' },
+    availability: { status: 'available' },
     highlights: [
       'Potência, geração e economia',
       'Payback e fluxo de caixa',

@@ -1,7 +1,7 @@
 # Memorial — Solar Calculator
 
 - **Pacote:** `@voltex/solar-engine/calculator`
-- **Versão do algoritmo:** `calc-1.0.0` (rascunho, sujeito a revisão por especialista antes da produção)
+- **Versão do algoritmo:** `calc-1.1.0` (rascunho, sujeito a revisão por especialista antes da produção)
 - **Implementação:** `packages/solar-engine/src/calculator` (entrada validada por Zod; função `runQuickCalculation`). O caso de referência abaixo é um teste automatizado.
 - **Natureza:** estimativa comercial de pré-viabilidade. **Não substitui projeto de engenharia.**
 
@@ -82,6 +82,24 @@ Valores para conferir a implementação (a validar por especialista). Este caso 
 | Economia anual (ano 1)         | **R$ 5.358,00** (535.800 centavos)                            |
 | Payback simples                | 19.800 / 5.358 ≈ **3,70 anos**                                |
 | Semáforo / alertas / confiança | **Verde** / nenhum / **100**                                  |
+
+## Orientação, inclinação, classe e premissas (`calc-1.1.0`)
+
+Origem: [EnergIF](../referencias/energif-2023/regras-e-medidas.md). São **avisos informativos**: não alteram a geração estimada (não há fator de correção com fonte, EF-G08).
+
+- **PR:** informado (`performanceRatio`), **ou** composto por perdas (`losses`, `PR = Π(1 − perda)`), **ou** o padrão `defaultPerformanceRatio` (0,80, hipótese sem fonte validada). A origem (`INPUT`, `LOSSES`, `DEFAULT`) vai no resultado e o padrão gera o aviso `DEFAULT_PERFORMANCE_RATIO`. Informar PR e perdas juntos é recusado.
+- **Orientação** (`roofAzimuthDegrees`, 0° = Norte): azimute ideal 0° no hemisfério sul (padrão) e 180° se a latitude for positiva. Avisa (`ORIENTATION_NOT_OPTIMAL`) quando o desvio passa de `orientationToleranceDegrees` (45°, hipótese do produto).
+- **Inclinação** (`tiltDegrees`): avisa (`TILT_BELOW_RECOMMENDED`) abaixo de `minRecommendedTiltDegrees` (10°, EF-M03).
+- **Inclinação recomendada** (com `latitude`), EF-M04 sobre a latitude absoluta: ≤ 10° → 10° · ≤ 20° → lat · ≤ 30° → lat + 5° · ≤ 40° → lat + 10° · acima → lat + 15° (limites superiores inclusivos; a faixa 31°–40° está impressa errada no livro, EF-I01).
+- **Classe da geração** pela potência instalada em kWp: ≤ `microgenerationMaxKw` (75) micro; ≤ `minigenerationMaxKw` (5000) mini; acima, usina. Mini → amarelo (`MINIGENERATION_CLASS`, exige engenharia e documentação extra); usina → vermelho (`UTILITY_SCALE_OUT_OF_SCOPE`). A regulação trata da potência instalada de geração, possivelmente limitada pelo inversor (a confirmar).
+- **HSP:** fora da faixa típica `typicalHspMin`–`typicalHspMax` (4 a 6,5, EF-M01) só avisa (`HSP_OUTSIDE_TYPICAL_RANGE`); a faixa bloqueante (2 a 8) segue como julgamento de engenharia.
+- **Premissas:** o resultado traz `assumptions` com tudo de que depende (PR e origem, HSP, custo de disponibilidade, tarifa, reajuste, degradação, módulo, horizonte, modelo de custo, orientação, inclinação e limites usados) e o snapshot guarda esse registro.
+
+Todos os limites ficam em `thresholds` e são **parâmetros do Rules Engine**.
+
+## Uso na API e na Web
+
+O servidor é a fonte oficial: `POST /calculations/quick` valida a entrada, aplica os limites da **regra em vigor da empresa** ([Rules Engine](../04-arquitetura/rules-engine.md)), calcula com este memorial e grava a sessão com `algorithmVersion` e `ruleSetRef`. O wizard usa o mesmo motor para o resultado em tempo real, com os mesmos limites. Snapshots congelam entrada, resultado, regra e versão e nunca mudam.
 
 ## Tolerâncias
 

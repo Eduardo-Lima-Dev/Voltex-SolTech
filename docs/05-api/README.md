@@ -52,6 +52,28 @@ Códigos: `BAD_REQUEST` 400 · `UNAUTHORIZED` 401 · `FORBIDDEN` 403 · `NOT_FOU
 
 Documentação interativa: `/api/docs`. Visão do código: [API (NestJS)](../07-desenvolvimento/api.md).
 
+## Endpoints implementados (Fase 6)
+
+| Método e rota                                                           | Acesso                                                            | Descrição                                                                                     |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GET /calculations/quick/config`                                        | `calculator.session.read`                                         | Regra em vigor: limites, custo de disponibilidade e fontes (usada também no preview do front) |
+| `POST /calculations/quick`                                              | `calculator.session.create`                                       | Recalcula **no servidor** com a regra da empresa, grava sessão, auditoria e evento            |
+| `GET /calculations/quick` · `GET /calculations/quick/:id`               | `calculator.session.read`                                         | Lista paginada (`search`, `trafficLight`) e detalhe                                           |
+| `POST /calculations/quick/:id/snapshot`                                 | `calculator.snapshot.create`                                      | Congela entrada, resultado, regra e versão do algoritmo (imutável)                            |
+| `GET /calculations/quick/:id/snapshots` · `GET …/snapshots/:snapshotId` | `calculator.session.read`                                         | Snapshots de um cálculo; um snapshot                                                          |
+| `GET/POST /distributors` · `PATCH/DELETE /distributors/:id`             | leitura `calculator.session.read`; escrita `platform.rule.manage` | Concessionárias                                                                               |
+| `GET/POST /tariffs` · `DELETE /tariffs/:id`                             | idem                                                              | Tarifas com vigência e fonte (filtros `distributorId`, `customerGroup`)                       |
+| `GET/POST /solar-resources` · `GET/DELETE /solar-resources/:id`         | idem                                                              | Irradiação (HSP mensal) por local, com fonte; `POST` atualiza o mesmo nome+UF                 |
+| `POST /solar-resources/import`                                          | `platform.rule.manage`                                            | Importação em lote (até 500 linhas); devolve `{ created, updated }`                           |
+| `GET /rules` · `GET /rules/effective`                                   | `platform.rule.read`                                              | Versões da regra e regra em vigor                                                             |
+| `POST /rules` · `POST /rules/:id/activate` · `DELETE /rules/:id`        | `platform.rule.manage`                                            | Criar rascunho, ativar (exige `reviewedBy`) e excluir rascunho                                |
+
+Particularidades do Calculator:
+
+- O cliente **não** define limites: qualquer `thresholds` enviado é ignorado; valem os da regra da empresa. O preview do front usa o mesmo motor e os mesmos limites (`/config`), por isso bate com o que o servidor grava.
+- `references` (`solarResourceId`, `tariffId`) é opcional; o servidor registra a fonte e se o usuário alterou o valor (`overridden`). Id inexistente ou de outra empresa → **404**.
+- `POST /calculations/quick`: corpo `{ title?, customerName?, references?, input }`; erro de entrada → **422** com o caminho do campo (`input.costPerWpCents`).
+
 ## Contrato conceitual dos demais produtos (modelagem, seção 39)
 
 ```http

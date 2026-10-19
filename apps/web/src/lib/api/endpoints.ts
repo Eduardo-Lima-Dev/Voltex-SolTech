@@ -1,6 +1,28 @@
+import type {
+  CalculationSessionDto,
+  CalculatorConfigDto,
+  CreateCalculationInput,
+  CreateSnapshotInput,
+  QuickCalculationSnapshotDto,
+} from '@voltex/solar-engine';
 import {
   ROUTES,
   type AcceptInvitationInput,
+  type ActivateRuleSetInput,
+  type AvailabilityCost,
+  type RuleSource,
+  type Thresholds,
+  type CreateDistributorInput,
+  type CreateRuleSetInput,
+  type CreateSolarResourceInput,
+  type CreateTariffInput,
+  type DistributorDto,
+  type ImportSolarResourcesInput,
+  type ListCalculationsQuery,
+  type RuleSetDto,
+  type SolarResourceDto,
+  type TariffDto,
+  type UpdateDistributorInput,
   type AuditLogDto,
   type BranchDto,
   type CreateBranchInput,
@@ -24,6 +46,15 @@ import {
 } from '@voltex/shared';
 import { api as defaultClient } from './index';
 import type { ApiClient, QueryParams } from './client';
+
+/** Regra em vigor (ativa ou padrão do produto), como devolvida por `GET /rules/effective`. */
+export interface EffectiveRulesDto {
+  ref: string;
+  key: string;
+  thresholds: Thresholds;
+  availabilityCostKwh: AvailabilityCost;
+  sources: RuleSource[];
+}
 
 /** Filtros de auditoria como chegam da URL (datas em string; a API converte). */
 export type AuditQuery = Partial<Omit<ListAuditLogsQuery, 'from' | 'to'>> & {
@@ -72,6 +103,55 @@ export function createEndpoints(client: ApiClient) {
       create: (input: CreateInvitationInput) =>
         client.post<CreatedInvitationDto>(ROUTES.invitations.base, input),
       revoke: (id: string) => client.delete<{ id: string }>(`${ROUTES.invitations.base}/${id}`),
+    },
+    calculator: {
+      config: () => client.get<CalculatorConfigDto>(`${ROUTES.calculations.quick}/config`),
+      list: (query: Partial<ListCalculationsQuery>) =>
+        client.get<Paginated<CalculationSessionDto>>(ROUTES.calculations.quick, {
+          query: query as QueryParams,
+        }),
+      get: (id: string) => client.get<CalculationSessionDto>(ROUTES.calculations.quickById(id)),
+      getSnapshot: (snapshotId: string) =>
+        client.get<QuickCalculationSnapshotDto>(
+          `${ROUTES.calculations.quick}/snapshots/${snapshotId}`,
+        ),
+      create: (input: CreateCalculationInput) =>
+        client.post<CalculationSessionDto>(ROUTES.calculations.quick, input),
+      createSnapshot: (id: string, input: CreateSnapshotInput) =>
+        client.post<QuickCalculationSnapshotDto>(ROUTES.calculations.quickSnapshot(id), input),
+      listSnapshots: (id: string) =>
+        client.get<QuickCalculationSnapshotDto[]>(`${ROUTES.calculations.quickById(id)}/snapshots`),
+    },
+    distributors: {
+      list: () => client.get<DistributorDto[]>(ROUTES.distributors),
+      create: (input: CreateDistributorInput) =>
+        client.post<DistributorDto>(ROUTES.distributors, input),
+      update: (id: string, input: UpdateDistributorInput) =>
+        client.patch<DistributorDto>(`${ROUTES.distributors}/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.distributors}/${id}`),
+    },
+    tariffs: {
+      list: (query: { distributorId?: string; customerGroup?: string } = {}) =>
+        client.get<TariffDto[]>(ROUTES.tariffs, { query }),
+      create: (input: CreateTariffInput) => client.post<TariffDto>(ROUTES.tariffs, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.tariffs}/${id}`),
+    },
+    solarResources: {
+      list: (query: { page?: number; pageSize?: number; search?: string } = {}) =>
+        client.get<Paginated<SolarResourceDto>>(ROUTES.solarResources, { query }),
+      create: (input: CreateSolarResourceInput) =>
+        client.post<SolarResourceDto>(ROUTES.solarResources, input),
+      import: (input: ImportSolarResourcesInput) =>
+        client.post<{ created: number; updated: number }>(`${ROUTES.solarResources}/import`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.solarResources}/${id}`),
+    },
+    rules: {
+      list: () => client.get<RuleSetDto[]>(ROUTES.rules),
+      effective: () => client.get<EffectiveRulesDto>(`${ROUTES.rules}/effective`),
+      create: (input: CreateRuleSetInput) => client.post<RuleSetDto>(ROUTES.rules, input),
+      activate: (id: string, input: ActivateRuleSetInput) =>
+        client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
     },
     audit: {
       list: (query: AuditQuery) =>

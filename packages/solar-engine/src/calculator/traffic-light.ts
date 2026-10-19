@@ -1,4 +1,11 @@
-import { AlertSeverity, CustomerGroup, ProjectType, TrafficLight } from '@voltex/shared';
+import {
+  AlertSeverity,
+  CustomerGroup,
+  GenerationClass,
+  ProjectType,
+  TrafficLight,
+} from '@voltex/shared';
+import { azimuthDeviationDegrees, optimalAzimuthDegrees } from './orientation.js';
 import type { CalculationAlert, ParsedQuickCalculationInput, TrafficLightResult } from './types.js';
 
 export interface TrafficLightContext {
@@ -9,6 +16,9 @@ export interface TrafficLightContext {
   averageMonthlyConsumptionKwh: number;
   annualGenerationKwh: number;
   hasPaybackInHorizon: boolean;
+  performanceRatio: number;
+  performanceRatioSource: 'INPUT' | 'LOSSES' | 'DEFAULT';
+  generationClass: GenerationClass;
 }
 
 /**
@@ -39,8 +49,8 @@ export const evaluateTrafficLight = (ctx: TrafficLightContext): TrafficLightResu
     );
   }
   if (
-    input.performanceRatio < t.performanceRatioMin ||
-    input.performanceRatio > t.performanceRatioMax
+    ctx.performanceRatio < t.performanceRatioMin ||
+    ctx.performanceRatio > t.performanceRatioMax
   ) {
     add(
       'ASSUMPTION_OUT_OF_RANGE',
@@ -50,6 +60,14 @@ export const evaluateTrafficLight = (ctx: TrafficLightContext): TrafficLightResu
   }
   if (ctx.averageHsp < t.hspMin || ctx.averageHsp > t.hspMax) {
     add('ASSUMPTION_OUT_OF_RANGE', AlertSeverity.BLOCKING, 'HSP médio fora da faixa configurada.');
+  }
+
+  if (ctx.generationClass === GenerationClass.UTILITY) {
+    add(
+      'UTILITY_SCALE_OUT_OF_SCOPE',
+      AlertSeverity.BLOCKING,
+      `Potência acima de ${t.minigenerationMaxKw} kW (usina): fora do escopo do Solar Calculator.`,
+    );
   }
 
   // Amarelo
@@ -91,6 +109,14 @@ export const evaluateTrafficLight = (ctx: TrafficLightContext): TrafficLightResu
     );
   }
 
+  if (ctx.generationClass === GenerationClass.MINI) {
+    add(
+      'MINIGENERATION_CLASS',
+      AlertSeverity.WARNING,
+      `Potência acima de ${t.microgenerationMaxKw} kW (minigeração): exige análise de engenharia e documentação adicional de acesso.`,
+    );
+  }
+
   // Informativos
   if (
     ctx.averageMonthlyConsumptionKwh > 0 &&
@@ -98,6 +124,44 @@ export const evaluateTrafficLight = (ctx: TrafficLightContext): TrafficLightResu
       t.maxGenerationToConsumptionRatio
   ) {
     add('OVERSIZED_SYSTEM', AlertSeverity.INFO, 'Geração estimada muito acima do consumo.');
+  }
+  if (ctx.performanceRatioSource === 'DEFAULT') {
+    add(
+      'DEFAULT_PERFORMANCE_RATIO',
+      AlertSeverity.INFO,
+      `Performance ratio padrão (${ctx.performanceRatio}) assumido: informe o PR ou as perdas para um resultado mais confiável.`,
+    );
+  }
+  if (
+    ctx.averageHsp >= t.hspMin &&
+    ctx.averageHsp <= t.hspMax &&
+    (ctx.averageHsp < t.typicalHspMin || ctx.averageHsp > t.typicalHspMax)
+  ) {
+    add(
+      'HSP_OUTSIDE_TYPICAL_RANGE',
+      AlertSeverity.INFO,
+      `HSP médio (${ctx.averageHsp.toFixed(2)}) fora da faixa típica do Brasil (${t.typicalHspMin} a ${t.typicalHspMax}): confira a fonte do dado.`,
+    );
+  }
+  if (input.tiltDegrees !== undefined && input.tiltDegrees < t.minRecommendedTiltDegrees) {
+    add(
+      'TILT_BELOW_RECOMMENDED',
+      AlertSeverity.INFO,
+      `Inclinação de ${input.tiltDegrees}° abaixo do recomendado (${t.minRecommendedTiltDegrees}°): risco de acúmulo de poeira.`,
+    );
+  }
+  if (input.roofAzimuthDegrees !== undefined) {
+    const deviation = azimuthDeviationDegrees(
+      input.roofAzimuthDegrees,
+      optimalAzimuthDegrees(input.latitude),
+    );
+    if (deviation > t.orientationToleranceDegrees) {
+      add(
+        'ORIENTATION_NOT_OPTIMAL',
+        AlertSeverity.INFO,
+        `Face dos módulos a ${Math.round(deviation)}° da orientação ideal (Norte geográfico no hemisfério sul): a geração real pode ser menor que a estimada.`,
+      );
+    }
   }
   if (!ctx.hasPaybackInHorizon) {
     add(

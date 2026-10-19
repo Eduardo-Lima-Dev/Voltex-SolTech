@@ -1,20 +1,21 @@
 import { z } from 'zod';
-import { CustomerGroup, ProjectType, type AlertSeverity, type TrafficLight } from '@voltex/shared';
+import {
+  CustomerGroup,
+  ProjectType,
+  thresholdsSchema,
+  type AlertSeverity,
+  type GenerationClass,
+  type Thresholds,
+  type TrafficLight,
+} from '@voltex/shared';
 
-export const ALGORITHM_VERSION = 'calc-1.0.0';
+export const ALGORITHM_VERSION = 'calc-1.1.0';
 
 export const hspSourceSchema = z.enum(['DATASET', 'MANUAL']);
 
-/** Limites usados pelo semáforo. Valores padrão são sugestões; o Rules Engine pode sobrescrevê-los. */
-export const thresholdsSchema = z.object({
-  performanceRatioMin: z.number().default(0.6),
-  performanceRatioMax: z.number().default(0.9),
-  hspMin: z.number().default(2),
-  hspMax: z.number().default(8),
-  /** Fração máxima de geração sobre o consumo antes de alertar sobredimensionamento. */
-  maxGenerationToConsumptionRatio: z.number().default(1.3),
-});
-export type Thresholds = z.infer<typeof thresholdsSchema>;
+// Os limites (`thresholds`) são definidos em @voltex/shared: API, Web e motor usam o mesmo schema.
+export { thresholdsSchema };
+export type { Thresholds };
 
 export const quickCalculationInputSchema = z
   .object({
@@ -25,7 +26,16 @@ export const quickCalculationInputSchema = z
     /** HSP (kWh/m²/dia) de janeiro a dezembro. Para entrada manual, repita o mesmo valor. */
     hspMonthly: z.array(z.number().positive()).length(12),
     hspSource: hspSourceSchema.default('DATASET'),
-    performanceRatio: z.number().gt(0).lte(1).default(0.8),
+    /** PR informado diretamente. Alternativa: `losses`. Sem nenhum dos dois, usa `thresholds.defaultPerformanceRatio`. */
+    performanceRatio: z.number().gt(0).lte(1).optional(),
+    /** Fatores de perda (fração cada: temperatura, sujeira, cabos, inversor, sombreamento...). PR = Π(1 − perda). */
+    losses: z.record(z.string(), z.number().min(0).lt(1)).optional(),
+    /** Latitude do local (graus, − no hemisfério sul): habilita a inclinação recomendada. */
+    latitude: z.number().min(-90).max(90).optional(),
+    /** Azimute da face dos módulos (0° = Norte geográfico, 90° = Leste, 180° = Sul, 270° = Oeste). */
+    roofAzimuthDegrees: z.number().min(0).lt(360).optional(),
+    /** Inclinação dos módulos em relação ao solo (graus). */
+    tiltDegrees: z.number().min(0).max(90).optional(),
     modulePowerWp: z.number().positive(),
     moduleAreaM2: z.number().positive(),
     /** Área disponível no telhado/terreno, quando informada. */
@@ -54,7 +64,19 @@ export const quickCalculationInputSchema = z
   .refine((v) => v.costPerWpCents !== undefined || v.systemCostCents !== undefined, {
     path: ['costPerWpCents'],
     message: 'Informe o custo por Wp ou o custo total do sistema',
-  });
+  })
+  .refine(
+    (v) =>
+      !(
+        v.performanceRatio !== undefined &&
+        v.losses !== undefined &&
+        Object.keys(v.losses).length > 0
+      ),
+    {
+      path: ['losses'],
+      message: 'Informe o PR OU os fatores de perda, não os dois',
+    },
+  );
 
 export type QuickCalculationInput = z.input<typeof quickCalculationInputSchema>;
 export type ParsedQuickCalculationInput = z.output<typeof quickCalculationInputSchema>;
@@ -72,6 +94,12 @@ export const ALERT_CODES = [
   'ASSUMPTION_OUT_OF_RANGE',
   'OVERSIZED_SYSTEM',
   'NO_PAYBACK_IN_HORIZON',
+  'DEFAULT_PERFORMANCE_RATIO',
+  'HSP_OUTSIDE_TYPICAL_RANGE',
+  'TILT_BELOW_RECOMMENDED',
+  'ORIENTATION_NOT_OPTIMAL',
+  'MINIGENERATION_CLASS',
+  'UTILITY_SCALE_OUT_OF_SCOPE',
 ] as const;
 export type AlertCode = (typeof ALERT_CODES)[number];
 
@@ -96,8 +124,32 @@ export interface TrafficLightResult {
   requiresEngineering: boolean;
 }
 
+/** Premissas efetivamente usadas: o que o resultado depende, visível ao usuário e guardado no snapshot (EF-R08). */
+export interface QuickCalculationAssumptions {
+  performanceRatio: number;
+  performanceRatioSource: 'INPUT' | 'LOSSES' | 'DEFAULT';
+  losses: Record<string, number> | null;
+  hspSource: 'DATASET' | 'MANUAL';
+  availabilityCostKwh: number;
+  tariffCentsPerKwh: number;
+  tariffEscalationRate: number;
+  moduleDegradationRate: number;
+  modulePowerWp: number;
+  moduleAreaM2: number;
+  horizonYears: number;
+  costModel: 'SYSTEM_COST' | 'COST_PER_WP';
+  roofAzimuthDegrees: number | null;
+  tiltDegrees: number | null;
+  thresholds: Thresholds;
+}
+
 export interface QuickCalculationResult {
   algorithmVersion: string;
+  /** Classe da geração pela potência instalada (micro, mini, usina). */
+  generationClass: GenerationClass;
+  /** Inclinação recomendada para a latitude informada (EF-M04); nula sem latitude. */
+  recommendedTiltDegrees: number | null;
+  assumptions: QuickCalculationAssumptions;
   averageMonthlyConsumptionKwh: number;
   compensableMonthlyKwh: number;
   annualConsumptionKwh: number;
