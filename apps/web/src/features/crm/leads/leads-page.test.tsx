@@ -366,6 +366,8 @@ describe('CRM · Leads', () => {
       await waitFor(() => expect(body).toBeDefined());
       expect(body).toMatchObject({ createOpportunity: false });
       await waitFor(() => expect(router.state.location.pathname).toBe('/crm/contas/acc-1'));
+      // Espera a conta carregar, para a requisição dela não vazar para o teste seguinte (a CI é mais lenta).
+      expect(await screen.findByText('Unidades consumidoras')).toBeInTheDocument();
     });
   });
 
