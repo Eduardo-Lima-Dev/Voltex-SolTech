@@ -2,29 +2,33 @@
 
 Plano de implementação por fases. Cada fase termina em um checkpoint verificável. A ordem segue a seção 76 da modelagem: CRM + Calculator primeiro, depois Engine, Off-Grid e, por fim, execução e lifecycle.
 
-| Fase | Entrega                                                                                                                                         | Status          |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)                                                                | ✅ Concluída    |
-| 1    | Documentação (`docs/`)                                                                                                                          | ✅ Concluída    |
-| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                                                                         | ✅ Concluída    |
-| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                                                                      | ✅ Concluída    |
-| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                                                                            | ✅ Concluída    |
-| 5    | Web React: casca da suíte, login, navegação, admin                                                                                              | ✅ Concluída    |
-| 6    | **MVP1** — Solar Calculator + Rules Engine base (premissas rastreáveis, snapshot)                                                               | 🚧 Em andamento |
-| 7A   | **MVP1** — CRM essencial: leads, oportunidades, pipeline, tarefas, fatura com OCR e integração com o Calculator                                 | ⏳              |
-| 7B   | **MVP1** — **Project Guard** → Margin Guard → proposta com snapshot e rastreabilidade ([ADR-0014](../04-arquitetura/adr/0014-project-guard.md)) | ⏳              |
-| 7C   | **MVP1** — Contrato, projeto automático e homologação básica (pode ficar para depois da Fase 8)                                                 | ⏳              |
-| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                                                                                | ⏳              |
-| 9    | **MVP2** — Solar Engine Studio                                                                                                                  | ⏳              |
-| 10   | **MVP3** — Off-Grid Designer                                                                                                                    | ⏳              |
-| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)                                                                | ⏳              |
-| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                                                                         | ⏳              |
+| Fase | Entrega                                                                                                                                         | Status       |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)                                                                | ✅ Concluída |
+| 1    | Documentação (`docs/`)                                                                                                                          | ✅ Concluída |
+| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                                                                         | ✅ Concluída |
+| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                                                                      | ✅ Concluída |
+| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                                                                            | ✅ Concluída |
+| 5    | Web React: casca da suíte, login, navegação, admin                                                                                              | ✅ Concluída |
+| 6    | **MVP1** — Solar Calculator + Rules Engine base (premissas rastreáveis, snapshot)                                                               | ✅ Concluída |
+| 7A   | **MVP1** — CRM essencial: leads, oportunidades, pipeline, tarefas, fatura com OCR e integração com o Calculator                                 | ⏳           |
+| 7B   | **MVP1** — **Project Guard** → Margin Guard → proposta com snapshot e rastreabilidade ([ADR-0014](../04-arquitetura/adr/0014-project-guard.md)) | ⏳           |
+| 7C   | **MVP1** — Contrato, projeto automático e homologação básica (pode ficar para depois da Fase 8)                                                 | ⏳           |
+| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                                                                                | ⏳           |
+| 9    | **MVP2** — Solar Engine Studio                                                                                                                  | ⏳           |
+| 10   | **MVP3** — Off-Grid Designer                                                                                                                    | ⏳           |
+| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)                                                                | ⏳           |
+| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                                                                         | ⏳           |
 
 > **Notas da Fase 3:** (1) o Prisma é o 7.x e o armazenamento S3 local é o RustFS — ver [ADR-0009](../04-arquitetura/adr/0009-prisma-7.md) e [ADR-0010](../04-arquitetura/adr/0010-rustfs-no-lugar-do-minio.md); (2) o `compose.prod.yml` traz infraestrutura + `migrate`, e os serviços `api`/`web` entram na Fase 8; (3) o pipeline padrão entra no seed junto das tabelas do CRM (Fase 7).
 
 > **Notas da Fase 4:** (1) NestJS **11** (o 12 ainda não é suportado pelo `nestjs-zod`) — ver [API](../07-desenvolvimento/api.md); (2) o worker do outbox é um _poller_ com `FOR UPDATE SKIP LOCKED`; as filas BullMQ entram com as automações (Fase 7); (3) o registro de contas e o MFA ficam para depois: usuários entram por convite; (4) testes e2e rodam em banco `voltex_test` próprio (`pnpm test:e2e`).
 
 > **Notas da Fase 5:** (1) React Router **8** (a API de rotas é a da v7) e Vite 8 — ver [ADR-0013](../04-arquitetura/adr/0013-arquitetura-do-front-end.md) e [Web](../07-desenvolvimento/web.md); (2) os quatro produtos aparecem no menu e no painel, cada um com uma página "em desenvolvimento" até a sua fase; (3) a identidade visual oficial (logo e paleta) foi aplicada antes da fase — ver [identidade visual](../00-visao-geral/identidade-visual.md); (4) i18n: textos em pt-BR centralizados em `i18n/labels.ts` (sem biblioteca de i18n por ora).
+
+> **Notas da Fase 6:** (1) o Rules Engine é uma **base**: um `RuleSet` versionado com `definition` em JSON (limites e custo de disponibilidade), fonte, revisor e imutabilidade após ativar — não há ainda as tabelas `Rule` nem o avaliador de condições ([Rules Engine](../04-arquitetura/rules-engine.md)); (2) concessionárias, tarifas e irradiação são **por empresa** e **sem dado embutido**: HSP, tarifas e custo de disponibilidade vêm do cadastro/importação com fonte (nada foi inventado); (3) o cálculo oficial é o do servidor, e o resultado em tempo real do wizard usa o mesmo motor e os mesmos limites; (4) criar e ativar regras ainda é pela API (a tela de regras é somente leitura); (5) `calc-1.1.0` traz PR/perdas, orientação, inclinação recomendada, classe de geração e premissas ([memorial](../06-calculos/calculator.md)) — fórmulas ainda são rascunho até validação com Pinho & Galdino/CRESESB; (6) roteiro de teste no navegador: [verificação manual](../07-desenvolvimento/verificacao-manual.md).
+
+> **Backlog (decisão pendente do usuário, fora das Fases 1–8):** **backoffice da plataforma** — um CRM/painel para o dono da Voltex gerenciar as **empresas clientes** (tenants): planos e contratos, cobrança/MRR, uso, suporte e saúde de cada empresa. Hoje só existe a administração **dentro** de cada empresa. Precisa de um perfil acima do tenant e acesso entre tenants com auditoria própria; vale um ADR antes de planejar.
 
 > **Base técnica:** o desenvolvimento até a **Fase 8** usa o livro EnergIF 2023 como referência ([regras e medidas](../referencias/energif-2023/regras-e-medidas.md)); o que as Fases 6 a 8 extraem dele está mapeado na seção 6 desse documento. O restante fica inventariado para as Fases 9 a 12.
 

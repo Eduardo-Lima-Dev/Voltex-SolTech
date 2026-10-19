@@ -97,6 +97,10 @@ Origem: [EnergIF](../referencias/energif-2023/regras-e-medidas.md). São **aviso
 
 Todos os limites ficam em `thresholds` e são **parâmetros do Rules Engine**.
 
+## Uso na API e na Web
+
+O servidor é a fonte oficial: `POST /calculations/quick` valida a entrada, aplica os limites da **regra em vigor da empresa** ([Rules Engine](../04-arquitetura/rules-engine.md)), calcula com este memorial e grava a sessão com `algorithmVersion` e `ruleSetRef`. O wizard usa o mesmo motor para o resultado em tempo real, com os mesmos limites. Snapshots congelam entrada, resultado, regra e versão e nunca mudam.
+
 ## Tolerâncias
 
 - Arredondamentos finais: kWp com 3 casas; kWh com 1 casa; valores monetários em centavos (inteiro).

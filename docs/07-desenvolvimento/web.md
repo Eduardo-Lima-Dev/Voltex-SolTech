@@ -22,7 +22,9 @@ apps/web/src/
 │   ├── auth/                # login, aceitar convite, AuthProvider, SessionStore
 │   ├── dashboard/           # início da suíte
 │   ├── products/            # registro dos 4 produtos + página "em desenvolvimento"
-│   └── admin/               # empresa (filiais/times), usuários/convites, perfis, auditoria
+│   ├── calculator/          # Solar Calculator: lista, wizard, resultado, snapshots
+│   └── admin/               # empresa, usuários/convites, perfis, auditoria,
+│       └── reference/       #   tarifas, irradiação (CSV) e regras
 ├── lib/
 │   ├── api/                 # ApiClient, endpoints tipados, erros
 │   ├── query-client.ts
@@ -31,6 +33,13 @@ apps/web/src/
 ├── components/ · hooks/
 └── test/                    # setup (MSW), fixtures, renderApp
 ```
+
+## Solar Calculator (Fase 6)
+
+- `form.ts` guarda o formulário como **texto** e converte só ao calcular (`buildInput`): vírgula decimal, R$ → centavos, % → fração. `evaluate` roda o **mesmo `calculateQuick` da API** com os limites de `GET /calculations/quick/config`; é o "resultado em tempo real" do wizard. Na hora de salvar o cliente envia só a entrada: o servidor recalcula e é a fonte oficial.
+- `validateStep` só orienta o preenchimento por etapa; a validação oficial é a do motor/API.
+- O resultado (`result-view.tsx`) é o mesmo componente no wizard (versão compacta), no cálculo salvo e no snapshot. Os gráficos (Recharts) ficam em `charts-section.tsx`, carregado sob demanda.
+- Administração: `/admin/tarifas`, `/admin/irradiacao` (cadastro e importação de CSV lida no navegador, `admin/reference/csv.ts`) e `/admin/regras` (somente leitura). Edição exige `platform.rule.manage`.
 
 ## Rotas
 
@@ -105,9 +114,9 @@ pnpm --filter @voltex/web test
 
 Vitest + Testing Library + **MSW**: a API é simulada na camada de rede, então os testes exercitam o `fetch` real do `ApiClient`. Qualquer requisição **sem handler faz o teste falhar** (não só a requisição), o que evita chamadas esquecidas. Helpers: `renderApp(path, { session })` renderiza o app inteiro com as rotas reais e a sessão escolhida; `makeSession(role)` cria uma sessão com as permissões reais do perfil.
 
-Cobertura: cliente HTTP (renovação em voo único, erros, rede), sessão e `AuthProvider` (StrictMode, logout offline), rotas e permissões por perfil, login, convite, painel, empresa/filiais/times, usuários e convites (filtros, paginação, edição, exclusão, escalada de privilégio), perfis, auditoria, tema, rótulos pt-BR (nenhum código cru na tela), formatação e paginação.
+Cobertura: cliente HTTP (renovação em voo único, erros, rede), sessão e `AuthProvider` (StrictMode, logout offline), rotas e permissões por perfil, login, convite, painel, empresa/filiais/times, usuários e convites (filtros, paginação, edição, exclusão, escalada de privilégio), perfis, auditoria, tema, rótulos pt-BR (nenhum código cru na tela), formatação e paginação; Solar Calculator (lista, wizard com validação por etapa e resultado em tempo real, salvar com referências, detalhe, snapshots, permissões por perfil) e administração de tarifas, irradiação (inclusive importação de CSV) e regras.
 
-Além dos testes automatizados, a interface foi percorrida num navegador real (Chromium via Playwright) contra a API de verdade: login/erros, tema escuro, sessão após recarregar, administração, convite de ponta a ponta, perfil sem acesso, logout, 404 e celular. Esse roteiro vira teste e2e automatizado na Fase 8.
+Além dos testes automatizados, a interface foi percorrida num navegador real (Chromium via Playwright) contra a API de verdade: login/erros, tema escuro, sessão após recarregar, administração, convite de ponta a ponta, perfil sem acesso, logout, 404 e celular. A Fase 6 foi percorrida do mesmo modo (login → wizard → resultado com gráficos → snapshot → administração, no claro, no escuro e a 390 px, sem erro de console nem rolagem horizontal). Esse roteiro vira teste e2e automatizado na Fase 8. Roteiro para você repetir: [verificação manual](verificacao-manual.md).
 
 ## Adicionando uma tela
 

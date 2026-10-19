@@ -23,6 +23,8 @@ Eventos publicados pelos módulos (seção 37 da modelagem). Os nomes e payloads
 
 ## Cálculos
 
+`QuickCalculationCompleted` já é publicado (Fase 6): payload com `sessionId`, `trafficLight`, `requiresEngineering`, `installedPowerKwp`, `algorithmVersion` e `ruleSetRef`, gravado no outbox na mesma transação da sessão de cálculo.
+
 `QuickCalculationRequested` · `QuickCalculationCompleted` · `EngineeringRequested` · `EngineeringVersionApproved` · `OffGridDesignRequested` · `OffGridScenarioApproved`
 
 ## Venda
