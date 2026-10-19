@@ -51,3 +51,15 @@ Use a oportunidade da 7A (com fatura validada e cálculo) ou crie outra.
 5. **Proposta** — aba **Proposta → Gerar proposta** (escolha a cotação liberada), depois **Enviar**: o link público aparece **uma vez**. Baixe o **PDF**.
 6. **Cliente** — abra o link numa janela anônima: vê cenários, gráficos e condições (nunca custos nem margem). **Aceitar proposta** pede nome completo e confirmação; a oportunidade vai para **Contrato** e a linha do tempo registra o aceite. Abrir o link de novo mostra "aceita"; uma versão nova da proposta torna o link antigo "substituído".
 7. **Perfis** — o vendedor não vê Aprovações nem Margens; o SDR não vê Triagem, Cotação nem Proposta.
+
+## Fase 7C — Contrato, projeto, automações e painel
+
+Continue da proposta aceita pelo cliente (a oportunidade vai para **Contrato**).
+
+1. **Modelo** — `Administração → Contratos`: o modelo-base avisa que não tem revisão jurídica. Edite, use só as variáveis listadas (uma desconhecida bloqueia) e **Publique**. `Administração → Homologação`: veja a base EnergIF 2023 (sem revisão) e, se quiser, **Publique regras** com fonte.
+2. **Contrato** — aba **Contrato → Gerar contrato** (complete CPF/CNPJ). Veja o texto, baixe o PDF. Para trocar algo, **Cancele o rascunho** e gere outro.
+3. **Assinatura** — **Registrar assinatura**: anexe um PDF. A oportunidade vira **Ganho** e aparece **Abrir o projeto**.
+4. **Projeto** — marque os documentos como **Concluído** (dispensar pede observação). **Protocolar** sem completar é recusado com a lista do que falta; com tudo pronto, informe o protocolo: aparece o prazo do parecer **com a fonte** ("confirme na regulação vigente").
+5. **Painel** — `CRM → Painel`: leads por origem, funil, propostas, ticket médio e previsão (sem total ponderado até definir pesos).
+6. **Automações** — deixe um lead sem contato além do prazo, ou uma oportunidade em "Fatura pendente" por mais de 24 h: em até 1 minuto nasce a tarefa (veja em **Tarefas**). Abra o link de uma proposta enviada: o responsável recebe a tarefa de follow-up.
+7. **Perfis** — o vendedor lê contratos e projetos mas não gera nem assina; o financeiro vê o painel; operação e engenharia atualizam o projeto.

@@ -37,7 +37,7 @@ function Bars({
   return (
     <ul aria-label={label} className="space-y-2">
       {rows.map((r) => (
-        <li key={r.key} className="grid grid-cols-[10rem_1fr_auto] items-center gap-3 text-sm">
+        <li key={r.key} className="grid grid-cols-[10rem_1fr_6rem] items-center gap-3 text-sm">
           <span className="truncate">{r.name}</span>
           <span className="h-3 overflow-hidden rounded-full bg-muted" aria-hidden>
             <span
@@ -45,7 +45,7 @@ function Bars({
               style={{ width: `${(r.value / max) * 100}%` }}
             />
           </span>
-          <span className="tabular-nums">
+          <span className="text-right tabular-nums">
             {r.value}
             {r.extra ? <span className="ml-2 text-xs text-muted-foreground">{r.extra}</span> : null}
           </span>
