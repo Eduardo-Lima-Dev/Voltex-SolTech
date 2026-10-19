@@ -2,24 +2,25 @@
 
 Plano de implementação por fases. Cada fase termina em um checkpoint verificável. A ordem segue a seção 76 da modelagem: CRM + Calculator primeiro, depois Engine, Off-Grid e, por fim, execução e lifecycle.
 
-| Fase | Entrega                                                                                                                                         | Status       |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)                                                                | ✅ Concluída |
-| 1    | Documentação (`docs/`)                                                                                                                          | ✅ Concluída |
-| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                                                                         | ✅ Concluída |
-| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                                                                      | ✅ Concluída |
-| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                                                                            | ✅ Concluída |
-| 5    | Web React: casca da suíte, login, navegação, admin                                                                                              | ✅ Concluída |
-| 6    | **MVP1** — Solar Calculator + Rules Engine base (premissas rastreáveis, snapshot)                                                               | ✅ Concluída |
-| 7A   | **MVP1** — CRM essencial: leads, oportunidades, pipeline, tarefas, fatura com OCR e integração com o Calculator                                 | ✅ Concluída |
-| 7B   | **MVP1** — **Project Guard** → Margin Guard → proposta com snapshot e rastreabilidade ([ADR-0014](../04-arquitetura/adr/0014-project-guard.md)) | ✅ Concluída |
-| 7C   | **MVP1** — Contrato, projeto automático e homologação básica, automações e painel comercial                                                     | ✅ Concluída |
-| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                                                                                | ✅ Concluída |
-| 9    | **MVP2** — Solar Engine Studio                                                                                                                  | ⏳           |
-| 10   | **MVP3** — Off-Grid Designer                                                                                                                    | ⏳           |
-| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)                                                                | ⏳           |
-| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                                                                         | ⏳           |
-| 13   | _(backlog, só se for desenvolvida)_ Backoffice do dono da plataforma: empresas clientes, planos, cobrança, uso e suporte                        | ⏳           |
+| Fase | Entrega                                                                                                                                                                                                                                  | Status       |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 0    | Bootstrap do monorepo (pnpm, Turborepo, TS, ESLint, Prettier, Husky, commitlint)                                                                                                                                                         | ✅ Concluída |
+| 1    | Documentação (`docs/`)                                                                                                                                                                                                                   | ✅ Concluída |
+| 2    | Pacotes compartilhados (`shared`, `solar-engine`, `ui`)                                                                                                                                                                                  | ✅ Concluída |
+| 3    | Infra Docker (dev/prod) + banco (Prisma, migrations, seed)                                                                                                                                                                               | ✅ Concluída |
+| 4    | API NestJS: auth, RBAC, multi-tenant, auditoria, eventos, documentos                                                                                                                                                                     | ✅ Concluída |
+| 5    | Web React: casca da suíte, login, navegação, admin                                                                                                                                                                                       | ✅ Concluída |
+| 6    | **MVP1** — Solar Calculator + Rules Engine base (premissas rastreáveis, snapshot)                                                                                                                                                        | ✅ Concluída |
+| 7A   | **MVP1** — CRM essencial: leads, oportunidades, pipeline, tarefas, fatura com OCR e integração com o Calculator                                                                                                                          | ✅ Concluída |
+| 7B   | **MVP1** — **Project Guard** → Margin Guard → proposta com snapshot e rastreabilidade ([ADR-0014](../04-arquitetura/adr/0014-project-guard.md))                                                                                          | ✅ Concluída |
+| 7C   | **MVP1** — Contrato, projeto automático e homologação básica, automações e painel comercial                                                                                                                                              | ✅ Concluída |
+| 8    | Qualidade, CI/CD, imagens de produção, e2e, LGPD                                                                                                                                                                                         | ✅ Concluída |
+| 9    | **MVP2** — Solar Engine Studio                                                                                                                                                                                                           | ⏳           |
+| 10   | **MVP3** — Off-Grid Designer                                                                                                                                                                                                             | ⏳           |
+| 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)                                                                                                                                                         | ⏳           |
+| 12   | Inteligência e ecossistema (IA, procurement, previsões)                                                                                                                                                                                  | ⏳           |
+| 13   | _(backlog, só se for desenvolvida)_ Backoffice do dono da plataforma: empresas clientes, planos, cobrança, uso e suporte                                                                                                                 | ⏳           |
+| 14   | _(backlog, talvez)_ Funil com regras próprias por empresa: criar etapas novas e definir quem pode ir para onde, hoje fixo no sistema (a personalização atual só renomeia, esconde e cria colunas que seguem as regras de uma etapa-base) | ⏳           |
 
 > **Notas da Fase 3:** (1) o Prisma é o 7.x e o armazenamento S3 local é o RustFS — ver [ADR-0009](../04-arquitetura/adr/0009-prisma-7.md) e [ADR-0010](../04-arquitetura/adr/0010-rustfs-no-lugar-do-minio.md); (2) o `compose.prod.yml` traz infraestrutura + `migrate`, e os serviços `api`/`web` entram na Fase 8; (3) o pipeline padrão entra no seed junto das tabelas do CRM (Fase 7).
 
