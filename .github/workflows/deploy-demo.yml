@@ -1,4 +1,5 @@
-# Publica a DEMONSTRAÇÃO na nuvem (Render + Vercel + Supabase) a cada push na branch `homologate`.
+# Publica a DEMONSTRAÇÃO na nuvem (Render + Vercel + Supabase) SOMENTE quando algo é mesclado na branch `main`.
+# Enquanto o trabalho estiver em `develop` ou `homolog`, só o CI (testes) roda: nada é publicado.
 # Guia: docs/08-deploy/nuvem-gratuita.md (seção "Publicação automática").
 #
 # Ordem: testes (CI) → imagem da API no GHCR → migrações no banco → API na Render → site e aplicação na Vercel.
@@ -7,8 +8,7 @@ name: Publicar demonstração
 
 on:
   push:
-    branches: [homologate]
-  workflow_dispatch: # também dá para disparar à mão, na aba Actions
+    branches: [main]
 
 # Uma publicação por vez; uma nova espera a atual terminar (não cancela no meio de uma migração).
 concurrency:
