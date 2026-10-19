@@ -1,6 +1,6 @@
 # CRM Solar (Fase 7A)
 
-Módulo `products/crm` da API e `features/crm` da Web. Cobre o caminho do lead até o cálculo vinculado à oportunidade: **leads → contas → oportunidades (Kanban) → tarefas → fatura → cálculo**. A triagem (Project Guard), a margem e a proposta são a 7B; contrato e projeto, a 7C.
+Módulo `products/crm` da API e `features/crm` da Web. Cobre o caminho do lead até o cálculo vinculado à oportunidade: **leads → contas → oportunidades (Kanban) → tarefas → fatura → cálculo**. A triagem (Project Guard), a margem e a proposta são a 7B e estão em [Triagem, cotação e proposta](guard-e-proposta.md); contrato e projeto, a 7C.
 
 ## Leads
 

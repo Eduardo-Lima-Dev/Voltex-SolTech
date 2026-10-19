@@ -85,6 +85,9 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'crm.task.write': 'Criar e editar tarefas',
   'crm.energy-bill.read': 'Ver faturas de energia',
   'crm.energy-bill.write': 'Enviar e validar faturas de energia',
+  'crm.guard.read': 'Ver a triagem do projeto',
+  'crm.guard.evaluate': 'Avaliar a triagem do projeto',
+  'crm.guard.review': 'Liberar triagem amarela ou vermelha',
   'crm.quote.read': 'Ver cotações',
   'crm.quote.write': 'Criar e editar cotações',
   'crm.margin.read': 'Ver margens',
@@ -142,6 +145,11 @@ export const ENTITY_LABELS: Record<string, string> = {
   Task: 'Tarefa',
   EnergyBill: 'Fatura de energia',
   PipelineStage: 'Etapa do pipeline',
+  TriageSnapshot: 'Triagem',
+  Quote: 'Cotação',
+  MarginPolicy: 'Política de margem',
+  ApprovalRequest: 'Aprovação de margem',
+  Proposal: 'Proposta',
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -210,6 +218,21 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'energy_bill.uploaded': 'Fatura enviada',
   'energy_bill.validated': 'Fatura validada',
   'energy_bill.rejected': 'Fatura recusada',
+  'guard.evaluated': 'Triagem avaliada',
+  'guard.overridden': 'Triagem liberada formalmente',
+  'quote.created': 'Cotação criada',
+  'quote.updated': 'Cotação atualizada',
+  'quote.deleted': 'Cotação excluída',
+  'approval.requested': 'Aprovação de margem solicitada',
+  'approval.approved': 'Margem aprovada',
+  'approval.rejected': 'Margem recusada',
+  'margin_policy.created': 'Política de margem criada',
+  'margin_policy.updated': 'Política de margem alterada',
+  'margin_policy.deleted': 'Política de margem excluída',
+  'proposal.generated': 'Proposta gerada',
+  'proposal.sent': 'Proposta enviada ao cliente',
+  'proposal.accepted': 'Proposta aceita pelo cliente',
+  'branding.updated': 'Identidade visual atualizada',
 };
 
 export const auditActionLabel = (action: string): string => AUDIT_ACTION_LABELS[action] ?? action;
@@ -488,4 +511,57 @@ export const ENGINEERING_STATUS_LABELS = {
   IN_PROGRESS: 'Em andamento',
   DONE: 'Concluído',
   CANCELLED: 'Cancelado',
+} as const;
+
+// ---- Triagem, margem e proposta (Fase 7B) ----
+
+export const GUARD_STATUS_LABELS = {
+  GREEN: 'Verde',
+  YELLOW: 'Amarela',
+  RED: 'Vermelha',
+} as const;
+
+export const GUARD_STATUS_DESCRIPTIONS = {
+  GREEN: 'Nenhum impedimento: pode seguir para a cotação.',
+  YELLOW: 'Há pontos a resolver. Só segue para a cotação se um responsável liberar.',
+  RED: 'Há impedimentos. Só segue para a cotação com liberação formal e justificada.',
+} as const;
+
+export const GUARD_SOURCE_LABELS = {
+  CALCULATOR: 'Cálculo',
+  INTAKE: 'Levantamento',
+  BILL: 'Fatura',
+  ENGINEERING: 'Engenharia',
+  CONSISTENCY: 'Consistência',
+  FRESHNESS: 'Atualização',
+} as const;
+
+export const MARGIN_STATUS_LABELS = {
+  WITHIN_POLICY: 'Dentro da política',
+  BELOW_POLICY: 'Abaixo do mínimo',
+  NO_POLICY: 'Sem política definida',
+} as const;
+
+export const APPROVAL_STATUS_LABELS = {
+  NONE: 'Sem pedido',
+  PENDING: 'Aguardando aprovação',
+  APPROVED: 'Aprovada',
+  REJECTED: 'Recusada',
+} as const;
+
+export const PROPOSAL_STATUS_LABELS = {
+  GENERATED: 'Gerada',
+  SENT: 'Enviada',
+  VIEWED: 'Visualizada',
+  ACCEPTED: 'Aceita',
+  SUPERSEDED: 'Substituída',
+} as const;
+
+export const QUOTE_CATEGORY_LABELS = {
+  MODULE: 'Módulos',
+  INVERTER: 'Inversor',
+  STRUCTURE: 'Estrutura',
+  PROTECTION: 'Proteções',
+  CABLE: 'Cabos',
+  OTHER_MATERIAL: 'Outros materiais',
 } as const;

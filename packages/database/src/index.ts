@@ -29,6 +29,13 @@ export type {
   Invitation,
   Document,
   RuleSet,
+  TriageSnapshot,
+  TriageOverride,
+  MarginPolicy,
+  Quote,
+  ApprovalRequest,
+  Proposal,
+  ProposalSnapshot,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

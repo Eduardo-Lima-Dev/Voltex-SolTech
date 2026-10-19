@@ -26,6 +26,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { queryKeys } from '../query-keys';
 import { BranchesCard } from './branches-card';
+import { BrandingCard } from './branding-card';
 import { TeamsCard } from './teams-card';
 
 const schema = z.object({
@@ -134,6 +135,7 @@ export function CompanyPage() {
   return (
     <div className="space-y-6">
       <CompanyDataCard />
+      <BrandingCard />
       <BranchesCard />
       <TeamsCard />
     </div>

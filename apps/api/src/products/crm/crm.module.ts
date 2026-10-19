@@ -7,11 +7,19 @@ import { BILL_PARSER } from './energy-bills/bill-parser';
 import { EnergyBillsController } from './energy-bills/energy-bills.controller';
 import { EnergyBillsService } from './energy-bills/energy-bills.service';
 import { PdfTextBillParser } from './energy-bills/pdf-text-bill-parser';
+import { GuardController } from './guard/guard.controller';
+import { GuardService } from './guard/guard.service';
 import { LeadCaptureController, LeadsController, PublicLeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { OpportunitiesController, PipelineController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { PipelineService } from './pipeline.service';
+import { BrandingService } from './proposals/branding.service';
+import { ProposalsController, PublicProposalsController } from './proposals/proposals.controller';
+import { ProposalsService } from './proposals/proposals.service';
+import { MarginPoliciesService } from './quotes/margin-policies.service';
+import { QuotesController } from './quotes/quotes.controller';
+import { QuotesService } from './quotes/quotes.service';
 import { TimelineService } from './support/timeline.service';
 import { UserDirectory } from './support/user-directory.service';
 import { TasksController } from './tasks.controller';
@@ -28,6 +36,10 @@ import { TasksService } from './tasks.service';
     OpportunitiesController,
     TasksController,
     EnergyBillsController,
+    GuardController,
+    QuotesController,
+    ProposalsController,
+    PublicProposalsController,
   ],
   providers: [
     UserDirectory,
@@ -39,8 +51,22 @@ import { TasksService } from './tasks.service';
     TasksService,
     EnergyBillsService,
     PdfTextBillParser,
+    GuardService,
+    MarginPoliciesService,
+    QuotesService,
+    BrandingService,
+    ProposalsService,
     { provide: BILL_PARSER, useExisting: PdfTextBillParser },
   ],
-  exports: [OpportunitiesService, TimelineService, UserDirectory, PipelineService, TasksService],
+  exports: [
+    OpportunitiesService,
+    TimelineService,
+    UserDirectory,
+    PipelineService,
+    TasksService,
+    GuardService,
+    QuotesService,
+    ProposalsService,
+  ],
 })
 export class CrmModule {}

@@ -28,6 +28,11 @@ export const ROUTES = {
   tasks: '/tasks',
   pipeline: '/pipeline',
   opportunities: '/opportunities',
+  quotes: '/quotes',
+  marginPolicies: '/margin-policies',
+  approvals: '/approvals',
+  proposals: '/proposals',
+  publicProposals: '/public/proposals',
   projects: '/projects',
   energyBills: {
     parse: '/energy-bills/parse',

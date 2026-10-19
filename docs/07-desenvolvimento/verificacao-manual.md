@@ -39,3 +39,15 @@ Faça `POST /auth/login`, clique em **Authorize** com o `accessToken` e teste `G
 6. **Kanban** — `Oportunidades`: arraste o cartão pelo ícone (ou use "Mover para…"). Pular etapas é recusado com a lista do que é permitido; "Perdida" pede o motivo.
 7. **Formulário público** — como administrador, copie o endereço de captação (Leads, no fim da página) e envie um POST com `{ "name", "phone", "consent": true }`: o lead aparece sem responsável.
 8. **Perfis** — o SDR vê Leads, Contas e Tarefas (não Oportunidades) e converte só em conta; o vendedor vê as quatro áreas.
+
+## Fase 7B — Triagem, cotação e proposta
+
+Use a oportunidade da 7A (com fatura validada e cálculo) ou crie outra.
+
+1. **Margem mínima** — `Administração → Margens → Nova política` (ex.: 20%). Sem política, nenhuma cotação é liberada. Em `Administração → Empresa`, defina a cor (e a logo) das propostas.
+2. **Triagem** — aba **Triagem → Avaliar triagem**. Com tudo em ordem fica **verde**. Para ver o resto: mude o azimute do imóvel (Conta → Imóvel) e a avaliação aparece **desatualizada**; sem fatura validada, fica **amarela** e o gestor pode **Liberar mesmo assim** com justificativa.
+3. **Cotação** — mova para **Cotação** (a trava exige triagem verde ou liberada). Aba **Cotação → Nova cotação**: preencha materiais, custos e preço; a **prévia da margem** muda ao digitar. Com preço baixo a cotação fica **abaixo do mínimo** e mostra o preço mínimo.
+4. **Aprovação** — **Pedir aprovação** (com justificativa). Entre como **gestor** (`gestor@voltex.demo`) em `CRM → Aprovações` e aprove ou recuse. Quem pediu não decide o próprio pedido (o proprietário pode).
+5. **Proposta** — aba **Proposta → Gerar proposta** (escolha a cotação liberada), depois **Enviar**: o link público aparece **uma vez**. Baixe o **PDF**.
+6. **Cliente** — abra o link numa janela anônima: vê cenários, gráficos e condições (nunca custos nem margem). **Aceitar proposta** pede nome completo e confirmação; a oportunidade vai para **Contrato** e a linha do tempo registra o aceite. Abrir o link de novo mostra "aceita"; uma versão nova da proposta torna o link antigo "substituído".
+7. **Perfis** — o vendedor não vê Aprovações nem Margens; o SDR não vê Triagem, Cotação nem Proposta.

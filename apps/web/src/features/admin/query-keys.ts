@@ -34,6 +34,14 @@ export const queryKeys = {
   opportunityBills: (id: string) => ['opportunity', id, 'bills'] as const,
   opportunityCalculations: (id: string) => ['opportunity', id, 'calculations'] as const,
   opportunityEngineering: (id: string) => ['opportunity', id, 'engineering'] as const,
+  opportunityGuard: (id: string) => ['opportunity', id, 'guard'] as const,
+  opportunityQuotes: (id: string) => ['opportunity', id, 'quotes'] as const,
+  opportunityProposals: (id: string) => ['opportunity', id, 'proposals'] as const,
+  approvals: (filters?: unknown) =>
+    filters === undefined ? (['approvals'] as const) : (['approvals', filters] as const),
+  marginPolicies: ['margin-policies'] as const,
+  branding: ['branding'] as const,
+  publicProposal: (token: string) => ['public-proposal', token] as const,
   calculationContext: (id: string) => ['opportunity', id, 'calculation-context'] as const,
   tasks: (filters?: unknown) =>
     filters === undefined ? (['tasks'] as const) : (['tasks', filters] as const),

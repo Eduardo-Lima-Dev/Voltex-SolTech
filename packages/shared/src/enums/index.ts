@@ -243,3 +243,33 @@ export const TimelineEventType = {
   PROJECT_CREATED: 'PROJECT_CREATED',
 } as const;
 export type TimelineEventType = (typeof TimelineEventType)[keyof typeof TimelineEventType];
+
+// ---- Triagem, cotação e proposta (Fase 7B) ----
+
+/** Situação da margem de uma cotação frente à política. */
+export const MarginStatus = {
+  WITHIN_POLICY: 'WITHIN_POLICY',
+  BELOW_POLICY: 'BELOW_POLICY',
+  NO_POLICY: 'NO_POLICY',
+} as const;
+export type MarginStatus = (typeof MarginStatus)[keyof typeof MarginStatus];
+
+export const ProposalStatus = {
+  GENERATED: 'GENERATED',
+  SENT: 'SENT',
+  VIEWED: 'VIEWED',
+  ACCEPTED: 'ACCEPTED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+export type ProposalStatus = (typeof ProposalStatus)[keyof typeof ProposalStatus];
+
+/** Alerta/verificação da triagem (Project Guard): cada código tem origem e severidade. */
+export const GuardCheckSource = {
+  CALCULATOR: 'CALCULATOR',
+  INTAKE: 'INTAKE',
+  BILL: 'BILL',
+  ENGINEERING: 'ENGINEERING',
+  CONSISTENCY: 'CONSISTENCY',
+  FRESHNESS: 'FRESHNESS',
+} as const;
+export type GuardCheckSource = (typeof GuardCheckSource)[keyof typeof GuardCheckSource];

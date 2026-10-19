@@ -18,6 +18,7 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
 ## Índice
 
 - [Solar Calculator](calculator.md) — MVP1
+- [Margem de contribuição](margem.md) — MVP1 (Margin Guard)
 - Compatibility Engine (módulo × inversor) — MVP2
 - Off-Grid (perfil de carga, banco de baterias, autonomia) — MVP3
 

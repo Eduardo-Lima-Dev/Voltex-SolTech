@@ -1,8 +1,15 @@
-import { Building2, CheckSquare, Kanban, UserPlus, type LucideIcon } from 'lucide-react';
+import {
+  BadgeCheck,
+  Building2,
+  CheckSquare,
+  Kanban,
+  UserPlus,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Permission } from '@voltex/shared';
 
 export interface CrmTab {
-  path: 'leads' | 'oportunidades' | 'contas' | 'tarefas';
+  path: 'leads' | 'oportunidades' | 'contas' | 'aprovacoes' | 'tarefas';
   label: string;
   icon: LucideIcon;
   permission: Permission;
@@ -17,6 +24,12 @@ export const CRM_TABS: readonly CrmTab[] = [
     permission: 'crm.opportunity.read',
   },
   { path: 'contas', label: 'Contas', icon: Building2, permission: 'crm.account.read' },
+  {
+    path: 'aprovacoes',
+    label: 'Aprovações',
+    icon: BadgeCheck,
+    permission: 'crm.margin.approve',
+  },
   { path: 'tarefas', label: 'Tarefas', icon: CheckSquare, permission: 'crm.task.read' },
 ];
 

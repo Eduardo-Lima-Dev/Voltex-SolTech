@@ -19,6 +19,7 @@ const handlers = () => [
   http.get(`${API}/tenant`, () => HttpResponse.json(tenant)),
   http.get(`${API}/branches`, () => HttpResponse.json([branch()])),
   http.get(`${API}/teams`, () => HttpResponse.json([team()])),
+  http.get(`${API}/branding`, () => HttpResponse.json({})),
 ];
 
 const withBase = (...overrides: Parameters<typeof server.use>) =>

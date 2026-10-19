@@ -295,6 +295,10 @@ model Opportunity {
   tasks               Task[]
   energyBills         EnergyBill[]
   engineeringRequests EngineeringRequest[]
+  triageSnapshots     TriageSnapshot[]
+  quotes              Quote[]
+  approvalRequests    ApprovalRequest[]
+  proposals           Proposal[]
 
   @@index([tenantId, stage])
   @@index([tenantId, status])

@@ -36,6 +36,7 @@ describe('rotas protegidas', () => {
       ),
       http.get(`${API}/branches`, () => HttpResponse.json([])),
       http.get(`${API}/teams`, () => HttpResponse.json([])),
+      http.get(`${API}/branding`, () => HttpResponse.json({})),
     );
     const { router } = renderApp('/admin/empresa', { session: null });
 

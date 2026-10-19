@@ -1,4 +1,6 @@
 import type {
+  SaveQuoteInput,
+  UpdateQuoteInput,
   CalculationSessionDto,
   CalculatorConfigDto,
   CreateCalculationInput,
@@ -7,6 +9,23 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type AcceptProposalInput,
+  type ApprovalDto,
+  type Branding,
+  type CreateMarginPolicyInput,
+  type CreateProposalInput,
+  type DecideApprovalInput,
+  type DocumentDto,
+  type GuardEvaluationDto,
+  type GuardOverviewDto,
+  type ListApprovalsQuery,
+  type MarginPolicyDto,
+  type OverrideGuardInput,
+  type ProposalDto,
+  type PublicProposalDto,
+  type QuoteDto,
+  type RequestApprovalInput,
+  type UpdateMarginPolicyInput,
   type AccountDetailDto,
   type AccountDto,
   type AneelImportResult,
@@ -273,6 +292,69 @@ export function createEndpoints(client: ApiClient) {
         }),
       engineeringRequests: (id: string) =>
         client.get<EngineeringRequestDto[]>(`${ROUTES.opportunities}/${id}/engineering-requests`),
+      guard: (id: string) => client.get<GuardOverviewDto>(`${ROUTES.opportunities}/${id}/guard`),
+      evaluateGuard: (id: string) =>
+        client.post<GuardEvaluationDto>(`${ROUTES.opportunities}/${id}/guard/evaluate`),
+      overrideGuard: (id: string, input: OverrideGuardInput) =>
+        client.post<GuardEvaluationDto>(`${ROUTES.opportunities}/${id}/guard/override`, input),
+      quotes: (id: string) => client.get<QuoteDto[]>(`${ROUTES.opportunities}/${id}/quotes`),
+      createQuote: (id: string, input: SaveQuoteInput) =>
+        client.post<QuoteDto>(`${ROUTES.opportunities}/${id}/quotes`, input),
+      proposals: (id: string) =>
+        client.get<ProposalDto[]>(`${ROUTES.opportunities}/${id}/proposals`),
+      createProposal: (id: string, input: CreateProposalInput) =>
+        client.post<ProposalDto>(`${ROUTES.opportunities}/${id}/proposals`, input),
+    },
+    quotes: {
+      update: (id: string, input: UpdateQuoteInput) =>
+        client.patch<QuoteDto>(`${ROUTES.quotes}/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.quotes}/${id}`),
+      requestApproval: (id: string, input: RequestApprovalInput) =>
+        client.post<QuoteDto>(`${ROUTES.quotes}/${id}/request-approval`, input),
+    },
+    approvals: {
+      list: (query: Partial<ListApprovalsQuery>) =>
+        client.get<Paginated<ApprovalDto>>(ROUTES.approvals, { query: query as QueryParams }),
+      decide: (id: string, input: DecideApprovalInput) =>
+        client.post<ApprovalDto>(`${ROUTES.approvals}/${id}/decide`, input),
+    },
+    marginPolicies: {
+      list: () => client.get<MarginPolicyDto[]>(ROUTES.marginPolicies),
+      create: (input: CreateMarginPolicyInput) =>
+        client.post<MarginPolicyDto>(ROUTES.marginPolicies, input),
+      update: (id: string, input: UpdateMarginPolicyInput) =>
+        client.patch<MarginPolicyDto>(`${ROUTES.marginPolicies}/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.marginPolicies}/${id}`),
+    },
+    proposals: {
+      get: (id: string) => client.get<ProposalDto>(`${ROUTES.proposals}/${id}`),
+      send: (id: string) => client.post<ProposalDto>(`${ROUTES.proposals}/${id}/send`),
+      pdfUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`${ROUTES.proposals}/${id}/pdf-url`),
+      regeneratePdf: (id: string) => client.post<ProposalDto>(`${ROUTES.proposals}/${id}/pdf`),
+    },
+    publicProposals: {
+      get: (token: string) =>
+        client.get<PublicProposalDto>(`${ROUTES.publicProposals}/${token}`, { auth: false }),
+      accept: (token: string, input: AcceptProposalInput) =>
+        client.post<PublicProposalDto>(`${ROUTES.publicProposals}/${token}/accept`, input, {
+          auth: false,
+        }),
+      pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
+      logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
+    },
+    documents: {
+      upload: (file: File, target?: { entityType?: string; entityId?: string }) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (target?.entityType) form.append('entityType', target.entityType);
+        if (target?.entityId) form.append('entityId', target.entityId);
+        return client.upload<DocumentDto>('/documents', form);
+      },
+    },
+    branding: {
+      get: () => client.get<Branding>('/branding'),
+      update: (input: Branding) => client.put<Branding>('/branding', input),
     },
     tasks: {
       list: (query: Partial<ListTasksQuery>) =>
