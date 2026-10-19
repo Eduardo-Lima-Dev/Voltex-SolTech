@@ -28,7 +28,12 @@ const booleanFromString = z.enum(['true', 'false']).transform((v) => v === 'true
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    API_PORT: z.coerce.number().int().positive().default(3000),
+    /** Porta da API. Hospedagens como a Render informam a porta em `PORT`; `API_PORT` tem prioridade. */
+    API_PORT: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(Number(process.env.PORT) || 3000),
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
     WEB_URL: z.string().default('http://localhost:5173'),
 

@@ -1,0 +1,23 @@
+{
+  "$comment": "Site de apresentação na Vercel. Só o formulário de contato fala com a API (captação pública de leads); nada mais da API fica exposto por aqui.",
+  "rewrites": [
+    {
+      "source": "/api/v1/public/leads/:key",
+      "destination": "https://__API_HOST__/api/v1/public/leads/:key"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
