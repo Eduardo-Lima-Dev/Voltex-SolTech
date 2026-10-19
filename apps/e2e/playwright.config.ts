@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { API_PORT, E2E_DATABASE_URL, WEB_PORT } from './env';
+import { API_PORT, E2E_DATABASE_URL, SITE_PORT, WEB_PORT } from './env';
 
 const root = path.resolve(__dirname, '../..');
 const apiEnv = {
@@ -56,6 +56,14 @@ export default defineConfig({
       command: `pnpm exec vite preview --port ${WEB_PORT} --strictPort`,
       cwd: path.join(root, 'apps/web'),
       url: `http://localhost:${WEB_PORT}/login`,
+      env: { API_PORT: String(API_PORT) },
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: `pnpm exec vite preview --port ${SITE_PORT} --strictPort`,
+      cwd: path.join(root, 'apps/site'),
+      url: `http://localhost:${SITE_PORT}/`,
       env: { API_PORT: String(API_PORT) },
       reuseExistingServer: false,
       timeout: 60_000,

@@ -125,6 +125,22 @@ services:
     ports:
       - '${WEB_PORT:-8080}:8080'
 
+  # Site de apresentação (landing page), separado da aplicação: outro endereço, ex.: www.suaempresa.com.br.
+  site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+      args:
+        VITE_APP_URL: ${WEB_URL:?defina WEB_URL com o endereço público da aplicação}
+        VITE_LEAD_KEY: ${SITE_LEAD_KEY:-}
+    image: voltex/site:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${SITE_PORT:-8081}:8080'
+
 volumes:
   postgres-data:
   redis-data:

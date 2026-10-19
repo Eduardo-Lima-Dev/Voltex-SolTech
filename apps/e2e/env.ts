@@ -5,6 +5,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 
 export const API_PORT = 3100;
 export const WEB_PORT = 4173;
+export const SITE_PORT = 4174;
 export const PASSWORD = process.env.SEED_PASSWORD ?? 'Voltex@2026';
 
 /** Banco próprio dos testes e2e: nunca o de desenvolvimento. */

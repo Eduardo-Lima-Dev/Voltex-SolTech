@@ -85,6 +85,14 @@ jobs:
           push: false
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+      - name: Site
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/site/Dockerfile
+          push: false
+          cache-from: type=gha,scope=site
+          cache-to: type=gha,mode=max,scope=site
       - name: Migrations
         uses: docker/build-push-action@v6
         with:

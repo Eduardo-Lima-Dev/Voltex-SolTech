@@ -1,4 +1,4 @@
-import { ShieldCheck, Sun, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Sun, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Logo, LogoMark } from '@voltex/ui';
 import { ThemeToggle } from '@/app/layout/theme-toggle';
@@ -8,6 +8,8 @@ const HIGHLIGHTS: { icon: LucideIcon; text: string }[] = [
   { icon: TrendingUp, text: 'Margem protegida antes de enviar ao cliente' },
   { icon: ShieldCheck, text: 'Triagem técnica e regulatória com revisão humana' },
 ];
+
+const SITE_URL = import.meta.env.VITE_SITE_URL?.trim() || null;
 
 /** Tela dividida das páginas públicas: painel de marca (azul-marinho) + formulário. */
 export function AuthLayout({ children }: { children: ReactNode }) {
@@ -19,7 +21,17 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           tone="on-dark"
           className="pointer-events-none absolute -bottom-24 -right-24 h-[34rem] opacity-[0.06]"
         />
-        <Logo tone="on-dark" className="relative h-12 self-start" />
+        {SITE_URL ? (
+          <a
+            href={SITE_URL}
+            aria-label="Voltex SolTech — voltar ao site"
+            className="relative self-start rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan"
+          >
+            <Logo tone="on-dark" className="h-12" />
+          </a>
+        ) : (
+          <Logo tone="on-dark" className="relative h-12 self-start" />
+        )}
         <div className="relative max-w-md space-y-8">
           <div className="space-y-3">
             <h2 className="text-3xl font-semibold leading-tight tracking-tight">
@@ -46,6 +58,14 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="relative flex flex-col items-center justify-center px-4 py-10 sm:px-8">
+        {SITE_URL ? (
+          <a
+            href={SITE_URL}
+            className="absolute left-4 top-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground sm:left-6 sm:top-6"
+          >
+            <ArrowLeft className="size-4" aria-hidden /> Voltar ao site
+          </a>
+        ) : null}
         <div className="absolute right-3 top-3 sm:right-6 sm:top-6">
           <ThemeToggle />
         </div>
