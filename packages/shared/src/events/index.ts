@@ -39,6 +39,7 @@ export const DomainEvent = {
   PROPOSAL_SENT: 'ProposalSent',
   PROPOSAL_VIEWED: 'ProposalViewed',
   PROPOSAL_ACCEPTED: 'ProposalAccepted',
+  CONTRACT_GENERATED: 'ContractGenerated',
   CONTRACT_SIGNED: 'ContractSigned',
   DEAL_WON: 'DealWon',
   // Execução

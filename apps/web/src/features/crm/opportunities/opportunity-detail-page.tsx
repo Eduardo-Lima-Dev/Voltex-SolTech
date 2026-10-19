@@ -21,6 +21,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { isApiError } from '@/lib/api/errors';
 import { BillsTab } from './bills-tab';
 import { CalculationsTab } from './calculations-tab';
+import { ContractTab } from './contract-tab';
 import { EditOpportunityDialog } from './edit-opportunity-dialog';
 import { EngineeringTab } from './engineering-tab';
 import { GuardTab } from './guard-tab';
@@ -138,6 +139,7 @@ export function OpportunityDetailPage() {
           {can('crm.guard.read') ? <TabsTrigger value="triagem">Triagem</TabsTrigger> : null}
           {can('crm.quote.read') ? <TabsTrigger value="cotacao">Cotação</TabsTrigger> : null}
           {can('crm.proposal.read') ? <TabsTrigger value="proposta">Proposta</TabsTrigger> : null}
+          {can('crm.contract.read') ? <TabsTrigger value="contrato">Contrato</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="resumo" className="pt-4">
           <SummaryTab opportunity={data} />
@@ -165,6 +167,9 @@ export function OpportunityDetailPage() {
         </TabsContent>
         <TabsContent value="proposta" className="pt-4">
           <ProposalsTab opportunityId={id} open={open} />
+        </TabsContent>
+        <TabsContent value="contrato" className="pt-4">
+          <ContractTab opportunityId={id} stage={data.stage} open={open} />
         </TabsContent>
       </Tabs>
 

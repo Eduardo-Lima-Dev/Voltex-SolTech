@@ -58,6 +58,10 @@ export const envSchema = z
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
     /** 0 desliga o worker do outbox (usado nos testes, que o acionam manualmente). */
     OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(0).default(1000),
+    /** Varredura das automações do CRM (SLA de lead, fatura não recebida). 0 desliga o agendamento. */
+    AUTOMATION_SCAN_INTERVAL_MS: z.coerce.number().int().min(0).default(60_000),
+    /** Prefixo das chaves da fila no Redis (os testes usam um por processo). */
+    AUTOMATION_QUEUE_PREFIX: z.string().default('voltex'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && env.JWT_SECRET.includes(DEV_JWT_SECRET_MARKER)) {

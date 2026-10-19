@@ -182,3 +182,4 @@ export interface HealthResponse {
 export type { CustomerGroup };
 export * from './crm.js';
 export * from './commercial.js';
+export * from './delivery.js';

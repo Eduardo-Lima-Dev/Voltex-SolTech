@@ -10,6 +10,22 @@ import type {
 import {
   ROUTES,
   type AcceptProposalInput,
+  type CancelContractInput,
+  type ChangeProjectStatusInput,
+  type CommercialDashboardDto,
+  type CommercialDashboardQuery,
+  type ContractDto,
+  type ContractTemplateDto,
+  type CreateContractInput,
+  type CreateHomologationChecklistInput,
+  type HomologationChecklistDto,
+  type HomologationRules,
+  type ListProjectsQuery,
+  type ProjectDto,
+  type ProjectSummaryDto,
+  type UpdateChecklistItemInput,
+  type UpdateContractTemplateInput,
+  type UpdateProjectInput,
   type ApprovalDto,
   type Branding,
   type CreateMarginPolicyInput,
@@ -304,6 +320,56 @@ export function createEndpoints(client: ApiClient) {
         client.get<ProposalDto[]>(`${ROUTES.opportunities}/${id}/proposals`),
       createProposal: (id: string, input: CreateProposalInput) =>
         client.post<ProposalDto>(`${ROUTES.opportunities}/${id}/proposals`, input),
+    },
+    contracts: {
+      template: () => client.get<ContractTemplateDto>(ROUTES.contractTemplate),
+      saveTemplate: (input: UpdateContractTemplateInput) =>
+        client.put<ContractTemplateDto>(ROUTES.contractTemplate, input),
+      list: (opportunityId: string) =>
+        client.get<ContractDto[]>(`${ROUTES.opportunities}/${opportunityId}/contracts`),
+      generate: (opportunityId: string, input: CreateContractInput) =>
+        client.post<ContractDto>(`${ROUTES.opportunities}/${opportunityId}/contracts`, input),
+      cancel: (id: string, input: CancelContractInput) =>
+        client.post<ContractDto>(`${ROUTES.contracts}/${id}/cancel`, input),
+      pdfUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`${ROUTES.contracts}/${id}/pdf-url`),
+      signedUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`${ROUTES.contracts}/${id}/signed-url`),
+      sign: (id: string, file: File, fields: { signedAt?: string; signedByName?: string }) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (fields.signedAt) form.append('signedAt', fields.signedAt);
+        if (fields.signedByName) form.append('signedByName', fields.signedByName);
+        return client.upload<ContractDto>(`${ROUTES.contracts}/${id}/sign`, form);
+      },
+    },
+    projects: {
+      list: (query: Partial<ListProjectsQuery>) =>
+        client.get<Paginated<ProjectSummaryDto>>(ROUTES.projects, { query: query as QueryParams }),
+      get: (id: string) => client.get<ProjectDto>(`${ROUTES.projects}/${id}`),
+      byOpportunity: (opportunityId: string) =>
+        client.get<ProjectDto | null>(`${ROUTES.opportunities}/${opportunityId}/project`),
+      update: (id: string, input: UpdateProjectInput) =>
+        client.patch<ProjectDto>(`${ROUTES.projects}/${id}`, input),
+      updateItem: (id: string, itemId: string, input: UpdateChecklistItemInput) =>
+        client.patch<ProjectDto>(`${ROUTES.projects}/${id}/checklist/${itemId}`, input),
+      changeStatus: (id: string, input: ChangeProjectStatusInput) =>
+        client.post<ProjectDto>(`${ROUTES.projects}/${id}/status`, input),
+    },
+    homologation: {
+      list: () => client.get<HomologationChecklistDto[]>(ROUTES.homologationChecklists),
+      effective: (distributorId?: string) =>
+        client.get<HomologationRules>(`${ROUTES.homologationChecklists}/effective`, {
+          query: { distributorId },
+        }),
+      publish: (input: CreateHomologationChecklistInput) =>
+        client.post<HomologationChecklistDto>(ROUTES.homologationChecklists, input),
+    },
+    dashboard: {
+      commercial: (query: Partial<CommercialDashboardQuery>) =>
+        client.get<CommercialDashboardDto>(ROUTES.commercialDashboard, {
+          query: query as QueryParams,
+        }),
     },
     quotes: {
       update: (id: string, input: UpdateQuoteInput) =>

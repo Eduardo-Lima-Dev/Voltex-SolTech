@@ -299,6 +299,8 @@ model Opportunity {
   quotes              Quote[]
   approvalRequests    ApprovalRequest[]
   proposals           Proposal[]
+  contracts           Contract[]
+  project             Project?
 
   @@index([tenantId, stage])
   @@index([tenantId, status])
@@ -340,6 +342,8 @@ model Task {
   createdById   String?    @map("created_by_id") @db.Uuid
   /// Quem criou automaticamente (automações): `automation:<regra>`.
   origin        String?
+  /// Chave de idempotência das automações: a mesma regra não cria a mesma tarefa duas vezes.
+  automationKey String?    @map("automation_key")
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
   deletedAt     DateTime?  @map("deleted_at")
@@ -347,6 +351,7 @@ model Task {
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
 
+  @@unique([tenantId, automationKey])
   @@index([tenantId, status, dueAt])
   @@index([tenantId, assigneeId, status])
   @@index([tenantId, opportunityId])

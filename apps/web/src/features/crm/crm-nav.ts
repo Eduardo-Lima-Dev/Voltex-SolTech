@@ -1,5 +1,7 @@
 import {
   BadgeCheck,
+  BarChart3,
+  HardHat,
   Building2,
   CheckSquare,
   Kanban,
@@ -9,7 +11,7 @@ import {
 import type { Permission } from '@voltex/shared';
 
 export interface CrmTab {
-  path: 'leads' | 'oportunidades' | 'contas' | 'aprovacoes' | 'tarefas';
+  path: 'leads' | 'oportunidades' | 'contas' | 'aprovacoes' | 'projetos' | 'painel' | 'tarefas';
   label: string;
   icon: LucideIcon;
   permission: Permission;
@@ -30,6 +32,8 @@ export const CRM_TABS: readonly CrmTab[] = [
     icon: BadgeCheck,
     permission: 'crm.margin.approve',
   },
+  { path: 'projetos', label: 'Projetos', icon: HardHat, permission: 'crm.project.read' },
+  { path: 'painel', label: 'Painel', icon: BarChart3, permission: 'crm.dashboard.read' },
   { path: 'tarefas', label: 'Tarefas', icon: CheckSquare, permission: 'crm.task.read' },
 ];
 

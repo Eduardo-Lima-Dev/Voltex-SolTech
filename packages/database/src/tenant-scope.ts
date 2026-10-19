@@ -37,6 +37,11 @@ export const TENANT_SCOPED_MODELS = [
   'ApprovalRequest',
   'Proposal',
   'ProposalSnapshot',
+  'ContractTemplate',
+  'Contract',
+  'HomologationChecklist',
+  'Project',
+  'ProjectChecklistItem',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

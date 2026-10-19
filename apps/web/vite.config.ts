@@ -26,6 +26,8 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['./src/test/setup.ts'],
       css: false,
+      // Com o monorepo todo rodando em paralelo a máquina fica lenta: 5 s (padrão) estoura em testes de tela inteira.
+      testTimeout: 15_000,
       // O fetch do Node exige URL absoluta; o MSW intercepta este host nos testes.
       env: { VITE_API_URL: 'http://api.test/api/v1' },
     },

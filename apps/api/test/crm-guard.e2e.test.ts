@@ -46,7 +46,7 @@ describe('CRM · Triagem (Project Guard) (e2e)', () => {
     t = await createTestApp();
     const { OutboxPublisher } = await import('../src/platform/events/outbox-publisher.service');
     const publisher = t.app.get(OutboxPublisher);
-    publish = () => publisher.publishPending(500);
+    publish = () => publisher.publishPending(500, a.id);
     a = await seedTenant(t.prisma, 'guard');
     b = await seedTenant(t.prisma, 'guardb');
     admin = await tokenFor(t.http, a.admin);

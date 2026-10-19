@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { API, makeSession } from '@/test/fixtures';
+import { API, makeSession, page } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -231,7 +231,7 @@ describe('rotas do CRM', () => {
     ).toBeInTheDocument();
   });
 
-  it('o vendedor vê as quatro áreas do CRM', async () => {
+  it('o vendedor vê as cinco áreas do CRM', async () => {
     crmHandlers();
     renderApp('/crm/contas', { session: makeSession('SALESPERSON') });
     const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
@@ -239,16 +239,21 @@ describe('rotas do CRM', () => {
       'Leads',
       'Oportunidades',
       'Contas',
+      'Projetos',
       'Tarefas',
     ]);
   });
 
-  it('o instalador só acessa as tarefas atribuídas a ele dentro do CRM', async () => {
+  it('o instalador acessa só projetos e as tarefas atribuídas a ele dentro do CRM', async () => {
     crmHandlers();
+    server.use(http.get(`${API}/projects`, () => HttpResponse.json(page([]))));
     const { router } = renderApp('/crm', { session: makeSession('INSTALLER') });
     const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Tarefas']);
-    await waitFor(() => expect(router.state.location.pathname).toBe('/crm/tarefas'));
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
+      'Projetos',
+      'Tarefas',
+    ]);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/crm/projetos'));
   });
 
   it('perfil sem nenhuma permissão do CRM vê "Sem acesso"', async () => {
