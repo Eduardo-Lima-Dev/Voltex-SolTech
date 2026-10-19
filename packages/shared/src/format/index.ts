@@ -23,3 +23,4 @@ export const formatPercent = (fraction: number, digits = 0): string =>
 
 export const formatYears = (years: number | null, digits = 1): string =>
   years === null ? '—' : `${decimal(digits).format(years)} anos`;
+export * from './normalize.js';

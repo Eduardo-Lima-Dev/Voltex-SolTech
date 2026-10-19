@@ -166,3 +166,4 @@ export interface HealthResponse {
 }
 
 export type { CustomerGroup };
+export * from './crm.js';

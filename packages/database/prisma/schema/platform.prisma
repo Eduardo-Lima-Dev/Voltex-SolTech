@@ -28,16 +28,18 @@ enum TenantStatus {
 
 /// Empresa cliente da suíte (integradora). Unidade de isolamento de dados.
 model Tenant {
-  id        String       @id @default(uuid(7)) @db.Uuid
-  name      String
-  slug      String       @unique
-  document  String? /// CNPJ
-  status    TenantStatus @default(ACTIVE)
+  id             String       @id @default(uuid(7)) @db.Uuid
+  name           String
+  slug           String       @unique
+  document       String? /// CNPJ
+  status         TenantStatus @default(ACTIVE)
   /// Plano, limites e feature flags (RF-PLAT-013).
-  settings  Json         @default("{}")
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
+  settings       Json         @default("{}")
+  /// Chave pública do formulário de captação de leads (rotacionável).
+  leadCaptureKey String?      @unique @map("lead_capture_key")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
 
   branches             Branch[]
   teams                Team[]
@@ -53,6 +55,18 @@ model Tenant {
   solarResources       SolarResource[]
   calculationSessions  CalculationSession[]
   calculationSnapshots QuickCalculationSnapshot[]
+  leads                Lead[]
+  accounts             Account[]
+  contacts             Contact[]
+  sites                Site[]
+  consumerUnits        ConsumerUnit[]
+  pipelineStages       PipelineStage[]
+  opportunities        Opportunity[]
+  timelineEvents       TimelineEvent[]
+  tasks                Task[]
+  energyBills          EnergyBill[]
+  energyBillSnapshots  EnergyBillSnapshot[]
+  engineeringRequests  EngineeringRequest[]
 
   @@map("tenants")
 }

@@ -1,5 +1,6 @@
 export * from './permissions.js';
 export * from './pipeline.js';
+export * from './opportunity-flow.js';
 
 /** Portas e prefixos padrão usados em desenvolvimento. */
 export const API_PREFIX = '/api/v1';

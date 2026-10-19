@@ -12,12 +12,15 @@ model Distributor {
   tenantId  String    @map("tenant_id") @db.Uuid
   name      String
   state     String?
+  /// CNPJ (só dígitos), quando vem da ANEEL.
+  cnpj      String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id])
-  tariffs Tariff[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  tariffs       Tariff[]
+  consumerUnits ConsumerUnit[]
 
   @@unique([tenantId, name])
   @@index([tenantId])

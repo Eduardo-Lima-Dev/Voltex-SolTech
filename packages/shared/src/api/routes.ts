@@ -21,6 +21,12 @@ export const ROUTES = {
   rules: '/rules',
   documents: '/documents',
   leads: '/leads',
+  publicLeads: '/public/leads',
+  accounts: '/accounts',
+  sites: '/sites',
+  consumerUnits: '/consumer-units',
+  tasks: '/tasks',
+  pipeline: '/pipeline',
   opportunities: '/opportunities',
   projects: '/projects',
   energyBills: {
