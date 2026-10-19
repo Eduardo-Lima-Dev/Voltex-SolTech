@@ -76,10 +76,18 @@ Há uma dependência circular de endereços (a API precisa saber o endereço da 
 
 ## Como enviar a API para a Render
 
-A Render publica a partir de **um repositório Git** ou de **uma imagem Docker** em um registro. Como o repositório ainda não foi enviado ao GitHub, há duas saídas:
+Decisão tomada: **imagem Docker em um registro privado**, sem enviar o repositório ao GitHub. O `scripts/publicar-api.sh` constrói e publica a imagem:
 
-- **A) Liberar o GitHub só para este fim:** enviar a branch e ligar a Render a ela (usa o `render.yaml`).
-- **B) Imagem Docker:** construir a imagem aqui (`docker build -f apps/api/Dockerfile -t <registro>/voltex-api .`), publicar num registro (Docker Hub ou GitHub Container Registry) e criar na Render um serviço "Existing image". A imagem **não** leva segredos (eles entram como variáveis no painel).
+```bash
+docker login ghcr.io                                   # uma vez (usuário do GitHub + token com permissão de pacotes)
+./scripts/publicar-api.sh ghcr.io/SEU_USUARIO/voltex-api
+```
+
+Na Render: _New → Web Service → Existing image_ (plano **Free**), informe a imagem e, por ser privada, as **credenciais do registro** (usuário e token só de **leitura** de pacotes). Em _Health Check Path_ use `/api/v1/health/live`. Preencha as variáveis da tabela abaixo.
+
+A imagem tem cerca de 800 MB e leva o **código compilado** da API (sem segredos: eles entram como variáveis na Render). Por isso o repositório do registro deve ser **privado**.
+
+Se um dia o repositório for ao GitHub, o `render.yaml` permite publicar direto dele.
 
 ## Variáveis da API (Render)
 
