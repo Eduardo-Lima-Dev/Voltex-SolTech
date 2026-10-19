@@ -45,4 +45,11 @@ for (const args of [
     process.exit(1);
   }
 }
+// Chave de captação conhecida: o site de teste é compilado com ela (veja env.ts e playwright.config.ts).
+const seeded = new pg.Client({ connectionString: url.toString() });
+await seeded.connect();
+await seeded.query(
+  `UPDATE tenants SET lead_capture_key = 'lk_e2e_jornada' WHERE slug = (SELECT slug FROM tenants ORDER BY created_at LIMIT 1)`,
+);
+await seeded.end();
 console.log(`Banco ${name} pronto.`);
