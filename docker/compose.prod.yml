@@ -117,6 +117,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_SITE_URL: ${SITE_URL:-}
     image: voltex/web:local
     restart: unless-stopped
     depends_on:

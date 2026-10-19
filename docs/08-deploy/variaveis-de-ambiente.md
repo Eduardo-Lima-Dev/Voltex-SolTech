@@ -31,4 +31,6 @@
 | `SEED_PASSWORD`                                           | Senha dos usuários do seed (só dev)                           | `Voltex@2026`                                                 |
 | `VITE_API_URL`                                            | URL da API usada pelo front                                   | `http://localhost:3000/api/v1`                                |
 
+**Servidor de teste (notebook):** as variáveis específicas desse deploy (`WEB_URL`, `SITE_URL`, `SITE_LEAD_KEY`, `CLOUDFLARE_TUNNEL_TOKEN`, `BACKUP_DIR`…) ficam em `.env.servidor` e estão explicadas em [Servidor de teste](servidor-de-teste.md#o-que-cada-variável-faz).
+
 **Segurança:** segredos de homologação e produção ficam no gerenciador de secrets do ambiente, nunca no repositório. Gere valores com `openssl rand -base64 48`. No `compose.prod.yml`, `POSTGRES_*` e `S3_ACCESS_KEY`/`S3_SECRET_KEY` são obrigatórios.

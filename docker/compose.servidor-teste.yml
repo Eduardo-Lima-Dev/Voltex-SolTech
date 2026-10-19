@@ -1,0 +1,48 @@
+# Complemento da composição de produção para o SERVIDOR DE TESTE (notebook em casa).
+# Guia completo: docs/08-deploy/servidor-de-teste.md. Não use isto diretamente: use `scripts/servidor-teste.sh`.
+#
+#   docker compose -f docker/compose.prod.yml -f docker/compose.servidor-teste.yml ...
+#
+# O que muda em relação à produção:
+#  - as portas da aplicação e do site só escutam em 127.0.0.1 (nada fica aberto para a rede; quem entra é o túnel);
+#  - o Mailpit captura os e-mails do sistema (convites etc.), já que não há servidor de e-mail de verdade;
+#  - serviço opcional `tunel` (Cloudflare Tunnel), ligado pelo perfil de mesmo nome.
+# Exige Docker Compose 2.24 ou mais novo (por causa do `!override`).
+
+services:
+  web:
+    ports: !override
+      - '127.0.0.1:${WEB_PORT:-8080}:8080'
+
+  site:
+    ports: !override
+      - '127.0.0.1:${SITE_PORT:-8081}:8080'
+
+  api:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: ${MAIL_FROM:-Voltex SolTech <no-reply@voltex.local>}
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  # Caixa de e-mails de teste. A tela fica só no próprio notebook (acesse por túnel SSH, veja o guia).
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025'
+
+  # Túnel da Cloudflare: o notebook faz uma conexão de SAÍDA e o público entra por ela (sem abrir portas no roteador).
+  # Só sobe com o perfil `tunel`: `./scripts/servidor-teste.sh subir` liga sozinho se houver token no .env.servidor.
+  tunel:
+    image: cloudflare/cloudflared:latest
+    profiles: ['tunel']
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+      - site

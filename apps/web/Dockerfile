@@ -7,6 +7,9 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 # A API responde no mesmo domínio, sob /api/v1 (o nginx faz o proxy).
 ENV VITE_API_URL=/api/v1
+# Endereço público do site, para o link "Voltar ao site" da tela de entrada (opcional).
+ARG VITE_SITE_URL
+ENV VITE_SITE_URL=$VITE_SITE_URL
 RUN pnpm turbo run build --filter=@voltex/web
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
