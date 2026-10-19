@@ -57,8 +57,11 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <div className="space-y-6">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Entrar na sua conta</h1>
+        <div className="space-y-2">
+          <p className="auth-mono text-xs text-brand-cyan-strong dark:text-brand-cyan">
+            Acesso à plataforma
+          </p>
+          <h1 className="text-3xl font-semibold tracking-[-0.035em]">Entrar na sua conta</h1>
           <p className="text-sm text-muted-foreground">
             Use o e-mail e a senha da sua empresa na Voltex SolTech.
           </p>
@@ -125,7 +128,11 @@ export function LoginPage() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              className="h-11 w-full rounded-full text-[0.95rem]"
+              disabled={submitting}
+            >
               {submitting ? <Spinner /> : <LogIn />}
               Entrar
             </Button>

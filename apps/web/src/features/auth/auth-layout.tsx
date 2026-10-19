@@ -1,17 +1,21 @@
-import { ArrowLeft, ShieldCheck, Sun, TrendingUp, type LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import '@fontsource-variable/jetbrains-mono';
+import { ArrowLeft } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Logo } from '@voltex/ui';
 import { ThemeToggle } from '@/app/layout/theme-toggle';
+import './auth.css';
 
-const HIGHLIGHTS: { icon: LucideIcon; text: string }[] = [
-  { icon: Sun, text: 'Do lead à proposta com premissas rastreáveis' },
-  { icon: TrendingUp, text: 'Margem protegida antes de enviar ao cliente' },
-  { icon: ShieldCheck, text: 'Triagem técnica e regulatória com revisão humana' },
+const HIGHLIGHTS = [
+  'Do lead à proposta com premissas rastreáveis',
+  'Margem protegida antes de enviar ao cliente',
+  'Triagem técnica e regulatória com revisão humana',
 ];
 
 const SITE_URL = import.meta.env.VITE_SITE_URL?.trim() || null;
 
-/** Tela dividida das páginas públicas: painel de marca (azul-marinho) + formulário. */
+const rise = (i: number): CSSProperties => ({ ['--i' as string]: i });
+
+/** Tela dividida das páginas públicas: painel de marca (azul-marinho, como o site) + formulário. */
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh bg-background text-foreground lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
@@ -22,6 +26,24 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           aria-hidden
           className="pointer-events-none absolute -bottom-36 -right-44 h-[34rem] w-auto opacity-[0.13]"
         />
+        <svg
+          className="auth-arc pointer-events-none absolute inset-0 size-full"
+          viewBox="0 0 700 800"
+          preserveAspectRatio="xMidYMin slice"
+          aria-hidden
+        >
+          <path d="M0 200H700" stroke="rgb(140 221 244 / 0.18)" fill="none" />
+          <path
+            className="auth-arc-line"
+            pathLength={1}
+            d="M-40 200C160 200 260 40 440 40S690 200 760 200"
+            fill="none"
+            stroke="rgb(140 221 244 / 0.45)"
+            strokeWidth="1.5"
+          />
+          <circle className="auth-sun" r="9" fill="rgb(140 221 244)" />
+        </svg>
+
         {SITE_URL ? (
           <a
             href={SITE_URL}
@@ -33,27 +55,37 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         ) : (
           <Logo tone="on-dark" className="relative h-12 self-start" />
         )}
-        <div className="relative max-w-md space-y-8">
-          <div className="space-y-3">
-            <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-              Inteligência comercial e técnica para integradores solares.
+
+        <div className="relative max-w-lg space-y-8">
+          <div className="space-y-5">
+            <p className="auth-mono auth-rise text-xs text-brand-cyan" style={rise(0)}>
+              Suíte para integradores fotovoltaicos
+            </p>
+            <h2
+              className="auth-rise text-[2.6rem] font-semibold leading-[1.05] tracking-[-0.04em] text-balance"
+              style={rise(1)}
+            >
+              Venda mais projetos solares sem perder o fio do negócio.
             </h2>
-            <p className="text-brand-ice/80">
-              Quatro produtos conectados em uma suíte: CRM, calculadora, engenharia e off-grid.
+            <p className="auth-rise max-w-md text-brand-ice/75" style={rise(2)}>
+              CRM, calculadora, engenharia e off-grid: quatro produtos conectados em uma suíte.
             </p>
           </div>
-          <ul className="space-y-4">
-            {HIGHLIGHTS.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-start gap-3">
-                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-cyan/15 text-brand-cyan">
-                  <Icon className="size-4" aria-hidden />
-                </span>
+          <ol className="border-t border-brand-ice/15">
+            {HIGHLIGHTS.map((text, i) => (
+              <li
+                key={text}
+                className="auth-rise flex items-baseline gap-4 border-b border-brand-ice/15 py-3.5"
+                style={rise(3 + i)}
+              >
+                <span className="auth-mono text-xs text-brand-cyan">0{i + 1}</span>
                 <span className="text-sm leading-6 text-brand-ice/90">{text}</span>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
-        <p className="relative text-xs text-brand-ice/60">
+
+        <p className="auth-mono relative text-[0.68rem] text-brand-ice/50">
           © {new Date().getFullYear()} Voltex SolTech
         </p>
       </aside>
