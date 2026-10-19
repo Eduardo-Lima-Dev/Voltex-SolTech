@@ -4,7 +4,7 @@
   "private": true,
   "description": "Testes ponta a ponta no navegador (Playwright) dos fluxos críticos da suíte",
   "scripts": {
-    "test": "playwright test --project=chromium",
+    "test:browser": "playwright test --project=chromium",
     "test:headed": "playwright test --project=chromium --headed",
     "jornada": "JORNADA=1 playwright test --project=jornada",
     "jornada:relatorio": "playwright show-report relatorio-jornada",
