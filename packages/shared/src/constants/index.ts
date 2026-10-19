@@ -1,6 +1,8 @@
 export * from './permissions.js';
 export * from './pipeline.js';
 export * from './opportunity-flow.js';
+export * from './homologation.js';
+export * from './contract-template.js';
 
 /** Portas e prefixos padrão usados em desenvolvimento. */
 export const API_PREFIX = '/api/v1';

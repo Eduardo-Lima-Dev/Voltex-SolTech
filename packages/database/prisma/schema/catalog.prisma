@@ -18,9 +18,11 @@ model Distributor {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  tariffs       Tariff[]
-  consumerUnits ConsumerUnit[]
+  tenant                 Tenant                  @relation(fields: [tenantId], references: [id])
+  tariffs                Tariff[]
+  consumerUnits          ConsumerUnit[]
+  homologationChecklists HomologationChecklist[]
+  projects               Project[]
 
   @@unique([tenantId, name])
   @@index([tenantId])

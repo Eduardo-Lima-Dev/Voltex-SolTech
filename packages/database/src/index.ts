@@ -36,6 +36,11 @@ export type {
   ApprovalRequest,
   Proposal,
   ProposalSnapshot,
+  ContractTemplate,
+  Contract,
+  HomologationChecklist,
+  Project,
+  ProjectChecklistItem,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

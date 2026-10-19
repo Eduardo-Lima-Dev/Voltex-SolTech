@@ -241,6 +241,7 @@ export const TimelineEventType = {
   CONTRACT_GENERATED: 'CONTRACT_GENERATED',
   CONTRACT_SIGNED: 'CONTRACT_SIGNED',
   PROJECT_CREATED: 'PROJECT_CREATED',
+  PROJECT_STATUS_CHANGED: 'PROJECT_STATUS_CHANGED',
 } as const;
 export type TimelineEventType = (typeof TimelineEventType)[keyof typeof TimelineEventType];
 
@@ -273,3 +274,30 @@ export const GuardCheckSource = {
   FRESHNESS: 'FRESHNESS',
 } as const;
 export type GuardCheckSource = (typeof GuardCheckSource)[keyof typeof GuardCheckSource];
+
+// ---- Contrato, projeto e homologação (Fase 7C) ----
+
+export const ContractStatus = {
+  DRAFT: 'DRAFT',
+  SIGNED: 'SIGNED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus];
+
+/** Situação do projeto na homologação (solicitação de acesso à distribuidora). */
+export const ProjectStatus = {
+  DOCUMENTATION: 'DOCUMENTATION',
+  SUBMITTED: 'SUBMITTED',
+  INSPECTION: 'INSPECTION',
+  APPROVED: 'APPROVED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
+
+export const ChecklistItemStatus = {
+  PENDING: 'PENDING',
+  DONE: 'DONE',
+  WAIVED: 'WAIVED',
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+} as const;
+export type ChecklistItemStatus = (typeof ChecklistItemStatus)[keyof typeof ChecklistItemStatus];

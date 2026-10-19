@@ -34,6 +34,10 @@ export const ROUTES = {
   proposals: '/proposals',
   publicProposals: '/public/proposals',
   projects: '/projects',
+  contracts: '/contracts',
+  contractTemplate: '/contract-template',
+  homologationChecklists: '/homologation/checklists',
+  commercialDashboard: '/dashboard/commercial',
   energyBills: {
     parse: '/energy-bills/parse',
     validate: (id: string) => `/energy-bills/${id}/validate`,

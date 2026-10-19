@@ -196,6 +196,7 @@ model Proposal {
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
   opportunity Opportunity       @relation(fields: [opportunityId], references: [id])
   snapshot    ProposalSnapshot?
+  contracts   Contract[]
 
   @@unique([opportunityId, version])
   @@index([tenantId, opportunityId])
