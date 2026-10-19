@@ -34,7 +34,12 @@ model ContractTemplate {
   tenantId    String   @map("tenant_id") @db.Uuid
   version     Int
   name        String
+  /// Texto do contrato (para modelos em Word: o texto extraído, usado na pré-visualização).
   body        String
+  /// `TEXT` (editado no sistema) ou `DOCX` (arquivo Word enviado pela empresa).
+  kind        String   @default("TEXT")
+  documentId  String?  @map("document_id") @db.Uuid
+  fileName    String?  @map("file_name")
   createdById String?  @map("created_by_id") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -63,7 +68,9 @@ model Contract {
   variables         Json
   missingVariables  Json           @map("missing_variables")
   valueCents        Int            @map("value_cents")
+  /// Arquivo gerado (PDF, ou Word quando o modelo da empresa é um .docx).
   pdfDocumentId     String?        @map("pdf_document_id") @db.Uuid
+  fileKind          String         @default("PDF") @map("file_kind")
   signedDocumentId  String?        @map("signed_document_id") @db.Uuid
   signedAt          DateTime?      @map("signed_at")
   signedByName      String?        @map("signed_by_name")

@@ -33,6 +33,7 @@ import type { ProposalContent } from '../proposals/proposal-content';
 import { ProjectsService } from '../projects/projects.service';
 import { TimelineService } from '../support/timeline.service';
 import { buildContractPdf } from './contract-pdf';
+import { DOCX_MIME, DocxTemplateError, inspectDocx, renderDocx } from './docx-template';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const money = (cents: number) => brl.format(cents / 100).replace(/\u00a0/g, ' ');
@@ -62,6 +63,8 @@ export class ContractsService {
       name: row?.name ?? 'Modelo-base (sem revisão jurídica)',
       body: row?.body ?? DEFAULT_CONTRACT_TEMPLATE,
       isDefault: !row,
+      kind: (row?.kind ?? 'TEXT') as 'TEXT' | 'DOCX',
+      fileName: row?.fileName ?? null,
       variables: [...CONTRACT_VARIABLES],
       createdAt: row?.createdAt.toISOString() ?? null,
     };
@@ -100,6 +103,82 @@ export class ContractsService {
       );
     });
     return this.getTemplate();
+  }
+
+  /** Modelo em Word enviado pela empresa: valida as variáveis e guarda o arquivo como nova versão do modelo. */
+  async uploadTemplate(
+    file: UploadedFile | undefined,
+    name: string | undefined,
+  ): Promise<ContractTemplateDto> {
+    if (!file) throw new BadRequestException('Envie o modelo no campo "file"');
+    if (file.mimetype !== DOCX_MIME && !/\.docx$/i.test(file.originalname))
+      throw new UnprocessableEntityException('O modelo precisa ser um arquivo do Word (.docx).');
+    let inspected: { text: string; variables: string[] };
+    try {
+      inspected = inspectDocx(file.buffer);
+    } catch (error) {
+      if (error instanceof DocxTemplateError)
+        throw new UnprocessableEntityException({
+          message: error.message,
+          code: 'INVALID_DOCX_TEMPLATE',
+        });
+      throw error;
+    }
+    const unknown = unknownTemplateVariables(inspected.text);
+    if (unknown.length)
+      throw new UnprocessableEntityException({
+        message: `Variáveis desconhecidas no modelo: ${unknown.map((u) => `{{${u}}}`).join(', ')}.`,
+        code: 'UNKNOWN_TEMPLATE_VARIABLES',
+        data: { unknown },
+      });
+    if (inspected.variables.length === 0)
+      throw new UnprocessableEntityException({
+        message:
+          'O modelo não usa nenhuma variável (como {{cliente.nome}}): o contrato sairia igual para todo cliente.',
+        code: 'NO_TEMPLATE_VARIABLES',
+      });
+    const document = await this.documents.upload(
+      { ...file, mimetype: DOCX_MIME },
+      { entityType: 'ContractTemplate', entityId: this.context.requireTenantId() },
+    );
+    await this.prisma.db.$transaction(async (tx) => {
+      const last = await tx.contractTemplate.findFirst({
+        orderBy: { version: 'desc' },
+        select: { version: true },
+      });
+      const created = await tx.contractTemplate.create({
+        data: {
+          tenantId: this.context.requireTenantId(),
+          version: (last?.version ?? 0) + 1,
+          name: name?.trim() || file.originalname.replace(/\.docx$/i, ''),
+          body: inspected.text,
+          kind: 'DOCX',
+          documentId: document.id,
+          fileName: file.originalname,
+          createdById: this.context.userId ?? null,
+        },
+      });
+      await this.audit.record(
+        {
+          action: 'contract_template.uploaded',
+          entity: 'ContractTemplate',
+          entityId: created.id,
+          after: {
+            version: created.version,
+            fileName: file.originalname,
+            variables: inspected.variables.length,
+          },
+        },
+        tx,
+      );
+    });
+    return this.getTemplate();
+  }
+
+  async templateFileUrl() {
+    const row = await this.prisma.db.contractTemplate.findFirst({ orderBy: { version: 'desc' } });
+    if (!row?.documentId) throw new NotFoundException('O modelo atual não é um arquivo enviado.');
+    return this.documents.downloadUrl(row.documentId);
   }
 
   // ---- Consulta ----
@@ -231,7 +310,20 @@ export class ContractsService {
       'proposta.versao': String(proposal.version),
       'proposta.observacoes': content.conditions.notes,
     };
-    const rendered = renderContractTemplate(template?.body ?? DEFAULT_CONTRACT_TEMPLATE, values);
+    // Modelo em Word: preenche o próprio arquivo (a formatação da empresa fica intacta) e gera um .docx.
+    let docx: ReturnType<typeof renderDocx> | null = null;
+    if (template?.kind === 'DOCX' && template.documentId) {
+      try {
+        docx = renderDocx((await this.documents.readContent(template.documentId)).buffer, values);
+      } catch (error) {
+        if (error instanceof DocxTemplateError)
+          throw new UnprocessableEntityException(error.message);
+        throw error;
+      }
+    }
+    const rendered = docx
+      ? { text: docx.text, missing: docx.missing }
+      : renderContractTemplate(template?.body ?? DEFAULT_CONTRACT_TEMPLATE, values);
 
     const row = await this.prisma.db.$transaction(async (tx) => {
       const last = await tx.contract.findFirst({
@@ -250,6 +342,7 @@ export class ContractsService {
           version: (last?.version ?? 0) + 1,
           templateVersion: template?.version ?? null,
           templateIsDefault: !template,
+          fileKind: docx ? 'DOCX' : 'PDF',
           body: rendered.text,
           variables: values as object,
           missingVariables: rendered.missing as object,
@@ -290,7 +383,7 @@ export class ContractsService {
       );
       return created;
     });
-    await this.attachPdf(row, opportunity.projectCode, tenant.name);
+    await this.attachFile(row, opportunity.projectCode, tenant.name, docx?.buffer ?? null);
     return this.get(row.id);
   }
 
@@ -418,19 +511,31 @@ export class ContractsService {
       null) as GenerationClass | null;
   }
 
-  private async attachPdf(row: Contract, projectCode: string, tenantName: string): Promise<void> {
+  /** Guarda o arquivo do contrato: o Word já preenchido (modelo enviado) ou o PDF gerado a partir do texto. */
+  private async attachFile(
+    row: Contract,
+    projectCode: string,
+    tenantName: string,
+    docx: Buffer | null,
+  ): Promise<void> {
     try {
-      const pdf = await buildContractPdf({
-        title: `Contrato — ${projectCode}`,
-        subtitle: tenantName,
-        body: row.body,
-      });
+      const file = docx
+        ? { name: `contrato-${projectCode}-v${row.version}.docx`, mime: DOCX_MIME, buffer: docx }
+        : {
+            name: `contrato-${projectCode}-v${row.version}.pdf`,
+            mime: 'application/pdf',
+            buffer: await buildContractPdf({
+              title: `Contrato — ${projectCode}`,
+              subtitle: tenantName,
+              body: row.body,
+            }),
+          };
       const document = await this.documents.upload(
         {
-          originalname: `contrato-${projectCode}-v${row.version}.pdf`,
-          mimetype: 'application/pdf',
-          buffer: pdf,
-          size: pdf.length,
+          originalname: file.name,
+          mimetype: file.mime,
+          buffer: file.buffer,
+          size: file.buffer.length,
         },
         { entityType: 'Contract', entityId: row.id },
       );
@@ -439,7 +544,7 @@ export class ContractsService {
         data: { pdfDocumentId: document.id },
       });
     } catch (error) {
-      this.logger.error({ err: error, contractId: row.id }, 'Falha ao gerar o PDF do contrato');
+      this.logger.error({ err: error, contractId: row.id }, 'Falha ao gerar o arquivo do contrato');
     }
   }
 
@@ -464,6 +569,7 @@ export class ContractsService {
       missingVariables: row.missingVariables as unknown as string[],
       valueCents: row.valueCents,
       pdfDocumentId: row.pdfDocumentId,
+      fileKind: (row.fileKind === 'DOCX' ? 'DOCX' : 'PDF') as 'PDF' | 'DOCX',
       signedDocumentId: row.signedDocumentId,
       signedAt: row.signedAt?.toISOString() ?? null,
       signedByName: row.signedByName,

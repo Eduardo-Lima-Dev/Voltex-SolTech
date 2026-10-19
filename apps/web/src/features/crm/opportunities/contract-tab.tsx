@@ -395,7 +395,7 @@ export function ContractTab({
                     variant="outline"
                     onClick={() => download.mutate({ contract, signed: false })}
                   >
-                    <Download /> PDF
+                    <Download /> {contract.fileKind === 'DOCX' ? 'Word' : 'PDF'}
                   </Button>
                 ) : null}
                 {contract.signedDocumentId ? (

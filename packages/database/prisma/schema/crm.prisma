@@ -137,6 +137,8 @@ model Lead {
   firstContactAt         DateTime?        @map("first_contact_at")
   /// Quando o alerta de SLA estourado foi emitido (evita repetir).
   slaAlertedAt           DateTime?        @map("sla_alerted_at")
+  /// Dados pessoais eliminados (LGPD): o registro fica para as estatísticas, sem identificar ninguém.
+  anonymizedAt           DateTime?        @map("anonymized_at")
   disqualifiedReason     String?          @map("disqualified_reason")
   convertedAccountId     String?          @map("converted_account_id") @db.Uuid
   convertedOpportunityId String?          @map("converted_opportunity_id") @db.Uuid
@@ -165,6 +167,7 @@ model Account {
   email              String?
   phone              String?
   notes              String?
+  anonymizedAt       DateTime?        @map("anonymized_at")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
   deletedAt          DateTime?        @map("deleted_at")

@@ -79,6 +79,7 @@ model Tenant {
   homologationChecklists HomologationChecklist[]
   projects               Project[]
   projectChecklistItems  ProjectChecklistItem[]
+  privacyRequests        PrivacyRequest[]
 
   @@map("tenants")
 }

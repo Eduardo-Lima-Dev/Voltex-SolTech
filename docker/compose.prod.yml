@@ -97,6 +97,7 @@ services:
       NODE_ENV: production
       TRUST_PROXY: 1
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?defina DATA_ENCRYPTION_KEY (openssl rand -base64 32) e guarde uma cópia fora do servidor}
+      DATA_ENCRYPTION_KEY_PREVIOUS: ${DATA_ENCRYPTION_KEY_PREVIOUS:-}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET com 32 ou mais caracteres aleatórios}
@@ -106,6 +107,7 @@ services:
       S3_BUCKET: ${S3_BUCKET:-voltex-documents}
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_SERVER_SIDE_ENCRYPTION: ${S3_SERVER_SIDE_ENCRYPTION:-none}
       # Endereço público da suíte (links de convite e de proposta). A API responde no mesmo domínio, sob /api.
       WEB_URL: ${WEB_URL:?defina WEB_URL com o endereço público, por exemplo https://app.suaempresa.com.br}
       CORS_ORIGIN: ${WEB_URL}

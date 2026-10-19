@@ -23,6 +23,9 @@
 | `JWT_SECRET` / `JWT_REFRESH_SECRET`                       | Assinatura dos tokens                                         | valores de dev — **trocar**                                   |
 | `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL`                      | Validade dos tokens                                           | `15m` / `7d`                                                  |
 | `DATA_ENCRYPTION_KEY`                                     | Chave-mestra (32 bytes, base64) dos CPF/CNPJ cifrados         | chave de dev embutida — **obrigatória e própria em produção** |
+| `DATA_ENCRYPTION_KEY_PREVIOUS`                            | Chaves anteriores (vírgula), só no rodízio                    | vazio                                                         |
+| `S3_SERVER_SIDE_ENCRYPTION`                               | `AES256` pede cifra dos arquivos ao armazenamento             | `none`                                                        |
+| `AUTOMATION_RETENTION_INTERVAL_MS`                        | Rotina diária da política de retenção (0 desliga)             | `86400000`                                                    |
 | `TRUST_PROXY`                                             | Proxies confiáveis na frente da API (nginx = 1)               | `0`                                                           |
 | `AUTOMATION_SCAN_INTERVAL_MS` / `AUTOMATION_QUEUE_PREFIX` | Varredura das automações do CRM (0 desliga) e prefixo da fila | `60000` / `voltex`                                            |
 | `SEED_PASSWORD`                                           | Senha dos usuários do seed (só dev)                           | `Voltex@2026`                                                 |

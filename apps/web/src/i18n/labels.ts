@@ -153,6 +153,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   Contract: 'Contrato',
   ContractTemplate: 'Modelo de contrato',
   Project: 'Projeto',
+  PrivacyRequest: 'Pedido de eliminação de dados',
   HomologationChecklist: 'Regras de homologação',
 };
 
@@ -238,6 +239,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'proposal.accepted': 'Proposta aceita pelo cliente',
   'branding.updated': 'Identidade visual atualizada',
   'tenant.exported': 'Dados da empresa exportados',
+  'privacy.retention_updated': 'Prazos de guarda alterados',
+  'privacy.erasure_completed': 'Dados pessoais eliminados',
+  'privacy.erasure_blocked': 'Pedido de eliminação bloqueado por prazo legal ou negócio aberto',
   'contract.generated': 'Contrato gerado',
   'contract.cancelled': 'Contrato cancelado',
   'contract.signed': 'Contrato assinado',

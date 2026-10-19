@@ -648,6 +648,7 @@ export const makeContract = (overrides: Partial<ContractDto> = {}): ContractDto 
   missingVariables: [],
   valueCents: 1_980_000,
   pdfDocumentId: 'doc-c1',
+  fileKind: 'PDF',
   signedDocumentId: null,
   signedAt: null,
   signedByName: null,

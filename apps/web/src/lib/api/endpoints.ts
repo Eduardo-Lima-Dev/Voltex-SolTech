@@ -10,6 +10,10 @@ import type {
 import {
   ROUTES,
   type AcceptProposalInput,
+  type CreateErasureInput,
+  type PrivacyRequestDto,
+  type RetentionPolicyDto,
+  type RetentionPolicyInput,
   type CancelContractInput,
   type ChangeProjectStatusInput,
   type CommercialDashboardDto,
@@ -325,6 +329,14 @@ export function createEndpoints(client: ApiClient) {
     },
     contracts: {
       template: () => client.get<ContractTemplateDto>(ROUTES.contractTemplate),
+      uploadTemplate: (file: File, name?: string) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (name) form.append('name', name);
+        return client.upload<ContractTemplateDto>(`${ROUTES.contractTemplate}/upload`, form);
+      },
+      templateFileUrl: () =>
+        client.get<{ url: string; expiresIn: number }>(`${ROUTES.contractTemplate}/file-url`),
       saveTemplate: (input: UpdateContractTemplateInput) =>
         client.put<ContractTemplateDto>(ROUTES.contractTemplate, input),
       list: (opportunityId: string) =>
@@ -410,6 +422,17 @@ export function createEndpoints(client: ApiClient) {
         }),
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
+    },
+    privacy: {
+      policy: () => client.get<RetentionPolicyDto>(`${ROUTES.privacy}/retention`),
+      updatePolicy: (input: RetentionPolicyInput) =>
+        client.put<RetentionPolicyDto>(`${ROUTES.privacy}/retention`, input),
+      erasures: (query: { page?: number; pageSize?: number } = {}) =>
+        client.get<Paginated<PrivacyRequestDto>>(`${ROUTES.privacy}/erasures`, {
+          query: query as QueryParams,
+        }),
+      erase: (input: CreateErasureInput) =>
+        client.post<PrivacyRequestDto>(`${ROUTES.privacy}/erasures`, input),
     },
     documents: {
       upload: (file: File, target?: { entityType?: string; entityId?: string }) => {

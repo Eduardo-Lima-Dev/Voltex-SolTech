@@ -5,3 +5,4 @@ export * from './platform.js';
 export * from './calculator.js';
 export * from './commercial.js';
 export * from './delivery.js';
+export * from './privacy.js';

@@ -1,20 +1,28 @@
 import type { RequestContext } from '../../common/context/request-context';
 import {
   blindIndex,
+  blindIndexes,
   decryptField,
-  deriveTenantKeys,
   encryptField,
   isEncrypted,
-  type TenantKeys,
+  type Keyring,
 } from '../crypto/field-crypto';
 
-/** Campos pessoais protegidos: cifrados no banco, com índice cego para busca por igualdade. */
-const PROTECTED: Record<string, { encrypted: string[]; blind: string[] }> = {
-  Account: { encrypted: ['document'], blind: ['documentNormalized'] },
-  Lead: { encrypted: ['document'], blind: ['documentNormalized'] },
-  Proposal: { encrypted: ['acceptedByDocument'], blind: [] },
+/**
+ * Campos pessoais protegidos: cifrados no banco, com índice cego para busca por igualdade.
+ *  - `encrypted`: texto cifrado na gravação e decifrado na leitura.
+ *  - `blind`: índice cego (HMAC) calculado a partir do valor normalizado.
+ *  - `json`: campo JSON cujo conteúdo inteiro é guardado cifrado (como texto) e devolvido já como objeto.
+ */
+const PROTECTED: Record<string, { encrypted: string[]; blind: string[]; json: string[] }> = {
+  Account: { encrypted: ['document'], blind: ['documentNormalized'], json: [] },
+  Lead: { encrypted: ['document'], blind: ['documentNormalized'], json: [] },
+  Proposal: { encrypted: ['acceptedByDocument'], blind: [], json: [] },
+  // O texto do contrato e as variáveis preenchidas trazem nome, CPF/CNPJ e endereço do cliente.
+  Contract: { encrypted: ['body'], blind: [], json: ['variables'] },
 };
-const DECRYPT_KEYS = new Set(['document', 'acceptedByDocument']);
+const REVEAL_TEXT = new Set(['document', 'acceptedByDocument', 'body']);
+const REVEAL_JSON = new Set(['variables']);
 const WRITE_OPERATIONS = new Set([
   'create',
   'createMany',
@@ -29,19 +37,8 @@ type Json = Record<string, unknown>;
 const isObject = (value: unknown): value is Json =>
   typeof value === 'object' && value !== null && !(value instanceof Date);
 
-/** Sem a chave-mestra o servidor nem sobe (validado em `env.ts`); aqui ela já vem decodificada. */
-export function createFieldEncryption(master: Buffer, context: RequestContext) {
-  const keysCache = new Map<string, TenantKeys>();
-  const keysFor = (): TenantKeys => {
-    const tenantId = context.requireTenantId();
-    let keys = keysCache.get(tenantId);
-    if (!keys) {
-      keys = deriveTenantKeys(master, tenantId);
-      keysCache.set(tenantId, keys);
-    }
-    return keys;
-  };
-
+/** O servidor só sobe com o conjunto de chaves válido (validado em `env.ts`). */
+export function createFieldEncryption(ring: Keyring, context: RequestContext) {
   const protectValue = (value: unknown, fn: (v: string) => string): unknown => {
     if (typeof value === 'string') return fn(value);
     // `{ set: "..." }` em atualizações.
@@ -54,34 +51,46 @@ export function createFieldEncryption(master: Buffer, context: RequestContext) {
     if (!config || data === undefined) return data;
     if (Array.isArray(data)) return data.map((item) => protectData(model, item));
     if (!isObject(data)) return data;
-    const keys = keysFor();
+    const tenantId = context.requireTenantId();
     const out: Json = { ...data };
     for (const field of config.encrypted)
-      if (field in out) out[field] = protectValue(out[field], (v) => encryptField(v, keys));
+      if (field in out)
+        out[field] = protectValue(out[field], (v) => encryptField(v, ring, tenantId));
     for (const field of config.blind)
-      if (field in out) out[field] = protectValue(out[field], (v) => blindIndex(v, keys));
+      if (field in out) out[field] = protectValue(out[field], (v) => blindIndex(v, ring, tenantId));
+    for (const field of config.json)
+      if (
+        field in out &&
+        out[field] !== null &&
+        out[field] !== undefined &&
+        typeof out[field] !== 'string'
+      )
+        out[field] = encryptField(JSON.stringify(out[field]), ring, tenantId);
     return out;
   };
 
-  /** Filtros por `documentNormalized` viram filtros pelo índice cego; só igualdade (não há busca parcial). */
+  /** Filtros por `documentNormalized` viram filtros pelos índices cegos (de todas as chaves); só igualdade. */
   const protectWhere = (where: unknown): unknown => {
     if (Array.isArray(where)) return where.map(protectWhere);
     if (!isObject(where)) return where;
     const out: Json = {};
     for (const [key, value] of Object.entries(where)) {
       if (key === 'documentNormalized') {
-        const keys = keysFor();
-        const toIndex = (v: unknown) => (typeof v === 'string' ? blindIndex(v, keys) : v);
-        if (typeof value === 'string') out[key] = toIndex(value);
+        const tenantId = context.requireTenantId();
+        const indexes = (v: unknown): string[] =>
+          typeof v === 'string' ? blindIndexes(v, ring, tenantId) : [];
+        if (typeof value === 'string') out[key] = { in: indexes(value) };
         else if (isObject(value)) {
           const next: Json = {};
           for (const [op, operand] of Object.entries(value)) {
-            if (op === 'equals') next[op] = toIndex(operand);
-            else if (op === 'in' || op === 'notIn') next[op] = (operand as unknown[]).map(toIndex);
+            if (op === 'equals') next.in = indexes(operand);
+            else if (op === 'in') next.in = (operand as unknown[]).flatMap(indexes);
+            else if (op === 'notIn') next.notIn = (operand as unknown[]).flatMap(indexes);
             else if (op === 'not')
-              next[op] = isObject(operand)
-                ? protectWhere({ documentNormalized: operand })
-                : toIndex(operand);
+              next.notIn =
+                isObject(operand) && 'equals' in operand
+                  ? indexes(operand.equals)
+                  : indexes(operand);
             else
               throw new Error(
                 `Busca "${op}" em documentNormalized não é suportada: o documento é cifrado (só igualdade).`,
@@ -99,8 +108,10 @@ export function createFieldEncryption(master: Buffer, context: RequestContext) {
     if (!isObject(result)) return result;
     const out: Json = {};
     for (const [key, value] of Object.entries(result)) {
-      if (DECRYPT_KEYS.has(key) && typeof value === 'string' && isEncrypted(value))
-        out[key] = decryptField(value, keysFor());
+      if (REVEAL_TEXT.has(key) && typeof value === 'string' && isEncrypted(value))
+        out[key] = decryptField(value, ring, context.requireTenantId());
+      else if (REVEAL_JSON.has(key) && typeof value === 'string' && isEncrypted(value))
+        out[key] = JSON.parse(decryptField(value, ring, context.requireTenantId()));
       else out[key] = Array.isArray(value) || isObject(value) ? revealResult(value) : value;
     }
     return out;

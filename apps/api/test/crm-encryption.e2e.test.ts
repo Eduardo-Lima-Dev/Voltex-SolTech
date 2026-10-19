@@ -45,7 +45,7 @@ describe('Documentos pessoais cifrados (e2e)', () => {
     expect((await get(`/accounts/${res.body.id}`, seller)).body.document).toBe(CPF);
 
     const raw = await t.prisma.system.account.findUniqueOrThrow({ where: { id: res.body.id } });
-    expect(raw.document).toMatch(/^enc:v1:/);
+    expect(raw.document).toMatch(/^enc:v2:/);
     expect(raw.document).not.toContain('123');
     expect(raw.documentNormalized).toMatch(/^bi1:[0-9a-f]{64}$/);
     expect(raw.documentNormalized).not.toContain(DIGITS);
@@ -77,7 +77,7 @@ describe('Documentos pessoais cifrados (e2e)', () => {
     expect(upd.status).toBe(200);
     expect(upd.body.document).toBe('529.982.247-25');
     const raw = await t.prisma.system.account.findUniqueOrThrow({ where: { id: acc.id } });
-    expect(raw.document).toMatch(/^enc:v1:/);
+    expect(raw.document).toMatch(/^enc:v2:/);
     expect((await post('/accounts', seller, { name: 'Dup', document: '52998224725' })).status).toBe(
       409,
     );
@@ -114,7 +114,7 @@ describe('Documentos pessoais cifrados (e2e)', () => {
     expect(lead.status).toBe(201);
     expect(lead.body.document).toBe('24843803480');
     const raw = await t.prisma.system.lead.findUniqueOrThrow({ where: { id: lead.body.id } });
-    expect(raw.document).toMatch(/^enc:v1:/);
+    expect(raw.document).toMatch(/^enc:v2:/);
     expect(raw.documentNormalized).toMatch(/^bi1:/);
     const dup = await post('/leads', seller, { name: 'Outro Lead', document: '248.438.034-80' });
     expect(dup.status).toBe(409);
@@ -163,7 +163,125 @@ describe('Documentos pessoais cifrados (e2e)', () => {
     const raw = await t.prisma.system.proposal.findUniqueOrThrow({
       where: { id: deal.proposalId },
     });
-    expect(raw.acceptedByDocument).toMatch(/^enc:v1:/);
+    expect(raw.acceptedByDocument).toMatch(/^enc:v2:/);
     expect(raw.acceptedByDocument).not.toContain('529');
   });
 });
+
+describe('Texto do contrato cifrado e rodízio de chave (e2e)', () => {
+  let t: TestApp;
+  let a: SeededTenant;
+  let seller: string;
+  let manager: string;
+
+  const post = (path: string, token: string, body: unknown = {}) =>
+    t.http
+      .post(`${API}${path}`)
+      .set(bearer(token))
+      .send(body as object);
+
+  beforeAll(async () => {
+    t = await createTestApp();
+    a = await seedTenant(t.prisma, 'rotate');
+    seller = await tokenFor(t.http, a.salesperson);
+    manager = await tokenFor(t.http, a.manager);
+  });
+  afterAll(() => t.close());
+
+  it('o contrato é lido em claro pela API, mas o banco guarda texto e variáveis cifrados', async () => {
+    const flow = { t, tenant: a, seller, admin: await tokenFor(t.http, a.admin) };
+    await ensureMarginPolicy(flow, manager);
+    const deal = await acceptedDeal(flow, { name: 'Cliente do Contrato Cifrado' });
+    const res = await post(`/opportunities/${deal.opportunityId}/contracts`, manager, {
+      customerDocument: '529.982.247-25',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.body).toContain('529.982.247-25');
+    expect(res.body.body).toContain('Cliente do Contrato Cifrado');
+    const raw = await t.prisma.system.contract.findUniqueOrThrow({ where: { id: res.body.id } });
+    expect(raw.body).toMatch(/^enc:v2:/);
+    expect(raw.body).not.toContain('529.982.247-25');
+    expect(typeof raw.variables).toBe('string');
+    expect(raw.variables as string).toMatch(/^enc:v2:/);
+    // O PDF gerado e a leitura seguinte continuam funcionando.
+    expect(
+      (await t.http.get(`${API}/contracts/${res.body.id}`).set(bearer(manager))).body.body,
+    ).toContain('529.982.247-25');
+    expect(res.body.pdfDocumentId).toBeTruthy();
+  });
+
+  it('rodízio: recifra tudo com a chave nova, refaz os índices, é idempotente e não abre brecha na imutabilidade', async () => {
+    const { createKeyring, decryptField, blindIndex, isEncryptedWithCurrent } =
+      await import('../src/platform/crypto/field-crypto');
+    const { DEV_DATA_ENCRYPTION_KEY } = await import('../src/config/env');
+    const { reprotectAll } = await import('../src/cli/reprotect');
+    const sys = t.prisma.system;
+
+    const flow = { t, tenant: a, seller, admin: await tokenFor(t.http, a.admin) };
+    await post('/accounts', seller, { name: 'Conta do rodízio', document: '390.533.447-05' });
+    const deal = await acceptedDeal(flow, { name: 'Cliente Rodízio' });
+    const contract = (await post(`/opportunities/${deal.opportunityId}/contracts`, manager, {}))
+      .body;
+    // Dado antigo em TEXTO (anterior à criptografia), gravado direto, sem a extensão.
+    const legacy = await sys.account.create({
+      data: {
+        tenantId: a.id,
+        name: 'Legado em texto',
+        document: '248.438.034-80',
+        documentNormalized: '24843803480',
+      },
+    });
+
+    const newKey = randomKey();
+    const ring = createKeyring(newKey, DEV_DATA_ENCRYPTION_KEY);
+    try {
+      const first = await reprotectAll(sys, ring);
+      expect(first.accounts).toBeGreaterThanOrEqual(2);
+      expect(first.contracts).toBeGreaterThanOrEqual(1);
+
+      const accounts = await sys.account.findMany({
+        where: { tenantId: a.id, document: { not: null } },
+      });
+      for (const acc of accounts) {
+        expect(isEncryptedWithCurrent(acc.document as string, ring)).toBe(true);
+        const plain = decryptField(acc.document as string, ring, a.id);
+        expect(acc.documentNormalized).toBe(blindIndex(plain.replace(/\D/g, ''), ring, a.id));
+      }
+      expect(
+        decryptField(
+          (await sys.account.findUniqueOrThrow({ where: { id: legacy.id } })).document as string,
+          ring,
+          a.id,
+        ),
+      ).toBe('248.438.034-80');
+      const rawContract = await sys.contract.findUniqueOrThrow({ where: { id: contract.id } });
+      expect(isEncryptedWithCurrent(rawContract.body, ring)).toBe(true);
+      expect(decryptField(rawContract.body, ring, a.id)).toContain('Cliente Rodízio');
+
+      // Segunda execução: nada a fazer.
+      expect(await reprotectAll(sys, ring)).toEqual({
+        accounts: 0,
+        leads: 0,
+        proposals: 0,
+        contracts: 0,
+      });
+
+      // O contrato continua imutável fora da manutenção.
+      await expect(
+        sys.contract.update({ where: { id: contract.id }, data: { body: 'adulterado' } }),
+      ).rejects.toThrow(/imutável/);
+    } finally {
+      // Volta para a chave de desenvolvimento, que é a que o app de teste usa.
+      await reprotectAll(sys, createKeyring(DEV_DATA_ENCRYPTION_KEY, newKey));
+    }
+    expect(
+      (await t.http.get(`${API}/contracts/${contract.id}`).set(bearer(manager))).body.body,
+    ).toContain('Cliente Rodízio');
+  });
+});
+
+function randomKey(): string {
+  return Buffer.from(Array.from({ length: 32 }, () => Math.floor(Math.random() * 256))).toString(
+    'base64',
+  );
+}

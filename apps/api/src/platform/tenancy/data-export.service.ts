@@ -53,6 +53,7 @@ export class DataExportService {
       db.project.findMany(),
       db.projectChecklistItem.findMany(),
       db.document.findMany(),
+      db.privacyRequest.findMany(),
     ]);
     const [
       branches,
@@ -82,6 +83,7 @@ export class DataExportService {
       projects,
       projectChecklistItems,
       documents,
+      privacyRequests,
     ] = rest;
 
     await this.audit.record({
@@ -132,6 +134,7 @@ export class DataExportService {
       projects,
       projectChecklistItems,
       documents,
+      privacyRequests,
     };
   }
 }

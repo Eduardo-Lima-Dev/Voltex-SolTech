@@ -301,3 +301,17 @@ export const ChecklistItemStatus = {
   NOT_APPLICABLE: 'NOT_APPLICABLE',
 } as const;
 export type ChecklistItemStatus = (typeof ChecklistItemStatus)[keyof typeof ChecklistItemStatus];
+
+// ---- Privacidade (LGPD) ----
+
+export const PrivacySubjectType = {
+  LEAD: 'LEAD',
+  ACCOUNT: 'ACCOUNT',
+} as const;
+export type PrivacySubjectType = (typeof PrivacySubjectType)[keyof typeof PrivacySubjectType];
+
+export const PrivacyRequestStatus = {
+  COMPLETED: 'COMPLETED',
+  BLOCKED: 'BLOCKED',
+} as const;
+export type PrivacyRequestStatus = (typeof PrivacyRequestStatus)[keyof typeof PrivacyRequestStatus];
