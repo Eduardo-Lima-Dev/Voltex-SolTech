@@ -12,7 +12,7 @@
 #   LEAD_KEY        (site) chave de captação de leads (CRM → Leads → "Receber contatos do seu site")
 #   VERCEL_TOKEN    (opcional) token da Vercel, no lugar do login interativo (`npx vercel login`)
 #   VERCEL_SCOPE    (opcional) equipe/conta da Vercel (ex.: luizeduardobls-projects)
-# --so-preparar    compila e monta a pasta (.deploy/...), mas NÃO envia nada: para conferir antes.
+# --so-preparar    compila e monta a pasta (em /tmp/voltex-deploy/...), mas NÃO envia nada: para conferir antes.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -20,7 +20,9 @@ alvo="${1:-}"; api_host="${2:-}"; modo="${3:-}"
 [[ "$alvo" == "app" || "$alvo" == "site" ]] || { sed -n '2,15p' "$0"; exit 1; }
 [[ -n "$api_host" && "$api_host" != http* ]] || { echo "Erro: informe o host da API sem https:// (ex.: voltex-api.onrender.com)." >&2; exit 1; }
 
-pasta=".deploy/voltex-$alvo"
+# Fora do repositório de propósito: se a pasta ficar dentro de um repositório Git, a Vercel conecta o projeto a ele
+# sozinha e passa a tentar compilar o monorepo a cada push (e falha).
+pasta="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/voltex-deploy/voltex-$alvo"
 rm -rf "$pasta" && mkdir -p "$pasta"
 
 if [[ "$alvo" == "app" ]]; then
