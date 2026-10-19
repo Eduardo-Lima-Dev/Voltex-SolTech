@@ -228,7 +228,7 @@ describe('Administração → Tarifas → importar da ANEEL', () => {
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Importar agora' }),
     );
-    expect(await screen.findByText(/O servidor encontrou um problema/)).toBeInTheDocument();
+    expect(await screen.findByText(/O sistema encontrou um problema/)).toBeInTheDocument();
     expect(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Importar agora' }),
     ).toBeEnabled();
@@ -315,10 +315,10 @@ describe('Administração → Irradiação', () => {
     );
     renderApp('/admin/irradiacao');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /Importar CSV/ }));
+    await user.click(await screen.findByRole('button', { name: /Importar planilha/ }));
     const dialog = await screen.findByRole('dialog');
     const csv = `${HEADER}\nNatal;RN;;;SunData;;${months('5,7')}\nRecife;PE;;;SunData;;${months('5,4')}`;
-    await user.upload(within(dialog).getByLabelText('Arquivo CSV'), csvFile(csv));
+    await user.upload(within(dialog).getByLabelText('Arquivo da planilha (CSV)'), csvFile(csv));
     expect(await within(dialog).findByText(/2 local\(is\) válido\(s\)/)).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Importar 2' }));
     await waitFor(() => expect(body).toBeDefined());
@@ -330,10 +330,10 @@ describe('Administração → Irradiação', () => {
     server.use(http.get(`${API}/solar-resources`, () => HttpResponse.json(page([]))));
     renderApp('/admin/irradiacao');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /Importar CSV/ }));
+    await user.click(await screen.findByRole('button', { name: /Importar planilha/ }));
     const dialog = await screen.findByRole('dialog');
     await user.upload(
-      within(dialog).getByLabelText('Arquivo CSV'),
+      within(dialog).getByLabelText('Arquivo da planilha (CSV)'),
       csvFile(`${HEADER}\nNatal;RN;;;;;${months('5')}\nRecife;PE;;;SunData;;${months('5')}`),
     );
     expect(await within(dialog).findByText(/Linha 2 \(Natal\): fonte/)).toBeInTheDocument();
@@ -365,7 +365,7 @@ describe('Administração → Irradiação', () => {
     URL.revokeObjectURL = () => undefined;
     renderApp('/admin/irradiacao');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /Importar CSV/ }));
+    await user.click(await screen.findByRole('button', { name: /Importar planilha/ }));
     await user.click(await screen.findByRole('button', { name: /Baixar modelo/ }));
   });
 });
@@ -408,8 +408,8 @@ describe('Administração → Regras', () => {
       http.get(`${API}/rules`, () => HttpResponse.json([])),
     );
     renderApp('/admin/regras');
-    expect(await screen.findByText('builtin@1')).toBeInTheDocument();
-    expect(screen.getByText(/Padrão do produto/)).toBeInTheDocument();
+    expect(await screen.findByText('Padrão do sistema')).toBeInTheDocument();
+    expect(screen.getByText(/ainda não ativou regras próprias/)).toBeInTheDocument();
     expect(screen.getByText('Limite da microgeração')).toBeInTheDocument();
     expect(screen.getByText(/75 kW/)).toBeInTheDocument();
     expect(screen.getByText('Livro técnico')).toBeInTheDocument();
@@ -455,7 +455,7 @@ describe('Administração → Regras', () => {
       http.get(`${API}/rules`, () => HttpResponse.json([])),
     );
     renderApp('/admin/regras', { session: makeSession('ENGINEERING') });
-    expect(await screen.findByText('builtin@1')).toBeInTheDocument();
+    expect(await screen.findByText('Padrão do sistema')).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Seções da administração' });
     expect(within(nav).getByRole('link', { name: /Regras/ })).toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: /Tarifas/ })).not.toBeInTheDocument();

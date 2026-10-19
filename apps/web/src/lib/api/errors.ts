@@ -35,9 +35,9 @@ export function errorMessage(
 ): string {
   if (isApiError(error)) {
     if (error.isNetworkError)
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+      return 'Não foi possível conectar ao sistema. Verifique sua conexão com a internet.';
     if (error.status >= 500)
-      return 'O servidor encontrou um problema. Tente novamente em instantes.';
+      return 'O sistema encontrou um problema. Tente novamente em instantes.';
     return error.message || fallback;
   }
   return fallback;

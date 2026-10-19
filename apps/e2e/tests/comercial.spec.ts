@@ -174,7 +174,7 @@ test.describe('Do contrato à homologação', () => {
     await dialog.getByRole('button', { name: 'Confirmar assinatura' }).click();
     await page.getByRole('link', { name: 'Abrir o projeto' }).click();
 
-    // Projeto com o mesmo Project ID e o checklist da base (com a fonte de cada item).
+    // Projeto com o mesmo código do projeto e o checklist da base (com a fonte de cada item).
     await expect(page.getByRole('heading', { name: 'Checklist de documentos' })).toBeVisible();
     await expect(page.getByText(opp.projectCode).first()).toBeVisible();
     await expect(page.getByText(/EnergIF 2023, EF-R04/).first()).toBeVisible();

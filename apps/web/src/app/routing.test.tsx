@@ -146,11 +146,9 @@ describe('permissões nas rotas', () => {
 });
 
 describe('painel inicial', () => {
-  it('mostra os 4 produtos; o card de status dos serviços aparece só para quem administra a empresa', async () => {
-    server.use(healthOk);
+  it('mostra os 4 produtos e NUNCA o status técnico dos serviços (isso é do dono da plataforma, não da empresa)', async () => {
     renderApp('/');
-    expect(await screen.findByText('Status dos serviços')).toBeInTheDocument();
-    expect(await screen.findAllByText('Operando')).toHaveLength(3);
+    await screen.findByRole('heading', { name: /Olá, Eduardo/ });
     for (const name of [
       'CRM Solar',
       'Solar Calculator',
@@ -159,34 +157,15 @@ describe('painel inicial', () => {
     ]) {
       expect(screen.getAllByText(name).length).toBeGreaterThan(0);
     }
+    expect(
+      screen.queryByText(/Status dos serviços|Banco de dados|Redis|Armazenamento/),
+    ).not.toBeInTheDocument();
   });
 
-  it('vendedor não vê o status dos serviços e vê Engine/Off-Grid como "Sem acesso"', async () => {
+  it('vendedor vê Engine/Off-Grid como "Sem acesso"', async () => {
     renderApp('/', { session: makeSession('SALESPERSON') });
     await screen.findByRole('heading', { name: /Olá, Eduardo/ });
-    expect(screen.queryByText('Status dos serviços')).not.toBeInTheDocument();
     expect(screen.getAllByText('Sem acesso')).toHaveLength(2);
-  });
-
-  it('sinaliza serviço fora do ar', async () => {
-    server.use(
-      http.get(`${API}/health`, () =>
-        HttpResponse.json(
-          {
-            status: 'degraded',
-            uptimeSeconds: 1,
-            checks: {
-              database: { status: 'up', latencyMs: 1 },
-              redis: { status: 'down', latencyMs: 2000, error: 'timeout' },
-              storage: { status: 'up', latencyMs: 1 },
-            },
-          },
-          { status: 503 },
-        ),
-      ),
-    );
-    renderApp('/');
-    expect(await screen.findByText('Não foi possível consultar o status.')).toBeInTheDocument();
   });
 });
 

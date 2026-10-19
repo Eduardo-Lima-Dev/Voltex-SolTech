@@ -388,10 +388,10 @@ describe('CRM · Leads', () => {
       );
       renderApp('/crm/leads');
       const user = userEvent.setup();
-      await user.click(await screen.findByRole('button', { name: /Importar CSV/ }));
+      await user.click(await screen.findByRole('button', { name: /Importar planilha/ }));
       const dialog = await screen.findByRole('dialog');
       await user.upload(
-        within(dialog).getByLabelText('Arquivo CSV'),
+        within(dialog).getByLabelText('Arquivo da planilha (CSV)'),
         fileOf('nome;telefone\nNovo Lead;(85) 98888-1111\nRepetido;(85) 98888-7777'),
       );
       expect(await within(dialog).findByText(/2 lead\(s\) válido\(s\)/)).toBeInTheDocument();
@@ -408,10 +408,10 @@ describe('CRM · Leads', () => {
       server.use(leadsHandler([]), captureHandler());
       renderApp('/crm/leads');
       const user = userEvent.setup();
-      await user.click(await screen.findByRole('button', { name: /Importar CSV/ }));
+      await user.click(await screen.findByRole('button', { name: /Importar planilha/ }));
       const dialog = await screen.findByRole('dialog');
       await user.upload(
-        within(dialog).getByLabelText('Arquivo CSV'),
+        within(dialog).getByLabelText('Arquivo da planilha (CSV)'),
         fileOf('nome;email\nOk Um;ok@ok.com\nX;\nOk Dois;ruim'),
       );
       expect(
@@ -423,7 +423,7 @@ describe('CRM · Leads', () => {
   });
 
   describe('captação pública', () => {
-    it('quem gerencia a empresa vê o endereço, copia e troca a chave com confirmação', async () => {
+    it('quem gerencia a empresa copia as instruções para o site e gera novo endereço com confirmação', async () => {
       let rotated = false;
       server.use(
         leadsHandler([]),
@@ -439,10 +439,10 @@ describe('CRM · Leads', () => {
         /\/api\/v1\/public\/leads\/lk_chave_de_teste$/,
       );
       const user = userEvent.setup();
-      await user.click(screen.getByRole('button', { name: /Trocar chave/ }));
+      await user.click(screen.getByRole('button', { name: /Gerar novo endereço/ }));
       const confirm = await screen.findByRole('alertdialog');
-      expect(within(confirm).getByText(/deixa de funcionar imediatamente/)).toBeInTheDocument();
-      await user.click(within(confirm).getByRole('button', { name: 'Trocar chave' }));
+      expect(within(confirm).getByText(/deixa de funcionar na hora/)).toBeInTheDocument();
+      await user.click(within(confirm).getByRole('button', { name: 'Gerar novo endereço' }));
       await waitFor(() => expect(rotated).toBe(true));
     });
 
@@ -450,7 +450,7 @@ describe('CRM · Leads', () => {
       server.use(leadsHandler(people));
       renderApp('/crm/leads', { session: makeSession('SDR') });
       await screen.findByText('Maria Silva');
-      expect(screen.queryByText('Formulário de captação')).not.toBeInTheDocument();
+      expect(screen.queryByText('Receber contatos do seu site')).not.toBeInTheDocument();
     });
 
     it('com só a permissão de leitura não há ações de escrita', async () => {
@@ -458,7 +458,7 @@ describe('CRM · Leads', () => {
       renderApp('/crm/leads', { session: makeSession('SDR', { permissions: ['crm.lead.read'] }) });
       await screen.findByText('Maria Silva');
       expect(screen.queryByRole('button', { name: /Novo lead/ })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Importar CSV/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Importar planilha/ })).not.toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: 'Ações de Maria Silva' }),
       ).not.toBeInTheDocument();

@@ -248,8 +248,7 @@ export function GuardTab({ opportunityId, open }: { opportunityId: string; open:
           ) : null}
           <p className="text-xs text-muted-foreground">
             Avaliada em {formatDateTime(current.createdAt)}
-            {current.createdByName ? ` por ${current.createdByName}` : ''} ·{' '}
-            {current.algorithmVersion} · regras {current.ruleSetRef}
+            {current.createdByName ? ` por ${current.createdByName}` : ''}
           </p>
           {open && canRelease ? (
             <Can permission="crm.guard.review">

@@ -259,12 +259,12 @@ describe('CRM · Página da oportunidade', () => {
     return renderApp(`/crm/oportunidades/${opp.id}`, { session });
   };
 
-  it('mostra título, Project ID, conta e a etapa com o nome do tenant', async () => {
+  it('mostra título, código do projeto, conta e a etapa com o nome do tenant', async () => {
     open(makeOpportunity({ stage: 'QUOTING' }));
     expect(
       await screen.findByRole('heading', { name: 'Casa da Maria', level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.getByTitle('Project ID')).toHaveTextContent('VLX-7K3M9QX2');
+    expect(screen.getByTitle('Código do projeto')).toHaveTextContent('VLX-7K3M9QX2');
     expect(screen.getAllByRole('link', { name: 'Maria Silva' })[0]).toHaveAttribute(
       'href',
       '/crm/contas/acc-1',

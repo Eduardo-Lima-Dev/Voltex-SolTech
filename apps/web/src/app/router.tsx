@@ -285,7 +285,7 @@ const pageRoutes: RouteObject[] = [
                 path: 'snapshots/:snapshotId',
                 lazy: async () => {
                   const { SnapshotPage } = await import('@/features/calculator/detail-page');
-                  return { Component: SnapshotPage, handle: { title: 'Snapshot de cálculo' } };
+                  return { Component: SnapshotPage, handle: { title: 'Versão salva do cálculo' } };
                 },
               },
               {

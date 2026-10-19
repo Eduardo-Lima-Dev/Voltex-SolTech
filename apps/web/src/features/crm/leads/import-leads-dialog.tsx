@@ -76,7 +76,7 @@ export function ImportLeadsDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Importar leads (CSV)</DialogTitle>
+          <DialogTitle>Importar leads de uma planilha</DialogTitle>
           <DialogDescription>
             Colunas: nome (obrigatória), telefone, email, documento, segmento, cidade, uf, origem e
             observacoes. Leads que já existem (mesmo telefone, e-mail ou documento) são ignorados.
@@ -92,7 +92,7 @@ export function ImportLeadsDialog({
           >
             <Download /> Baixar modelo
           </Button>
-          <Field id="leads-file" label="Arquivo CSV">
+          <Field id="leads-file" label="Arquivo da planilha (CSV)">
             <Input
               id="leads-file"
               type="file"

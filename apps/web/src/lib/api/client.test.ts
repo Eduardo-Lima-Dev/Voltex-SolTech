@@ -115,7 +115,7 @@ describe('ApiClient — erros', () => {
     );
     const error = (await h.client.get('/x').catch((e: unknown) => e)) as ApiError;
     expect(error).toMatchObject({ status: 502, code: 'HTTP_ERROR' });
-    expect(errorMessage(error)).toMatch(/servidor/);
+    expect(errorMessage(error)).toMatch(/sistema/);
   });
 
   it('falha de rede vira ApiError status 0 com mensagem amigável', async () => {

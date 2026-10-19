@@ -222,8 +222,8 @@ function SignDialog({
           <DialogTitle>Registrar contrato assinado</DialogTitle>
           <DialogDescription>
             Anexe o arquivo digitalizado. Ao confirmar, a oportunidade vira <strong>Ganho</strong> e
-            o projeto de homologação é criado com o mesmo Project ID. Isso não pode ser desfeito
-            aqui.
+            o projeto de homologação é criado com o mesmo código do projeto. Isso não pode ser
+            desfeito aqui.
           </DialogDescription>
         </DialogHeader>
         <form

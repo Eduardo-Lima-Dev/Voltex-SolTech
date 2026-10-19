@@ -47,13 +47,13 @@ export function ProjectsPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Cada contrato assinado vira um projeto, com o mesmo Project ID, para acompanhar a
-        homologação na distribuidora.
+        Cada contrato assinado vira um projeto, com o mesmo código, para acompanhar a homologação na
+        distribuidora.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <Input
           aria-label="Buscar projeto"
-          placeholder="Buscar por cliente, título ou Project ID"
+          placeholder="Buscar por cliente, título ou código do projeto"
           className="max-w-xs"
           value={search}
           onChange={(e) => {

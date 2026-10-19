@@ -50,10 +50,13 @@ function EffectiveRules() {
         ) : (
           <>
             <p className="text-sm">
-              Referência: <Badge variant="outline">{config.data.ref}</Badge>
+              Regras em uso:{' '}
+              <Badge variant="outline">
+                {config.data.ref === 'builtin@1' ? 'Padrão do sistema' : config.data.ref}
+              </Badge>
               {config.data.ref === 'builtin@1' ? (
                 <span className="ml-2 text-muted-foreground">
-                  Padrão do produto: a empresa ainda não ativou uma regra própria.
+                  A empresa ainda não ativou regras próprias.
                 </span>
               ) : null}
             </p>
@@ -130,8 +133,8 @@ function Versions() {
       <CardHeader>
         <CardTitle>Versões da regra</CardTitle>
         <CardDescription>
-          Regras ativadas são imutáveis e exigem um responsável pela revisão. Rascunhos e ativação
-          são feitos pela API nesta fase.
+          Regras ativadas não mudam mais e exigem um responsável pela revisão. Para criar ou ativar
+          uma nova versão, fale com o suporte da plataforma.
         </CardDescription>
       </CardHeader>
       <CardContent>

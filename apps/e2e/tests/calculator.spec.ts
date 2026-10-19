@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { USERS, loginAs } from './helpers';
 
 test.describe('Solar Calculator', () => {
-  test('calcula, mostra o resultado e guarda o snapshot', async ({ page }) => {
+  test('calcula, mostra o resultado e guarda uma versão salva', async ({ page }) => {
     await loginAs(page, USERS.seller);
     await page.goto('/calculator/new');
 
@@ -34,8 +34,8 @@ test.describe('Solar Calculator', () => {
     ).toBeVisible();
     await expect(page.getByText('4,4 kWp').first()).toBeVisible();
 
-    await page.getByRole('button', { name: /Salvar snapshot/ }).click();
-    await expect(page.getByText(/Snapshot/i).first()).toBeVisible();
+    await page.getByRole('button', { name: /Salvar versão/ }).click();
+    await expect(page.getByText(/Versão salva/i).first()).toBeVisible();
 
     // Aparece na lista.
     await page.goto('/calculator');

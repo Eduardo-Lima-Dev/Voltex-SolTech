@@ -159,7 +159,7 @@ describe('CRM · Revisão da fatura', () => {
     server.use(http.post(`${API}/energy-bills/bill-1/validate`, () => error(500, 'x')));
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Confirmar dados da fatura' }));
-    expect(await screen.findByText(/O servidor encontrou um problema/)).toBeInTheDocument();
+    expect(await screen.findByText(/O sistema encontrou um problema/)).toBeInTheDocument();
     expect(screen.getByLabelText('Unidade consumidora (UC)')).toHaveValue('12345678-9');
   });
 

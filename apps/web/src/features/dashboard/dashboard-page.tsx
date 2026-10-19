@@ -1,63 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Lock } from 'lucide-react';
 import { Link } from 'react-router';
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Skeleton,
-} from '@voltex/ui';
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@voltex/ui';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-provider';
 import { PRODUCTS } from '@/features/products/registry';
 import { roleLabel } from '@/i18n/labels';
-import { endpoints } from '@/lib/api/endpoints';
-
-const CHECK_LABELS: Record<string, string> = {
-  database: 'Banco de dados',
-  redis: 'Filas (Redis)',
-  storage: 'Armazenamento',
-};
-
-function SystemStatus() {
-  const { data, isPending, isError } = useQuery({
-    queryKey: ['health'],
-    queryFn: endpoints.health,
-    refetchInterval: 60_000,
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Status dos serviços</CardTitle>
-        <CardDescription>Visível para quem administra a empresa.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isPending ? (
-          <Skeleton className="h-16 w-full" />
-        ) : isError ? (
-          <p className="text-sm text-destructive">Não foi possível consultar o status.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-3">
-            {Object.entries(data.checks).map(([name, check]) => (
-              <li
-                key={name}
-                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-              >
-                <span>{CHECK_LABELS[name] ?? name}</span>
-                <Badge variant={check.status === 'up' ? 'green' : 'red'}>
-                  {check.status === 'up' ? 'Operando' : 'Falhou'}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export function DashboardPage() {
   const user = useCurrentUser();
@@ -133,8 +79,6 @@ export function DashboardPage() {
           })}
         </div>
       </section>
-
-      {can('platform.tenant.manage') ? <SystemStatus /> : null}
     </div>
   );
 }
