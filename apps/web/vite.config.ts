@@ -15,6 +15,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    // Só o endereço do site vem do .env da raiz (o resto das VITE_* da raiz é de desenvolvimento e não deve vazar para o build).
+    define: { 'import.meta.env.VITE_SITE_URL': JSON.stringify(env.VITE_SITE_URL ?? '') },
     resolve: { alias: { '@': path.resolve(here, 'src') } },
     // O front chama `/api/v1` na mesma origem; em dev o Vite encaminha para a API (sem CORS e com o cookie de sessão).
     server: { port: 5173, strictPort: true, proxy },
