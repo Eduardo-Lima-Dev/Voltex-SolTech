@@ -1,0 +1,14 @@
+import type { ComponentProps } from 'react';
+import { Loader2Icon } from 'lucide-react';
+import { cn } from '../lib/utils';
+
+export function Spinner({ className, ...props }: ComponentProps<typeof Loader2Icon>) {
+  return (
+    <Loader2Icon
+      role="status"
+      aria-label="Carregando"
+      className={cn('size-4 animate-spin', className)}
+      {...props}
+    />
+  );
+}

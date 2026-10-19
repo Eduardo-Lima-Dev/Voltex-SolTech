@@ -1,0 +1,12 @@
+{
+  "extends": "@voltex/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": ".",
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["src", "test", "vitest.config.mts", "vitest.e2e.config.mts"]
+}

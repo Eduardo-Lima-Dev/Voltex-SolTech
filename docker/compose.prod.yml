@@ -1,0 +1,149 @@
+# Composição de PRODUÇÃO/HOMOLOGAÇÃO. Nada é exposto no host além do que for declarado nos serviços
+# de aplicação (api/web), adicionados nas Fases 4, 5 e 8. Os segredos são obrigatórios (sem padrão).
+# Uso: `pnpm docker:build` e `pnpm docker:up`, com as variáveis definidas no ambiente ou em um .env.
+name: voltex
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  s3:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?defina S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?defina S3_SECRET_KEY}
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9000/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  s3-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      s3:
+        condition: service_healthy
+    restart: 'no'
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-voltex-documents}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >
+        aws --endpoint-url http://s3:9000 s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null
+        || aws --endpoint-url http://s3:9000 s3api create-bucket --bucket "$${S3_BUCKET}";
+        echo "bucket $${S3_BUCKET} pronto"
+
+  # Aplica as migrations e termina. A API depende da conclusão com sucesso deste serviço.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    image: voltex/migrate:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: voltex/api:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+      s3-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY: 1
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?defina DATA_ENCRYPTION_KEY (openssl rand -base64 32) e guarde uma cópia fora do servidor}
+      DATA_ENCRYPTION_KEY_PREVIOUS: ${DATA_ENCRYPTION_KEY_PREVIOUS:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET com 32 ou mais caracteres aleatórios}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?defina JWT_REFRESH_SECRET}
+      S3_ENDPOINT: http://s3:9000
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-voltex-documents}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_SERVER_SIDE_ENCRYPTION: ${S3_SERVER_SIDE_ENCRYPTION:-none}
+      # Endereço público da suíte (links de convite e de proposta). A API responde no mesmo domínio, sob /api.
+      WEB_URL: ${WEB_URL:?defina WEB_URL com o endereço público, por exemplo https://app.suaempresa.com.br}
+      CORS_ORIGIN: ${WEB_URL}
+    # Só a web (nginx) fala com a API, pela rede interna.
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_SITE_URL: ${SITE_URL:-}
+    image: voltex/web:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${WEB_PORT:-8080}:8080'
+
+  # Site de apresentação (landing page), separado da aplicação: outro endereço, ex.: www.suaempresa.com.br.
+  site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+      args:
+        VITE_APP_URL: ${WEB_URL:?defina WEB_URL com o endereço público da aplicação}
+        VITE_LEAD_KEY: ${SITE_LEAD_KEY:-}
+    image: voltex/site:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${SITE_PORT:-8081}:8080'
+
+volumes:
+  postgres-data:
+  redis-data:
+  s3-data:

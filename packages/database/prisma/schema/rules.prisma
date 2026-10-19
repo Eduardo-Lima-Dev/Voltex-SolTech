@@ -1,0 +1,36 @@
+// Rules Engine (base): regras versionadas com fonte, vigência e responsável pela revisão (RN-012).
+
+enum RuleSetStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+
+  @@map("rule_set_status")
+}
+
+/// Uma versão de um conjunto de regras (ex.: `calculator.rules`). Depois de ativada a definição é imutável
+/// (trigger no banco): mudar uma regra cria uma NOVA versão. No máximo uma versão ativa por tenant e chave.
+model RuleSet {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  key         String
+  version     Int
+  status      RuleSetStatus @default(DRAFT)
+  validFrom   DateTime?     @map("valid_from")
+  validTo     DateTime?     @map("valid_to")
+  definition  Json
+  /// Lista de fontes: `[{ type, reference, url?, notes? }]`.
+  sources     Json
+  reviewedBy  String?       @map("reviewed_by")
+  reviewedAt  DateTime?     @map("reviewed_at")
+  notes       String?
+  createdById String?       @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key, version])
+  @@index([tenantId, key, status])
+  @@map("rule_sets")
+}

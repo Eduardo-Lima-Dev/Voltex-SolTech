@@ -1,0 +1,222 @@
+// Triagem (Project Guard), cotação com Margin Guard e proposta (Fase 7B). Enums espelham os de @voltex/shared.
+
+enum MarginStatus {
+  WITHIN_POLICY
+  BELOW_POLICY
+  NO_POLICY
+
+  @@map("margin_status")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("approval_status")
+}
+
+enum QuoteApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("quote_approval_status")
+}
+
+enum ProposalStatus {
+  GENERATED
+  SENT
+  VIEWED
+  ACCEPTED
+  SUPERSEDED
+
+  @@map("proposal_status")
+}
+
+/// Relatório da triagem. IMUTÁVEL (gatilho no banco): só a invalidação (`invalidated_*`) pode mudar, uma vez.
+/// Cada reavaliação gera a versão seguinte; as anteriores permanecem acessíveis (RF-GUARD-006).
+model TriageSnapshot {
+  id                     String       @id @default(uuid(7)) @db.Uuid
+  tenantId               String       @map("tenant_id") @db.Uuid
+  opportunityId          String       @map("opportunity_id") @db.Uuid
+  version                Int
+  status                 TrafficLight
+  checks                 Json
+  missingFields          Json         @map("missing_fields")
+  needsHumanReview       Boolean      @map("needs_human_review")
+  needsEngineeringReview Boolean      @map("needs_engineering_review")
+  algorithmVersion       String       @map("algorithm_version")
+  ruleSetRef             String       @map("rule_set_ref")
+  /// O que foi avaliado (rastreabilidade).
+  billSnapshotId         String?      @map("bill_snapshot_id") @db.Uuid
+  calculationSessionId   String?      @map("calculation_session_id") @db.Uuid
+  /// Resumo das premissas no momento da avaliação: se mudar, a avaliação está desatualizada.
+  inputsFingerprint      String       @map("inputs_fingerprint")
+  invalidatedAt          DateTime?    @map("invalidated_at")
+  invalidatedReason      String?      @map("invalidated_reason")
+  createdById            String?      @map("created_by_id") @db.Uuid
+  createdAt              DateTime     @default(now()) @map("created_at")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity      @relation(fields: [opportunityId], references: [id])
+  overrides   TriageOverride[]
+
+  @@unique([opportunityId, version])
+  @@index([tenantId, opportunityId, createdAt])
+  @@map("triage_snapshots")
+}
+
+/// Liberação formal de uma triagem amarela ou vermelha (justificativa + responsável). IMUTÁVEL.
+model TriageOverride {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  evaluationId  String   @unique @map("evaluation_id") @db.Uuid
+  justification String
+  decidedById   String?  @map("decided_by_id") @db.Uuid
+  decidedAt     DateTime @default(now()) @map("decided_at")
+
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  evaluation TriageSnapshot @relation(fields: [evaluationId], references: [id])
+
+  @@index([tenantId])
+  @@map("triage_overrides")
+}
+
+/// Margem mínima por empresa, time e/ou tipo de projeto (a mais específica vence).
+model MarginPolicy {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  name          String
+  /// Fração do preço (0,2 = 20%).
+  minMarginRate Float        @map("min_margin_rate")
+  projectType   ProjectType? @map("project_type")
+  teamId        String?      @map("team_id") @db.Uuid
+  active        Boolean      @default(true)
+  createdById   String?      @map("created_by_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, active])
+  @@map("margin_policies")
+}
+
+/// Cotação (um cenário de preço). Versionada por oportunidade; trava quando entra numa proposta.
+model Quote {
+  id                   String              @id @default(uuid(7)) @db.Uuid
+  tenantId             String              @map("tenant_id") @db.Uuid
+  opportunityId        String              @map("opportunity_id") @db.Uuid
+  version              Int
+  title                String?
+  calculationSessionId String?             @map("calculation_session_id") @db.Uuid
+  /// Lista de materiais: `[{ category, description, quantity, unitCostCents }]`.
+  items                Json
+  /// Frete, instalação, deslocamento, outros e taxas (comissão, impostos, custo financeiro, contingência).
+  costs                Json
+  priceCents           Int                 @map("price_cents")
+  /// Detalhamento da margem calculado pelo servidor no momento do salvamento.
+  margin               Json
+  marginStatus         MarginStatus        @map("margin_status")
+  minMarginRate        Float?              @map("min_margin_rate")
+  policyId             String?             @map("policy_id") @db.Uuid
+  approvalStatus       QuoteApprovalStatus @default(NONE) @map("approval_status")
+  lockedAt             DateTime?           @map("locked_at")
+  createdById          String?             @map("created_by_id") @db.Uuid
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  deletedAt            DateTime?           @map("deleted_at")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity       @relation(fields: [opportunityId], references: [id])
+  approvals   ApprovalRequest[]
+
+  @@unique([opportunityId, version])
+  @@index([tenantId, opportunityId])
+  @@map("quotes")
+}
+
+/// Pedido de aprovação de margem abaixo do mínimo (RF-CRM-053).
+model ApprovalRequest {
+  id                    String         @id @default(uuid(7)) @db.Uuid
+  tenantId              String         @map("tenant_id") @db.Uuid
+  type                  String         @default("MARGIN")
+  quoteId               String         @map("quote_id") @db.Uuid
+  opportunityId         String         @map("opportunity_id") @db.Uuid
+  status                ApprovalStatus @default(PENDING)
+  marginRate            Float          @map("margin_rate")
+  minMarginRate         Float          @map("min_margin_rate")
+  priceCents            Int            @map("price_cents")
+  justification         String
+  requestedById         String?        @map("requested_by_id") @db.Uuid
+  decisionJustification String?        @map("decision_justification")
+  decidedById           String?        @map("decided_by_id") @db.Uuid
+  decidedAt             DateTime?      @map("decided_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  quote       Quote       @relation(fields: [quoteId], references: [id])
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, quoteId])
+  @@map("approval_requests")
+}
+
+model Proposal {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  tenantId           String         @map("tenant_id") @db.Uuid
+  opportunityId      String         @map("opportunity_id") @db.Uuid
+  version            Int
+  status             ProposalStatus @default(GENERATED)
+  /// `[{ label, quoteId, quoteVersion, installedPowerKwp, priceCents }]`.
+  scenarios          Json
+  conditions         Json
+  validUntil         DateTime       @map("valid_until")
+  /// Só o hash do token do link público é guardado (o link em si aparece uma vez).
+  tokenHash          String?        @unique @map("token_hash")
+  sentAt             DateTime?      @map("sent_at")
+  firstViewedAt      DateTime?      @map("first_viewed_at")
+  lastViewedAt       DateTime?      @map("last_viewed_at")
+  viewCount          Int            @default(0) @map("view_count")
+  acceptedAt         DateTime?      @map("accepted_at")
+  acceptedByName     String?        @map("accepted_by_name")
+  acceptedByDocument String?        @map("accepted_by_document")
+  acceptedIp         String?        @map("accepted_ip")
+  acceptedUserAgent  String?        @map("accepted_user_agent")
+  pdfDocumentId      String?        @map("pdf_document_id") @db.Uuid
+  createdById        String?        @map("created_by_id") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity       @relation(fields: [opportunityId], references: [id])
+  snapshot    ProposalSnapshot?
+  contracts   Contract[]
+
+  @@unique([opportunityId, version])
+  @@index([tenantId, opportunityId])
+  @@index([tenantId, status])
+  @@map("proposals")
+}
+
+/// Conteúdo da proposta no momento em que foi gerada. IMUTÁVEL (gatilho): é o que o cliente vê e aceita.
+model ProposalSnapshot {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  proposalId  String   @unique @map("proposal_id") @db.Uuid
+  content     Json
+  contentHash String   @map("content_hash")
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  proposal Proposal @relation(fields: [proposalId], references: [id])
+
+  @@index([tenantId])
+  @@map("proposal_snapshots")
+}
