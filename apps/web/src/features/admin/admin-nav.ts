@@ -1,5 +1,7 @@
 import {
   Building2,
+  FileText,
+  HardHat,
   Percent,
   Receipt,
   Scale,
@@ -20,7 +22,9 @@ export interface AdminTab {
     | 'tarifas'
     | 'irradiacao'
     | 'regras'
-    | 'margens';
+    | 'margens'
+    | 'contratos'
+    | 'homologacao';
   label: string;
   description: string;
   icon: LucideIcon;
@@ -84,6 +88,20 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'Margem mínima das cotações',
     icon: Percent,
     anyOf: ['crm.margin-policy.manage'],
+  },
+  {
+    path: 'contratos',
+    label: 'Contratos',
+    description: 'Modelo de contrato da empresa',
+    icon: FileText,
+    anyOf: ['crm.contract.write'],
+  },
+  {
+    path: 'homologacao',
+    label: 'Homologação',
+    description: 'Checklist de documentos por distribuidora',
+    icon: HardHat,
+    anyOf: ['platform.rule.read'],
   },
 ];
 

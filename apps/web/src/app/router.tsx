@@ -193,6 +193,49 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'projetos',
+                lazy: async () => {
+                  const { ProjectsPage } = await import('@/features/crm/projects/projects-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.project.read">
+                        <ProjectsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projetos' },
+                  };
+                },
+              },
+              {
+                path: 'projetos/:id',
+                lazy: async () => {
+                  const { ProjectDetailPage } =
+                    await import('@/features/crm/projects/project-detail-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.project.read">
+                        <ProjectDetailPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projeto' },
+                  };
+                },
+              },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { DashboardPage } = await import('@/features/crm/dashboard/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.dashboard.read">
+                        <DashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel comercial' },
+                  };
+                },
+              },
+              {
                 path: 'tarefas',
                 lazy: async () => {
                   const { TasksPage } = await import('@/features/crm/tasks/tasks-page');
@@ -365,6 +408,36 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Margens' },
+                  };
+                },
+              },
+              {
+                path: 'contratos',
+                lazy: async () => {
+                  const { ContractTemplatePage } =
+                    await import('@/features/admin/contracts/contract-template-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('contratos').anyOf}>
+                        <ContractTemplatePage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Contratos' },
+                  };
+                },
+              },
+              {
+                path: 'homologacao',
+                lazy: async () => {
+                  const { HomologationPage } =
+                    await import('@/features/admin/homologation/homologation-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('homologacao').anyOf}>
+                        <HomologationPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Homologação' },
                   };
                 },
               },

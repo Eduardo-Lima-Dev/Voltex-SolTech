@@ -20,7 +20,7 @@ import {
   type ContractTemplateDto,
   type CreateContractInput,
   type GenerationClass,
-  type SignContractInput,
+  type SignContractData,
   type UpdateContractTemplateData,
 } from '@voltex/shared';
 import { RequestContext } from '../../../common/context/request-context';
@@ -321,7 +321,7 @@ export class ContractsService {
   async sign(
     id: string,
     file: UploadedFile | undefined,
-    input: SignContractInput,
+    input: SignContractData,
   ): Promise<ContractDto> {
     const row = await this.findOrThrow(id);
     if (row.status !== 'DRAFT') throw new ConflictException('Este contrato não está em rascunho.');
@@ -333,7 +333,7 @@ export class ContractsService {
       throw new ConflictException(
         'A oportunidade precisa estar na etapa Contrato para registrar a assinatura.',
       );
-    const signedAt = input.signedAt ? new Date(input.signedAt) : new Date();
+    const signedAt = input.signedAt ?? new Date();
     if (signedAt.getTime() > Date.now() + 86_400_000)
       throw new UnprocessableEntityException('A data da assinatura não pode ser futura');
 

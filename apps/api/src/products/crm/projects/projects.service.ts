@@ -12,7 +12,7 @@ import {
   Role,
   TimelineEventType,
   applicableChecklistItems,
-  type ChangeProjectStatusInput,
+  type ChangeProjectStatusData,
   type ChecklistDeadline,
   type GenerationClass,
   type HomologationRules,
@@ -21,7 +21,7 @@ import {
   type ProjectDeadlineSuggestionDto,
   type ProjectDto,
   type ProjectSummaryDto,
-  type UpdateChecklistItemInput,
+  type UpdateChecklistItemData,
   type UpdateProjectInput,
 } from '@voltex/shared';
 import { RequestContext } from '../../../common/context/request-context';
@@ -279,7 +279,7 @@ export class ProjectsService {
   async updateChecklistItem(
     id: string,
     itemId: string,
-    input: UpdateChecklistItemInput,
+    input: UpdateChecklistItemData,
   ): Promise<ProjectDto> {
     const project = await this.findOrThrow(id);
     this.assertEditable(project);
@@ -308,9 +308,7 @@ export class ProjectsService {
         data: {
           status,
           note,
-          ...(input.dueAt !== undefined
-            ? { dueAt: input.dueAt ? new Date(input.dueAt) : null }
-            : {}),
+          ...(input.dueAt !== undefined ? { dueAt: input.dueAt ? input.dueAt : null } : {}),
           ...(input.documentId !== undefined ? { documentId: input.documentId } : {}),
           completedAt: concluding ? (item.completedAt ?? new Date()) : null,
           completedById: concluding ? (item.completedById ?? this.context.userId ?? null) : null,
@@ -330,7 +328,7 @@ export class ProjectsService {
     return this.get(id);
   }
 
-  async changeStatus(id: string, input: ChangeProjectStatusInput): Promise<ProjectDto> {
+  async changeStatus(id: string, input: ChangeProjectStatusData): Promise<ProjectDto> {
     const project = await this.findOrThrow(id);
     const to = input.status;
     if (to === project.status) throw new ConflictException('O projeto já está nesta situação');
@@ -373,7 +371,7 @@ export class ProjectsService {
       data.submittedAt = project.submittedAt ?? now;
       const suggestion = suggest('ACCESS_OPINION', now);
       if (input.dueAt) {
-        data.accessOpinionDueAt = new Date(input.dueAt);
+        data.accessOpinionDueAt = input.dueAt;
         data.accessOpinionDueSource = 'Informado pelo usuário';
       } else if (suggestion && (first || project.status === 'DOCUMENTATION')) {
         data.accessOpinionDueAt = suggestion.at;
@@ -383,7 +381,7 @@ export class ProjectsService {
     if (to === 'INSPECTION') {
       data.inspectionRequestedAt = now;
       const suggestion = suggest('INSPECTION', now);
-      data.inspectionDueAt = input.dueAt ? new Date(input.dueAt) : (suggestion?.at ?? null);
+      data.inspectionDueAt = input.dueAt ? input.dueAt : (suggestion?.at ?? null);
     }
     if (to === 'APPROVED') data.approvedAt = now;
     if (to === 'CANCELLED') data.cancelledAt = now;

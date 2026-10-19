@@ -40,6 +40,14 @@ export const queryKeys = {
   approvals: (filters?: unknown) =>
     filters === undefined ? (['approvals'] as const) : (['approvals', filters] as const),
   marginPolicies: ['margin-policies'] as const,
+  opportunityContracts: (id: string) => ['opportunity', id, 'contracts'] as const,
+  opportunityProject: (id: string) => ['opportunity', id, 'project'] as const,
+  contractTemplate: ['contract-template'] as const,
+  projects: (filters?: unknown) =>
+    filters === undefined ? (['projects'] as const) : (['projects', filters] as const),
+  project: (id: string) => ['project', id] as const,
+  homologation: ['homologation'] as const,
+  commercialDashboard: (filters?: unknown) => ['commercial-dashboard', filters] as const,
   branding: ['branding'] as const,
   publicProposal: (token: string) => ['public-proposal', token] as const,
   calculationContext: (id: string) => ['opportunity', id, 'calculation-context'] as const,

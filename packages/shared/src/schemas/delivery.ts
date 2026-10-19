@@ -38,7 +38,8 @@ export const signContractSchema = z.object({
   /** Quem assinou pelo cliente. */
   signedByName: z.string().trim().min(3).max(160).optional(),
 });
-export type SignContractInput = z.infer<typeof signContractSchema>;
+export type SignContractInput = z.input<typeof signContractSchema>;
+export type SignContractData = z.output<typeof signContractSchema>;
 
 // ---- Projeto e homologação ----
 
@@ -56,7 +57,8 @@ export const updateChecklistItemSchema = z.object({
   dueAt: isoDateTimeSchema.nullable().optional(),
   documentId: z.uuid().nullable().optional(),
 });
-export type UpdateChecklistItemInput = z.infer<typeof updateChecklistItemSchema>;
+export type UpdateChecklistItemInput = z.input<typeof updateChecklistItemSchema>;
+export type UpdateChecklistItemData = z.output<typeof updateChecklistItemSchema>;
 
 export const changeProjectStatusSchema = z.object({
   status: z.enum(ProjectStatus),
@@ -66,7 +68,8 @@ export const changeProjectStatusSchema = z.object({
   dueAt: isoDateTimeSchema.optional(),
   reason: z.string().trim().max(300).optional(),
 });
-export type ChangeProjectStatusInput = z.infer<typeof changeProjectStatusSchema>;
+export type ChangeProjectStatusInput = z.input<typeof changeProjectStatusSchema>;
+export type ChangeProjectStatusData = z.output<typeof changeProjectStatusSchema>;
 
 export const listProjectsQuerySchema = paginationQuerySchema.extend({
   status: z.enum(ProjectStatus).optional(),
@@ -96,4 +99,5 @@ export const commercialDashboardQuerySchema = z.object({
   from: isoDateTimeSchema.optional(),
   to: isoDateTimeSchema.optional(),
 });
-export type CommercialDashboardQuery = z.infer<typeof commercialDashboardQuerySchema>;
+export type CommercialDashboardQuery = z.input<typeof commercialDashboardQuerySchema>;
+export type CommercialDashboardData = z.output<typeof commercialDashboardQuerySchema>;

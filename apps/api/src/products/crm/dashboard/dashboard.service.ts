@@ -3,7 +3,7 @@ import {
   OpportunityStage,
   TimelineEventType,
   type CommercialDashboardDto,
-  type CommercialDashboardQuery,
+  type CommercialDashboardData,
   type LeadSource,
 } from '@voltex/shared';
 import { RequestContext } from '../../../common/context/request-context';
@@ -22,9 +22,9 @@ export class DashboardService {
   ) {}
 
   /** Painel comercial (RF-CRM-100). Tudo calculado dos registros existentes; nada é estimado por estatística. */
-  async commercial(query: CommercialDashboardQuery): Promise<CommercialDashboardDto> {
-    const to = query.to ? new Date(query.to) : new Date();
-    const from = query.from ? new Date(query.from) : new Date(to.getTime() - 30 * DAY);
+  async commercial(query: CommercialDashboardData): Promise<CommercialDashboardDto> {
+    const to = query.to ?? new Date();
+    const from = query.from ?? new Date(to.getTime() - 30 * DAY);
     const inRange = { gte: from, lte: to };
     const db = this.prisma.db;
 

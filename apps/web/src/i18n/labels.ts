@@ -150,6 +150,10 @@ export const ENTITY_LABELS: Record<string, string> = {
   MarginPolicy: 'Política de margem',
   ApprovalRequest: 'Aprovação de margem',
   Proposal: 'Proposta',
+  Contract: 'Contrato',
+  ContractTemplate: 'Modelo de contrato',
+  Project: 'Projeto',
+  HomologationChecklist: 'Regras de homologação',
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -233,6 +237,16 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'proposal.sent': 'Proposta enviada ao cliente',
   'proposal.accepted': 'Proposta aceita pelo cliente',
   'branding.updated': 'Identidade visual atualizada',
+  'contract.generated': 'Contrato gerado',
+  'contract.cancelled': 'Contrato cancelado',
+  'contract.signed': 'Contrato assinado',
+  'contract_template.published': 'Modelo de contrato publicado',
+  'project.created': 'Projeto criado',
+  'project.updated': 'Projeto atualizado',
+  'project.checklist_item_updated': 'Item do checklist atualizado',
+  'project.status_changed': 'Situação da homologação alterada',
+  'homologation_checklist.published': 'Regras de homologação publicadas',
+  'automation.lead_sla_breached': 'Prazo do primeiro contato estourado (automação)',
 };
 
 export const auditActionLabel = (action: string): string => AUDIT_ACTION_LABELS[action] ?? action;
@@ -469,6 +483,7 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   CONTRACT_GENERATED: 'Contrato gerado',
   CONTRACT_SIGNED: 'Contrato assinado',
   PROJECT_CREATED: 'Projeto criado',
+  PROJECT_STATUS_CHANGED: 'Homologação',
 };
 
 export const ROOF_TYPE_LABELS: Record<RoofType, string> = {
@@ -564,4 +579,33 @@ export const QUOTE_CATEGORY_LABELS = {
   PROTECTION: 'Proteções',
   CABLE: 'Cabos',
   OTHER_MATERIAL: 'Outros materiais',
+} as const;
+
+// ---- Contrato, projeto e homologação (Fase 7C) ----
+
+export const CONTRACT_STATUS_LABELS = {
+  DRAFT: 'Rascunho',
+  SIGNED: 'Assinado',
+  CANCELLED: 'Cancelado',
+} as const;
+
+export const PROJECT_STATUS_LABELS = {
+  DOCUMENTATION: 'Reunindo documentos',
+  SUBMITTED: 'Solicitação protocolada',
+  INSPECTION: 'Vistoria',
+  APPROVED: 'Homologado',
+  CANCELLED: 'Cancelado',
+} as const;
+
+export const CHECKLIST_STATUS_LABELS = {
+  PENDING: 'Pendente',
+  DONE: 'Concluído',
+  WAIVED: 'Dispensado',
+  NOT_APPLICABLE: 'Não se aplica',
+} as const;
+
+export const DEADLINE_LABELS = {
+  ACCESS_OPINION: 'Parecer de acesso',
+  INSPECTION: 'Vistoria',
+  POST_APPROVAL_EXECUTION: 'Execução após a homologação',
 } as const;
