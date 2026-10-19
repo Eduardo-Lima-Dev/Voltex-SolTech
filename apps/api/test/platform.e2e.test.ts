@@ -33,6 +33,13 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
       for (const check of Object.values(res.body.checks) as { status: string }[])
         expect(check.status).toBe('up');
     });
+
+    it('/health/live responde sem consultar as dependências', async () => {
+      const res = await t.http.get(`${API}/health/live`);
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('ok');
+      expect(res.body.checks).toBeUndefined();
+    });
   });
 
   describe('outbox de eventos', () => {

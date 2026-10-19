@@ -4,14 +4,14 @@ Coloca o sistema no ar **sem pagar**, usando planos gratuitos de vários serviç
 
 ## Quem faz o quê
 
-| Peça                                     | Serviço                             | Onde fica                                            |
-| ---------------------------------------- | ----------------------------------- | ---------------------------------------------------- |
-| Aplicação (login, CRM, calculadora)      | **Vercel** (arquivos estáticos)     | `https://voltex-app.vercel.app` (o nome pode variar) |
-| Site de apresentação                     | **Vercel**                          | `https://voltex-site.vercel.app`                     |
-| API                                      | **Render** (plano Free, Docker)     | `https://voltex-api.onrender.com`                    |
-| Banco de dados                           | **Supabase** (Postgres)             | região mais próxima                                  |
-| Arquivos (contratos, propostas, faturas) | **Supabase Storage** (protocolo S3) | bucket privado                                       |
-| Filas e automações (Redis)               | _a definir_ (veja abaixo)           |                                                      |
+| Peça                                     | Serviço                             | Onde fica                                                           |
+| ---------------------------------------- | ----------------------------------- | ------------------------------------------------------------------- |
+| Aplicação (login, CRM, calculadora)      | **Vercel** (arquivos estáticos)     | `https://voltex-app.vercel.app` (o nome pode variar)                |
+| Site de apresentação                     | **Vercel**                          | `https://voltex-site.vercel.app`                                    |
+| API                                      | **Render** (plano Free, Docker)     | `https://voltex-api.onrender.com`                                   |
+| Banco de dados                           | **Supabase** (Postgres)             | região mais próxima                                                 |
+| Arquivos (contratos, propostas, faturas) | **Supabase Storage** (protocolo S3) | bucket privado                                                      |
+| Filas e automações (Redis)               | **Upstash** (plano gratuito)        | `REDIS_URL` no formato `rediss://default:SENHA@host:6379` (com TLS) |
 
 ```mermaid
 flowchart LR
@@ -99,6 +99,7 @@ E-mails (convites): neste deploy **não há servidor de e-mail**. Convites só f
 
 ## Limites e riscos
 
+- **Redis (Upstash) pode esgotar o limite:** a fila consulta o Redis mesmo sem trabalho. Por isso a verificação de saúde da Render usa `/api/v1/health/live` (sem Redis) e a varredura das automações roda a cada 15 minutos. Se o limite acabar, a API continua de pé, mas filas e automações param até o mês virar.
 - **A API gratuita dorme** depois de uns 15 minutos sem uso; o primeiro acesso depois demora cerca de um minuto. **As automações e as filas rodam dentro da API**, então param enquanto ela dorme.
 - **O projeto gratuito do Supabase pausa** depois de cerca de uma semana sem uso; pausado, a API fica sem banco e sem arquivos até você reativar pelo painel.
 - **Sem backup automático** garantido nos planos gratuitos. Use `pg_dump` periodicamente.

@@ -8,13 +8,17 @@ services:
     plan: free
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
+    # Verificação leve (sem tocar em banco, Redis nem armazenamento): o /health completo gastaria os comandos do Redis gratuito.
+    healthCheckPath: /api/v1/health/live
     autoDeploy: false
     envVars:
       - key: NODE_ENV
         value: production
       - key: TRUST_PROXY
         value: '2' # Render + Vercel na frente
+      # Varredura das automações a cada 15 min (padrão: 1 min): poupa os comandos do Redis gratuito.
+      - key: AUTOMATION_SCAN_INTERVAL_MS
+        value: '900000'
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

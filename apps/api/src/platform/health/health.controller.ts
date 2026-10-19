@@ -10,6 +10,17 @@ import { HealthService } from './health.service';
 export class HealthController {
   constructor(private readonly health: HealthService) {}
 
+  /**
+   * Só confirma que o processo responde, sem consultar banco, Redis nem armazenamento. É o que hospedagens com plano
+   * gratuito devem usar na verificação periódica: o `/health` completo acordaria o banco e gastaria comandos do Redis.
+   */
+  @Public()
+  @SkipThrottle()
+  @Get('live')
+  live() {
+    return { status: 'ok', uptimeSeconds: Math.round(process.uptime()) };
+  }
+
   @Public()
   @SkipThrottle()
   @Get()
