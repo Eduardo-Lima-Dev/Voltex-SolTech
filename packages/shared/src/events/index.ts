@@ -14,6 +14,13 @@ export const DomainEvent = {
   ENERGY_BILL_VALIDATED: 'EnergyBillValidated',
   OPPORTUNITY_CREATED: 'OpportunityCreated',
   OPPORTUNITY_STAGE_CHANGED: 'OpportunityStageChanged',
+  /** Local, unidade consumidora ou tipo de projeto mudaram: avaliações e cotações dependentes ficam desatualizadas. */
+  OPPORTUNITY_PREMISES_CHANGED: 'OpportunityPremisesChanged',
+  LEAD_SLA_BREACHED: 'LeadSlaBreached',
+  // Project Guard
+  PROJECT_GUARD_EVALUATED: 'ProjectGuardEvaluated',
+  PROJECT_GUARD_OVERRIDDEN: 'ProjectGuardOverridden',
+  PROJECT_CREATED: 'ProjectCreated',
   // Cálculos
   QUICK_CALCULATION_REQUESTED: 'QuickCalculationRequested',
   QUICK_CALCULATION_COMPLETED: 'QuickCalculationCompleted',

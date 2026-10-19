@@ -164,6 +164,13 @@ export class DocumentsService {
     return { url, expiresIn: DOWNLOAD_URL_TTL_SECONDS };
   }
 
+  /** Conteúdo e metadados de um documento, para uso interno de outros módulos. */
+  async readContent(id: string) {
+    const document = await this.getOrThrow(id);
+    const buffer = await this.s3.getBuffer(document.storageKey);
+    return { buffer, filename: document.filename, mimeType: document.mimeType };
+  }
+
   /** Exclusão lógica: o objeto permanece no bucket (retenção/LGPD é política de infraestrutura). */
   async remove(id: string) {
     const document = await this.getOrThrow(id);

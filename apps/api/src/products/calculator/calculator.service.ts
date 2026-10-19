@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ZodValidationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
 import { DomainEvent, type ListCalculationsQuery } from '@voltex/shared';
@@ -14,7 +14,7 @@ import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../../platform/audit/audit.service';
 import { EventBus } from '../../platform/events/event-bus.service';
-import { PrismaService } from '../../platform/prisma/prisma.service';
+import { PrismaService, type ScopedPrismaClient } from '../../platform/prisma/prisma.service';
 import { RulesService } from '../../platform/rules/rules.service';
 
 const EPSILON = 1e-9;
@@ -104,6 +104,35 @@ export class CalculatorService {
       );
       return this.toSession(session);
     });
+  }
+
+  /** Cálculos vinculados a uma oportunidade (mais recente primeiro). */
+  async listByOpportunity(opportunityId: string) {
+    const rows = await this.prisma.db.calculationSession.findMany({
+      where: { opportunityId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => this.toSession(row));
+  }
+
+  /** Vincula o cálculo à oportunidade (idempotente; um cálculo não muda de oportunidade). */
+  async attachToOpportunity(
+    sessionId: string,
+    opportunityId: string,
+    client: Pick<ScopedPrismaClient, 'calculationSession'> = this.prisma.db,
+  ) {
+    const session = await client.calculationSession.findFirst({
+      where: { id: sessionId, deletedAt: null },
+    });
+    if (!session) throw new NotFoundException('Cálculo não encontrado');
+    if (session.opportunityId && session.opportunityId !== opportunityId)
+      throw new ConflictException('Este cálculo já está vinculado a outra oportunidade');
+    if (session.opportunityId === opportunityId) return this.toSession(session);
+    const updated = await client.calculationSession.update({
+      where: { id: sessionId },
+      data: { opportunityId },
+    });
+    return this.toSession(updated);
   }
 
   async list(query: ListCalculationsQuery) {

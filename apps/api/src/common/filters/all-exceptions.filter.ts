@@ -69,10 +69,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
             : ((payload as { message?: string }).message ?? exception.message);
       const customCode =
         typeof payload === 'object' ? (payload as { code?: string }).code : undefined;
+      const data =
+        typeof payload === 'object'
+          ? (payload as { data?: Record<string, unknown> }).data
+          : undefined;
       return {
         statusCode: status,
         code: customCode ?? CODE_BY_STATUS[status] ?? 'HTTP_ERROR',
         message,
+        ...(data ? { data } : {}),
       };
     }
 

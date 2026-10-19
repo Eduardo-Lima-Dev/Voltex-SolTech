@@ -127,8 +127,12 @@ export type ConvertLeadInput = z.input<typeof convertLeadSchema>;
 // Contas, contatos, imóveis e unidades consumidoras (RF-CRM-010..012, RF-CRM-078)
 // ---------------------------------------------------------------------------------------------------------
 
-export const createAccountSchema = z.object({
-  type: z.enum(AccountType).default(AccountType.PERSON),
+/*
+ * Atenção: os schemas de ATUALIZAÇÃO partem da base SEM valores padrão. Um `.partial()` sobre um campo com `.default()`
+ * reaplicaria o padrão e apagaria o dado existente em qualquer edição parcial.
+ */
+const accountBase = z.object({
+  type: z.enum(AccountType),
   name: nameSchema,
   document: z.string().trim().optional(),
   segment: z.enum(CustomerSegment).optional(),
@@ -136,8 +140,11 @@ export const createAccountSchema = z.object({
   phone: phoneSchema.optional(),
   notes: z.string().max(2000).optional(),
 });
+export const createAccountSchema = accountBase.extend({
+  type: z.enum(AccountType).default(AccountType.PERSON),
+});
 export type CreateAccountInput = z.input<typeof createAccountSchema>;
-export const updateAccountSchema = createAccountSchema.partial();
+export const updateAccountSchema = accountBase.partial();
 export type UpdateAccountInput = z.input<typeof updateAccountSchema>;
 
 export const listAccountsQuerySchema = paginationQuerySchema.extend({
@@ -145,15 +152,16 @@ export const listAccountsQuerySchema = paginationQuerySchema.extend({
 });
 export type ListAccountsQuery = z.output<typeof listAccountsQuerySchema>;
 
-export const createContactSchema = z.object({
+const contactBase = z.object({
   name: nameSchema,
   email: emailSchema.optional(),
   phone: phoneSchema.optional(),
   roleTitle: optionalText(80),
-  isPrimary: z.boolean().default(false),
+  isPrimary: z.boolean(),
 });
+export const createContactSchema = contactBase.extend({ isPrimary: z.boolean().default(false) });
 export type CreateContactInput = z.input<typeof createContactSchema>;
-export const updateContactSchema = createContactSchema.partial();
+export const updateContactSchema = contactBase.partial();
 export type UpdateContactInput = z.input<typeof updateContactSchema>;
 
 /**
@@ -176,7 +184,7 @@ export const siteIntakeSchema = z.object({
 });
 export type SiteIntake = z.infer<typeof siteIntakeSchema>;
 
-export const createSiteSchema = z.object({
+const siteBase = z.object({
   name: z.string().trim().min(2).max(120),
   street: optionalText(160),
   number: optionalText(20),
@@ -186,24 +194,28 @@ export const createSiteSchema = z.object({
   zip: optionalText(12),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
-  intake: siteIntakeSchema.default({}),
+  intake: siteIntakeSchema,
 });
+export const createSiteSchema = siteBase.extend({ intake: siteIntakeSchema.default({}) });
 export type CreateSiteInput = z.input<typeof createSiteSchema>;
-export const updateSiteSchema = createSiteSchema.partial();
+export const updateSiteSchema = siteBase.partial();
 export type UpdateSiteInput = z.input<typeof updateSiteSchema>;
 
-export const createConsumerUnitSchema = z.object({
+const consumerUnitBase = z.object({
   siteId: z.uuid().optional(),
   /** Número da UC na fatura. */
   number: z.string().trim().min(3).max(40),
   distributorId: z.uuid().optional(),
-  customerGroup: z.enum(CustomerGroup).default(CustomerGroup.B),
+  customerGroup: z.enum(CustomerGroup),
   phaseSystem: z.enum(PhaseSystem).optional(),
   /** Classe de consumo como aparece na fatura (ex.: "Residencial"). */
   consumerClass: optionalText(60),
 });
+export const createConsumerUnitSchema = consumerUnitBase.extend({
+  customerGroup: z.enum(CustomerGroup).default(CustomerGroup.B),
+});
 export type CreateConsumerUnitInput = z.input<typeof createConsumerUnitSchema>;
-export const updateConsumerUnitSchema = createConsumerUnitSchema.partial();
+export const updateConsumerUnitSchema = consumerUnitBase.partial();
 export type UpdateConsumerUnitInput = z.input<typeof updateConsumerUnitSchema>;
 
 // ---------------------------------------------------------------------------------------------------------
@@ -366,3 +378,21 @@ export const listEnergyBillsQuerySchema = z.object({
   opportunityId: z.uuid().optional(),
   consumerUnitId: z.uuid().optional(),
 });
+
+// Tipos de saída (já validados e com padrões aplicados): é o que os serviços da API recebem.
+export type CreateAccountData = z.output<typeof createAccountSchema>;
+export type UpdateAccountData = z.output<typeof updateAccountSchema>;
+export type CreateContactData = z.output<typeof createContactSchema>;
+export type UpdateContactData = z.output<typeof updateContactSchema>;
+export type CreateSiteData = z.output<typeof createSiteSchema>;
+export type UpdateSiteData = z.output<typeof updateSiteSchema>;
+export type CreateConsumerUnitData = z.output<typeof createConsumerUnitSchema>;
+export type UpdateConsumerUnitData = z.output<typeof updateConsumerUnitSchema>;
+export type UpdateOpportunityData = z.output<typeof updateOpportunitySchema>;
+export type CreateTaskData = z.output<typeof createTaskSchema>;
+export type UpdateTaskData = z.output<typeof updateTaskSchema>;
+export type UpdateLeadData = z.output<typeof updateLeadSchema>;
+export type ConvertLeadData = z.output<typeof convertLeadSchema>;
+export type PublicLeadData = z.output<typeof publicLeadSchema>;
+export type ImportLeadsData = z.output<typeof importLeadsSchema>;
+export type ValidateEnergyBillData = z.output<typeof validateEnergyBillSchema>;

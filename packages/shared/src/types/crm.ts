@@ -146,6 +146,17 @@ export interface OpportunityDto {
   updatedAt: string;
 }
 
+export interface OpportunityBoardColumnDto {
+  stage: PipelineStageDto;
+  /** Total de oportunidades na etapa (os cartões podem ser limitados). */
+  total: number;
+  items: OpportunityDto[];
+}
+
+export interface OpportunityBoardDto {
+  columns: OpportunityBoardColumnDto[];
+}
+
 export interface TimelineEventDto {
   id: string;
   opportunityId: string;
@@ -233,6 +244,7 @@ export interface OpportunityCalculationContext {
   distributorId: string | null;
   distributorName: string | null;
   tariffCentsPerKwh: number | null;
+  tariffId: string | null;
   latitude: number | null;
   roofAzimuthDegrees: number | null;
   tiltDegrees: number | null;

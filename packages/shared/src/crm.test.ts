@@ -6,6 +6,10 @@ import {
   canTransition,
   convertLeadSchema,
   createOpportunitySchema,
+  updateAccountSchema,
+  updateConsumerUnitSchema,
+  updateContactSchema,
+  updateSiteSchema,
   createTaskSchema,
   isValidCnpj,
   isValidCpf,
@@ -156,5 +160,14 @@ describe('schemas do CRM', () => {
         fields: { ucNumber: '12345678', consumptionHistory: [{ month: '2026-13', kwh: 1 }] },
       }).success,
     ).toBe(false);
+  });
+
+  it('edição parcial NÃO reaplica padrões (não apaga grupo, tipo, principal nem intake existentes)', () => {
+    expect(updateAccountSchema.parse({ name: 'Novo Nome' })).toEqual({ name: 'Novo Nome' });
+    expect(updateContactSchema.parse({ name: 'Novo Nome' })).toEqual({ name: 'Novo Nome' });
+    expect(updateSiteSchema.parse({ name: 'Novo Nome' })).toEqual({ name: 'Novo Nome' });
+    expect(updateConsumerUnitSchema.parse({ consumerClass: 'Comercial' })).toEqual({
+      consumerClass: 'Comercial',
+    });
   });
 });
