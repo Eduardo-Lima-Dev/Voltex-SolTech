@@ -67,6 +67,13 @@ model Tenant {
   energyBills          EnergyBill[]
   energyBillSnapshots  EnergyBillSnapshot[]
   engineeringRequests  EngineeringRequest[]
+  triageSnapshots      TriageSnapshot[]
+  triageOverrides      TriageOverride[]
+  marginPolicies       MarginPolicy[]
+  quotes               Quote[]
+  approvalRequests     ApprovalRequest[]
+  proposals            Proposal[]
+  proposalSnapshots    ProposalSnapshot[]
 
   @@map("tenants")
 }
