@@ -1,9 +1,10 @@
 name: CI
 
+# Os testes rodam em pull requests para `homolog` e `main` (proteção antes de mesclar) e, na `main`, dentro da publicação
+# (deploy-demo.yml chama este arquivo). Push em `develop` e `homolog` não roda nada.
 on:
-  push:
-    branches: [develop, homolog, main]
   pull_request:
+    branches: [homolog, main]
   workflow_call: # chamado pela publicação da demonstração (deploy-demo.yml)
 
 concurrency:
