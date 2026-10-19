@@ -47,4 +47,4 @@ Só pela tela; a API prepara apenas o que o gestor da empresa já teria feito an
 8. **Administradora:** gera o **contrato**, registra a **assinatura**; o **projeto** nasce com o mesmo código.
 9. Resolve o checklist, **protocola na distribuidora**; a oportunidade fica **Ganha** e aparece no painel.
 
-O vendedor não escreve contrato (regra do produto), por isso a segunda metade é da administradora. O `pnpm test` (e a CI) roda só o projeto `chromium`; a jornada é separada para não gravar vídeo toda vez.
+O vendedor não escreve contrato (regra do produto), por isso a segunda metade é da administradora. O `pnpm test:browser` (e a CI) roda só o projeto `chromium`; a jornada é separada para não gravar vídeo toda vez.
