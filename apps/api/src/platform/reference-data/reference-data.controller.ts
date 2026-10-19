@@ -22,6 +22,8 @@ import {
   updateDistributorSchema,
 } from '@voltex/shared';
 import { Audit, RequirePermissions } from '../../common/decorators';
+import { Throttle } from '@nestjs/throttler';
+import { AneelImportService } from './aneel-import.service';
 import { ReferenceDataService } from './reference-data.service';
 
 class CreateDistributorDto extends createZodDto(createDistributorSchema) {}
@@ -37,7 +39,22 @@ class ListSolarResourcesQueryDto extends createZodDto(listSolarResourcesQuerySch
 @ApiBearerAuth()
 @Controller()
 export class ReferenceDataController {
-  constructor(private readonly data: ReferenceDataService) {}
+  constructor(
+    private readonly data: ReferenceDataService,
+    private readonly aneel: AneelImportService,
+  ) {}
+
+  /**
+   * Importa concessionárias e a tarifa residencial vigente dos Dados Abertos da ANEEL (arquivo grande: pode levar
+   * alguns minutos). Os valores NÃO incluem impostos.
+   */
+  @Post('reference-data/aneel/import')
+  @HttpCode(200)
+  @RequirePermissions('platform.rule.manage')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  importAneel() {
+    return this.aneel.importAll();
+  }
 
   // ---- Concessionárias ----
   @Get('distributors')
