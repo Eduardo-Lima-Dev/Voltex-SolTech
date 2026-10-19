@@ -538,6 +538,20 @@ export class OpportunitiesService {
         tx,
       );
 
+      // Um cálculo novo muda a base da triagem: a avaliação vigente fica desatualizada.
+      await this.events.publish(
+        {
+          type: DomainEvent.OPPORTUNITY_PREMISES_CHANGED,
+          projectCode: opportunity.projectCode,
+          payload: {
+            opportunityId: id,
+            reason: 'novo cálculo vinculado',
+            calculationSessionId: sessionId,
+          },
+        },
+        tx,
+      );
+
       if (light === 'YELLOW' || result.requiresEngineering) {
         const already = await tx.engineeringRequest.findFirst({
           where: { opportunityId: id, calculationSessionId: sessionId },
@@ -660,7 +674,7 @@ export class OpportunitiesService {
 
   private async toDtos(rows: OpportunityWithAccount[]): Promise<OpportunityDto[]> {
     const ids = rows.map((r) => r.id);
-    const [names, openTasks] = await Promise.all([
+    const [names, openTasks, quotes] = await Promise.all([
       this.users.names(rows.map((r) => r.ownerId)),
       ids.length
         ? this.prisma.db.task.findMany({
@@ -668,7 +682,18 @@ export class OpportunitiesService {
             select: { opportunityId: true, dueAt: true },
           })
         : [],
+      ids.length
+        ? this.prisma.db.quote.findMany({
+            where: { opportunityId: { in: ids }, deletedAt: null },
+            orderBy: { version: 'desc' },
+            select: { opportunityId: true, priceCents: true },
+          })
+        : [],
     ]);
+    // Valor do negócio = preço da cotação mais recente.
+    const value = new Map<string, number>();
+    for (const quote of quotes)
+      if (!value.has(quote.opportunityId)) value.set(quote.opportunityId, quote.priceCents);
     const tasks = new Map<string, { count: number; next: Date | null }>();
     for (const task of openTasks) {
       if (!task.opportunityId) continue;
@@ -694,7 +719,7 @@ export class OpportunitiesService {
       ownerName: r.ownerId ? (names.get(r.ownerId) ?? null) : null,
       lostReason: r.lostReason,
       expectedCloseDate: r.expectedCloseDate?.toISOString() ?? null,
-      valueCents: null,
+      valueCents: value.get(r.id) ?? null,
       openTaskCount: tasks.get(r.id)?.count ?? 0,
       nextTaskDueAt: tasks.get(r.id)?.next?.toISOString() ?? null,
       stageChangedAt: r.stageChangedAt.toISOString(),
