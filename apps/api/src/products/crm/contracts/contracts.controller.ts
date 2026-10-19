@@ -13,6 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 import {
   cancelContractSchema,
   createContractSchema,
@@ -25,6 +26,9 @@ import { ContractsService } from './contracts.service';
 
 class TemplateDto extends createZodDto(updateContractTemplateSchema) {}
 class CreateContractDto extends createZodDto(createContractSchema) {}
+class UploadTemplateDto extends createZodDto(
+  z.object({ name: z.string().trim().max(80).optional() }),
+) {}
 class CancelContractDto extends createZodDto(cancelContractSchema) {}
 class SignContractDto extends createZodDto(signContractSchema) {}
 
@@ -44,6 +48,32 @@ export class ContractsController {
   @RequirePermissions('crm.contract.write')
   saveTemplate(@Body() body: TemplateDto) {
     return this.contracts.saveTemplate(body);
+  }
+
+  /** Envia o modelo em Word (.docx) da empresa: vira a próxima versão do modelo. */
+  @Post('contract-template/upload')
+  @HttpCode(201)
+  @RequirePermissions('crm.contract.write', 'platform.document.write')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' }, name: { type: 'string' } },
+    },
+  })
+  uploadTemplate(
+    @UploadedFile() file: UploadedFileType | undefined,
+    @Body() body: UploadTemplateDto,
+  ) {
+    return this.contracts.uploadTemplate(file, body.name);
+  }
+
+  @Get('contract-template/file-url')
+  @RequirePermissions('crm.contract.read')
+  templateFileUrl() {
+    return this.contracts.templateFileUrl();
   }
 
   @Get('opportunities/:id/contracts')

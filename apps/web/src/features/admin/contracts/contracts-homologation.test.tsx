@@ -1,12 +1,14 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   BUILT_IN_HOMOLOGATION_RULES,
   CONTRACT_VARIABLES,
   DEFAULT_CONTRACT_TEMPLATE,
 } from '@voltex/shared';
+import { ApiError } from '@/lib/api/errors';
+import { endpoints } from '@/lib/api/endpoints';
 import { API, distributor, makeSession } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
@@ -16,6 +18,8 @@ const template = (over = {}) => ({
   name: 'Modelo-base (sem revisão jurídica)',
   body: DEFAULT_CONTRACT_TEMPLATE,
   isDefault: true,
+  kind: 'TEXT',
+  fileName: null,
   variables: [...CONTRACT_VARIABLES],
   createdAt: null,
   ...over,
@@ -26,7 +30,7 @@ describe('Administração · Contratos', () => {
     server.use(http.get(`${API}/contract-template`, () => HttpResponse.json(template())));
     renderApp('/admin/contratos', { session: makeSession('SALES_MANAGER') });
     expect(await screen.findByText(/modelo-base/, { selector: 'strong' })).toBeInTheDocument();
-    expect(screen.getByText('{{cliente.nome}}')).toBeInTheDocument();
+    expect(screen.getAllByText('{{cliente.nome}}').length).toBeGreaterThan(0);
   });
 
   it('recusa variável desconhecida antes de enviar e publica o modelo válido', async () => {
@@ -151,5 +155,67 @@ describe('Administração · Homologação', () => {
     renderApp('/admin/homologacao', { session: makeSession('ENGINEERING') });
     expect(await screen.findByText('energif-2023@1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Publicar regras/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Administração · Contratos · modelo em Word', () => {
+  const baseTemplate = (over = {}) => ({
+    version: null,
+    name: 'Modelo-base (sem revisão jurídica)',
+    body: DEFAULT_CONTRACT_TEMPLATE,
+    isDefault: true,
+    kind: 'TEXT',
+    fileName: null,
+    variables: [...CONTRACT_VARIABLES],
+    createdAt: null,
+    ...over,
+  });
+
+  it('envia o contrato da empresa em Word e mostra o modelo atual com a opção de baixar', async () => {
+    let current = baseTemplate();
+    const upload = vi
+      .spyOn(endpoints.contracts, 'uploadTemplate')
+      .mockImplementation(async (file) => {
+        current = baseTemplate({ version: 1, isDefault: false, kind: 'DOCX', fileName: file.name });
+        return current as never;
+      });
+    server.use(http.get(`${API}/contract-template`, () => HttpResponse.json(current)));
+    renderApp('/admin/contratos', { session: makeSession('OWNER') });
+    const user = userEvent.setup({ applyAccept: false });
+    expect(await screen.findByText('Usar o contrato da sua empresa (Word)')).toBeInTheDocument();
+    await user.upload(
+      screen.getByLabelText('Enviar modelo em Word'),
+      new File(['x'], 'Meu contrato.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    await waitFor(() => expect(upload).toHaveBeenCalled());
+    expect(await screen.findByText(/Meu contrato\.docx/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Baixar o modelo/ })).toBeInTheDocument();
+    upload.mockRestore();
+  });
+
+  it('recusa arquivo que não é Word e mostra o erro do servidor (variável desconhecida)', async () => {
+    server.use(http.get(`${API}/contract-template`, () => HttpResponse.json(baseTemplate())));
+    const upload = vi
+      .spyOn(endpoints.contracts, 'uploadTemplate')
+      .mockRejectedValue(
+        new ApiError(
+          422,
+          'UNKNOWN_TEMPLATE_VARIABLES',
+          'Variáveis desconhecidas no modelo: {{cliente.nomee}}.',
+        ),
+      );
+    renderApp('/admin/contratos', { session: makeSession('OWNER') });
+    const user = userEvent.setup({ applyAccept: false });
+    const input = await screen.findByLabelText('Enviar modelo em Word');
+    await user.upload(input, new File(['x'], 'contrato.pdf', { type: 'application/pdf' }));
+    expect(await screen.findByText('Envie um arquivo do Word (.docx).')).toBeInTheDocument();
+    expect(upload).not.toHaveBeenCalled();
+    await user.upload(input, new File(['x'], 'contrato.docx'));
+    expect(
+      await screen.findByText(/Variáveis desconhecidas no modelo: \{\{cliente\.nomee\}\}/),
+    ).toBeInTheDocument();
+    upload.mockRestore();
   });
 });

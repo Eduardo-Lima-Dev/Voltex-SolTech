@@ -16,6 +16,9 @@ export interface ContractTemplateDto {
   name: string;
   body: string;
   isDefault: boolean;
+  /** `DOCX` = a empresa enviou um modelo em Word; `TEXT` = texto editado no sistema. */
+  kind: 'TEXT' | 'DOCX';
+  fileName: string | null;
   variables: { key: string; label: string }[];
   createdAt: string | null;
 }
@@ -35,7 +38,9 @@ export interface ContractDto {
   /** Variáveis que ficaram sem valor no texto (aparecem como "(não informado)"). */
   missingVariables: string[];
   valueCents: number;
+  /** Arquivo gerado: PDF (modelo em texto) ou Word (modelo enviado em .docx). */
   pdfDocumentId: string | null;
+  fileKind: 'PDF' | 'DOCX';
   signedDocumentId: string | null;
   signedAt: string | null;
   signedByName: string | null;

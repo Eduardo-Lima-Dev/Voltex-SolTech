@@ -47,6 +47,8 @@ export const envSchema = z
     S3_BUCKET: z.string().default('voltex-documents'),
     S3_ACCESS_KEY: z.string().min(1),
     S3_SECRET_KEY: z.string().min(1),
+    /** `AES256` pede ao armazenamento que cifre os arquivos em repouso (o S3 da AWS faz; confira se o seu suporta). */
+    S3_SERVER_SIDE_ENCRYPTION: z.enum(['none', 'AES256']).default('none'),
     S3_FORCE_PATH_STYLE: booleanFromString.default(true),
     UPLOAD_MAX_BYTES: z.coerce
       .number()

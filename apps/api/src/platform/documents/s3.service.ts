@@ -17,10 +17,14 @@ export class S3Service implements OnModuleInit {
   private readonly client: S3Client;
   private readonly bucket: string;
   private readonly isProduction: boolean;
+  private readonly serverSideEncryption: 'AES256' | undefined;
 
   constructor(config: ConfigService<Env, true>) {
     this.bucket = config.get('S3_BUCKET', { infer: true });
     this.isProduction = config.get('NODE_ENV', { infer: true }) === 'production';
+    // Criptografia em repouso feita pelo próprio armazenamento (S3 da AWS e compatíveis que a suportem).
+    this.serverSideEncryption =
+      config.get('S3_SERVER_SIDE_ENCRYPTION', { infer: true }) === 'AES256' ? 'AES256' : undefined;
     this.client = new S3Client({
       endpoint: config.get('S3_ENDPOINT', { infer: true }),
       region: config.get('S3_REGION', { infer: true }),
@@ -51,7 +55,13 @@ export class S3Service implements OnModuleInit {
 
   async put(key: string, body: Buffer, contentType: string): Promise<void> {
     await this.client.send(
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }),
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        ...(this.serverSideEncryption ? { ServerSideEncryption: this.serverSideEncryption } : {}),
+      }),
     );
   }
 

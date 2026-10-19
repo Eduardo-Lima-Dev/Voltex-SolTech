@@ -329,6 +329,14 @@ export function createEndpoints(client: ApiClient) {
     },
     contracts: {
       template: () => client.get<ContractTemplateDto>(ROUTES.contractTemplate),
+      uploadTemplate: (file: File, name?: string) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (name) form.append('name', name);
+        return client.upload<ContractTemplateDto>(`${ROUTES.contractTemplate}/upload`, form);
+      },
+      templateFileUrl: () =>
+        client.get<{ url: string; expiresIn: number }>(`${ROUTES.contractTemplate}/file-url`),
       saveTemplate: (input: UpdateContractTemplateInput) =>
         client.put<ContractTemplateDto>(ROUTES.contractTemplate, input),
       list: (opportunityId: string) =>
