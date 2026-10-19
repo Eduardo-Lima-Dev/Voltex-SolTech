@@ -1,6 +1,6 @@
 import { ArrowLeft, ShieldCheck, Sun, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Logo, LogoMark } from '@voltex/ui';
+import { Logo } from '@voltex/ui';
 import { ThemeToggle } from '@/app/layout/theme-toggle';
 
 const HIGHLIGHTS: { icon: LucideIcon; text: string }[] = [
@@ -16,10 +16,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh bg-background text-foreground lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       <aside className="relative hidden overflow-hidden bg-brand-navy text-brand-ice lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <LogoMark
-          title=""
-          tone="on-dark"
-          className="pointer-events-none absolute -bottom-24 -right-24 h-[34rem] opacity-[0.06]"
+        <img
+          src="/brand-grid-cyan.svg"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute -bottom-36 -right-44 h-[34rem] w-auto opacity-[0.13]"
         />
         {SITE_URL ? (
           <a

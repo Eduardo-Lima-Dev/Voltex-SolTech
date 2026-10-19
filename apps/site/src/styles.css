@@ -1058,9 +1058,9 @@ ol {
   position: absolute;
   right: -6rem;
   bottom: -7rem;
-  height: 34rem;
+  height: 36rem;
   width: auto;
-  opacity: 0.06;
+  opacity: 0.16;
   pointer-events: none;
 }
 .contact__grid {
