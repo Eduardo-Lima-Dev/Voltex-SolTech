@@ -221,7 +221,7 @@ export function LeadsPage() {
           <Can permission="crm.lead.write">
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setImporting(true)}>
-                <Upload /> Importar CSV
+                <Upload /> Importar planilha
               </Button>
               <Button size="sm" onClick={() => edit(null)}>
                 <Plus /> Novo lead
@@ -230,7 +230,7 @@ export function LeadsPage() {
           </Can>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_9rem_10rem_9rem_9rem]">
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1fr)_11rem_10rem_12rem_10rem]">
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -239,7 +239,7 @@ export function LeadsPage() {
               <Input
                 type="search"
                 className="pl-9"
-                placeholder="Buscar por nome, e-mail ou telefone"
+                placeholder="Nome, e-mail ou telefone"
                 aria-label="Buscar leads"
                 value={search}
                 onChange={(e) => reset(setSearch)(e.target.value)}
@@ -320,7 +320,7 @@ export function LeadsPage() {
                       <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                         {debouncedSearch || status || source || segment || slaOnly
                           ? 'Nenhum lead encontrado com esses filtros.'
-                          : 'Nenhum lead ainda. Cadastre, importe um CSV ou use o formulário de captação.'}
+                          : 'Nenhum lead ainda. Cadastre, importe uma planilha ou ligue o formulário do seu site.'}
                       </TableCell>
                     </TableRow>
                   ) : (

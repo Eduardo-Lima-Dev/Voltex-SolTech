@@ -265,7 +265,7 @@ function ImportDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Importar irradiação (CSV)</DialogTitle>
+          <DialogTitle>Importar irradiação de uma planilha</DialogTitle>
           <DialogDescription>
             Colunas: nome, uf, latitude, longitude, fonte, plano (opcional) e jan a dez. Use “;” com
             decimais em vírgula, ou “,” com decimais em ponto. Cada local precisa de fonte.
@@ -281,7 +281,7 @@ function ImportDialog({
           >
             <Download /> Baixar modelo
           </Button>
-          <Field id="sr-file" label="Arquivo CSV">
+          <Field id="sr-file" label="Arquivo da planilha (CSV)">
             <Input
               id="sr-file"
               type="file"
@@ -376,7 +376,7 @@ export function SolarResourcesPage() {
         <Can permission="platform.rule.manage">
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => setImporting(true)}>
-              <Upload /> Importar CSV
+              <Upload /> Importar planilha
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus /> Novo local
@@ -425,7 +425,7 @@ export function SolarResourcesPage() {
                     <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
                       {debouncedSearch
                         ? 'Nenhum local encontrado com essa busca.'
-                        : 'Nenhum local cadastrado. Cadastre um ou importe um CSV.'}
+                        : 'Nenhum local cadastrado. Cadastre um ou importe uma planilha.'}
                     </TableCell>
                   </TableRow>
                 ) : (

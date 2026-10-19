@@ -13,7 +13,7 @@ import {
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 
-/** Portabilidade (LGPD): baixa todos os dados da empresa em um arquivo JSON. */
+/** Portabilidade (LGPD): baixa todos os dados da empresa em um arquivo. */
 export function ExportCard() {
   const exportData = useMutation({
     mutationFn: async () => {
@@ -36,9 +36,9 @@ export function ExportCard() {
         <CardTitle>Exportar os dados da empresa</CardTitle>
         <CardDescription>
           Baixa tudo o que é da sua empresa (leads, contas, oportunidades, propostas, contratos,
-          projetos…) em JSON, com CPF/CNPJ em claro. Não inclui senhas nem os arquivos enviados (só
-          a lista deles). O arquivo contém dados pessoais: guarde com cuidado. A exportação fica
-          registrada na auditoria.
+          projetos…) em um arquivo, com CPF/CNPJ legíveis. Não inclui senhas nem os arquivos
+          enviados (só a lista deles). O arquivo contém dados pessoais: guarde com cuidado. A
+          exportação fica registrada na auditoria.
         </CardDescription>
       </CardHeader>
       <CardContent>

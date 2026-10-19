@@ -335,6 +335,8 @@ describe('CRM · Contas', () => {
         projectType: 'ON_GRID',
       });
       await waitFor(() => expect(router.state.location.pathname).toBe('/crm/oportunidades/opp-5'));
+      // Espera a página nova terminar de carregar: requisições soltas contaminariam o teste seguinte.
+      await screen.findByRole('heading', { name: 'Nova', level: 2 });
     });
   });
 

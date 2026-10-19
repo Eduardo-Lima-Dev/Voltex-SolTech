@@ -89,7 +89,7 @@ export function OpportunityDetailPage() {
                 {data.accountName}
               </Link>{' '}
               ·{' '}
-              <span className="font-mono" title="Project ID">
+              <span className="font-mono" title="Código do projeto">
                 {data.projectCode}
               </span>{' '}
               · {PROJECT_TYPE_LABELS[data.projectType]}

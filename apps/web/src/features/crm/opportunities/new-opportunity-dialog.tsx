@@ -87,7 +87,7 @@ export function NewOpportunityDialog({ open, onOpenChange, accountId }: NewOppor
         <DialogHeader>
           <DialogTitle>Nova oportunidade</DialogTitle>
           <DialogDescription>
-            Cada oportunidade ganha um Project ID que acompanha o negócio até a operação.
+            Cada oportunidade ganha um código do projeto, que acompanha o negócio até a instalação.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">

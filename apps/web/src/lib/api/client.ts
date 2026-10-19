@@ -149,7 +149,7 @@ export class ApiClient {
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
-      throw new ApiError(0, 'NETWORK_ERROR', 'Não foi possível conectar ao servidor');
+      throw new ApiError(0, 'NETWORK_ERROR', 'Não foi possível conectar ao sistema');
     }
   }
 

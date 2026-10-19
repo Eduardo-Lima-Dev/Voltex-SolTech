@@ -82,7 +82,7 @@ function ListView({ mine }: { mine: boolean }) {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_12rem_9rem_12rem]">
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_12rem_10rem_12rem]">
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -91,7 +91,7 @@ function ListView({ mine }: { mine: boolean }) {
             <Input
               type="search"
               className="pl-9"
-              placeholder="Buscar por título, conta ou Project ID"
+              placeholder="Buscar por título, conta ou código do projeto"
               aria-label="Buscar oportunidades"
               value={search}
               onChange={(e) => reset(setSearch)(e.target.value)}

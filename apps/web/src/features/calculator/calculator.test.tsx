@@ -329,7 +329,7 @@ describe('detalhe do cálculo', () => {
     expect(order('Área insuficiente')).toBeLessThan(order('PR padrão em uso'));
   });
 
-  it('salva um snapshot com observação e atualiza a lista de snapshots', async () => {
+  it('salva uma versão com observação e atualiza a lista de versões salvas', async () => {
     const calc = makeCalculation();
     let note: unknown;
     let snapshots: ReturnType<typeof makeSnapshot>[] = [];
@@ -346,15 +346,15 @@ describe('detalhe do cálculo', () => {
     );
     renderApp(`/calculator/${calc.id}`, { session: makeSession('SALESPERSON') });
     const user = userEvent.setup();
-    expect(await screen.findByText('Nenhum snapshot salvo ainda.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Salvar snapshot/ }));
+    expect(await screen.findByText('Nenhuma versão salva ainda.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Salvar versão/ }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/nunca muda/)).toBeInTheDocument();
     await user.type(
       within(dialog).getByLabelText('Observação (opcional)'),
       'Versão enviada ao cliente',
     );
-    await user.click(within(dialog).getByRole('button', { name: /Salvar snapshot/ }));
+    await user.click(within(dialog).getByRole('button', { name: /Salvar versão/ }));
     expect(await screen.findByText('Versão enviada ao cliente')).toBeInTheDocument();
     expect(note).toBe('Versão enviada ao cliente');
     expect(screen.getByRole('link', { name: /Abrir/ })).toHaveAttribute(
@@ -363,11 +363,11 @@ describe('detalhe do cálculo', () => {
     );
   });
 
-  it('SDR calcula mas não vê o botão de salvar snapshot', async () => {
+  it('SDR calcula mas não vê o botão de salvar versão', async () => {
     server.use(...detail());
     renderApp('/calculator/calc-1', { session: makeSession('SDR') });
     await screen.findByRole('heading', { name: 'Residência Silva', level: 1 });
-    expect(screen.queryByRole('button', { name: /Salvar snapshot/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Salvar versão/ })).not.toBeInTheDocument();
   });
 
   it('cálculo inexistente mostra mensagem e caminho de volta', async () => {
@@ -386,7 +386,7 @@ describe('detalhe do cálculo', () => {
 });
 
 describe('página do snapshot', () => {
-  it('mostra o registro congelado com observação, regra e versão do algoritmo', async () => {
+  it('mostra a versão salva com a observação, sem jargão técnico', async () => {
     server.use(
       http.get(`${API}/calculations/quick/snapshots/snap-1`, () =>
         HttpResponse.json(makeSnapshot()),
@@ -395,7 +395,8 @@ describe('página do snapshot', () => {
     renderApp('/calculator/snapshots/snap-1');
     expect(await screen.findByText('Enviado ao cliente')).toBeInTheDocument();
     expect(screen.getByText(/Este registro é imutável/)).toBeInTheDocument();
-    expect(screen.getByText(/regra builtin@1/)).toBeInTheDocument();
+    expect(screen.getByText(/Os números abaixo não mudam mais/)).toBeInTheDocument();
+    expect(screen.queryByText(/builtin@1|calc-1/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver cálculo original' })).toHaveAttribute(
       'href',
       '/calculator/calc-1',

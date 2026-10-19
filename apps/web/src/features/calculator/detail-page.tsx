@@ -123,7 +123,7 @@ function SnapshotDialog({
     mutationFn: () =>
       endpoints.calculator.createSnapshot(session.id, { note: note.trim() || undefined }),
     onSuccess: async () => {
-      toast.success('Snapshot salvo');
+      toast.success('Versão salva');
       setNote('');
       onOpenChange(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.calculationSnapshots(session.id) });
@@ -131,8 +131,8 @@ function SnapshotDialog({
     onError: (error) =>
       toast.error(
         isApiError(error) && error.status === 403
-          ? 'Seu perfil não pode salvar snapshots.'
-          : errorMessage(error, 'Não foi possível salvar o snapshot.'),
+          ? 'Seu perfil não pode salvar versões do cálculo.'
+          : errorMessage(error, 'Não foi possível salvar a versão.'),
       ),
   });
 
@@ -140,11 +140,11 @@ function SnapshotDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Salvar snapshot</DialogTitle>
+          <DialogTitle>Salvar uma versão deste cálculo</DialogTitle>
           <DialogDescription>
-            Congela este resultado com a entrada, a regra ({session.ruleSetRef}) e a versão do
-            algoritmo ({session.algorithmVersion}). Um snapshot nunca muda, mesmo que tarifas e
-            regras mudem depois.
+            Guarda uma cópia deste resultado, exatamente como está agora. A versão salva nunca muda,
+            mesmo que tarifas e regras sejam atualizadas depois: serve para provar em que números a
+            proposta foi feita.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-1.5">
@@ -164,7 +164,7 @@ function SnapshotDialog({
           </Button>
           <Button type="button" onClick={() => create.mutate()} disabled={create.isPending}>
             {create.isPending ? <Spinner /> : <Camera />}
-            Salvar snapshot
+            Salvar versão
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -180,16 +180,16 @@ function SnapshotsCard({ id }: { id: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Snapshots</CardTitle>
+        <CardTitle className="text-base">Versões salvas</CardTitle>
         <CardDescription>Versões congeladas deste cálculo.</CardDescription>
       </CardHeader>
       <CardContent>
         {snapshots.isPending ? (
           <Skeleton className="h-10 w-full" />
         ) : snapshots.isError ? (
-          <p className="text-sm text-destructive">Não foi possível carregar os snapshots.</p>
+          <p className="text-sm text-destructive">Não foi possível carregar as versões salvas.</p>
         ) : snapshots.data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum snapshot salvo ainda.</p>
+          <p className="text-sm text-muted-foreground">Nenhuma versão salva ainda.</p>
         ) : (
           <ul className="divide-y">
             {snapshots.data.map((s: QuickCalculationSnapshotDto) => (
@@ -243,12 +243,12 @@ export function CalculationDetailPage() {
     <div className="space-y-6">
       <Header
         title={data.title || data.customerName || 'Cálculo sem título'}
-        subtitle={`${data.title && data.customerName ? `${data.customerName} · ` : ''}Criado em ${formatDateTime(data.createdAt)} · regra ${data.ruleSetRef} · algoritmo ${data.algorithmVersion}`}
+        subtitle={`${data.title && data.customerName ? `${data.customerName} · ` : ''}Criado em ${formatDateTime(data.createdAt)}`}
         light={data.trafficLight}
       >
         <Can permission="calculator.snapshot.create">
           <Button onClick={() => setSnapshotOpen(true)}>
-            <Camera /> Salvar snapshot
+            <Camera /> Salvar versão
           </Button>
         </Can>
       </Header>
@@ -273,8 +273,8 @@ export function SnapshotPage() {
       <div className="space-y-3">
         <p className="text-sm text-destructive">
           {isApiError(snapshot.error) && snapshot.error.status === 404
-            ? 'Snapshot não encontrado.'
-            : 'Não foi possível carregar o snapshot.'}
+            ? 'Versão salva não encontrada.'
+            : 'Não foi possível carregar a versão salva.'}
         </p>
         <Button asChild variant="outline">
           <Link to="/calculator">Voltar aos cálculos</Link>
@@ -286,8 +286,8 @@ export function SnapshotPage() {
   return (
     <div className="space-y-6">
       <Header
-        title={`Snapshot — ${data.customerName || 'cálculo'}`}
-        subtitle={`Congelado em ${formatDateTime(data.createdAt)} · regra ${data.ruleSetRef} · algoritmo ${data.algorithmVersion}`}
+        title={`Versão salva — ${data.customerName || 'cálculo'}`}
+        subtitle={`Salva em ${formatDateTime(data.createdAt)}. Os números abaixo não mudam mais.`}
         light={data.trafficLight}
       >
         <Button asChild variant="outline">

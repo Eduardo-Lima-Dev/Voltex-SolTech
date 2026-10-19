@@ -27,7 +27,7 @@ import {
 import { Pagination } from '@/components/pagination';
 import { AUDIT_ACTION_LABELS, ENTITY_LABELS, auditActionLabel, entityLabel } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
-import { formatDateTime, shortId } from '@/lib/format';
+import { formatCents, formatDateTime, formatPercent, shortId } from '@/lib/format';
 import { queryKeys } from '../query-keys';
 
 const PAGE_SIZE = 15;
@@ -36,14 +36,77 @@ const PAGE_SIZE = 15;
 const startOfDay = (date: string) => new Date(`${date}T00:00:00`).toISOString();
 const endOfDay = (date: string) => new Date(`${date}T23:59:59.999`).toISOString();
 
-function JsonBlock({ title, value }: { title: string; value: unknown }) {
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Nome',
+  email: 'E-mail',
+  phone: 'Telefone',
+  document: 'Documento',
+  role: 'Perfil',
+  isActive: 'Ativo',
+  status: 'Situação',
+  stage: 'Etapa',
+  title: 'Título',
+  notes: 'Observações',
+  reason: 'Motivo',
+  justification: 'Justificativa',
+  priceCents: 'Preço',
+  marginRate: 'Margem',
+  minMarginRate: 'Margem mínima',
+  marginStatus: 'Situação da margem',
+  approvalStatus: 'Situação da aprovação',
+  version: 'Versão',
+  protocolNumber: 'Protocolo',
+  responsibleId: 'Responsável técnico',
+  valueCents: 'Valor',
+  active: 'Ativa',
+  source: 'Origem',
+  segment: 'Segmento',
+  projectCode: 'Código do projeto',
+};
+
+const humanize = (key: string) =>
+  FIELD_LABELS[key] ??
+  key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+
+function formatValue(key: string, value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (typeof value === 'number') {
+    if (key.endsWith('Cents')) return formatCents(value);
+    if (/Rate$/.test(key)) return formatPercent(value, 1);
+    return String(value);
+  }
+  if (Array.isArray(value))
+    return value.length === 0 ? '—' : value.map((v) => formatValue(key, v)).join(', ');
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return formatDateTime(value);
+  return String(value);
+}
+
+/** Objetos aninhados viram linhas "Grupo · campo": nada de chaves e colchetes na tela. */
+function flatten(value: unknown, prefix = ''): [string, string][] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return [[prefix, formatValue(prefix, value)]];
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, v]) =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+      ? flatten(v, key).map(([k, text]): [string, string] => [`${humanize(key)} · ${k}`, text])
+      : [[humanize(key), formatValue(key, v)] as [string, string]],
+  );
+}
+
+function ChangeBlock({ title, value }: { title: string; value: unknown }) {
   if (value === null || value === undefined) return null;
+  const rows = flatten(value);
   return (
     <div className="space-y-1">
       <h4 className="text-sm font-medium">{title}</h4>
-      <pre className="max-h-60 overflow-auto rounded-md border bg-muted p-3 text-xs">
-        {JSON.stringify(value, null, 2)}
-      </pre>
+      <dl className="max-h-60 overflow-auto rounded-md border bg-muted p-3 text-sm">
+        {rows.map(([label, text]) => (
+          <div key={label} className="flex justify-between gap-4 py-0.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="text-right">{text}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -236,8 +299,8 @@ export function AuditPage() {
                 <dt className="text-muted-foreground">Requisição</dt>
                 <dd className="break-all font-mono text-xs">{selected.requestId ?? '—'}</dd>
               </dl>
-              <JsonBlock title="Antes" value={selected.before} />
-              <JsonBlock title="Depois" value={selected.after} />
+              <ChangeBlock title="Antes" value={selected.before} />
+              <ChangeBlock title="Depois" value={selected.after} />
             </>
           ) : null}
         </DialogContent>

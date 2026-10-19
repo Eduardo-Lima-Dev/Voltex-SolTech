@@ -251,8 +251,8 @@ export function CalculatorWizardPage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Novo cálculo</h1>
         <p className="text-muted-foreground">
-          O resultado ao lado se atualiza enquanto você preenche. Ao salvar, o servidor recalcula
-          com as regras da sua empresa ({config.data.ruleSetRef}).
+          O resultado ao lado se atualiza enquanto você preenche. Ao salvar, o sistema confere tudo
+          de novo com as regras da sua empresa.
         </p>
       </header>
 
@@ -680,7 +680,9 @@ export function CalculatorWizardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Resultado em tempo real</CardTitle>
-              <CardDescription>Mesmo motor de cálculo do servidor.</CardDescription>
+              <CardDescription>
+                Calculado na hora, com as mesmas regras usadas ao salvar.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {evaluation?.ok ? (

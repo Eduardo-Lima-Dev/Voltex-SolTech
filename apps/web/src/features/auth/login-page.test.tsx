@@ -43,7 +43,7 @@ describe('LoginPage', () => {
 
   it.each([
     [429, 'Muitas tentativas de login. Aguarde um minuto e tente de novo.'],
-    [500, 'O servidor encontrou um problema. Tente novamente em instantes.'],
+    [500, 'O sistema encontrou um problema. Tente novamente em instantes.'],
   ])('status %s mostra a mensagem apropriada', async (status, message) => {
     server.use(
       http.post(`${API}/auth/login`, () =>
@@ -61,7 +61,7 @@ describe('LoginPage', () => {
     renderApp('/login', { session: null });
     await screen.findByRole('heading', { name: 'Entrar na sua conta' });
     await fillAndSubmit('owner@voltex.test', 'Voltex@2026');
-    expect(await screen.findByText(/Não foi possível conectar ao servidor/)).toBeInTheDocument();
+    expect(await screen.findByText(/Não foi possível conectar ao sistema/)).toBeInTheDocument();
   });
 
   it('envia o e-mail normalizado e entra', async () => {

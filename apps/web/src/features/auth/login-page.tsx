@@ -26,9 +26,9 @@ function loginErrorMessage(error: unknown): string {
     if (error.status === 429)
       return 'Muitas tentativas de login. Aguarde um minuto e tente de novo.';
     if (error.isNetworkError)
-      return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+      return 'Não foi possível conectar ao sistema. Verifique sua conexão com a internet.';
     if (error.status >= 500)
-      return 'O servidor encontrou um problema. Tente novamente em instantes.';
+      return 'O sistema encontrou um problema. Tente novamente em instantes.';
   }
   return 'Não foi possível entrar. Tente novamente.';
 }

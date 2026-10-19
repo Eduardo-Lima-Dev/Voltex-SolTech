@@ -25,7 +25,7 @@ export function UserMenu() {
       await logout();
     } catch {
       toast.error(
-        'Não foi possível encerrar a sessão no servidor, mas você foi desconectado neste aparelho.',
+        'Não foi possível encerrar a sessão por completo, mas você foi desconectado neste aparelho.',
       );
     }
     navigate('/login', { replace: true });
