@@ -1,5 +1,4 @@
 {
-  "$comment": "Site de apresentação na Vercel. Só o formulário de contato fala com a API (captação pública de leads); nada mais da API fica exposto por aqui.",
   "rewrites": [
     {
       "source": "/api/v1/public/leads/:key",

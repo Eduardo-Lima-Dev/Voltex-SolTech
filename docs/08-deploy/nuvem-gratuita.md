@@ -122,3 +122,17 @@ E-mails (convites): neste deploy **não há servidor de e-mail**. Convites só f
 - **Termos de uso:** o plano gratuito da Vercel é para uso **não comercial**; para um produto comercial, a hospedagem do site e da aplicação por lá pode ir contra o contrato.
 - **Cada plano muda de regras**: confira as páginas oficiais antes de depender.
 - **Dados pessoais (LGPD):** use só dados fictícios.
+
+## Estado da demonstração publicada
+
+| Peça                          | Endereço                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| Aplicação                     | https://voltex-app-rho.vercel.app                                         |
+| Site                          | https://voltex-site-one.vercel.app                                        |
+| API (Render, região Virgínia) | https://voltex-api-zc9f.onrender.com                                      |
+| Banco e arquivos              | Supabase, projeto `voltex` (São Paulo), bucket privado `voltex-documents` |
+| Redis                         | Upstash                                                                   |
+
+Segredos ficam em `~/.voltex-deploy/` (fora do repositório, permissão 600). Scripts usados: `guardar-segredo.sh`, `publicar-api.sh`, `render-api.mjs` (cria ou atualiza o serviço na Render pela API), `publicar-front.sh` e `criar-dono-nuvem.sh` (primeira empresa e proprietário).
+
+Para **atualizar a API**: `./scripts/publicar-api.sh ghcr.io/eduardo-lima-dev/voltex-api`, depois `node scripts/render-api.mjs ghcr.io/eduardo-lima-dev/voltex-api:latest https://voltex-app-rho.vercel.app` (atualiza as variáveis e pede nova publicação). Para **atualizar o front**: rode de novo o `publicar-front.sh`.

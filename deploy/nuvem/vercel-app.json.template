@@ -1,5 +1,4 @@
 {
-  "$comment": "Aplicação (SPA) na Vercel. /api é encaminhado para a API na Render: o navegador só fala com este endereço, então o cookie de login continua do mesmo site. __API_HOST__ é trocado por scripts/publicar-front.sh.",
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://__API_HOST__/api/:path*" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
