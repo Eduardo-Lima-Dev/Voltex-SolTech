@@ -75,14 +75,15 @@ export function AcceptInvitationPage() {
     return (
       <AuthLayout>
         <div className="space-y-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Convite inválido</h1>
+          <p className="brand-mono text-xs text-brand-cyan-strong dark:text-brand-cyan">Convite</p>
+          <h1 className="text-3xl font-semibold tracking-[-0.035em]">Convite inválido</h1>
           <Alert variant="destructive">
             <AlertDescription>
               O link do convite está incompleto. Abra o link exatamente como veio no e-mail ou peça
               um novo convite.
             </AlertDescription>
           </Alert>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="h-11 w-full rounded-full">
             <Link to="/login">Ir para o login</Link>
           </Button>
         </div>
@@ -93,8 +94,11 @@ export function AcceptInvitationPage() {
   return (
     <AuthLayout>
       <div className="space-y-6">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Crie sua conta</h1>
+        <div className="space-y-2">
+          <p className="brand-mono text-xs text-brand-cyan-strong dark:text-brand-cyan">
+            Convite para a plataforma
+          </p>
+          <h1 className="text-3xl font-semibold tracking-[-0.035em]">Crie sua conta</h1>
           <p className="text-sm text-muted-foreground">
             Você foi convidado para a Voltex SolTech. Informe seu nome e escolha uma senha.
           </p>
@@ -148,7 +152,11 @@ export function AcceptInvitationPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="h-11 w-full rounded-full text-[0.95rem]"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? <Spinner /> : <UserPlus />}
               Criar conta e entrar
             </Button>

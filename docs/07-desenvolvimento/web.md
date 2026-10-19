@@ -130,3 +130,14 @@ Além dos testes automatizados, a interface foi percorrida num navegador real (C
 3. Formulário com `react-hook-form` + `zodResolver` (reaproveite o schema de `@voltex/shared`).
 4. Textos de enumerações em `i18n/labels.ts`.
 5. Teste com `renderApp` cobrindo sucesso, erro da API e o que o perfil sem permissão **não** vê.
+
+## Telas públicas (sem login)
+
+| Endereço                         | O que é                              | Como chegar                                                                                                                             |
+| -------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`                         | Entrar                               | Botão **Entrar** do site, ou direto. Quem já está logado é levado para o início.                                                        |
+| `/accept-invitation?token=…`     | Criar conta pelo convite             | Link no e-mail do convite (Administração → Usuários → Convidar). Em desenvolvimento o e-mail chega no Mailpit, `http://localhost:8025`. |
+| `/p/:token`                      | Proposta que o cliente abre e aceita | Link gerado na oportunidade (aba Propostas → enviar). Cada versão tem o seu; versões antigas mostram "substituída".                     |
+| qualquer endereço que não exista | Página não encontrada (404)          | Ex.: `/qualquer-coisa`.                                                                                                                 |
+
+O **site** (`apps/site`) é outro aplicativo, em outro endereço (dev: `http://localhost:5174`); veja [Site de apresentação](../08-deploy/site.md). Estas telas usam o mesmo estilo do site (rótulos em mono, títulos apertados, arco do sol e grade da marca). A proposta pública mantém as **cores e a logo da empresa** que a enviou; só a tipografia e a estrutura seguem o estilo.

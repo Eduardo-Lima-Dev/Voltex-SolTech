@@ -58,7 +58,7 @@ export function LoginPage() {
     <AuthLayout>
       <div className="space-y-6">
         <div className="space-y-2">
-          <p className="auth-mono text-xs text-brand-cyan-strong dark:text-brand-cyan">
+          <p className="brand-mono text-xs text-brand-cyan-strong dark:text-brand-cyan">
             Acesso à plataforma
           </p>
           <h1 className="text-3xl font-semibold tracking-[-0.035em]">Entrar na sua conta</h1>
