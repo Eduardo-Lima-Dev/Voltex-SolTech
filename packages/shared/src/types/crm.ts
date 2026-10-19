@@ -117,6 +117,16 @@ export interface PipelineStageDto {
   name: string;
   order: number;
   terminal: boolean;
+  /** Escondida do quadro (reaparece sozinha se ainda tiver negócios). */
+  hidden: boolean;
+}
+
+/** Coluna criada pela empresa; segue as regras da etapa-base. */
+export interface CustomStageDto {
+  id: string;
+  name: string;
+  baseStage: OpportunityStage;
+  position: number;
 }
 
 export interface OpportunityDto {
@@ -126,6 +136,8 @@ export interface OpportunityDto {
   projectCode: string;
   title: string;
   stage: OpportunityStage;
+  customStageId: string | null;
+  customStageName: string | null;
   status: OpportunityStatus;
   projectType: ProjectType;
   accountId: string;
@@ -147,7 +159,10 @@ export interface OpportunityDto {
 }
 
 export interface OpportunityBoardColumnDto {
+  /** Etapa padrão da coluna (para coluna personalizada, a etapa-base). */
   stage: PipelineStageDto;
+  /** Preenchido quando a coluna é personalizada. */
+  customStage: CustomStageDto | null;
   /** Total de oportunidades na etapa (os cartões podem ser limitados). */
   total: number;
   /** Soma do valor (preço da cotação mais recente) de TODAS as oportunidades da etapa, mesmo as não exibidas. */

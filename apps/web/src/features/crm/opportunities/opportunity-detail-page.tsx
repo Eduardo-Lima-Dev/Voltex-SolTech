@@ -81,7 +81,9 @@ export function OpportunityDetailPage() {
                   data.status === 'WON' ? 'green' : data.status === 'LOST' ? 'outline' : 'secondary'
                 }
               >
-                {open ? stageName(stages.data, data.stage) : OPPORTUNITY_STATUS_LABELS[data.status]}
+                {open
+                  ? `${stageName(stages.data, data.stage)}${data.customStageName ? ` · ${data.customStageName}` : ''}`
+                  : OPPORTUNITY_STATUS_LABELS[data.status]}
               </Badge>
             </div>
             <p className="text-muted-foreground">

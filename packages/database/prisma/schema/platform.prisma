@@ -61,6 +61,7 @@ model Tenant {
   sites                  Site[]
   consumerUnits          ConsumerUnit[]
   pipelineStages         PipelineStage[]
+  customPipelineStages   CustomPipelineStage[]
   opportunities          Opportunity[]
   timelineEvents         TimelineEvent[]
   tasks                  Task[]

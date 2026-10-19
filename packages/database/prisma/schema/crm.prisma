@@ -263,12 +263,31 @@ model PipelineStage {
   name     String
   order    Int
   terminal Boolean          @default(false)
+  /// Etapa escondida do quadro (a coluna reaparece sozinha se ainda houver negócios nela).
+  hidden   Boolean          @default(false)
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, key])
   @@index([tenantId, order])
   @@map("pipeline_stages")
+}
+
+/// Coluna criada pela empresa. Fica logo depois da etapa-base no quadro e segue as regras dela
+/// (passagem entre etapas, automações, painel): só muda onde o negócio aparece.
+model CustomPipelineStage {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  name      String
+  baseStage OpportunityStage @map("base_stage")
+  position  Int              @default(1)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  opportunities Opportunity[]
+
+  @@index([tenantId, baseStage, position])
+  @@map("custom_pipeline_stages")
 }
 
 model Opportunity {
@@ -278,6 +297,8 @@ model Opportunity {
   projectCode       String            @unique @map("project_code")
   title             String
   stage             OpportunityStage  @default(NEW_LEAD)
+  /// Coluna personalizada da empresa (sempre da mesma etapa-base de `stage`); nula = coluna padrão.
+  customStageId     String?           @map("custom_stage_id") @db.Uuid
   status            OpportunityStatus @default(OPEN)
   projectType       ProjectType       @default(ON_GRID) @map("project_type")
   accountId         String            @map("account_id") @db.Uuid
@@ -294,6 +315,7 @@ model Opportunity {
 
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   account             Account              @relation(fields: [accountId], references: [id])
+  customStage         CustomPipelineStage? @relation(fields: [customStageId], references: [id], onDelete: SetNull)
   timeline            TimelineEvent[]
   tasks               Task[]
   energyBills         EnergyBill[]

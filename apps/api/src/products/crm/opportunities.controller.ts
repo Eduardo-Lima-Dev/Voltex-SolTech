@@ -16,10 +16,12 @@ import { z } from 'zod';
 import {
   changeStageSchema,
   createNoteSchema,
+  createCustomStageSchema,
   createOpportunitySchema,
   listOpportunitiesQuerySchema,
   OpportunityStatus,
   updateOpportunitySchema,
+  updateCustomStageSchema,
   updatePipelineStageSchema,
 } from '@voltex/shared';
 import { createCalculationSchema } from '@voltex/solar-engine';
@@ -33,6 +35,8 @@ class ChangeStageDto extends createZodDto(changeStageSchema) {}
 class ListOpportunitiesQueryDto extends createZodDto(listOpportunitiesQuerySchema) {}
 class CreateNoteDto extends createZodDto(createNoteSchema) {}
 class UpdatePipelineStageDto extends createZodDto(updatePipelineStageSchema) {}
+class CreateCustomStageDto extends createZodDto(createCustomStageSchema) {}
+class UpdateCustomStageDto extends createZodDto(updateCustomStageSchema) {}
 class CreateCalculationDto extends createZodDto(createCalculationSchema) {}
 class LinkCalculationDto extends createZodDto(z.object({ sessionId: z.uuid() })) {}
 class BoardQueryDto extends createZodDto(
@@ -59,6 +63,30 @@ export class PipelineController {
   @RequirePermissions('crm.pipeline.manage')
   updateStage(@Param('id', ParseUUIDPipe) id: string, @Body() body: UpdatePipelineStageDto) {
     return this.pipeline.updateStage(id, body);
+  }
+
+  @Get('custom-stages')
+  @RequirePermissions('crm.opportunity.read')
+  customStages() {
+    return this.pipeline.customStages();
+  }
+
+  @Post('custom-stages')
+  @RequirePermissions('crm.pipeline.manage')
+  createCustomStage(@Body() body: CreateCustomStageDto) {
+    return this.pipeline.createCustom(body);
+  }
+
+  @Patch('custom-stages/:id')
+  @RequirePermissions('crm.pipeline.manage')
+  updateCustomStage(@Param('id', ParseUUIDPipe) id: string, @Body() body: UpdateCustomStageDto) {
+    return this.pipeline.updateCustom(id, body);
+  }
+
+  @Delete('custom-stages/:id')
+  @RequirePermissions('crm.pipeline.manage')
+  removeCustomStage(@Param('id', ParseUUIDPipe) id: string) {
+    return this.pipeline.removeCustom(id);
   }
 }
 

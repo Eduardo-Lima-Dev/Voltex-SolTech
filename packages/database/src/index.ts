@@ -13,6 +13,7 @@ export type {
   Site,
   ConsumerUnit,
   PipelineStage,
+  CustomPipelineStage,
   Opportunity,
   TimelineEvent,
   Task,

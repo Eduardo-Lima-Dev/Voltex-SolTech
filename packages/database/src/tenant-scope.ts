@@ -24,6 +24,7 @@ export const TENANT_SCOPED_MODELS = [
   'Site',
   'ConsumerUnit',
   'PipelineStage',
+  'CustomPipelineStage',
   'Opportunity',
   'TimelineEvent',
   'Task',

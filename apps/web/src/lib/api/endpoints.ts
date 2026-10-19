@@ -74,7 +74,10 @@ import {
   type OpportunityBoardDto,
   type OpportunityCalculationContext,
   type OpportunityDto,
+  type CreateCustomStageInput,
+  type CustomStageDto,
   type PipelineStageDto,
+  type UpdateCustomStageInput,
   type RejectEnergyBillInput,
   type SiteDto,
   type TaskDto,
@@ -281,6 +284,13 @@ export function createEndpoints(client: ApiClient) {
       list: () => client.get<PipelineStageDto[]>(ROUTES.pipeline),
       updateStage: (id: string, input: UpdatePipelineStageInput) =>
         client.patch<PipelineStageDto>(`${ROUTES.pipeline}/stages/${id}`, input),
+      customStages: () => client.get<CustomStageDto[]>(`${ROUTES.pipeline}/custom-stages`),
+      createCustomStage: (input: CreateCustomStageInput) =>
+        client.post<CustomStageDto>(`${ROUTES.pipeline}/custom-stages`, input),
+      updateCustomStage: (id: string, input: UpdateCustomStageInput) =>
+        client.patch<CustomStageDto>(`${ROUTES.pipeline}/custom-stages/${id}`, input),
+      removeCustomStage: (id: string) =>
+        client.delete<{ id: string; movedBack: number }>(`${ROUTES.pipeline}/custom-stages/${id}`),
     },
     opportunities: {
       list: (query: Partial<ListOpportunitiesQuery>) =>
