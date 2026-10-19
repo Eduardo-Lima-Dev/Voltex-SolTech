@@ -69,7 +69,9 @@ function CardBody({ opportunity }: { opportunity: OpportunityDto }) {
           {opportunity.accountName}
         </Link>
         <span className="shrink-0 text-sm font-semibold tabular-nums">
-          {opportunity.valueCents ? formatCents(opportunity.valueCents) : '—'}
+          {opportunity.valueCents != null && Number.isFinite(opportunity.valueCents)
+            ? formatCents(opportunity.valueCents)
+            : '—'}
         </span>
       </div>
       <div className="truncate text-xs text-muted-foreground">{opportunity.title}</div>
@@ -176,7 +178,7 @@ function Column({
       ref={setNodeRef}
       aria-label={`Etapa ${column.stage.name}`}
       className={cn(
-        'flex w-72 shrink-0 flex-col rounded-xl border bg-muted/40 transition-colors',
+        'flex w-60 shrink-0 flex-col rounded-xl border bg-muted/40 transition-colors',
         valid === true && 'border-brand-cyan-strong/60',
         valid === false && 'opacity-50',
         isOver && valid && 'bg-accent',
@@ -187,7 +189,9 @@ function Column({
         <p className="text-xs text-muted-foreground">
           {column.total === 1 ? '1 oportunidade' : `${column.total} oportunidades`}
           {' · '}
-          <span className="font-medium text-foreground">{formatCents(column.totalValueCents)}</span>
+          <span className="font-medium text-foreground">
+            {formatCents(column.totalValueCents ?? 0)}
+          </span>
         </p>
       </header>
       <ul className="flex min-h-16 flex-1 flex-col gap-2 px-2 pb-2">
@@ -242,7 +246,7 @@ export function KanbanBoard({
         onDragCancel={() => setDragging(null)}
       >
         <div className="-mx-4 overflow-x-auto px-4 pb-3 md:-mx-6 md:px-6">
-          <div className="flex gap-3">
+          <div className="flex min-h-[calc(100dvh-15rem)] items-stretch gap-3">
             {columns.map((column) => (
               <Column
                 key={column.stage.id}
@@ -256,7 +260,7 @@ export function KanbanBoard({
         </div>
         <DragOverlay>
           {dragging ? (
-            <div className="w-72 rounded-lg border bg-card p-3 shadow-lg">
+            <div className="w-60 rounded-lg border bg-card p-3 shadow-lg">
               <CardBody opportunity={dragging} />
             </div>
           ) : null}
