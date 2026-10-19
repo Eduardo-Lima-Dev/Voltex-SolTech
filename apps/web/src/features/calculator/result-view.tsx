@@ -7,6 +7,7 @@ import type {
   QuickCalculationResult,
 } from '@voltex/solar-engine';
 import {
+  cn,
   Alert,
   AlertDescription,
   AlertTitle,
@@ -77,11 +78,23 @@ function AlertList({ alerts }: { alerts: CalculationAlert[] }) {
   );
 }
 
-function Kpi({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+function Kpi({
+  label,
+  value,
+  hint,
+  compact = false,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+  compact?: boolean;
+}) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className={cn('rounded-lg border bg-card', compact ? 'p-3' : 'p-4')}>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-xl font-semibold tabular-nums">{value}</dd>
+      <dd className={cn('mt-1 font-semibold tabular-nums', compact ? 'text-base' : 'text-xl')}>
+        {value}
+      </dd>
       {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -119,36 +132,53 @@ export function ResultView({ result, input, compact = false }: ResultViewProps) 
     <div className="space-y-6">
       <section
         aria-label="Semáforo de pré-viabilidade"
-        className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4"
+        className={cn(
+          'flex gap-3 rounded-lg border bg-card p-4',
+          compact
+            ? 'flex-col items-start'
+            : 'flex-col items-start sm:flex-row sm:flex-wrap sm:items-center',
+        )}
       >
         <TrafficLightBadge light={result.trafficLight} />
         <p className="min-w-0 flex-1 text-sm text-muted-foreground">
           {TRAFFIC_LIGHT_DESCRIPTIONS[result.trafficLight]}
         </p>
         <p className="text-xs text-muted-foreground">
-          Confiança da análise: <strong>{formatPercent(result.confidenceScore)}</strong>
+          Confiança da análise: <strong>{formatNumber(result.confidenceScore, 0)}%</strong>
         </p>
       </section>
 
-      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <dl className={cn('grid gap-3', compact ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-3')}>
         <Kpi
+          compact={compact}
           label="Potência instalada"
           value={formatKwp(result.installedPowerKwp)}
           hint={`${result.moduleCount} módulos · ${formatNumber(result.estimatedAreaM2, 1)} m² · ${GENERATION_CLASS_LABELS[result.generationClass]}`}
         />
         <Kpi
+          compact={compact}
           label="Geração anual"
           value={formatKwh(result.annualGenerationKwh)}
           hint={`${formatPercent(result.compensationRatio)} do consumo compensável`}
         />
-        <Kpi label="Investimento estimado" value={formatCents(result.investmentCents)} />
-        <Kpi label="Economia no 1º ano" value={formatCents(result.firstYearSavingsCents)} />
         <Kpi
+          compact={compact}
+          label="Investimento estimado"
+          value={formatCents(result.investmentCents)}
+        />
+        <Kpi
+          compact={compact}
+          label="Economia no 1º ano"
+          value={formatCents(result.firstYearSavingsCents)}
+        />
+        <Kpi
+          compact={compact}
           label="Payback simples"
           value={formatYears(result.simplePaybackYears)}
           hint={`Com fluxo de caixa: ${formatYears(result.cashFlowPaybackYears)}`}
         />
         <Kpi
+          compact={compact}
           label={`Economia em ${a.horizonYears} anos`}
           value={formatCents(result.accumulatedSavingsCents)}
         />

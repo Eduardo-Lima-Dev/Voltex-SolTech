@@ -315,7 +315,7 @@ export function CalculatorWizardPage() {
                     )}
                   </fieldset>
 
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
                     <Field
                       id="wz-latitude"
                       label="Latitude (°)"
@@ -515,7 +515,7 @@ export function CalculatorWizardPage() {
 
               {step === 3 ? (
                 <>
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
                     <Field
                       id="wz-modulePowerWp"
                       label="Potência do módulo (Wp)"

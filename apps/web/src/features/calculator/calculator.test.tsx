@@ -221,6 +221,8 @@ describe('wizard de novo cálculo', () => {
     await waitFor(() => expect(body).toBeDefined());
     expect(body!.references).toEqual({ solarResourceId: 'sr-1', tariffId: 'tf-1' });
     expect(body!.input).toMatchObject({ hspSource: 'DATASET', tariffCentsPerKwh: 95.5 });
+    // Espera a navegação terminar: requisições da próxima tela não podem vazar para o teste seguinte.
+    await screen.findByRole('heading', { name: 'Residência Silva', level: 1 });
   });
 
   it('o custo de disponibilidade vem da regra conforme o tipo de ligação', async () => {
@@ -294,6 +296,8 @@ describe('detalhe do cálculo', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Potência instalada')).toBeInTheDocument();
     expect(screen.getByText('4,4 kWp')).toBeInTheDocument();
+    // O score do motor vai de 0 a 100: aparece como porcentagem direta (e não multiplicada de novo).
+    expect(screen.getByText(`${calc.result.confidenceScore}%`)).toBeInTheDocument();
     expect(screen.getByText('Premissas usadas')).toBeInTheDocument();
     expect(screen.getByText(/Performance Ratio \(PR\)/)).toBeInTheDocument();
     expect(screen.getByText(/Irradiação: Fortaleza/)).toBeInTheDocument();
