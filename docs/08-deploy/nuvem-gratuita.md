@@ -136,3 +136,57 @@ E-mails (convites): neste deploy **não há servidor de e-mail**. Convites só f
 Segredos ficam em `~/.voltex-deploy/` (fora do repositório, permissão 600). Scripts usados: `guardar-segredo.sh`, `publicar-api.sh`, `render-api.mjs` (cria ou atualiza o serviço na Render pela API), `publicar-front.sh` e `criar-dono-nuvem.sh` (primeira empresa e proprietário).
 
 Para **atualizar a API**: `./scripts/publicar-api.sh ghcr.io/eduardo-lima-dev/voltex-api`, depois `node scripts/render-api.mjs ghcr.io/eduardo-lima-dev/voltex-api:latest https://voltex-app-rho.vercel.app` (atualiza as variáveis e pede nova publicação). Para **atualizar o front**: rode de novo o `publicar-front.sh`.
+
+## Publicação automática (GitHub Actions)
+
+Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho a cada push na branch `homologate`** (ou pelo botão _Run workflow_ na aba Actions), seguindo o fluxo `develop → homologate → main`.
+
+```mermaid
+flowchart LR
+  P[push em homologate] --> CI[Testes<br/>lint, tipos, testes, e2e]
+  CI --> IMG[Imagem da API<br/>no GHCR]
+  IMG --> DB[Migrações<br/>no Supabase]
+  DB --> API[API<br/>na Render]
+  API --> FRONT[Site e aplicação<br/>na Vercel]
+  FRONT --> OK[Conferência<br/>no ar]
+```
+
+Se qualquer etapa falhar, as seguintes **não rodam** e a demonstração continua na versão anterior. As migrações só rodam depois que os testes passam, e a API só é trocada depois que as migrações terminam.
+
+### O que configurar uma vez no GitHub
+
+No repositório: _Settings → Environments → New environment_ chamado **`demo`** (dá para exigir aprovação manual antes de cada publicação, em _Required reviewers_). Dentro dele:
+
+| Tipo     | Nome                | Valor                                                                                 |
+| -------- | ------------------- | ------------------------------------------------------------------------------------- |
+| Secret   | `DEMO_DATABASE_URL` | conexão do Supabase (_session pooler_), a mesma de `~/.voltex-deploy/supabase-db-url` |
+| Secret   | `RENDER_API_KEY`    | chave da API da Render                                                                |
+| Secret   | `VERCEL_TOKEN`      | token criado em vercel.com/account/tokens                                             |
+| Variável | `RENDER_SERVICE_ID` | `srv-dbb8t3o473hc73c46ke0`                                                            |
+| Variável | `API_HOST`          | `voltex-api-zc9f.onrender.com` (sem `https://`)                                       |
+| Variável | `APP_URL`           | `https://voltex-app-rho.vercel.app`                                                   |
+| Variável | `SITE_URL`          | `https://voltex-site-one.vercel.app`                                                  |
+| Variável | `LEAD_KEY`          | chave de captação do formulário do site (não é segredo: fica visível no site)         |
+| Variável | `VERCEL_SCOPE`      | a equipe/conta da Vercel (ex.: `luizeduardobls-projects`)                             |
+
+Com a CLI do GitHub, a partir de `~/.voltex-deploy` (os segredos não passam pela tela):
+
+```bash
+gh api -X PUT repos/Eduardo-Lima-Dev/Voltex-SolTech/environments/demo
+gh secret set DEMO_DATABASE_URL --env demo < ~/.voltex-deploy/supabase-db-url
+gh secret set RENDER_API_KEY    --env demo < ~/.voltex-deploy/render
+gh secret set VERCEL_TOKEN      --env demo < ~/.voltex-deploy/vercel-token
+gh variable set RENDER_SERVICE_ID --env demo --body srv-dbb8t3o473hc73c46ke0
+gh variable set API_HOST          --env demo --body voltex-api-zc9f.onrender.com
+gh variable set APP_URL           --env demo --body https://voltex-app-rho.vercel.app
+gh variable set SITE_URL          --env demo --body https://voltex-site-one.vercel.app
+gh variable set VERCEL_SCOPE      --env demo --body SUA_EQUIPE
+```
+
+**Pacote de imagens:** o pacote `voltex-api` do GHCR foi criado à mão. Para o Actions poder gravar nele, vá em _github.com → seu perfil → Packages → voltex-api → Package settings → Manage Actions access_ e adicione o repositório com permissão **Write**. (Na primeira imagem publicada pelo workflow, o pacote também passa a apontar para o repositório.)
+
+### O que não é automático
+
+- **A Render só troca a imagem**; as variáveis de ambiente (segredos da API) continuam as que estão no serviço. Para mudar uma variável, use `node scripts/render-api.mjs ...`.
+- **Produção real (`main`)** não publica nada ainda. Quando existir um ambiente de produção, cria-se um segundo ambiente no GitHub e um workflow irmão.
+- **A primeira execução do CI no GitHub** ainda não aconteceu (o repositório não recebeu push dessas mudanças). Pode haver ajustes até ele passar; enquanto não passar, nada é publicado.
