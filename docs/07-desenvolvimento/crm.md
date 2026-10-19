@@ -65,4 +65,4 @@ O SDR qualifica, cadastra contas e calcula, mas não cria oportunidades (entrega
 
 ## Dados pessoais (LGPD)
 
-Leads e contas guardam nome, telefone, e-mail e documento. A criptografia de campos sensíveis, a retenção e a exportação por empresa entram na **Fase 8**; até lá o documento fica em texto no banco (com isolamento por empresa e auditoria). A captação pública registra o consentimento.
+Leads e contas guardam nome, telefone, e-mail e documento. O CPF/CNPJ é **cifrado** (e a busca por documento exige o número completo); a exportação por empresa existe; retenção e eliminação a pedido ainda não: veja [Segurança e LGPD](../08-deploy/seguranca-lgpd.md).

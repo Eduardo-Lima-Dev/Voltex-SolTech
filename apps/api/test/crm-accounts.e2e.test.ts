@@ -73,7 +73,7 @@ describe('CRM · Contas, imóveis e unidades consumidoras (e2e)', () => {
       ).toBe('Cliente estratégico');
       const byName = await get('/accounts?search=alfa', seller);
       expect(byName.body.data.map((x: { id: string }) => x.id)).toContain(created.body.id);
-      const byDoc = await get('/accounts?search=444777', seller);
+      const byDoc = await get('/accounts?search=11444777000161', seller);
       expect(byDoc.body.data.map((x: { id: string }) => x.id)).toContain(created.body.id);
       expect((await get('/accounts?page=1&pageSize=1', seller)).body.data).toHaveLength(1);
     });

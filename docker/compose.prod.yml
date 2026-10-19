@@ -96,6 +96,7 @@ services:
     environment:
       NODE_ENV: production
       TRUST_PROXY: 1
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?defina DATA_ENCRYPTION_KEY (openssl rand -base64 32) e guarde uma cópia fora do servidor}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET com 32 ou mais caracteres aleatórios}

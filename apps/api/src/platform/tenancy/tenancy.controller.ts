@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { createZodDto } from 'nestjs-zod';
 import {
   createBranchSchema,
@@ -19,6 +20,7 @@ import {
   updateTenantSchema,
 } from '@voltex/shared';
 import { Audit, Authenticated, RequirePermissions } from '../../common/decorators';
+import { DataExportService } from './data-export.service';
 import { TenancyService } from './tenancy.service';
 
 class UpdateTenantDto extends createZodDto(updateTenantSchema) {}
@@ -31,12 +33,23 @@ class UpdateTeamDto extends createZodDto(updateTeamSchema) {}
 @ApiBearerAuth()
 @Controller()
 export class TenancyController {
-  constructor(private readonly tenancy: TenancyService) {}
+  constructor(
+    private readonly tenancy: TenancyService,
+    private readonly dataExport: DataExportService,
+  ) {}
 
   @Get('tenant')
   @Authenticated()
   getTenant() {
     return this.tenancy.getTenant();
+  }
+
+  /** Portabilidade (LGPD): todos os dados da empresa em JSON. Pesado: limite baixo de chamadas. */
+  @Get('tenant/export')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @RequirePermissions('platform.tenant.manage')
+  exportData() {
+    return this.dataExport.exportTenant();
   }
 
   @Patch('tenant')

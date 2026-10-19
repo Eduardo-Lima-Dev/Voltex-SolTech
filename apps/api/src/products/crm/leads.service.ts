@@ -92,7 +92,10 @@ export class LeadsService {
               ...(digits.length >= 4
                 ? [
                     { phoneNormalized: { contains: digits } },
-                    { documentNormalized: { contains: digits } },
+                    // O documento é cifrado: a busca por ele é só pelo número completo.
+                    ...(digits.length === 11 || digits.length === 14
+                      ? [{ documentNormalized: digits }]
+                      : []),
                   ]
                 : []),
             ],
@@ -517,7 +520,11 @@ export class LeadsService {
     const matchedBy = [
       ...(keys.email && found.emailNormalized === keys.email ? ['e-mail'] : []),
       ...(keys.phone && found.phoneNormalized === keys.phone ? ['telefone'] : []),
-      ...(keys.document && found.documentNormalized === keys.document ? ['documento'] : []),
+      // `documentNormalized` é um índice cego: a comparação passa pelo filtro (que o converte), não pelo valor lido.
+      ...(keys.document &&
+      (await client.lead.count({ where: { id: found.id, documentNormalized: keys.document } })) > 0
+        ? ['documento']
+        : []),
     ];
     return { id: found.id, name: found.name, matchedBy };
   }

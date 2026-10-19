@@ -237,6 +237,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'proposal.sent': 'Proposta enviada ao cliente',
   'proposal.accepted': 'Proposta aceita pelo cliente',
   'branding.updated': 'Identidade visual atualizada',
+  'tenant.exported': 'Dados da empresa exportados',
   'contract.generated': 'Contrato gerado',
   'contract.cancelled': 'Contrato cancelado',
   'contract.signed': 'Contrato assinado',
