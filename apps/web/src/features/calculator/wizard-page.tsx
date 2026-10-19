@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Calculator, Check } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { toast } from '@voltex/ui';
 import { CustomerGroup, PhaseSystem, ProjectType, type SolarResourceDto } from '@voltex/shared';
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
   Card,
   CardContent,
@@ -30,12 +33,13 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { Field, fieldAria } from './field';
+import { Field, fieldAria } from '@/components/field';
 import {
   WIZARD_STEPS,
   defaultWizardValues,
   evaluate,
   validateStep,
+  valuesFromContext,
   type WizardValues,
 } from './form';
 import { ResultView } from './result-view';
@@ -89,12 +93,19 @@ export function CalculatorWizardPage() {
   const [showErrors, setShowErrors] = useState(false);
   const [resource, setResource] = useState<SolarResourceDto | null>(null);
   const [resourceSearch, setResourceSearch] = useState('');
+  const [params] = useSearchParams();
+  const opportunityId = params.get('opportunityId');
   const debouncedSearch = useDebouncedValue(resourceSearch.trim());
 
   const form = useForm<WizardValues>({ defaultValues: defaultWizardValues() });
   const { register, watch, setValue, getValues } = form;
   const values = watch();
 
+  const context = useQuery({
+    queryKey: queryKeys.calculationContext(opportunityId ?? ''),
+    queryFn: () => endpoints.opportunities.calculationContext(opportunityId as string),
+    enabled: !!opportunityId,
+  });
   const config = useQuery({
     queryKey: queryKeys.calculatorConfig,
     queryFn: endpoints.calculator.config,
@@ -130,10 +141,21 @@ export function CalculatorWizardPage() {
     [JSON.stringify(values), resource, config.data],
   );
 
+  // Aberto a partir da oportunidade: preenche com a fatura validada, o imóvel e a tarifa (uma vez só).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!context.data || !config.data || prefilled.current) return;
+    prefilled.current = true;
+    form.reset({
+      ...defaultWizardValues(),
+      ...valuesFromContext(context.data, config.data.availabilityCostKwh),
+    });
+  }, [context.data, config.data, form]);
+
   const save = useMutation({
     mutationFn: () => {
       if (!evaluation) throw new Error('Cálculo indisponível');
-      return endpoints.calculator.create({
+      const body = {
         title: values.title.trim() || undefined,
         customerName: values.customerName.trim() || undefined,
         references: {
@@ -141,12 +163,25 @@ export function CalculatorWizardPage() {
           tariffId: values.tariffId || undefined,
         },
         input: evaluation.input,
-      });
+      };
+      return opportunityId
+        ? endpoints.opportunities.createCalculation(opportunityId, body)
+        : endpoints.calculator.create(body);
     },
     onSuccess: async (session) => {
-      toast.success('Cálculo salvo');
+      toast.success(opportunityId ? 'Cálculo salvo e vinculado à oportunidade' : 'Cálculo salvo');
       await queryClient.invalidateQueries({ queryKey: queryKeys.calculations() });
-      void navigate(`/calculator/${session.id}`);
+      if (opportunityId) {
+        for (const key of [
+          queryKeys.opportunityCalculations(opportunityId),
+          queryKeys.opportunityTimeline(opportunityId),
+          queryKeys.opportunityEngineering(opportunityId),
+          queryKeys.opportunity(opportunityId),
+        ])
+          await queryClient.invalidateQueries({ queryKey: key });
+        await queryClient.invalidateQueries({ queryKey: ['opportunity-board'] });
+        void navigate(`/crm/oportunidades/${opportunityId}`);
+      } else void navigate(`/calculator/${session.id}`);
     },
     onError: (error) => toast.error(errorMessage(error, 'Não foi possível salvar o cálculo.')),
   });
@@ -220,6 +255,23 @@ export function CalculatorWizardPage() {
           com as regras da sua empresa ({config.data.ruleSetRef}).
         </p>
       </header>
+
+      {opportunityId ? (
+        <Alert variant="info">
+          <AlertTitle>
+            Cálculo da oportunidade {context.data ? `“${context.data.title}”` : ''}
+          </AlertTitle>
+          <AlertDescription>
+            {context.isPending
+              ? 'Carregando os dados da oportunidade…'
+              : context.isError
+                ? 'Não foi possível carregar os dados da oportunidade: preencha manualmente.'
+                : context.data.billSnapshotId
+                  ? 'Preenchido com a fatura validada, o imóvel e a tarifa. Confira antes de salvar; o cálculo ficará vinculado à oportunidade.'
+                  : 'Ainda não há fatura validada: o consumo precisa ser informado à mão. O cálculo ficará vinculado à oportunidade.'}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <Stepper
         current={step}

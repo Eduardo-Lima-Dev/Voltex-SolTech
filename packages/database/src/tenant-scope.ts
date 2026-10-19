@@ -18,6 +18,18 @@ export const TENANT_SCOPED_MODELS = [
   'SolarResource',
   'CalculationSession',
   'QuickCalculationSnapshot',
+  'Lead',
+  'Account',
+  'Contact',
+  'Site',
+  'ConsumerUnit',
+  'PipelineStage',
+  'Opportunity',
+  'TimelineEvent',
+  'Task',
+  'EnergyBill',
+  'EnergyBillSnapshot',
+  'EngineeringRequest',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

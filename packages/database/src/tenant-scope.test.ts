@@ -1,7 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import * as Shared from '@voltex/shared';
 import { Role as SharedRole } from '@voltex/shared';
 import { describe, expect, it } from 'vitest';
+import * as Db from './index';
 import { Role, TENANT_SCOPED_MODELS, isTenantScopedModel } from './index';
 
 const schemaDir = path.resolve(__dirname, '../prisma/schema');
@@ -26,6 +28,27 @@ function readModels(): ParsedModel[] {
 describe('paridade com @voltex/shared', () => {
   it('o enum Role do Prisma tem os mesmos valores do Role compartilhado', () => {
     expect(Object.values(Role).sort()).toEqual(Object.values(SharedRole).sort());
+  });
+
+  it.each([
+    'LeadSource',
+    'CustomerSegment',
+    'LeadStatus',
+    'AccountType',
+    'PhaseSystem',
+    'ProjectType',
+    'OpportunityStage',
+    'OpportunityStatus',
+    'TaskStatus',
+    'EnergyBillStatus',
+    'CustomerGroup',
+    'TrafficLight',
+  ])('o enum %s do Prisma tem os mesmos valores do compartilhado', (name) => {
+    const prisma = (Db as unknown as Record<string, Record<string, string>>)[name];
+    const shared = (Shared as unknown as Record<string, Record<string, string>>)[name];
+    expect(prisma, `${name} no Prisma`).toBeDefined();
+    expect(shared, `${name} no shared`).toBeDefined();
+    expect(Object.values(prisma!).sort()).toEqual(Object.values(shared!).sort());
   });
 });
 

@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AccountType,
   CustomerGroup,
+  CustomerSegment,
+  DEFAULT_PIPELINE_STAGES,
+  ENERGY_BILL_FIELDS,
+  EnergyBillStatus,
   GenerationClass,
+  LeadSource,
+  LeadStatus,
+  OpportunityStage,
+  OpportunityStatus,
+  RoofType,
+  ShadingLevel,
+  TaskStatus,
+  TimelineEventType,
   PERMISSIONS,
   PhaseSystem,
   Product,
@@ -15,7 +28,20 @@ import { ALERT_CODES } from '@voltex/solar-engine';
 import { PRODUCTS } from '@/features/products/registry';
 import { ADMIN_PERMISSIONS, ADMIN_TABS } from '@/features/admin/admin-nav';
 import {
+  ACCOUNT_TYPE_LABELS,
   ALERT_TITLES,
+  BILL_FIELD_LABELS,
+  BILL_STATUS_LABELS,
+  ENGINEERING_STATUS_LABELS,
+  LEAD_SOURCE_LABELS,
+  LEAD_STATUS_LABELS,
+  OPPORTUNITY_STATUS_LABELS,
+  ROOF_TYPE_LABELS,
+  SEGMENT_LABELS,
+  SHADING_LABELS,
+  STAGE_LABELS,
+  TASK_STATUS_LABELS,
+  TIMELINE_TYPE_LABELS,
   AUDIT_ACTION_LABELS,
   CUSTOMER_GROUP_LABELS,
   GENERATION_CLASS_LABELS,
@@ -101,6 +127,45 @@ describe('rótulos em pt-BR (a interface nunca mostra códigos crus)', () => {
     for (const key of Object.keys(thresholdsSchema.parse({})))
       expect(THRESHOLD_LABELS[key as keyof typeof THRESHOLD_LABELS], key).toBeTruthy();
     expect(MONTH_LABELS).toHaveLength(12);
+  });
+
+  it('todo valor do CRM tem rótulo em português', () => {
+    const cases: [string, Record<string, string>, readonly string[]][] = [
+      ['lead status', LEAD_STATUS_LABELS, Object.values(LeadStatus)],
+      ['lead origem', LEAD_SOURCE_LABELS, Object.values(LeadSource)],
+      ['segmento', SEGMENT_LABELS, Object.values(CustomerSegment)],
+      ['tipo de conta', ACCOUNT_TYPE_LABELS, Object.values(AccountType)],
+      ['situação da oportunidade', OPPORTUNITY_STATUS_LABELS, Object.values(OpportunityStatus)],
+      ['etapa', STAGE_LABELS, Object.values(OpportunityStage)],
+      ['tarefa', TASK_STATUS_LABELS, Object.values(TaskStatus)],
+      ['linha do tempo', TIMELINE_TYPE_LABELS, Object.values(TimelineEventType)],
+      ['telhado', ROOF_TYPE_LABELS, Object.values(RoofType)],
+      ['sombreamento', SHADING_LABELS, Object.values(ShadingLevel)],
+      ['fatura', BILL_STATUS_LABELS, Object.values(EnergyBillStatus)],
+      ['campo da fatura', BILL_FIELD_LABELS, ENERGY_BILL_FIELDS],
+      ['engenharia', ENGINEERING_STATUS_LABELS, ['PENDING', 'IN_PROGRESS', 'DONE', 'CANCELLED']],
+    ];
+    for (const [name, labels, values] of cases) {
+      for (const value of values) expect(labels[value], `${name}: ${value}`).toBeTruthy();
+      expect(Object.keys(labels).sort(), name).toEqual([...values].sort());
+    }
+    // Os nomes padrão das etapas vêm do pipeline padrão do shared.
+    for (const stage of DEFAULT_PIPELINE_STAGES) expect(STAGE_LABELS[stage.key]).toBe(stage.name);
+  });
+
+  it('as ações de auditoria do CRM têm texto legível', () => {
+    for (const action of [
+      'lead.created',
+      'lead.converted',
+      'lead.captured',
+      'account.created',
+      'opportunity.stage_changed',
+      'task.completed',
+      'energy_bill.validated',
+      'aneel.imported',
+      'pipeline.stage_updated',
+    ])
+      expect(AUDIT_ACTION_LABELS[action], action).toBeTruthy();
   });
 
   it('valores desconhecidos aparecem como vieram (sem quebrar)', () => {

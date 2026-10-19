@@ -158,7 +158,11 @@ export const createSolarResourceSchema = z.object({
 });
 export type CreateSolarResourceInput = z.input<typeof createSolarResourceSchema>;
 export type CreateSolarResourceData = z.output<typeof createSolarResourceSchema>;
-export const updateSolarResourceSchema = createSolarResourceSchema.partial();
+/** Atualização parcial: sem reaplicar o padrão de `plane` (um `.partial()` direto o repõe e apaga o valor existente). */
+export const updateSolarResourceSchema = createSolarResourceSchema
+  .omit({ plane: true })
+  .partial()
+  .extend({ plane: z.string().trim().max(80).optional() });
 
 export const importSolarResourcesSchema = z.object({
   rows: z.array(createSolarResourceSchema).min(1).max(500),

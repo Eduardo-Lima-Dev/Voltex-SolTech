@@ -19,6 +19,8 @@ Eventos publicados pelos módulos (seção 37 da modelagem). Os nomes e payloads
 
 ## Comercial
 
+Já publicados (Fase 7A): `LeadCreated` · `LeadQualified` · `OpportunityCreated` · `OpportunityStageChanged` · `OpportunityPremisesChanged` (imóvel, UC ou tipo de projeto mudaram) · `EnergyBillParsed` · `EnergyBillValidated` · `EngineeringRequested`. Os de oportunidade levam o `projectCode` no envelope.
+
 `LeadCreated` · `LeadQualified` · `EnergyBillRequested` · `EnergyBillParsed` · `EnergyBillValidated` · `OpportunityCreated` · `OpportunityStageChanged`
 
 ## Cálculos

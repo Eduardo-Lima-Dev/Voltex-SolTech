@@ -49,13 +49,14 @@ async function toApiError(response: Response): Promise<ApiError> {
   }
   const parsed = apiErrorSchema.safeParse(body);
   if (parsed.success) {
-    const { code, message, details, requestId } = parsed.data;
+    const { code, message, details, requestId, data } = parsed.data;
     return new ApiError(
       response.status,
       code,
       message,
       details,
       requestId ?? response.headers.get('x-request-id') ?? undefined,
+      data,
     );
   }
   return new ApiError(response.status, 'HTTP_ERROR', response.statusText || 'Erro na requisição');

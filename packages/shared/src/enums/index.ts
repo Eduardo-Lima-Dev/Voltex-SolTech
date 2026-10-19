@@ -167,3 +167,79 @@ export const InstallationStatus = {
   FINISHED: 'FINISHED',
 } as const;
 export type InstallationStatus = (typeof InstallationStatus)[keyof typeof InstallationStatus];
+
+// ---- CRM (Fase 7A) ----
+
+export const LeadStatus = {
+  NEW: 'NEW',
+  CONTACTED: 'CONTACTED',
+  QUALIFIED: 'QUALIFIED',
+  DISQUALIFIED: 'DISQUALIFIED',
+  CONVERTED: 'CONVERTED',
+} as const;
+export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
+
+export const AccountType = {
+  PERSON: 'PERSON',
+  COMPANY: 'COMPANY',
+} as const;
+export type AccountType = (typeof AccountType)[keyof typeof AccountType];
+
+/** Situação da oportunidade, independente da etapa do pipeline. */
+export const OpportunityStatus = {
+  OPEN: 'OPEN',
+  WON: 'WON',
+  LOST: 'LOST',
+} as const;
+export type OpportunityStatus = (typeof OpportunityStatus)[keyof typeof OpportunityStatus];
+
+export const TaskStatus = {
+  OPEN: 'OPEN',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
+
+/** Sombreamento no local (EnergIF EF-M05): informado no intake técnico. */
+export const ShadingLevel = {
+  NONE: 'NONE',
+  LOW: 'LOW',
+  RELEVANT: 'RELEVANT',
+} as const;
+export type ShadingLevel = (typeof ShadingLevel)[keyof typeof ShadingLevel];
+
+export const RoofType = {
+  CERAMIC: 'CERAMIC',
+  METAL: 'METAL',
+  FIBROCEMENT: 'FIBROCEMENT',
+  SLAB: 'SLAB',
+  GROUND: 'GROUND',
+  OTHER: 'OTHER',
+} as const;
+export type RoofType = (typeof RoofType)[keyof typeof RoofType];
+
+/** Tipos de registro da linha do tempo da oportunidade. */
+export const TimelineEventType = {
+  CREATED: 'CREATED',
+  NOTE: 'NOTE',
+  STAGE_CHANGED: 'STAGE_CHANGED',
+  TASK_CREATED: 'TASK_CREATED',
+  TASK_COMPLETED: 'TASK_COMPLETED',
+  BILL_UPLOADED: 'BILL_UPLOADED',
+  BILL_VALIDATED: 'BILL_VALIDATED',
+  CALCULATION_LINKED: 'CALCULATION_LINKED',
+  ENGINEERING_REQUESTED: 'ENGINEERING_REQUESTED',
+  GUARD_EVALUATED: 'GUARD_EVALUATED',
+  GUARD_OVERRIDDEN: 'GUARD_OVERRIDDEN',
+  QUOTE_CREATED: 'QUOTE_CREATED',
+  MARGIN_APPROVAL_REQUESTED: 'MARGIN_APPROVAL_REQUESTED',
+  MARGIN_APPROVAL_DECIDED: 'MARGIN_APPROVAL_DECIDED',
+  PROPOSAL_GENERATED: 'PROPOSAL_GENERATED',
+  PROPOSAL_SENT: 'PROPOSAL_SENT',
+  PROPOSAL_VIEWED: 'PROPOSAL_VIEWED',
+  PROPOSAL_ACCEPTED: 'PROPOSAL_ACCEPTED',
+  CONTRACT_GENERATED: 'CONTRACT_GENERATED',
+  CONTRACT_SIGNED: 'CONTRACT_SIGNED',
+  PROJECT_CREATED: 'PROJECT_CREATED',
+} as const;
+export type TimelineEventType = (typeof TimelineEventType)[keyof typeof TimelineEventType];

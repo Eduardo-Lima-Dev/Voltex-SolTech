@@ -148,6 +148,99 @@ describe('Administração → Tarifas', () => {
   });
 });
 
+describe('Administração → Tarifas → importar da ANEEL', () => {
+  const baseline = () =>
+    server.use(
+      http.get(`${API}/distributors`, () => HttpResponse.json([])),
+      http.get(`${API}/tariffs`, () => HttpResponse.json([])),
+    );
+  const result = {
+    rowsRead: 655_289,
+    distributorsCreated: 116,
+    distributorsUpdated: 0,
+    tariffsCreated: 107,
+    tariffsUpdated: 0,
+    tariffsUnchanged: 0,
+    rowsSkipped: 82_562,
+    source: {
+      dataset: 'tarifas-distribuidoras-energia-eletrica',
+      license: 'ODbL (Open Data Commons Open Database License)',
+      url: 'https://dadosabertos.aneel.gov.br/x.csv',
+    },
+  };
+
+  it('explica o que é importado (e que não inclui impostos) antes de rodar', async () => {
+    baseline();
+    renderApp('/admin/tarifas');
+    await userEvent.setup().click(await screen.findByRole('button', { name: /Importar da ANEEL/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Valores sem impostos')).toBeInTheDocument();
+    expect(within(dialog).getByText(/ICMS, PIS e COFINS/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Grupo B, subgrupo B1/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /Ver a fonte/ })).toHaveAttribute(
+      'href',
+      'https://dadosabertos.aneel.gov.br/dataset/tarifas-distribuidoras-energia-eletrica',
+    );
+  });
+
+  it('roda a importação e mostra o resumo com a fonte e a licença', async () => {
+    let calls = 0;
+    baseline();
+    server.use(
+      http.post(
+        `${API}/reference-data/aneel/import`,
+        () => ((calls += 1), HttpResponse.json(result)),
+      ),
+    );
+    renderApp('/admin/tarifas');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /Importar da ANEEL/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Importar agora' }));
+    expect(await within(dialog).findByText('Importação concluída')).toBeInTheDocument();
+    expect(calls).toBe(1);
+    expect(within(dialog).getByText(/655\.289 linhas lidas/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/116 novas/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/107 novas/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/licença ODbL/)).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Importar agora' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('portal fora do ar mostra a mensagem do servidor e permite tentar de novo', async () => {
+    baseline();
+    server.use(
+      http.post(`${API}/reference-data/aneel/import`, () =>
+        HttpResponse.json(
+          {
+            statusCode: 503,
+            code: 'ERR',
+            message: 'Não foi possível acessar o portal de Dados Abertos da ANEEL',
+          },
+          { status: 503 },
+        ),
+      ),
+    );
+    renderApp('/admin/tarifas');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /Importar da ANEEL/ }));
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Importar agora' }),
+    );
+    expect(await screen.findByText(/O servidor encontrou um problema/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Importar agora' }),
+    ).toBeEnabled();
+  });
+
+  it('só quem gerencia regras vê o botão', async () => {
+    baseline();
+    renderApp('/admin/tarifas', { session: makeSession('TECHNICAL_LEAD') });
+    expect(await screen.findByRole('button', { name: /Importar da ANEEL/ })).toBeInTheDocument();
+  });
+});
+
 describe('Administração → Irradiação', () => {
   const HEADER =
     'nome;uf;latitude;longitude;fonte;plano;jan;fev;mar;abr;mai;jun;jul;ago;set;out;nov;dez';

@@ -153,6 +153,7 @@ export const distributor = (overrides: Partial<DistributorDto> = {}): Distributo
   tenantId: 'tenant-1',
   name: 'Enel Ceará',
   state: 'CE',
+  cnpj: null,
   createdAt: now,
   updatedAt: now,
   ...overrides,
@@ -205,4 +206,247 @@ export const ruleSet = (overrides: Partial<RuleSetDto> = {}): RuleSetDto => ({
 export const page = <T>(data: T[], total = data.length, pageNo = 1, pageSize = 10) => ({
   data,
   meta: { page: pageNo, pageSize, total },
+});
+
+// ---- CRM ----
+
+import {
+  DEFAULT_PIPELINE_STAGES,
+  type AccountDetailDto,
+  type EnergyBillDto,
+  type EnergyBillSnapshotDto,
+  type LeadDto,
+  type OpportunityBoardDto,
+  type OpportunityCalculationContext,
+  type OpportunityDto,
+  type PipelineStageDto,
+  type TaskDto,
+  type TimelineEventDto,
+} from '@voltex/shared';
+
+export const makeLead = (overrides: Partial<LeadDto> = {}): LeadDto => ({
+  id: 'lead-1',
+  tenantId: 'tenant-1',
+  name: 'Maria Silva',
+  email: 'maria@exemplo.com',
+  phone: '(85) 98888-7777',
+  document: null,
+  source: 'MANUAL',
+  segment: 'RESIDENTIAL',
+  preliminaryGroup: null,
+  city: 'Fortaleza',
+  state: 'CE',
+  notes: null,
+  utm: null,
+  status: 'NEW',
+  ownerId: 'user-owner',
+  ownerName: 'Eduardo Silva',
+  firstContactDueAt: '2099-01-01T12:00:00.000Z',
+  firstContactAt: null,
+  slaBreached: false,
+  disqualifiedReason: null,
+  convertedAccountId: null,
+  convertedOpportunityId: null,
+  createdAt: now,
+  updatedAt: now,
+  ...overrides,
+});
+
+export const stages = (): PipelineStageDto[] =>
+  DEFAULT_PIPELINE_STAGES.map((s) => ({
+    id: `stage-${s.key}`,
+    key: s.key,
+    name: s.name,
+    order: s.order,
+    terminal: s.terminal,
+  }));
+
+export const makeOpportunity = (overrides: Partial<OpportunityDto> = {}): OpportunityDto => ({
+  id: 'opp-1',
+  tenantId: 'tenant-1',
+  projectCode: 'VLX-7K3M9QX2',
+  title: 'Casa da Maria',
+  stage: 'NEW_LEAD',
+  status: 'OPEN',
+  projectType: 'ON_GRID',
+  accountId: 'acc-1',
+  accountName: 'Maria Silva',
+  siteId: null,
+  consumerUnitId: null,
+  leadId: null,
+  ownerId: 'user-owner',
+  ownerName: 'Eduardo Silva',
+  lostReason: null,
+  expectedCloseDate: null,
+  valueCents: null,
+  openTaskCount: 0,
+  nextTaskDueAt: null,
+  stageChangedAt: now,
+  createdAt: now,
+  updatedAt: now,
+  ...overrides,
+});
+
+export const makeBoard = (items: OpportunityDto[] = []): OpportunityBoardDto => ({
+  columns: stages().map((stage) => {
+    const inStage = items.filter((o) => o.stage === stage.key);
+    return { stage, total: inStage.length, items: inStage };
+  }),
+});
+
+export const makeAccount = (overrides: Partial<AccountDetailDto> = {}): AccountDetailDto => ({
+  id: 'acc-1',
+  tenantId: 'tenant-1',
+  type: 'PERSON',
+  name: 'Maria Silva',
+  document: null,
+  segment: 'RESIDENTIAL',
+  email: 'maria@exemplo.com',
+  phone: '(85) 98888-7777',
+  notes: null,
+  createdAt: now,
+  updatedAt: now,
+  contacts: [
+    {
+      id: 'ct-1',
+      accountId: 'acc-1',
+      name: 'Maria Silva',
+      email: null,
+      phone: null,
+      roleTitle: null,
+      isPrimary: true,
+      createdAt: now,
+    },
+  ],
+  sites: [
+    {
+      id: 'site-1',
+      accountId: 'acc-1',
+      name: 'Residência',
+      street: 'Rua das Flores',
+      number: '100',
+      district: 'Centro',
+      city: 'Fortaleza',
+      state: 'CE',
+      zip: null,
+      latitude: -3.73,
+      longitude: -38.52,
+      intake: { roofType: 'CERAMIC', roofAzimuthDegrees: 0, tiltDegrees: 15, shading: 'LOW' },
+      createdAt: now,
+    },
+  ],
+  consumerUnits: [
+    {
+      id: 'uc-1',
+      accountId: 'acc-1',
+      siteId: 'site-1',
+      number: '12345678',
+      distributorId: 'd-1',
+      distributorName: 'Enel Ceará',
+      customerGroup: 'B',
+      phaseSystem: 'TWO_PHASE',
+      consumerClass: 'Residencial',
+      createdAt: now,
+    },
+  ],
+  ...overrides,
+});
+
+export const makeTask = (overrides: Partial<TaskDto> = {}): TaskDto => ({
+  id: 'task-1',
+  title: 'Ligar para o cliente',
+  description: null,
+  dueAt: '2099-01-01T12:00:00.000Z',
+  status: 'OPEN',
+  assigneeId: 'user-owner',
+  assigneeName: 'Eduardo Silva',
+  opportunityId: 'opp-1',
+  leadId: null,
+  accountId: null,
+  completedAt: null,
+  overdue: false,
+  createdAt: now,
+  ...overrides,
+});
+
+export const makeTimelineEvent = (overrides: Partial<TimelineEventDto> = {}): TimelineEventDto => ({
+  id: 'ev-1',
+  opportunityId: 'opp-1',
+  type: 'CREATED',
+  summary: 'Oportunidade criada (VLX-7K3M9QX2)',
+  data: {},
+  actorId: 'user-owner',
+  actorName: 'Eduardo Silva',
+  createdAt: now,
+  ...overrides,
+});
+
+export const makeBill = (overrides: Partial<EnergyBillDto> = {}): EnergyBillDto => ({
+  id: 'bill-1',
+  opportunityId: 'opp-1',
+  consumerUnitId: 'uc-1',
+  documentId: 'doc-1',
+  filename: 'fatura.pdf',
+  status: 'PARSED',
+  extracted: {
+    ucNumber: { value: '12345678-9', confidence: 0.85 },
+    distributorName: { value: 'Enel Ceará', confidence: 0.9 },
+    customerName: { value: 'JOAO DA SILVA', confidence: 0.5 },
+    consumptionHistory: {
+      value: [
+        { month: '2026-06', kwh: 400 },
+        { month: '2026-07', kwh: 405 },
+        { month: '2026-08', kwh: 1020 },
+      ],
+      confidence: 0.65,
+    },
+    phaseSystem: { value: 'TWO_PHASE', confidence: 0.8 },
+  },
+  overallConfidence: 0.74,
+  parserName: 'pdf-text-heuristic',
+  parserVersion: '1.0.0',
+  rejectedReason: null,
+  validatedAt: null,
+  snapshotId: null,
+  createdAt: now,
+  ...overrides,
+});
+
+export const makeBillSnapshot = (
+  overrides: Partial<EnergyBillSnapshotDto> = {},
+): EnergyBillSnapshotDto => ({
+  id: 'snap-1',
+  billId: 'bill-1',
+  fields: { ucNumber: '12345678-9', consumptionHistory: [{ month: '2026-08', kwh: 480 }] },
+  note: null,
+  validatedById: 'user-owner',
+  createdAt: now,
+  ...overrides,
+});
+
+export const makeContext = (
+  overrides: Partial<OpportunityCalculationContext> = {},
+): OpportunityCalculationContext => ({
+  opportunityId: 'opp-1',
+  title: 'Casa da Maria',
+  customerName: 'Maria Silva',
+  consumptionHistory: [
+    { month: '2026-03', kwh: 480 },
+    { month: '2026-04', kwh: 450 },
+  ],
+  consumptionMonthlyKwh: [480, 450],
+  billSnapshotId: 'snap-1',
+  customerGroup: 'B',
+  phaseSystem: 'TWO_PHASE',
+  distributorId: 'd-1',
+  distributorName: 'Enel Ceará',
+  tariffCentsPerKwh: 98.5,
+  tariffId: 'tf-1',
+  latitude: -3.73,
+  roofAzimuthDegrees: 0,
+  tiltDegrees: 15,
+  availableAreaM2: 50,
+  shadingRelevant: false,
+  projectType: 'ON_GRID',
+  ...overrides,
 });

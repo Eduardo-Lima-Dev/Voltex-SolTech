@@ -1,0 +1,417 @@
+// CRM Solar (Fase 7A): leads, contas, contatos, imóveis, unidades consumidoras, pipeline, oportunidades,
+// tarefas, linha do tempo e fatura de energia. Enums espelham os de @voltex/shared.
+
+enum LeadSource {
+  FORM
+  LANDING_PAGE
+  WHATSAPP
+  API
+  REFERRAL
+  CSV_IMPORT
+  MARKETPLACE
+  CAMPAIGN
+  MANUAL
+  PARTNER_PORTAL
+
+  @@map("lead_source")
+}
+
+enum CustomerSegment {
+  RESIDENTIAL
+  RURAL
+  COMMERCIAL
+  INDUSTRIAL
+
+  @@map("customer_segment")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DISQUALIFIED
+  CONVERTED
+
+  @@map("lead_status")
+}
+
+enum AccountType {
+  PERSON
+  COMPANY
+
+  @@map("account_type")
+}
+
+enum PhaseSystem {
+  SINGLE_PHASE
+  TWO_PHASE
+  THREE_PHASE
+
+  @@map("phase_system")
+}
+
+enum ProjectType {
+  ON_GRID
+  HYBRID
+  OFF_GRID
+
+  @@map("project_type")
+}
+
+enum OpportunityStage {
+  NEW_LEAD
+  FIRST_CONTACT
+  QUALIFICATION
+  BILL_PENDING
+  PRE_SIZING
+  TECHNICAL_VISIT_REQUIRED
+  ENGINEERING_REQUIRED
+  QUOTING
+  PROPOSAL_READY
+  PROPOSAL_SENT
+  NEGOTIATION
+  CREDIT_FINANCING
+  CONTRACT
+  WON
+  LOST
+
+  @@map("opportunity_stage")
+}
+
+enum OpportunityStatus {
+  OPEN
+  WON
+  LOST
+
+  @@map("opportunity_status")
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+
+  @@map("task_status")
+}
+
+enum EnergyBillStatus {
+  UPLOADED
+  PARSED
+  VALIDATED
+  REJECTED
+
+  @@map("energy_bill_status")
+}
+
+enum EngineeringRequestStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+
+  @@map("engineering_request_status")
+}
+
+model Lead {
+  id                     String           @id @default(uuid(7)) @db.Uuid
+  tenantId               String           @map("tenant_id") @db.Uuid
+  name                   String
+  email                  String?
+  phone                  String?
+  document               String?
+  /// Chaves de deduplicação (RF-CRM-003): só dígitos / minúsculas.
+  emailNormalized        String?          @map("email_normalized")
+  phoneNormalized        String?          @map("phone_normalized")
+  documentNormalized     String?          @map("document_normalized")
+  source                 LeadSource       @default(MANUAL)
+  segment                CustomerSegment?
+  preliminaryGroup       CustomerGroup?   @map("preliminary_group")
+  city                   String?
+  state                  String?
+  notes                  String?
+  utm                    Json?
+  status                 LeadStatus       @default(NEW)
+  ownerId                String?          @map("owner_id") @db.Uuid
+  /// Prazo do primeiro contato (SLA) e quando ele aconteceu.
+  firstContactDueAt      DateTime?        @map("first_contact_due_at")
+  firstContactAt         DateTime?        @map("first_contact_at")
+  /// Quando o alerta de SLA estourado foi emitido (evita repetir).
+  slaAlertedAt           DateTime?        @map("sla_alerted_at")
+  disqualifiedReason     String?          @map("disqualified_reason")
+  convertedAccountId     String?          @map("converted_account_id") @db.Uuid
+  convertedOpportunityId String?          @map("converted_opportunity_id") @db.Uuid
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+  deletedAt              DateTime?        @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, phoneNormalized])
+  @@index([tenantId, emailNormalized])
+  @@index([tenantId, documentNormalized])
+  @@map("leads")
+}
+
+model Account {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  type               AccountType      @default(PERSON)
+  name               String
+  document           String?
+  documentNormalized String?          @map("document_normalized")
+  segment            CustomerSegment?
+  email              String?
+  phone              String?
+  notes              String?
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  deletedAt          DateTime?        @map("deleted_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  contacts      Contact[]
+  sites         Site[]
+  consumerUnits ConsumerUnit[]
+  opportunities Opportunity[]
+
+  @@index([tenantId, name])
+  @@index([tenantId, documentNormalized])
+  @@map("accounts")
+}
+
+model Contact {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  name      String
+  email     String?
+  phone     String?
+  roleTitle String?   @map("role_title")
+  isPrimary Boolean   @default(false) @map("is_primary")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([tenantId, accountId])
+  @@map("contacts")
+}
+
+/// Imóvel do cliente. O `intake` guarda o levantamento técnico (EnergIF EF-M02/M03/M05/R05/R09).
+model Site {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  name      String
+  street    String?
+  number    String?
+  district  String?
+  city      String
+  state     String
+  zip       String?
+  latitude  Float?
+  longitude Float?
+  intake    Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  account       Account        @relation(fields: [accountId], references: [id])
+  consumerUnits ConsumerUnit[]
+
+  @@index([tenantId, accountId])
+  @@map("sites")
+}
+
+model ConsumerUnit {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  accountId     String        @map("account_id") @db.Uuid
+  siteId        String?       @map("site_id") @db.Uuid
+  /// Número da UC na fatura.
+  number        String
+  distributorId String?       @map("distributor_id") @db.Uuid
+  customerGroup CustomerGroup @default(B) @map("customer_group")
+  phaseSystem   PhaseSystem?  @map("phase_system")
+  consumerClass String?       @map("consumer_class")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  deletedAt     DateTime?     @map("deleted_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  account     Account      @relation(fields: [accountId], references: [id])
+  site        Site?        @relation(fields: [siteId], references: [id])
+  distributor Distributor? @relation(fields: [distributorId], references: [id])
+
+  @@index([tenantId, accountId])
+  @@index([tenantId, number])
+  @@map("consumer_units")
+}
+
+/// Etapas do pipeline do tenant: nomes e ordem personalizáveis; as chaves seguem a máquina de estados.
+model PipelineStage {
+  id       String           @id @default(uuid(7)) @db.Uuid
+  tenantId String           @map("tenant_id") @db.Uuid
+  key      OpportunityStage
+  name     String
+  order    Int
+  terminal Boolean          @default(false)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+  @@index([tenantId, order])
+  @@map("pipeline_stages")
+}
+
+model Opportunity {
+  id                String            @id @default(uuid(7)) @db.Uuid
+  tenantId          String            @map("tenant_id") @db.Uuid
+  /// Project ID global (Digital Thread), único na plataforma.
+  projectCode       String            @unique @map("project_code")
+  title             String
+  stage             OpportunityStage  @default(NEW_LEAD)
+  status            OpportunityStatus @default(OPEN)
+  projectType       ProjectType       @default(ON_GRID) @map("project_type")
+  accountId         String            @map("account_id") @db.Uuid
+  siteId            String?           @map("site_id") @db.Uuid
+  consumerUnitId    String?           @map("consumer_unit_id") @db.Uuid
+  leadId            String?           @map("lead_id") @db.Uuid
+  ownerId           String?           @map("owner_id") @db.Uuid
+  lostReason        String?           @map("lost_reason")
+  expectedCloseDate DateTime?         @map("expected_close_date")
+  stageChangedAt    DateTime          @default(now()) @map("stage_changed_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  deletedAt         DateTime?         @map("deleted_at")
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  account             Account              @relation(fields: [accountId], references: [id])
+  timeline            TimelineEvent[]
+  tasks               Task[]
+  energyBills         EnergyBill[]
+  engineeringRequests EngineeringRequest[]
+
+  @@index([tenantId, stage])
+  @@index([tenantId, status])
+  @@index([tenantId, ownerId])
+  @@index([tenantId, accountId])
+  @@map("opportunities")
+}
+
+/// Registro da linha do tempo (imutável: só se acrescenta).
+model TimelineEvent {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  opportunityId String   @map("opportunity_id") @db.Uuid
+  type          String
+  summary       String
+  data          Json     @default("{}")
+  actorId       String?  @map("actor_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+
+  @@index([tenantId, opportunityId, createdAt])
+  @@map("timeline_events")
+}
+
+model Task {
+  id            String     @id @default(uuid(7)) @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  title         String
+  description   String?
+  dueAt         DateTime   @map("due_at")
+  status        TaskStatus @default(OPEN)
+  assigneeId    String?    @map("assignee_id") @db.Uuid
+  opportunityId String?    @map("opportunity_id") @db.Uuid
+  leadId        String?    @map("lead_id") @db.Uuid
+  accountId     String?    @map("account_id") @db.Uuid
+  completedAt   DateTime?  @map("completed_at")
+  createdById   String?    @map("created_by_id") @db.Uuid
+  /// Quem criou automaticamente (automações): `automation:<regra>`.
+  origin        String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+
+  @@index([tenantId, status, dueAt])
+  @@index([tenantId, assigneeId, status])
+  @@index([tenantId, opportunityId])
+  @@map("tasks")
+}
+
+model EnergyBill {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  tenantId          String           @map("tenant_id") @db.Uuid
+  opportunityId     String?          @map("opportunity_id") @db.Uuid
+  consumerUnitId    String?          @map("consumer_unit_id") @db.Uuid
+  documentId        String           @map("document_id") @db.Uuid
+  filename          String
+  status            EnergyBillStatus @default(UPLOADED)
+  /// Campos lidos: `{ campo: { value, confidence } }`.
+  extracted         Json             @default("{}")
+  overallConfidence Float?           @map("overall_confidence")
+  parserName        String?          @map("parser_name")
+  parserVersion     String?          @map("parser_version")
+  rejectedReason    String?          @map("rejected_reason")
+  validatedById     String?          @map("validated_by_id") @db.Uuid
+  validatedAt       DateTime?        @map("validated_at")
+  createdById       String?          @map("created_by_id") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  deletedAt         DateTime?        @map("deleted_at")
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity?         @relation(fields: [opportunityId], references: [id])
+  snapshots   EnergyBillSnapshot[]
+
+  @@index([tenantId, opportunityId])
+  @@index([tenantId, status])
+  @@map("energy_bills")
+}
+
+/// Registro IMUTÁVEL (trigger) do que a pessoa confirmou. Cada validação gera um novo; o mais recente vale.
+model EnergyBillSnapshot {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  billId        String   @map("bill_id") @db.Uuid
+  fields        Json
+  note          String?
+  validatedById String?  @map("validated_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id])
+  bill   EnergyBill @relation(fields: [billId], references: [id])
+
+  @@index([tenantId, billId, createdAt])
+  @@map("energy_bill_snapshots")
+}
+
+/// Pedido de análise de engenharia: nasce de um cálculo amarelo (RF-CRM-042) e é atendido no Solar Engine Studio.
+model EngineeringRequest {
+  id                   String                   @id @default(uuid(7)) @db.Uuid
+  tenantId             String                   @map("tenant_id") @db.Uuid
+  opportunityId        String                   @map("opportunity_id") @db.Uuid
+  calculationSessionId String?                  @map("calculation_session_id") @db.Uuid
+  reason               String
+  status               EngineeringRequestStatus @default(PENDING)
+  createdById          String?                  @map("created_by_id") @db.Uuid
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([tenantId, opportunityId])
+  @@map("engineering_requests")
+}

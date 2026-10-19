@@ -55,6 +55,15 @@ export class S3Service implements OnModuleInit {
     );
   }
 
+  /** Lê o conteúdo de um objeto (ex.: reprocessar uma fatura ou anexar um PDF a outro documento). */
+  async getBuffer(key: string): Promise<Buffer> {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!response.Body) throw new Error(`Objeto vazio: ${key}`);
+    return Buffer.from(await response.Body.transformToByteArray());
+  }
+
   async remove(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }

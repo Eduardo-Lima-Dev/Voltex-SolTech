@@ -188,3 +188,83 @@ describe('painel inicial', () => {
     expect(await screen.findByText('Não foi possível consultar o status.')).toBeInTheDocument();
   });
 });
+
+describe('rotas do CRM', () => {
+  const crmHandlers = () =>
+    server.use(
+      http.get(`${API}/leads`, () =>
+        HttpResponse.json({ data: [], meta: { page: 1, pageSize: 10, total: 0 } }),
+      ),
+      http.get(`${API}/lead-capture`, () => HttpResponse.json({ key: 'lk_x' })),
+      http.get(`${API}/accounts`, () =>
+        HttpResponse.json({ data: [], meta: { page: 1, pageSize: 10, total: 0 } }),
+      ),
+      http.get(`${API}/tasks`, () =>
+        HttpResponse.json({ data: [], meta: { page: 1, pageSize: 15, total: 0 } }),
+      ),
+    );
+
+  it('/crm leva à primeira área permitida ao perfil (Leads para quem vê leads)', async () => {
+    crmHandlers();
+    const { router } = renderApp('/crm', { session: makeSession('SDR') });
+    expect(await screen.findByRole('heading', { name: 'CRM Solar', level: 1 })).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/crm/leads'));
+  });
+
+  it('o SDR vê Leads, Contas e Tarefas, mas não Oportunidades; a rota de oportunidades fica bloqueada', async () => {
+    crmHandlers();
+    renderApp('/crm/leads', { session: makeSession('SDR') });
+    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
+      'Leads',
+      'Contas',
+      'Tarefas',
+    ]);
+  });
+
+  it('sem acesso a oportunidades, a página mostra "Sem acesso" (a API continua sendo a barreira real)', async () => {
+    crmHandlers();
+    renderApp('/crm/oportunidades', { session: makeSession('SDR') });
+    expect(
+      await screen.findByRole('heading', { name: 'Sem acesso a esta área' }),
+    ).toBeInTheDocument();
+  });
+
+  it('o vendedor vê as quatro áreas do CRM', async () => {
+    crmHandlers();
+    renderApp('/crm/contas', { session: makeSession('SALESPERSON') });
+    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
+      'Leads',
+      'Oportunidades',
+      'Contas',
+      'Tarefas',
+    ]);
+  });
+
+  it('o instalador só acessa as tarefas atribuídas a ele dentro do CRM', async () => {
+    crmHandlers();
+    const { router } = renderApp('/crm', { session: makeSession('INSTALLER') });
+    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Tarefas']);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/crm/tarefas'));
+  });
+
+  it('perfil sem nenhuma permissão do CRM vê "Sem acesso"', async () => {
+    renderApp('/crm', { session: makeSession('CUSTOMER') });
+    expect(
+      await screen.findByRole('heading', { name: 'Sem acesso a esta área' }),
+    ).toBeInTheDocument();
+  });
+
+  it('o CRM aparece no menu como disponível (sem "em breve")', async () => {
+    crmHandlers();
+    renderApp('/crm/leads');
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    const crm = Array.from(nav.querySelectorAll('a')).find((a) =>
+      a.textContent?.includes('CRM Solar'),
+    );
+    expect(crm).toBeDefined();
+    expect(crm?.textContent).not.toMatch(/em breve/);
+  });
+});

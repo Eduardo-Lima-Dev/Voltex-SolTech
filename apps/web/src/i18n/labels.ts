@@ -1,9 +1,22 @@
 import {
+  DEFAULT_PIPELINE_STAGES,
   PERMISSIONS,
+  type AccountType,
+  type CustomerSegment,
+  type EnergyBillField,
+  type EnergyBillStatus,
+  type LeadSource,
+  type LeadStatus,
+  type OpportunityStage,
+  type OpportunityStatus,
   type Permission,
   type Product,
   type Role,
+  type RoofType,
+  type ShadingLevel,
+  type TaskStatus,
   type Thresholds,
+  type TimelineEventType,
 } from '@voltex/shared';
 import type { AlertCode } from '@voltex/solar-engine';
 
@@ -120,6 +133,15 @@ export const ENTITY_LABELS: Record<string, string> = {
   SolarResource: 'Irradiação',
   Tariff: 'Tarifa',
   Distributor: 'Concessionária',
+  Lead: 'Lead',
+  Account: 'Conta',
+  Contact: 'Contato',
+  Site: 'Imóvel',
+  ConsumerUnit: 'Unidade consumidora',
+  Opportunity: 'Oportunidade',
+  Task: 'Tarefa',
+  EnergyBill: 'Fatura de energia',
+  PipelineStage: 'Etapa do pipeline',
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -155,6 +177,39 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'solar_resource.upserted': 'Irradiação cadastrada',
   'solar_resource.imported': 'Irradiação importada',
   'solar_resource.deleted': 'Irradiação excluída',
+  'aneel.imported': 'Tarifas importadas da ANEEL',
+  'lead.created': 'Lead criado',
+  'lead.updated': 'Lead atualizado',
+  'lead.deleted': 'Lead excluído',
+  'lead.imported': 'Leads importados',
+  'lead.converted': 'Lead convertido',
+  'lead.captured': 'Lead recebido pelo formulário público',
+  'lead_capture.key_rotated': 'Chave do formulário de captação trocada',
+  'account.created': 'Conta criada',
+  'account.updated': 'Conta atualizada',
+  'account.deleted': 'Conta excluída',
+  'contact.created': 'Contato criado',
+  'contact.updated': 'Contato atualizado',
+  'contact.deleted': 'Contato excluído',
+  'site.created': 'Imóvel criado',
+  'site.updated': 'Imóvel atualizado',
+  'site.deleted': 'Imóvel excluído',
+  'consumer_unit.created': 'Unidade consumidora criada',
+  'consumer_unit.updated': 'Unidade consumidora atualizada',
+  'consumer_unit.deleted': 'Unidade consumidora excluída',
+  'pipeline.stage_updated': 'Etapa do pipeline alterada',
+  'opportunity.created': 'Oportunidade criada',
+  'opportunity.updated': 'Oportunidade atualizada',
+  'opportunity.deleted': 'Oportunidade excluída',
+  'opportunity.stage_changed': 'Etapa da oportunidade alterada',
+  'opportunity.calculation_linked': 'Cálculo vinculado à oportunidade',
+  'task.created': 'Tarefa criada',
+  'task.updated': 'Tarefa atualizada',
+  'task.completed': 'Tarefa concluída',
+  'task.deleted': 'Tarefa excluída',
+  'energy_bill.uploaded': 'Fatura enviada',
+  'energy_bill.validated': 'Fatura validada',
+  'energy_bill.rejected': 'Fatura recusada',
 };
 
 export const auditActionLabel = (action: string): string => AUDIT_ACTION_LABELS[action] ?? action;
@@ -316,3 +371,121 @@ export const MONTH_LABELS = [
   'Nov',
   'Dez',
 ] as const;
+
+// ---- CRM ----
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  NEW: 'Novo',
+  CONTACTED: 'Contatado',
+  QUALIFIED: 'Qualificado',
+  DISQUALIFIED: 'Desqualificado',
+  CONVERTED: 'Convertido',
+};
+
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  FORM: 'Formulário',
+  LANDING_PAGE: 'Landing page',
+  WHATSAPP: 'WhatsApp',
+  API: 'API',
+  REFERRAL: 'Indicação',
+  CSV_IMPORT: 'Importação CSV',
+  MARKETPLACE: 'Marketplace',
+  CAMPAIGN: 'Campanha',
+  MANUAL: 'Cadastro manual',
+  PARTNER_PORTAL: 'Portal do parceiro',
+};
+
+export const SEGMENT_LABELS: Record<CustomerSegment, string> = {
+  RESIDENTIAL: 'Residencial',
+  RURAL: 'Rural',
+  COMMERCIAL: 'Comercial',
+  INDUSTRIAL: 'Industrial',
+};
+
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+  PERSON: 'Pessoa física',
+  COMPANY: 'Empresa',
+};
+
+export const OPPORTUNITY_STATUS_LABELS: Record<OpportunityStatus, string> = {
+  OPEN: 'Aberta',
+  WON: 'Ganha',
+  LOST: 'Perdida',
+};
+
+/** Nomes padrão das etapas; o tenant pode renomeá-las (a tela usa o nome do pipeline quando o tem). */
+export const STAGE_LABELS: Record<OpportunityStage, string> = Object.fromEntries(
+  DEFAULT_PIPELINE_STAGES.map((stage) => [stage.key, stage.name]),
+) as Record<OpportunityStage, string>;
+
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  OPEN: 'Em aberto',
+  DONE: 'Concluída',
+  CANCELLED: 'Cancelada',
+};
+
+export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
+  CREATED: 'Criação',
+  NOTE: 'Nota',
+  STAGE_CHANGED: 'Mudança de etapa',
+  TASK_CREATED: 'Tarefa criada',
+  TASK_COMPLETED: 'Tarefa concluída',
+  BILL_UPLOADED: 'Fatura enviada',
+  BILL_VALIDATED: 'Fatura validada',
+  CALCULATION_LINKED: 'Cálculo vinculado',
+  ENGINEERING_REQUESTED: 'Pedido de engenharia',
+  GUARD_EVALUATED: 'Triagem avaliada',
+  GUARD_OVERRIDDEN: 'Triagem liberada',
+  QUOTE_CREATED: 'Cotação criada',
+  MARGIN_APPROVAL_REQUESTED: 'Aprovação de margem solicitada',
+  MARGIN_APPROVAL_DECIDED: 'Aprovação de margem decidida',
+  PROPOSAL_GENERATED: 'Proposta gerada',
+  PROPOSAL_SENT: 'Proposta enviada',
+  PROPOSAL_VIEWED: 'Proposta visualizada',
+  PROPOSAL_ACCEPTED: 'Proposta aceita',
+  CONTRACT_GENERATED: 'Contrato gerado',
+  CONTRACT_SIGNED: 'Contrato assinado',
+  PROJECT_CREATED: 'Projeto criado',
+};
+
+export const ROOF_TYPE_LABELS: Record<RoofType, string> = {
+  CERAMIC: 'Telha cerâmica',
+  METAL: 'Telha metálica',
+  FIBROCEMENT: 'Fibrocimento',
+  SLAB: 'Laje',
+  GROUND: 'Solo',
+  OTHER: 'Outro',
+};
+
+export const SHADING_LABELS: Record<ShadingLevel, string> = {
+  NONE: 'Sem sombreamento',
+  LOW: 'Sombreamento leve',
+  RELEVANT: 'Sombreamento relevante',
+};
+
+export const BILL_STATUS_LABELS: Record<EnergyBillStatus, string> = {
+  UPLOADED: 'Enviada',
+  PARSED: 'Lida, aguardando revisão',
+  VALIDATED: 'Validada',
+  REJECTED: 'Recusada',
+};
+
+export const BILL_FIELD_LABELS: Record<EnergyBillField, string> = {
+  distributorName: 'Distribuidora',
+  ucNumber: 'Unidade consumidora (UC)',
+  customerName: 'Nome do cliente',
+  referenceMonth: 'Mês de referência',
+  consumptionHistory: 'Histórico de consumo',
+  tariffCentsPerKwh: 'Tarifa (com impostos)',
+  totalAmountCents: 'Total da fatura',
+  dueDate: 'Vencimento',
+  customerGroup: 'Grupo tarifário',
+  phaseSystem: 'Tipo de ligação',
+};
+
+export const ENGINEERING_STATUS_LABELS = {
+  PENDING: 'Pendente',
+  IN_PROGRESS: 'Em andamento',
+  DONE: 'Concluído',
+  CANCELLED: 'Cancelado',
+} as const;

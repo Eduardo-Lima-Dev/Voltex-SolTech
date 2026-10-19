@@ -107,8 +107,22 @@ export interface DistributorDto {
   tenantId: string;
   name: string;
   state: string | null;
+  /** CNPJ (só dígitos), quando veio da ANEEL. */
+  cnpj: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AneelImportResult {
+  rowsRead: number;
+  distributorsCreated: number;
+  distributorsUpdated: number;
+  tariffsCreated: number;
+  tariffsUpdated: number;
+  tariffsUnchanged: number;
+  /** Linhas de tarifa lidas e descartadas (fora do escopo importado ou com unidade diferente de MWh). */
+  rowsSkipped: number;
+  source: { dataset: string; license: string; url: string };
 }
 
 export interface TariffDto {
@@ -166,3 +180,4 @@ export interface HealthResponse {
 }
 
 export type { CustomerGroup };
+export * from './crm.js';

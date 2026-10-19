@@ -74,6 +74,34 @@ Particularidades do Calculator:
 - `references` (`solarResourceId`, `tariffId`) é opcional; o servidor registra a fonte e se o usuário alterou o valor (`overridden`). Id inexistente ou de outra empresa → **404**.
 - `POST /calculations/quick`: corpo `{ title?, customerName?, references?, input }`; erro de entrada → **422** com o caminho do campo (`input.costPerWpCents`).
 
+## Endpoints implementados (Fase 7A — CRM)
+
+| Método e rota                                                                        | Acesso                                              | Descrição                                                                                                           |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET/POST /leads` · `GET/PATCH/DELETE /leads/:id`                                    | `crm.lead.read` / `crm.lead.write`                  | Leads (filtros `search`, `status`, `source`, `segment`, `ownerId`, `slaBreached`); duplicado → 409 `DUPLICATE_LEAD` |
+| `POST /leads/import`                                                                 | `crm.lead.write`                                    | Importação em lote (até 500); devolve criados, duplicados e as linhas ignoradas                                     |
+| `POST /leads/:id/convert`                                                            | `crm.lead.write` + `crm.account.write`              | Conta + contato + (opcional) oportunidade                                                                           |
+| `GET /lead-capture` · `POST /lead-capture/rotate`                                    | `platform.tenant.manage`                            | Chave do formulário público                                                                                         |
+| `POST /public/leads/:chave`                                                          | **público** (10/min)                                | Captação (consentimento obrigatório); responde 202 sempre                                                           |
+| `GET/POST /accounts` · `GET/PATCH/DELETE /accounts/:id`                              | `crm.account.read` / `crm.account.write`            | Contas; documento repetido → 409 `DUPLICATE_ACCOUNT`                                                                |
+| `POST /accounts/:id/contacts` · `PATCH/DELETE /contacts/:id`                         | `crm.account.write`                                 | Contatos (um principal por conta)                                                                                   |
+| `POST /accounts/:id/sites` · `PATCH/DELETE /sites/:id`                               | `crm.account.write`                                 | Imóveis e levantamento técnico (`intake`)                                                                           |
+| `POST /accounts/:id/consumer-units` · `PATCH/DELETE /consumer-units/:id`             | `crm.account.write`                                 | Unidades consumidoras                                                                                               |
+| `GET /pipeline` · `PATCH /pipeline/stages/:id`                                       | `crm.opportunity.read` / `crm.pipeline.manage`      | Etapas do tenant (nome e ordem)                                                                                     |
+| `GET/POST /opportunities` · `GET/PATCH/DELETE /opportunities/:id`                    | `crm.opportunity.read` / `crm.opportunity.write`    | Oportunidades (filtros `search`, `stage`, `status`, `ownerId`, `accountId`, `withoutNextTask`)                      |
+| `GET /opportunities/board`                                                           | `crm.opportunity.read`                              | Quadro Kanban (`ownerId` opcional)                                                                                  |
+| `POST /opportunities/:id/stage`                                                      | `crm.opportunity.write`                             | Muda a etapa; 422 `INVALID_STAGE_TRANSITION` com as etapas permitidas                                               |
+| `GET /opportunities/:id/timeline` · `POST …/notes`                                   | leitura / escrita                                   | Linha do tempo e notas                                                                                              |
+| `GET …/calculation-context` · `GET/POST …/calculations` · `POST …/calculations/link` | `calculator.*` + `crm.opportunity.*`                | Contexto de pré-preenchimento, cálculos vinculados e vínculo                                                        |
+| `GET …/engineering-requests`                                                         | `crm.opportunity.read`                              | Pedidos de engenharia abertos pelo semáforo amarelo                                                                 |
+| `GET/POST /tasks` · `GET/PATCH/DELETE /tasks/:id` · `POST /tasks/:id/complete`       | `crm.task.read` / `crm.task.write`                  | Tarefas (filtros `status`, `assigneeId`, `opportunityId`, `overdue`)                                                |
+| `POST /energy-bills` (multipart)                                                     | `crm.energy-bill.write` + `platform.document.write` | Envia e lê a fatura                                                                                                 |
+| `GET /energy-bills` · `GET …/:id` · `…/snapshots` · `…/download-url`                 | `crm.energy-bill.read`                              | Consulta                                                                                                            |
+| `POST /energy-bills/:id/validate` · `POST …/reject`                                  | `crm.energy-bill.write`                             | Confirma os campos (snapshot imutável) ou recusa                                                                    |
+| `POST /reference-data/aneel/import`                                                  | `platform.rule.manage` (3/min)                      | Distribuidoras e tarifas dos Dados Abertos da ANEEL                                                                 |
+
+Erros com dados estruturados trazem `data` no corpo (ex.: `{ code: "DUPLICATE_LEAD", data: { matchedLeadId, matchedBy } }`). Visão do módulo: [CRM Solar](../07-desenvolvimento/crm.md).
+
 ## Contrato conceitual dos demais produtos (modelagem, seção 39)
 
 ```http

@@ -34,7 +34,7 @@ import {
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
 import { Pagination } from '@/components/pagination';
-import { Field } from '@/features/calculator/field';
+import { Field } from '@/components/field';
 import { parseDecimal } from '@/features/calculator/form';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { BRAZILIAN_STATES, MONTH_LABELS } from '@/i18n/labels';

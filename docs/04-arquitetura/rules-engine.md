@@ -36,7 +36,7 @@ stateDiagram-v2
 1. versão `ACTIVE` da empresa dentro da vigência (a de maior versão);
 2. senão, o **padrão do produto** (`builtin@1`), com as fontes do EnergIF e as hipóteses declaradas.
 
-Valores que a regra não define caem nos padrões de `thresholdsSchema`. O **custo de disponibilidade não tem padrão**: depende da regulação vigente, então só existe se a empresa o cadastrar; sem ele, o usuário informa o valor da fatura em cada cálculo.
+Ao criar a versão, os valores que ela não define são preenchidos com os padrões de `thresholdsSchema` **e gravados junto**: a versão fica autocontida e reproduzível, mesmo que o padrão do produto mude depois. O **custo de disponibilidade não tem padrão**: depende da regulação vigente, então só existe se a empresa o cadastrar; sem ele, o usuário informa o valor da fatura em cada cálculo.
 
 A referência gravada em cada cálculo e snapshot é `builtin@1` ou `<id>@<versão>`: dá para saber exatamente qual regra gerou um número.
 

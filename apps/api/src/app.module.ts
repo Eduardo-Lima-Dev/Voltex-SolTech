@@ -25,6 +25,7 @@ import { PrismaModule } from './platform/prisma/prisma.module';
 import { ReferenceDataModule } from './platform/reference-data/reference-data.module';
 import { RulesModule } from './platform/rules/rules.module';
 import { CalculatorModule } from './products/calculator/calculator.module';
+import { CrmModule } from './products/crm/crm.module';
 import { TenancyModule } from './platform/tenancy/tenancy.module';
 import { UsersModule } from './platform/users/users.module';
 
@@ -103,6 +104,7 @@ import { UsersModule } from './platform/users/users.module';
     RulesModule,
     ReferenceDataModule,
     CalculatorModule,
+    CrmModule,
     HealthModule,
   ],
   providers: [

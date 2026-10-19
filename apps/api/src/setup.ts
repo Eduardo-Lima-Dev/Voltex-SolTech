@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
@@ -44,13 +45,20 @@ export function configureApp(app: INestApplication): void {
   );
 
   app.use(cookieParser());
-  app.enableCors({
-    origin: config
-      .get('CORS_ORIGIN', { infer: true })
-      .split(',')
-      .map((origin) => origin.trim()),
-    credentials: true,
-    exposedHeaders: ['x-request-id'],
+  const allowedOrigins = config
+    .get('CORS_ORIGIN', { infer: true })
+    .split(',')
+    .map((origin) => origin.trim());
+  // Formulários públicos (captação de leads) rodam em sites de terceiros: aceitam qualquer origem, mas sem
+  // credenciais. Todo o resto só aceita as origens configuradas.
+  app.enableCors((req: Request, callback: (error: Error | null, options: CorsOptions) => void) => {
+    const isPublic = req.url?.startsWith(`${API_PREFIX}/public/`) ?? false;
+    callback(
+      null,
+      isPublic
+        ? { origin: true, credentials: false, exposedHeaders: ['x-request-id'] }
+        : { origin: allowedOrigins, credentials: true, exposedHeaders: ['x-request-id'] },
+    );
   });
   app.enableShutdownHooks();
 }
