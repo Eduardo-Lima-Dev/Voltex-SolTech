@@ -139,7 +139,7 @@ Para **atualizar a API**: `./scripts/publicar-api.sh ghcr.io/eduardo-lima-dev/vo
 
 ## Publicação automática (GitHub Actions)
 
-Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho a cada push na branch `homolog`** (ou pelo botão _Run workflow_ na aba Actions), seguindo o fluxo `develop → homolog → main`.
+Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho, somente quando algo é mesclado na `main`**, seguindo o fluxo `develop → homolog → main`. Enquanto o trabalho estiver em `develop` ou `homolog`, **nenhuma Action roda em push**; os testes (CI) rodam quando você abre um pull request para `homolog` ou `main`, e de novo na `main`, dentro da publicação.
 
 ```mermaid
 flowchart LR
