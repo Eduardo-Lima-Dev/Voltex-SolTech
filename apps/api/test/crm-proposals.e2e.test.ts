@@ -493,7 +493,7 @@ describe('CRM · Proposta (e2e)', () => {
       expect(stored).toMatchObject({
         status: 'ACCEPTED',
         acceptedByName: 'Maria da Silva',
-        acceptedByDocument: expect.stringMatching(/^enc:v1:/),
+        acceptedByDocument: expect.stringMatching(/^enc:v2:/),
       });
       expect(stored.acceptedAt).toBeTruthy();
       expect(stored.acceptedIp).toBeTruthy();

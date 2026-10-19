@@ -65,6 +65,8 @@ export const envSchema = z
      * torna esses dados ilegíveis, então guarde cópia separada do backup do banco. Gere com `openssl rand -base64 32`.
      */
     DATA_ENCRYPTION_KEY: z.string().default(DEV_DATA_ENCRYPTION_KEY),
+    /** Chaves ANTERIORES (base64, separadas por vírgula): só leitura/busca durante o rodízio. Veja `rotate-encryption-key`. */
+    DATA_ENCRYPTION_KEY_PREVIOUS: z.string().default(''),
     /** Liga `GET /api/v1/metrics` (Prometheus) para quem enviar `Authorization: Bearer <token>`. Vazio = desligado. */
     METRICS_TOKEN: z.string().min(16).optional(),
     THROTTLE_DISABLED: booleanFromString.default(false),
@@ -77,6 +79,16 @@ export const envSchema = z
     AUTOMATION_QUEUE_PREFIX: z.string().default('voltex'),
   })
   .superRefine((env, ctx) => {
+    const previous = env.DATA_ENCRYPTION_KEY_PREVIOUS.split(',')
+      .map((k) => k.trim())
+      .filter(Boolean);
+    for (const [i, key] of previous.entries())
+      if (Buffer.from(key, 'base64').length !== 32)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['DATA_ENCRYPTION_KEY_PREVIOUS'],
+          message: `a chave anterior nº ${i + 1} deve ter 32 bytes em base64`,
+        });
     if (Buffer.from(env.DATA_ENCRYPTION_KEY, 'base64').length !== 32) {
       ctx.addIssue({
         code: 'custom',

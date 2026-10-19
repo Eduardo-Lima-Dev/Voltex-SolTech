@@ -3,12 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { createPrismaClient, isTenantScopedModel, type PrismaClient } from '@voltex/database';
 import { RequestContext } from '../../common/context/request-context';
 import type { Env } from '../../config/env';
-import { parseMasterKey } from '../crypto/field-crypto';
+import { createKeyring, type Keyring } from '../crypto/field-crypto';
 import { createFieldEncryption } from './field-encryption';
 import { TenantScopeError, scopeArgs } from './tenant-scope';
 
-function createScopedClient(base: PrismaClient, context: RequestContext, master: Buffer) {
-  const encryption = createFieldEncryption(master, context);
+function createScopedClient(base: PrismaClient, context: RequestContext, ring: Keyring) {
+  const encryption = createFieldEncryption(ring, context);
   return (
     base
       .$extends({
@@ -76,7 +76,10 @@ export class PrismaService implements OnModuleDestroy {
     this.db = createScopedClient(
       this.system,
       context,
-      parseMasterKey(config.get('DATA_ENCRYPTION_KEY', { infer: true })),
+      createKeyring(
+        config.get('DATA_ENCRYPTION_KEY', { infer: true }),
+        config.get('DATA_ENCRYPTION_KEY_PREVIOUS', { infer: true }),
+      ),
     );
   }
 
