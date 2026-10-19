@@ -25,6 +25,7 @@ import {
   Label,
   Skeleton,
   Spinner,
+  Textarea,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
 import { queryKeys } from '@/features/admin/query-keys';
@@ -148,14 +149,13 @@ function SnapshotDialog({
         </DialogHeader>
         <div className="grid gap-1.5">
           <Label htmlFor="snapshot-note">Observação (opcional)</Label>
-          <textarea
+          <Textarea
             id="snapshot-note"
             rows={3}
             maxLength={500}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Ex.: versão enviada ao cliente em reunião"
-            className="rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
         <DialogFooter>

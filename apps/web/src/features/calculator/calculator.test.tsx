@@ -2,11 +2,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { opportunityPageHandlers } from '@/test/crm-handlers';
 import {
   API,
   distributor,
   makeCalculation,
   makeConfig,
+  makeContext,
+  makeOpportunity,
   makeSession,
   makeSnapshot,
   page,
@@ -397,5 +400,108 @@ describe('página do snapshot', () => {
       'href',
       '/calculator/calc-1',
     );
+  });
+});
+
+describe('wizard a partir da oportunidade', () => {
+  const contextHandler = (overrides: Parameters<typeof makeContext>[0] = {}) =>
+    http.get(`${API}/opportunities/opp-1/calculation-context`, () =>
+      HttpResponse.json(makeContext(overrides)),
+    );
+
+  it('abre pré-preenchido com a fatura validada, o imóvel e a tarifa, e avisa de onde vêm os dados', async () => {
+    server.use(...wizardHandlers([contextHandler()]));
+    renderApp('/calculator/new?opportunityId=opp-1');
+    expect(await screen.findByText(/Cálculo da oportunidade/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Preenchido com a fatura validada, o imóvel e a tarifa/),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText('Título (opcional)')).toHaveValue('Casa da Maria'),
+    );
+    expect(screen.getByLabelText('Cliente (opcional)')).toHaveValue('Maria Silva');
+    expect(screen.getByLabelText('Latitude (°)')).toHaveValue('-3,73');
+    expect(screen.getByLabelText('Azimute do telhado (°)')).toHaveValue('0');
+    expect(screen.getByLabelText('Inclinação (°)')).toHaveValue('15');
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('HSP médio (kWh/m²·dia)'), '5');
+    await user.click(screen.getByRole('button', { name: /Próximo/ }));
+    // O consumo da fatura cai no mês do calendário correspondente (março e abril).
+    expect(await screen.findByLabelText('Mar')).toHaveValue('480');
+    expect(screen.getByLabelText('Abr')).toHaveValue('450');
+    expect(screen.getByLabelText('Jan')).toHaveValue('');
+    expect(screen.getByLabelText('Tipo de ligação')).toHaveValue('TWO_PHASE');
+  });
+
+  it('salva o cálculo VINCULADO à oportunidade (com a tarifa do cadastro como referência) e volta para ela', async () => {
+    let body: { references?: Record<string, string>; input?: Record<string, unknown> } | undefined;
+    const saved = makeCalculation({ id: 'calc-opp', opportunityId: 'opp-1' });
+    server.use(
+      ...wizardHandlers([
+        contextHandler(),
+        http.post(`${API}/opportunities/opp-1/calculations`, async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return HttpResponse.json(saved, { status: 201 });
+        }),
+      ]),
+      ...opportunityPageHandlers(makeOpportunity()),
+      http.get(`${API}/tasks`, () => HttpResponse.json(page([]))),
+    );
+    const { router } = renderApp('/calculator/new?opportunityId=opp-1');
+    const user = userEvent.setup();
+    await waitFor(() =>
+      expect(screen.getByLabelText('Título (opcional)')).toHaveValue('Casa da Maria'),
+    );
+    await user.type(screen.getByLabelText('HSP médio (kWh/m²·dia)'), '5');
+    await user.click(screen.getByRole('button', { name: /Próximo/ }));
+    await user.type(await screen.findByLabelText('Custo de disponibilidade (kWh/mês)'), '30');
+    await user.click(screen.getByRole('button', { name: /Próximo/ }));
+    expect(await screen.findByLabelText('Tarifa de energia (R$/kWh)')).toHaveValue('0,985');
+    expect(screen.getByLabelText('Tarifa cadastrada')).toHaveValue('tf-1');
+    await user.click(screen.getByRole('button', { name: /Próximo/ }));
+    await user.type(await screen.findByLabelText('Potência do módulo (Wp)'), '550');
+    await user.type(screen.getByLabelText('Área do módulo (m²)'), '2,58');
+    await user.type(screen.getByLabelText('Custo do sistema (R$/Wp)'), '4,50');
+    await user.click(screen.getByRole('button', { name: /Calcular e salvar/ }));
+    await waitFor(() => expect(body).toBeDefined());
+    expect(body!.references).toMatchObject({ tariffId: 'tf-1' });
+    expect(body!.input).toMatchObject({
+      tariffCentsPerKwh: 98.5,
+      customerGroup: 'B',
+      latitude: -3.73,
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/crm/oportunidades/opp-1'));
+  });
+
+  it('sem fatura validada avisa que o consumo precisa ser informado à mão', async () => {
+    server.use(
+      ...wizardHandlers([
+        contextHandler({
+          billSnapshotId: null,
+          consumptionHistory: [],
+          consumptionMonthlyKwh: [],
+          tariffCentsPerKwh: null,
+          tariffId: null,
+        }),
+      ]),
+    );
+    renderApp('/calculator/new?opportunityId=opp-1');
+    expect(await screen.findByText(/Ainda não há fatura validada/)).toBeInTheDocument();
+  });
+
+  it('se o contexto falhar, o wizard continua utilizável com preenchimento manual', async () => {
+    server.use(
+      ...wizardHandlers([
+        http.get(`${API}/opportunities/opp-1/calculation-context`, () =>
+          HttpResponse.json({ statusCode: 404, code: 'NOT_FOUND', message: 'x' }, { status: 404 }),
+        ),
+      ]),
+    );
+    renderApp('/calculator/new?opportunityId=opp-1');
+    expect(
+      await screen.findByText(/Não foi possível carregar os dados da oportunidade/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('HSP médio (kWh/m²·dia)')).toBeInTheDocument();
   });
 });

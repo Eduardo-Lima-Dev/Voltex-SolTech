@@ -267,6 +267,7 @@ export const listOpportunitiesQuerySchema = paginationQuerySchema.extend({
   stage: z.enum(OpportunityStage).optional(),
   status: z.enum(OpportunityStatus).optional(),
   ownerId: z.uuid().optional(),
+  accountId: z.uuid().optional(),
   /** `true`: só oportunidades abertas sem tarefa em aberto (RF-CRM-026). */
   withoutNextTask: z
     .enum(['true', 'false'])

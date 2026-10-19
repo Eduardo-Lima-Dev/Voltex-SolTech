@@ -5,7 +5,9 @@ import {
   type QuickCalculationResult,
 } from '@voltex/solar-engine';
 import type {
+  AvailabilityCost,
   CustomerGroup,
+  OpportunityCalculationContext,
   PhaseSystem,
   ProjectType,
   SolarResourceDto,
@@ -226,4 +228,47 @@ export function validateStep(step: number, values: WizardValues): StepErrors {
     });
   }
   return errors;
+}
+
+const decimalText = (value: number, digits = 4): string =>
+  String(Number(value.toFixed(digits))).replace('.', ',');
+
+/**
+ * Pré-preenche o formulário com o que a oportunidade já sabe (fatura validada, imóvel, UC, tarifa). O consumo vai para
+ * o mês do calendário correspondente (Jan–Dez), que é como o gráfico de geração × consumo o lê.
+ */
+export function valuesFromContext(
+  context: OpportunityCalculationContext,
+  availability: AvailabilityCost = {},
+): Partial<WizardValues> {
+  const values: Partial<WizardValues> = {
+    title: context.title,
+    customerName: context.customerName,
+    projectType: context.projectType,
+    shadingRelevant: context.shadingRelevant,
+  };
+  if (context.consumptionHistory.length > 0) {
+    const months = Array<string>(12).fill('');
+    for (const point of context.consumptionHistory) {
+      const index = Number(point.month.slice(5, 7)) - 1;
+      if (index >= 0 && index < 12) months[index] = decimalText(point.kwh, 2);
+    }
+    values.consumption = months;
+  }
+  if (context.customerGroup) values.customerGroup = context.customerGroup;
+  if (context.phaseSystem) {
+    values.phaseSystem = context.phaseSystem;
+    const cost = availability[context.phaseSystem];
+    if (cost !== undefined) values.availabilityCostKwh = decimalText(cost, 2);
+  }
+  if (context.tariffCentsPerKwh !== null)
+    values.tariffReais = decimalText(context.tariffCentsPerKwh / 100);
+  if (context.tariffId) values.tariffId = context.tariffId;
+  if (context.latitude !== null) values.latitude = decimalText(context.latitude, 6);
+  if (context.roofAzimuthDegrees !== null)
+    values.roofAzimuthDegrees = decimalText(context.roofAzimuthDegrees, 1);
+  if (context.tiltDegrees !== null) values.tiltDegrees = decimalText(context.tiltDegrees, 1);
+  if (context.availableAreaM2 !== null)
+    values.availableAreaM2 = decimalText(context.availableAreaM2, 1);
+  return values;
 }

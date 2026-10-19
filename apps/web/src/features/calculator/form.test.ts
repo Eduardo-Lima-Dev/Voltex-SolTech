@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { thresholdsSchema } from '@voltex/shared';
-import { solarResource } from '@/test/fixtures';
+import { makeContext, solarResource } from '@/test/fixtures';
 import {
   buildInput,
   defaultWizardValues,
   evaluate,
   parseDecimal,
   validateStep,
+  valuesFromContext,
   type WizardValues,
 } from './form';
 
@@ -128,5 +129,78 @@ describe('validateStep', () => {
     expect(step4.performanceRatio).toMatch(/entre 0 e 1/);
     expect(step4.horizonYears).toBe('Use um número inteiro');
     expect(validateStep(3, filled())).toEqual({});
+  });
+});
+
+describe('valuesFromContext (pré-preenchimento pela oportunidade)', () => {
+  it('põe o consumo no mês do calendário, converte a tarifa e leva imóvel, UC e intake', () => {
+    const values = valuesFromContext(makeContext());
+    expect(values.consumption?.[2]).toBe('480'); // março
+    expect(values.consumption?.[3]).toBe('450'); // abril
+    expect(values.consumption?.filter(Boolean)).toHaveLength(2);
+    expect(values).toMatchObject({
+      title: 'Casa da Maria',
+      customerName: 'Maria Silva',
+      customerGroup: 'B',
+      phaseSystem: 'TWO_PHASE',
+      tariffReais: '0,985',
+      tariffId: 'tf-1',
+      latitude: '-3,73',
+      roofAzimuthDegrees: '0',
+      tiltDegrees: '15',
+      availableAreaM2: '50',
+      shadingRelevant: false,
+    });
+  });
+
+  it('usa o custo de disponibilidade da regra conforme a ligação; sem regra deixa em branco', () => {
+    expect(valuesFromContext(makeContext(), { TWO_PHASE: 50 }).availabilityCostKwh).toBe('50');
+    expect(valuesFromContext(makeContext(), {}).availabilityCostKwh).toBeUndefined();
+  });
+
+  it('sem fatura validada e sem dados do local, só leva o que existe', () => {
+    const values = valuesFromContext(
+      makeContext({
+        consumptionHistory: [],
+        consumptionMonthlyKwh: [],
+        billSnapshotId: null,
+        customerGroup: null,
+        phaseSystem: null,
+        tariffCentsPerKwh: null,
+        tariffId: null,
+        latitude: null,
+        roofAzimuthDegrees: null,
+        tiltDegrees: null,
+        availableAreaM2: null,
+        shadingRelevant: true,
+      }),
+    );
+    expect(values.consumption).toBeUndefined();
+    expect(values.tariffReais).toBeUndefined();
+    expect(values.latitude).toBeUndefined();
+    expect(values.shadingRelevant).toBe(true);
+  });
+
+  it('o resultado pré-preenchido calcula igual ao da tela (mesmo motor)', () => {
+    const values = {
+      ...defaultWizardValues(),
+      ...valuesFromContext(
+        makeContext({
+          consumptionHistory: Array.from({ length: 12 }, (_, i) => ({
+            month: `2026-${String(i + 1).padStart(2, '0')}`,
+            kwh: 500,
+          })),
+        }),
+      ),
+      hspManual: '5',
+      availabilityCostKwh: '30',
+      modulePowerWp: '550',
+      moduleAreaM2: '2,58',
+      costPerWpReais: '4,50',
+      performanceRatio: '0,80',
+      tariffReais: '0,95',
+    };
+    const evaluation = evaluate(values, null, thresholds);
+    expect(evaluation.ok && evaluation.result.moduleCount).toBe(8);
   });
 });

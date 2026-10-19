@@ -237,6 +237,8 @@ export interface OpportunityCalculationContext {
   opportunityId: string;
   title: string;
   customerName: string;
+  /** Últimos 12 meses da fatura validada, em ordem cronológica. */
+  consumptionHistory: { month: string; kwh: number }[];
   consumptionMonthlyKwh: number[];
   billSnapshotId: string | null;
   customerGroup: CustomerGroup | null;

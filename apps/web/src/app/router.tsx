@@ -65,6 +65,127 @@ const pageRoutes: RouteObject[] = [
             }),
           ),
           {
+            path: 'crm',
+            handle: { title: 'CRM Solar' },
+            lazy: async () => {
+              const { CrmLayout } = await import('@/features/crm/layout');
+              return { Component: CrmLayout };
+            },
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { CrmIndexRedirect } = await import('@/features/crm/layout');
+                  return { Component: CrmIndexRedirect };
+                },
+              },
+              {
+                path: 'leads',
+                lazy: async () => {
+                  const { LeadsPage } = await import('@/features/crm/leads/leads-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.lead.read">
+                        <LeadsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Leads' },
+                  };
+                },
+              },
+              {
+                path: 'oportunidades',
+                lazy: async () => {
+                  const { OpportunitiesPage } =
+                    await import('@/features/crm/opportunities/opportunities-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.opportunity.read">
+                        <OpportunitiesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Oportunidades' },
+                  };
+                },
+              },
+              {
+                path: 'oportunidades/:id',
+                lazy: async () => {
+                  const { OpportunityDetailPage } =
+                    await import('@/features/crm/opportunities/opportunity-detail-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.opportunity.read">
+                        <OpportunityDetailPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Oportunidade' },
+                  };
+                },
+              },
+              {
+                path: 'oportunidades/:id/faturas/:billId',
+                lazy: async () => {
+                  const { BillReviewPage } =
+                    await import('@/features/crm/opportunities/bill-review-page');
+                  return {
+                    element: (
+                      <RequirePermission
+                        permission={['crm.opportunity.read', 'crm.energy-bill.write']}
+                      >
+                        <BillReviewPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Revisar fatura' },
+                  };
+                },
+              },
+              {
+                path: 'contas',
+                lazy: async () => {
+                  const { AccountsPage } = await import('@/features/crm/accounts/accounts-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.account.read">
+                        <AccountsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Contas' },
+                  };
+                },
+              },
+              {
+                path: 'contas/:id',
+                lazy: async () => {
+                  const { AccountDetailPage } =
+                    await import('@/features/crm/accounts/account-detail-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.account.read">
+                        <AccountDetailPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Conta' },
+                  };
+                },
+              },
+              {
+                path: 'tarefas',
+                lazy: async () => {
+                  const { TasksPage } = await import('@/features/crm/tasks/tasks-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.task.read">
+                        <TasksPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Tarefas' },
+                  };
+                },
+              },
+            ],
+          },
+          {
             path: 'calculator',
             handle: { title: 'Solar Calculator' },
             lazy: async () => {

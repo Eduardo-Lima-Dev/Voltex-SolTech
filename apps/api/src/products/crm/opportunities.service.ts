@@ -165,6 +165,7 @@ export class OpportunitiesService {
       ...(query.stage ? { stage: query.stage } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.ownerId ? { ownerId: query.ownerId } : {}),
+      ...(query.accountId ? { accountId: query.accountId } : {}),
       ...(query.withoutNextTask
         ? {
             status: OpportunityStatus.OPEN,
@@ -443,10 +444,10 @@ export class OpportunitiesService {
       phaseSystem?: OpportunityCalculationContext['phaseSystem'];
       tariffCentsPerKwh?: number;
     };
-    const consumption = [...(fields.consumptionHistory ?? [])]
+    const history = [...(fields.consumptionHistory ?? [])]
       .sort((a, b) => a.month.localeCompare(b.month))
-      .slice(-12)
-      .map((p) => p.kwh);
+      .slice(-12);
+    const consumption = history.map((p) => p.kwh);
     const customerGroup = unit?.customerGroup ?? fields.customerGroup ?? null;
 
     let tariffCents: number | null = fields.tariffCentsPerKwh ?? null;
@@ -475,6 +476,7 @@ export class OpportunitiesService {
       opportunityId: id,
       title: opportunity.title,
       customerName: opportunity.account.name,
+      consumptionHistory: history,
       consumptionMonthlyKwh: consumption,
       billSnapshotId: snapshot?.id ?? null,
       customerGroup,

@@ -8,6 +8,8 @@ export class ApiError extends Error {
     message: string,
     readonly details: ApiErrorBody['details'] = undefined,
     readonly requestId: string | undefined = undefined,
+    /** Dados estruturados do erro (ex.: `matchedLeadId` num lead duplicado). */
+    readonly data: Record<string, unknown> | undefined = undefined,
   ) {
     super(message);
     this.name = 'ApiError';

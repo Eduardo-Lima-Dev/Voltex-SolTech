@@ -207,6 +207,8 @@ describe('CRM · Pipeline, oportunidades, tarefas e Calculator (e2e)', () => {
         ).body.data.every((o: { stage: string }) => o.stage === 'NEW_LEAD'),
       ).toBe(true);
       expect((await get('/opportunities?page=1&pageSize=2', seller)).body.data).toHaveLength(2);
+      const byAccount = await get(`/opportunities?accountId=${opp.accountId}`, seller);
+      expect(byAccount.body.data.map((o: { id: string }) => o.id)).toEqual([opp.id]);
     });
 
     it('edita título, responsável e previsão; trocar o imóvel avisa que as premissas mudaram', async () => {

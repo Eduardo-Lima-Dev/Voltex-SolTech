@@ -7,6 +7,49 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type AccountDetailDto,
+  type AccountDto,
+  type AneelImportResult,
+  type ContactDto,
+  type ConsumerUnitDto,
+  type ConvertLeadInput,
+  type ConvertLeadResult,
+  type CreateAccountInput,
+  type CreateConsumerUnitInput,
+  type CreateContactInput,
+  type CreateLeadInput,
+  type CreateNoteInput,
+  type CreateOpportunityInput,
+  type CreateSiteInput,
+  type CreateTaskInput,
+  type EnergyBillDto,
+  type EnergyBillSnapshotDto,
+  type EngineeringRequestDto,
+  type ImportLeadsInput,
+  type ImportLeadsResult,
+  type LeadDto,
+  type ListAccountsQuery,
+  type ListLeadsQuery,
+  type ListOpportunitiesQuery,
+  type ListTasksQuery,
+  type OpportunityBoardDto,
+  type OpportunityCalculationContext,
+  type OpportunityDto,
+  type PipelineStageDto,
+  type RejectEnergyBillInput,
+  type SiteDto,
+  type TaskDto,
+  type TimelineEventDto,
+  type UpdateAccountInput,
+  type UpdateConsumerUnitInput,
+  type UpdateContactInput,
+  type UpdateLeadInput,
+  type UpdateOpportunityInput,
+  type UpdatePipelineStageInput,
+  type UpdateSiteInput,
+  type UpdateTaskInput,
+  type ValidateEnergyBillInput,
+  type ChangeStageInput,
   type AcceptInvitationInput,
   type ActivateRuleSetInput,
   type AvailabilityCost,
@@ -152,6 +195,116 @@ export function createEndpoints(client: ApiClient) {
       activate: (id: string, input: ActivateRuleSetInput) =>
         client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
+    },
+    leads: {
+      list: (query: Partial<ListLeadsQuery>) =>
+        client.get<Paginated<LeadDto>>(ROUTES.leads, { query: query as QueryParams }),
+      get: (id: string) => client.get<LeadDto>(`${ROUTES.leads}/${id}`),
+      create: (input: CreateLeadInput) => client.post<LeadDto>(ROUTES.leads, input),
+      update: (id: string, input: UpdateLeadInput) =>
+        client.patch<LeadDto>(`${ROUTES.leads}/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.leads}/${id}`),
+      import: (input: ImportLeadsInput) =>
+        client.post<ImportLeadsResult>(`${ROUTES.leads}/import`, input),
+      convert: (id: string, input: ConvertLeadInput) =>
+        client.post<ConvertLeadResult>(`${ROUTES.leads}/${id}/convert`, input),
+      captureKey: () => client.get<{ key: string }>('/lead-capture'),
+      rotateCaptureKey: () => client.post<{ key: string }>('/lead-capture/rotate'),
+    },
+    accounts: {
+      list: (query: Partial<ListAccountsQuery>) =>
+        client.get<Paginated<AccountDto>>(ROUTES.accounts, { query: query as QueryParams }),
+      get: (id: string) => client.get<AccountDetailDto>(`${ROUTES.accounts}/${id}`),
+      create: (input: CreateAccountInput) => client.post<AccountDto>(ROUTES.accounts, input),
+      update: (id: string, input: UpdateAccountInput) =>
+        client.patch<AccountDto>(`${ROUTES.accounts}/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.accounts}/${id}`),
+      addContact: (accountId: string, input: CreateContactInput) =>
+        client.post<ContactDto>(`${ROUTES.accounts}/${accountId}/contacts`, input),
+      updateContact: (id: string, input: UpdateContactInput) =>
+        client.patch<ContactDto>(`/contacts/${id}`, input),
+      removeContact: (id: string) => client.delete<{ id: string }>(`/contacts/${id}`),
+      addSite: (accountId: string, input: CreateSiteInput) =>
+        client.post<SiteDto>(`${ROUTES.accounts}/${accountId}/sites`, input),
+      updateSite: (id: string, input: UpdateSiteInput) =>
+        client.patch<SiteDto>(`${ROUTES.sites}/${id}`, input),
+      removeSite: (id: string) => client.delete<{ id: string }>(`${ROUTES.sites}/${id}`),
+      addConsumerUnit: (accountId: string, input: CreateConsumerUnitInput) =>
+        client.post<ConsumerUnitDto>(`${ROUTES.accounts}/${accountId}/consumer-units`, input),
+      updateConsumerUnit: (id: string, input: UpdateConsumerUnitInput) =>
+        client.patch<ConsumerUnitDto>(`${ROUTES.consumerUnits}/${id}`, input),
+      removeConsumerUnit: (id: string) =>
+        client.delete<{ id: string }>(`${ROUTES.consumerUnits}/${id}`),
+    },
+    pipeline: {
+      list: () => client.get<PipelineStageDto[]>(ROUTES.pipeline),
+      updateStage: (id: string, input: UpdatePipelineStageInput) =>
+        client.patch<PipelineStageDto>(`${ROUTES.pipeline}/stages/${id}`, input),
+    },
+    opportunities: {
+      list: (query: Partial<ListOpportunitiesQuery>) =>
+        client.get<Paginated<OpportunityDto>>(ROUTES.opportunities, {
+          query: query as QueryParams,
+        }),
+      board: (ownerId?: string) =>
+        client.get<OpportunityBoardDto>(`${ROUTES.opportunities}/board`, { query: { ownerId } }),
+      get: (id: string) => client.get<OpportunityDto>(`${ROUTES.opportunities}/${id}`),
+      create: (input: CreateOpportunityInput) =>
+        client.post<OpportunityDto>(ROUTES.opportunities, input),
+      update: (id: string, input: UpdateOpportunityInput) =>
+        client.patch<OpportunityDto>(`${ROUTES.opportunities}/${id}`, input),
+      changeStage: (id: string, input: ChangeStageInput) =>
+        client.post<OpportunityDto>(`${ROUTES.opportunities}/${id}/stage`, input),
+      timeline: (id: string) =>
+        client.get<TimelineEventDto[]>(`${ROUTES.opportunities}/${id}/timeline`),
+      addNote: (id: string, input: CreateNoteInput) =>
+        client.post<{ ok: true }>(`${ROUTES.opportunities}/${id}/notes`, input),
+      calculationContext: (id: string) =>
+        client.get<OpportunityCalculationContext>(
+          `${ROUTES.opportunities}/${id}/calculation-context`,
+        ),
+      calculations: (id: string) =>
+        client.get<CalculationSessionDto[]>(`${ROUTES.opportunities}/${id}/calculations`),
+      createCalculation: (id: string, input: CreateCalculationInput) =>
+        client.post<CalculationSessionDto>(`${ROUTES.opportunities}/${id}/calculations`, input),
+      linkCalculation: (id: string, sessionId: string) =>
+        client.post<CalculationSessionDto>(`${ROUTES.opportunities}/${id}/calculations/link`, {
+          sessionId,
+        }),
+      engineeringRequests: (id: string) =>
+        client.get<EngineeringRequestDto[]>(`${ROUTES.opportunities}/${id}/engineering-requests`),
+    },
+    tasks: {
+      list: (query: Partial<ListTasksQuery>) =>
+        client.get<Paginated<TaskDto>>(ROUTES.tasks, { query: query as QueryParams }),
+      create: (input: CreateTaskInput) => client.post<TaskDto>(ROUTES.tasks, input),
+      update: (id: string, input: UpdateTaskInput) =>
+        client.patch<TaskDto>(`${ROUTES.tasks}/${id}`, input),
+      complete: (id: string) => client.post<TaskDto>(`${ROUTES.tasks}/${id}/complete`),
+      remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.tasks}/${id}`),
+    },
+    energyBills: {
+      upload: (file: File, target: { opportunityId?: string; consumerUnitId?: string }) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (target.opportunityId) form.append('opportunityId', target.opportunityId);
+        if (target.consumerUnitId) form.append('consumerUnitId', target.consumerUnitId);
+        return client.upload<EnergyBillDto>('/energy-bills', form);
+      },
+      list: (query: { opportunityId?: string; consumerUnitId?: string }) =>
+        client.get<EnergyBillDto[]>('/energy-bills', { query }),
+      get: (id: string) => client.get<EnergyBillDto>(`/energy-bills/${id}`),
+      snapshots: (id: string) =>
+        client.get<EnergyBillSnapshotDto[]>(`/energy-bills/${id}/snapshots`),
+      downloadUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`/energy-bills/${id}/download-url`),
+      validate: (id: string, input: ValidateEnergyBillInput) =>
+        client.post<EnergyBillDto>(`/energy-bills/${id}/validate`, input),
+      reject: (id: string, input: RejectEnergyBillInput) =>
+        client.post<EnergyBillDto>(`/energy-bills/${id}/reject`, input),
+    },
+    aneel: {
+      import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
     },
     audit: {
       list: (query: AuditQuery) =>

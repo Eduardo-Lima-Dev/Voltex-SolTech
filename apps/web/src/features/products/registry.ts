@@ -30,7 +30,7 @@ export const PRODUCTS: readonly ProductDef[] = [
     icon: Handshake,
     tagline: 'Do lead à proposta, com margem protegida.',
     permission: 'crm.lead.read',
-    availability: { status: 'soon', phase: 'Fase 7' },
+    availability: { status: 'available' },
     highlights: [
       'Leads, funil e tarefas',
       'Fatura de energia com leitura assistida',

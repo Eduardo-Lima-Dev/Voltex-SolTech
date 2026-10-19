@@ -19,6 +19,25 @@ export const queryKeys = {
       ? (['solar-resources'] as const)
       : (['solar-resources', filters] as const),
   rules: ['rules'] as const,
+  leads: (filters?: unknown) =>
+    filters === undefined ? (['leads'] as const) : (['leads', filters] as const),
+  leadCaptureKey: ['lead-capture-key'] as const,
+  accounts: (filters?: unknown) =>
+    filters === undefined ? (['accounts'] as const) : (['accounts', filters] as const),
+  account: (id: string) => ['account', id] as const,
+  pipeline: ['pipeline'] as const,
+  opportunities: (filters?: unknown) =>
+    filters === undefined ? (['opportunities'] as const) : (['opportunities', filters] as const),
+  opportunityBoard: (ownerId?: string) => ['opportunity-board', ownerId ?? 'all'] as const,
+  opportunity: (id: string) => ['opportunity', id] as const,
+  opportunityTimeline: (id: string) => ['opportunity', id, 'timeline'] as const,
+  opportunityBills: (id: string) => ['opportunity', id, 'bills'] as const,
+  opportunityCalculations: (id: string) => ['opportunity', id, 'calculations'] as const,
+  opportunityEngineering: (id: string) => ['opportunity', id, 'engineering'] as const,
+  calculationContext: (id: string) => ['opportunity', id, 'calculation-context'] as const,
+  tasks: (filters?: unknown) =>
+    filters === undefined ? (['tasks'] as const) : (['tasks', filters] as const),
+  energyBill: (id: string) => ['energy-bill', id] as const,
   effectiveRules: ['rules', 'effective'] as const,
   audit: (filters?: unknown) =>
     filters === undefined ? (['audit'] as const) : (['audit', filters] as const),

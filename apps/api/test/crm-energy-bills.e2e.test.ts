@@ -301,6 +301,11 @@ describe('CRM · Fatura de energia (e2e)', () => {
       const ctx = (await get(`/opportunities/${opp.id}/calculation-context`, seller)).body;
       expect(ctx.billSnapshotId).toBe(second.body.snapshotId);
       expect(ctx.consumptionMonthlyKwh).toEqual([430, 400, 405]); // 2026-05, 2026-06, 2026-07
+      expect(ctx.consumptionHistory).toEqual([
+        { month: '2026-05', kwh: 430 },
+        { month: '2026-06', kwh: 400 },
+        { month: '2026-07', kwh: 405 },
+      ]);
       expect(ctx.tariffCentsPerKwh).toBe(105); // a tarifa da fatura (com impostos) vale mais que a do cadastro
       expect(ctx.customerGroup).toBe('B');
       expect(ctx.phaseSystem).toBe('TWO_PHASE');

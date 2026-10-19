@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { CloudDownload, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -49,6 +49,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format';
 import { ConfirmDialog } from '../company/confirm-delete';
+import { AneelImportDialog } from './aneel-import-dialog';
 import { queryKeys } from '../query-keys';
 
 // ---- Concessionárias ----
@@ -163,6 +164,7 @@ function DistributorsCard({ distributors }: { distributors: DistributorDto[] }) 
   const [editing, setEditing] = useState<DistributorDto | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<DistributorDto | null>(null);
+  const [aneel, setAneel] = useState(false);
 
   const remove = useMutation({
     mutationFn: (id: string) => endpoints.distributors.remove(id),
@@ -186,9 +188,14 @@ function DistributorsCard({ distributors }: { distributors: DistributorDto[] }) 
           <CardDescription>Distribuidoras de energia que você atende.</CardDescription>
         </div>
         <Can permission="platform.rule.manage">
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus /> Nova concessionária
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => setAneel(true)}>
+              <CloudDownload /> Importar da ANEEL
+            </Button>
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <Plus /> Nova concessionária
+            </Button>
+          </div>
         </Can>
       </CardHeader>
       <CardContent>
@@ -236,6 +243,7 @@ function DistributorsCard({ distributors }: { distributors: DistributorDto[] }) 
           </Table>
         )}
       </CardContent>
+      <AneelImportDialog open={aneel} onOpenChange={setAneel} />
       <DistributorDialog
         distributor={editing}
         open={creating || editing !== null}
