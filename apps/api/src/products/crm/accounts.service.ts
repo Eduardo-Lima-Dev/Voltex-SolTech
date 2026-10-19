@@ -105,7 +105,10 @@ export class AccountsService {
             OR: [
               { name: { contains: query.search, mode: 'insensitive' as const } },
               { email: { contains: query.search, mode: 'insensitive' as const } },
-              ...(digits.length >= 4 ? [{ documentNormalized: { contains: digits } }] : []),
+              // O documento é cifrado: a busca por ele é só pelo número completo (CPF 11 ou CNPJ 14 dígitos).
+              ...(digits.length === 11 || digits.length === 14
+                ? [{ documentNormalized: digits }]
+                : []),
             ],
           }
         : {}),

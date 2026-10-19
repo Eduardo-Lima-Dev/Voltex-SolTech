@@ -46,7 +46,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
 
     it('entrega o evento ao consumidor com o envelope completo e marca como publicado', async () => {
       const publisher = t.app.get(await outbox());
-      await publisher.publishPending(500); // drena eventos de testes anteriores
+      await publisher.publishPending(500, tenant.id); // drena eventos de testes anteriores
 
       const received: DomainEventEnvelope[] = [];
       const listener = (envelope: DomainEventEnvelope) => void received.push(envelope);
@@ -58,7 +58,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
         });
         expect(before.attempts).toBe(0);
 
-        expect(await publisher.publishPending(500)).toBeGreaterThanOrEqual(1);
+        expect(await publisher.publishPending(500, tenant.id)).toBeGreaterThanOrEqual(1);
         const mine = received.find((e) => e.payload.documentId === doc.body.id)!;
         expect(mine).toMatchObject({
           type: 'DocumentUploaded',
@@ -75,7 +75,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
         expect(after.publishedAt).not.toBeNull();
         // já publicado: não é entregue de novo
         received.length = 0;
-        await publisher.publishPending();
+        await publisher.publishPending(500, tenant.id);
         expect(received).toEqual([]);
       } finally {
         t.app.get(EventEmitter2).off('DocumentUploaded', listener);
@@ -84,7 +84,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
 
     it('reentrega depois de falha, registrando tentativas e o erro', async () => {
       const publisher = t.app.get(await outbox());
-      await publisher.publishPending(500);
+      await publisher.publishPending(500, tenant.id);
       await upload();
 
       const failing = async () => {
@@ -92,7 +92,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
       };
       const emitter = t.app.get(EventEmitter2);
       emitter.on('DocumentUploaded', failing);
-      await publisher.publishPending();
+      await publisher.publishPending(500, tenant.id);
       emitter.off('DocumentUploaded', failing);
 
       const pending = await t.prisma.system.outboxEvent.findFirstOrThrow({
@@ -101,7 +101,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
       expect(pending.attempts).toBe(1);
       expect(pending.lastError).toContain('consumidor fora do ar');
 
-      expect(await publisher.publishPending()).toBe(1);
+      expect(await publisher.publishPending(500, tenant.id)).toBe(1);
       const done = await t.prisma.system.outboxEvent.findUniqueOrThrow({
         where: { id: pending.id },
       });
@@ -113,7 +113,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
       const { OUTBOX_MAX_ATTEMPTS } =
         await import('../src/platform/events/outbox-publisher.service');
       const publisher = t.app.get(await outbox());
-      await publisher.publishPending(500);
+      await publisher.publishPending(500, tenant.id);
       const dead = await t.prisma.system.outboxEvent.create({
         data: {
           tenantId: tenant.id,
@@ -122,7 +122,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
           attempts: OUTBOX_MAX_ATTEMPTS,
         },
       });
-      expect(await publisher.publishPending()).toBe(0);
+      expect(await publisher.publishPending(500, tenant.id)).toBe(0);
       expect(
         (await t.prisma.system.outboxEvent.findUniqueOrThrow({ where: { id: dead.id } }))
           .publishedAt,

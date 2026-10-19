@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 const DEV_JWT_SECRET_MARKER = 'dev-only';
+/** 32 bytes em base64, SÓ para desenvolvimento e testes: em produção a validação recusa. */
+export const DEV_DATA_ENCRYPTION_KEY = Buffer.from('voltex-dev-only-encryption-key!!').toString(
+  'base64',
+);
 
 /** Converte "15m", "7d", "3600s" ou um número de segundos em segundos. */
 export function parseDurationToSeconds(value: string | number): number {
@@ -54,6 +58,15 @@ export const envSchema = z
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('Voltex SolTech <no-reply@voltex.local>'),
 
+    /** Quantos proxies confiáveis ficam na frente da API (nginx = 1): o IP do cliente vem de `X-Forwarded-For`. */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+    /**
+     * Chave-mestra (32 bytes em base64) dos campos pessoais cifrados (CPF/CNPJ). Obrigatória em produção; perdê-la
+     * torna esses dados ilegíveis, então guarde cópia separada do backup do banco. Gere com `openssl rand -base64 32`.
+     */
+    DATA_ENCRYPTION_KEY: z.string().default(DEV_DATA_ENCRYPTION_KEY),
+    /** Liga `GET /api/v1/metrics` (Prometheus) para quem enviar `Authorization: Bearer <token>`. Vazio = desligado. */
+    METRICS_TOKEN: z.string().min(16).optional(),
     THROTTLE_DISABLED: booleanFromString.default(false),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
     /** 0 desliga o worker do outbox (usado nos testes, que o acionam manualmente). */
@@ -64,6 +77,20 @@ export const envSchema = z
     AUTOMATION_QUEUE_PREFIX: z.string().default('voltex'),
   })
   .superRefine((env, ctx) => {
+    if (Buffer.from(env.DATA_ENCRYPTION_KEY, 'base64').length !== 32) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATA_ENCRYPTION_KEY'],
+        message: 'deve ter 32 bytes em base64 (gere com: openssl rand -base64 32)',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.DATA_ENCRYPTION_KEY === DEV_DATA_ENCRYPTION_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATA_ENCRYPTION_KEY'],
+        message: 'a chave de desenvolvimento não pode ser usada em produção: defina a sua',
+      });
+    }
     if (env.NODE_ENV === 'production' && env.JWT_SECRET.includes(DEV_JWT_SECRET_MARKER)) {
       ctx.addIssue({
         code: 'custom',

@@ -33,6 +33,9 @@ export function requestIdMiddleware(
 export function configureApp(app: INestApplication): void {
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
+  const proxies = config.get('TRUST_PROXY', { infer: true });
+  // Atrás do nginx, sem isto o IP de todos os clientes seria o do proxy (limite de requisições e auditoria erradas).
+  if (proxies > 0) app.getHttpAdapter().getInstance().set('trust proxy', proxies);
   app.use(requestIdMiddleware);
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix(API_PREFIX.replace(/^\//, ''));

@@ -31,6 +31,7 @@ Object.assign(process.env, {
   THROTTLE_DISABLED: 'true',
   OUTBOX_POLL_INTERVAL_MS: '0',
   AUTOMATION_SCAN_INTERVAL_MS: '0',
+  METRICS_TOKEN: 'e2e-metrics-token-0123456789',
   AUTOMATION_QUEUE_PREFIX: `voltex-test-${process.pid}`,
   REFRESH_REUSE_GRACE_MS: '0',
   JWT_SECRET: 'e2e-jwt-secret-with-at-least-32-characters-0123456789',

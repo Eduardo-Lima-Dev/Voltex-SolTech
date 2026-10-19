@@ -27,7 +27,27 @@ Projeto Docker: `voltex`. **Nenhuma porta é publicada no host**; os segredos s�
 | `postgres`, `redis`, `s3`, `s3-init` | Infraestrutura (em produção real, preferir serviços gerenciados)                                                                      |
 | `migrate`                            | Job único (`docker/migrate.Dockerfile`, `node:24-alpine` + Prisma CLI 7.10.1) que roda `prisma migrate deploy` e termina com código 0 |
 
-Estado atual: infraestrutura + `migrate`, **validado de ponta a ponta** (build da imagem, banco novo, migrations aplicadas). Os serviços `api` e `web` (imagens multi-stage, `nginx` com proxy `/api`, `depends_on: migrate: service_completed_successfully`) são adicionados na **Fase 8**.
+Serviços de aplicação (Fase 8):
+
+| Serviço | Descrição                                                                                                                                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api`   | `apps/api/Dockerfile` (multi-stage: build com Turbo, `pnpm deploy --prod`, runtime `node:24-alpine` **sem root**). Depende de `migrate` e `s3-init` concluídos. `TRUST_PROXY=1` (atrás do nginx)        |
+| `web`   | `apps/web/Dockerfile` (build Vite + `nginx-unprivileged`): SPA com fallback para `index.html`, proxy de `/api` para a API, cabeçalhos de segurança. **Única porta publicada** (`WEB_PORT`, padrão 8080) |
+
+Validado de ponta a ponta: build das imagens, pilha completa saudável, login pela porta pública (nginx → API), página pública `/p/:token` servida pela SPA, usuário `1000` na API.
+
+**Primeiro acesso:** o banco novo não tem usuários (o seed de demonstração é recusado em produção). Crie a primeira empresa e o proprietário:
+
+```bash
+docker compose -f docker/compose.prod.yml run --rm \
+  -e TENANT_NAME="Sua Empresa" -e OWNER_NAME="Nome Sobrenome" \
+  -e OWNER_EMAIL=voce@empresa.com.br -e OWNER_PASSWORD='senha longa e única' \
+  api node dist/cli/create-owner.js
+```
+
+A senha vem só do ambiente (12+ caracteres, letras e números) e não é gravada em log; recusa e-mail ou empresa já existentes.
+
+**CI** (`.github/workflows/ci.yml`): em push (`develop`, `homologate`, `main`) e PR — instala com `--frozen-lockfile`, sobe a infra, roda lint, typecheck, testes, build e os e2e da API; depois constrói as imagens (`api`, `web`, `migrate`) com cache. O workflow **ainda não rodou no GitHub** (foi validado só localmente).
 
 Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 

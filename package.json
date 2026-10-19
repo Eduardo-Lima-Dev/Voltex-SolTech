@@ -27,6 +27,7 @@
     "db:deploy": "pnpm --filter @voltex/database db:deploy",
     "db:seed": "pnpm --filter @voltex/database db:seed",
     "db:studio": "pnpm --filter @voltex/database db:studio",
+    "test:browser": "pnpm --filter @voltex/e2e test",
     "docker:build": "docker compose --project-directory . -f docker/compose.prod.yml build",
     "docker:up": "docker compose --project-directory . -f docker/compose.prod.yml up -d --wait",
     "docker:down": "docker compose --project-directory . -f docker/compose.prod.yml down",

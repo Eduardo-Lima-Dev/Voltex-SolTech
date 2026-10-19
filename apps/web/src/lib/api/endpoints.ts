@@ -153,6 +153,8 @@ export function createEndpoints(client: ApiClient) {
     health: () => client.get<HealthResponse>(ROUTES.health, { auth: false }),
     tenant: {
       get: () => client.get<TenantDto>(ROUTES.tenant),
+      /** Todos os dados da empresa (LGPD), em JSON. */
+      export: () => client.get<Record<string, unknown>>(`${ROUTES.tenant}/export`),
       update: (input: UpdateTenantInput) => client.patch<TenantDto>(ROUTES.tenant, input),
     },
     branches: {
