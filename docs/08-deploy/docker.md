@@ -47,7 +47,7 @@ docker compose -f docker/compose.prod.yml run --rm \
 
 A senha vem só do ambiente (12+ caracteres, letras e números) e não é gravada em log; recusa e-mail ou empresa já existentes.
 
-**CI** (`.github/workflows/ci.yml`): em push (`develop`, `homolog`, `main`) e PR — instala com `--frozen-lockfile`, sobe a infra, roda lint, typecheck, testes, build e os e2e da API; depois constrói as imagens (`api`, `web`, `migrate`) com cache. O workflow **ainda não rodou no GitHub** (foi validado só localmente).
+**CI** (`.github/workflows/ci.yml`): em **pull requests** para `homolog` e `main` e, na `main`, dentro da publicação da demonstração (push em `develop` e `homolog` **não** roda nada) — instala com `--frozen-lockfile`, sobe a infra, roda lint, typecheck, testes, build e os e2e da API; depois constrói as imagens (`api`, `web`, `migrate`) com cache. O workflow **ainda não rodou no GitHub** (foi validado só localmente).
 
 Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 
