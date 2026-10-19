@@ -141,6 +141,55 @@ files['favicon.svg'] =
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Voltex SolTech"><rect width="64" height="64" rx="14" fill="${COLORS.navy}"/>` +
   `<g transform="translate(${(32 - cx * scale).toFixed(3)} ${(32 - cy * scale).toFixed(3)}) scale(${scale.toFixed(5)})">${paths(mark, COLORS.ice, COLORS.cyan)}</g></svg>\n`;
 
+// Uma cor só (impressos, carimbos, documentos em preto e branco, e-mails): o símbolo e o nome na mesma cor.
+files['logo-horizontal-mono-navy.svg'] = doc(fullBox, paths(both, COLORS.navy, COLORS.navy));
+files['logo-horizontal-mono-white.svg'] = doc(fullBox, paths(both, '#FFFFFF', '#FFFFFF'));
+files['logo-mark-mono-navy.svg'] = doc(markBox, paths(mark, COLORS.navy, COLORS.navy));
+
+// Ícone "mascarável" (Android/PWA): quadrado de borda a borda, sem cantos arredondados, e o símbolo dentro da
+// zona segura (círculo de 80% do lado), porque o sistema recorta o ícone no formato que quiser.
+const halfDiagonal = Math.hypot(markBox.w / 2, markBox.h / 2);
+const safeScale = (64 * 0.4) / halfDiagonal;
+files['icon-maskable.svg'] =
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Voltex SolTech"><rect width="64" height="64" fill="${COLORS.navy}"/>` +
+  `<g transform="translate(${(32 - cx * safeScale).toFixed(3)} ${(32 - cy * safeScale).toFixed(3)}) scale(${safeScale.toFixed(5)})">${paths(mark, COLORS.ice, COLORS.cyan)}</g></svg>\n`;
+
+// Grade de construção do símbolo: linhas nas coordenadas reais das pontas e dos vértices das asas, eixo de simetria
+// e o contorno do símbolo. Serve de fundo técnico (engenharia), em `currentColor` para pegar a cor do contexto.
+const allMark = [...mark.primary, ...mark.accent];
+const nums = (d) => [...d.matchAll(/-?\d+\.?\d*/g)].map((m) => Number(m[0]));
+const keyValues = (axis) => {
+  const values = allMark.flatMap((d) => {
+    const n = nums(d).filter((_, i) => i % 2 === axis);
+    return [Math.min(...n), Math.max(...n)];
+  });
+  const picked = [];
+  for (const v of [...values].sort((a, b) => a - b))
+    if (!picked.length || v - picked[picked.length - 1] > 14) picked.push(v);
+  return picked;
+};
+const gx = keyValues(0);
+const gy = keyValues(1);
+const GP = 46; // quanto a grade passa do símbolo
+const gbox = {
+  x: markBox.x - GP,
+  y: markBox.y - GP,
+  w: markBox.w + 2 * GP,
+  h: markBox.h + 2 * GP,
+};
+const gridLines = [
+  ...gx.map((x) => `<path d="M${x.toFixed(1)} ${gbox.y}V${gbox.y + gbox.h}"/>`),
+  ...gy.map((y) => `<path d="M${gbox.x} ${y.toFixed(1)}H${gbox.x + gbox.w}"/>`),
+].join('');
+files['brand-grid.svg'] =
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${gbox.x} ${gbox.y} ${gbox.w} ${gbox.h}" role="img" aria-label="Símbolo Voltex SolTech sobre grade de construção">` +
+  `<g fill="none" stroke="currentColor" stroke-width="1" opacity="0.55">${gridLines}</g>` +
+  `<path d="M${(markBox.x + markBox.w / 2).toFixed(1)} ${gbox.y}V${gbox.y + gbox.h}" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="5 6" opacity="0.8"/>` +
+  `<g fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.5" fill-rule="evenodd">${allMark.map((d) => `<path d="${d}"/>`).join('')}</g></svg>\n`;
+
+// Para usar em <img> ou CSS, onde `currentColor` não vale: a mesma grade já em ciano.
+files['brand-grid-cyan.svg'] = files['brand-grid.svg'].replaceAll('currentColor', COLORS.cyan);
+
 for (const [name, content] of Object.entries(files)) writeFileSync(`${brandDir}/${name}`, content);
 
 // ---------- PNGs (opcional: exige rsvg-convert) ----------
@@ -159,8 +208,29 @@ try {
   png('favicon.svg', 'icon-512.png', 512);
   png('logo-horizontal.svg', 'logo-horizontal.png', 960);
   png('logo-banner.svg', 'logo-banner.png', 1280);
+  png('icon-maskable.svg', 'icon-maskable-512.png', 512);
+  png('logo-horizontal-on-light.svg', 'logo-horizontal-on-light.png', 720);
+  png('logo-horizontal-mono-navy.svg', 'logo-horizontal-mono-navy.png', 720);
 } catch {
   console.warn('[brand] rsvg-convert não encontrado: PNGs não foram gerados (os SVGs sim).');
+}
+
+// ---------- cópia para os apps ----------
+for (const app of ['web', 'site']) {
+  const dest = `${root}apps/${app}/public`;
+  mkdirSync(dest, { recursive: true });
+  for (const f of [
+    'brand-grid-cyan.svg',
+    'favicon.svg',
+    'favicon-32.png',
+    'apple-touch-icon.png',
+    'icon-192.png',
+    'icon-512.png',
+  ]) {
+    if (existsSync(`${brandDir}/${f}`)) copyFileSync(`${brandDir}/${f}`, `${dest}/${f}`);
+  }
+  if (existsSync(`${brandDir}/icon-maskable-512.png`))
+    copyFileSync(`${brandDir}/icon-maskable-512.png`, `${dest}/icon-maskable-512.png`);
 }
 
 console.log(

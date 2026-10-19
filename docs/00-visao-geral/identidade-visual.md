@@ -39,17 +39,20 @@ Todo par texto/fundo dos dois temas tem contraste **≥ 4,5:1** (WCAG AA) e o an
 
 ## Arquivos de marca (`docs/assets/brand/`)
 
-| Arquivo                                                      | Uso                                                                    |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `voltex-soltech-logo-original.svg`                           | Original recebido (com fundo marinho). Fonte para a geração dos demais |
-| `logo-horizontal.svg` / `.png`                               | Símbolo + nome, fundo transparente, para fundos **escuros**            |
-| `logo-horizontal-on-light.svg`                               | Marinho + ciano forte, para fundos **claros**                          |
-| `logo-mark.svg` · `logo-mark-on-light.svg`                   | Só o símbolo "V"                                                       |
-| `logo-banner.svg` / `.png`                                   | Logo sobre marinho (README, apresentações, pré-visualização de links)  |
-| `favicon.svg`, `favicon-32.png`                              | Ícone do navegador                                                     |
-| `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png` | Ícones de aplicativo/PWA                                               |
+| Arquivo                                                                                                 | Uso                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `voltex-soltech-logo-original.svg`                                                                      | Original recebido (com fundo marinho). Fonte para a geração dos demais                                                               |
+| `logo-horizontal.svg` / `.png`                                                                          | Símbolo + nome, fundo transparente, para fundos **escuros**                                                                          |
+| `logo-horizontal-on-light.svg`                                                                          | Marinho + ciano forte, para fundos **claros**                                                                                        |
+| `logo-mark.svg` · `logo-mark-on-light.svg`                                                              | Só o símbolo "V"                                                                                                                     |
+| `logo-banner.svg` / `.png`                                                                              | Logo sobre marinho (README, apresentações, pré-visualização de links)                                                                |
+| `logo-horizontal-mono-navy.svg` / `.png` · `logo-horizontal-mono-white.svg` · `logo-mark-mono-navy.svg` | **Uma cor só** (marinho ou branco): impressos, carimbos, documentos em preto e branco, cabeçalho de PDF e e-mails                    |
+| `icon-maskable.svg` / `icon-maskable-512.png`                                                           | Ícone de borda a borda, com o símbolo na zona segura, para o recorte do Android/PWA                                                  |
+| `brand-grid.svg` · `brand-grid-cyan.svg`                                                                | Símbolo sobre a **grade de construção** (linhas nas pontas e vértices reais); fundo técnico. A versão `-cyan` serve para `<img>`/CSS |
+| `favicon.svg`, `favicon-32.png`                                                                         | Ícone do navegador                                                                                                                   |
+| `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`                                            | Ícones de aplicativo/PWA                                                                                                             |
 
-Todos são **gerados** por `node scripts/build-brand-assets.mjs` a partir do original (os PNGs exigem `rsvg-convert`). O mesmo script produz `packages/ui/src/assets/logo-paths.ts`, usado pelo componente React. Se o logo mudar, substitua o original e rode o script.
+Todos são **gerados** por `node scripts/build-brand-assets.mjs` a partir do original (os PNGs exigem `rsvg-convert`). O mesmo script produz `packages/ui/src/assets/logo-paths.ts`, usado pelo componente React, e copia favicon, ícones e a grade para `apps/web/public` e `apps/site/public`. Se o logo mudar, substitua o original e rode o script.
 
 O original desenha o miolo das letras O, o e e com formas azul-marinho por cima. O script as funde às letras com `fill-rule: evenodd`, criando **cortes reais**: assim o logo funciona sobre qualquer fundo, não só sobre marinho.
 
