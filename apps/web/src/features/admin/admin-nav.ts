@@ -1,5 +1,6 @@
 import {
   Building2,
+  Percent,
   Receipt,
   Scale,
   ScrollText,
@@ -11,7 +12,15 @@ import {
 import type { Permission } from '@voltex/shared';
 
 export interface AdminTab {
-  path: 'empresa' | 'usuarios' | 'perfis' | 'auditoria' | 'tarifas' | 'irradiacao' | 'regras';
+  path:
+    | 'empresa'
+    | 'usuarios'
+    | 'perfis'
+    | 'auditoria'
+    | 'tarifas'
+    | 'irradiacao'
+    | 'regras'
+    | 'margens';
   label: string;
   description: string;
   icon: LucideIcon;
@@ -68,6 +77,13 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'Limites e parâmetros do Solar Calculator',
     icon: Scale,
     anyOf: ['platform.rule.read'],
+  },
+  {
+    path: 'margens',
+    label: 'Margens',
+    description: 'Margem mínima das cotações',
+    icon: Percent,
+    anyOf: ['crm.margin-policy.manage'],
   },
 ];
 

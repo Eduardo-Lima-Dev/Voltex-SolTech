@@ -35,6 +35,15 @@ const pageRoutes: RouteObject[] = [
     },
   },
   {
+    // Proposta do cliente: link com token, sem login e fora da casca da suíte.
+    path: '/p/:token',
+    lazy: async () => {
+      const { PublicProposalPage } =
+        await import('@/features/public-proposal/public-proposal-page');
+      return { Component: PublicProposalPage, handle: { title: 'Proposta comercial' } };
+    },
+  },
+  {
     element: <RequireAuth />,
     errorElement: <RouteErrorPage />,
     children: [
@@ -166,6 +175,20 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Conta' },
+                  };
+                },
+              },
+              {
+                path: 'aprovacoes',
+                lazy: async () => {
+                  const { ApprovalsPage } = await import('@/features/crm/approvals/approvals-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.margin.approve">
+                        <ApprovalsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Aprovações' },
                   };
                 },
               },
@@ -328,6 +351,20 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Regras' },
+                  };
+                },
+              },
+              {
+                path: 'margens',
+                lazy: async () => {
+                  const { MarginsPage } = await import('@/features/admin/margins/margins-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('margens').anyOf}>
+                        <MarginsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Margens' },
                   };
                 },
               },

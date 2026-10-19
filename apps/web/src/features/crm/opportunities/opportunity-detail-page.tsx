@@ -23,7 +23,10 @@ import { BillsTab } from './bills-tab';
 import { CalculationsTab } from './calculations-tab';
 import { EditOpportunityDialog } from './edit-opportunity-dialog';
 import { EngineeringTab } from './engineering-tab';
+import { GuardTab } from './guard-tab';
 import { LostDialog } from './lost-dialog';
+import { ProposalsTab } from './proposals-tab';
+import { QuotesTab } from './quotes-tab';
 import { allowedStages, stageName, useStageChange } from './stage-change';
 import { SummaryTab } from './summary-tab';
 import { TasksTab } from './tasks-tab';
@@ -132,6 +135,9 @@ export function OpportunityDetailPage() {
             <TabsTrigger value="calculos">Cálculos</TabsTrigger>
           ) : null}
           <TabsTrigger value="engenharia">Engenharia</TabsTrigger>
+          {can('crm.guard.read') ? <TabsTrigger value="triagem">Triagem</TabsTrigger> : null}
+          {can('crm.quote.read') ? <TabsTrigger value="cotacao">Cotação</TabsTrigger> : null}
+          {can('crm.proposal.read') ? <TabsTrigger value="proposta">Proposta</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="resumo" className="pt-4">
           <SummaryTab opportunity={data} />
@@ -150,6 +156,15 @@ export function OpportunityDetailPage() {
         </TabsContent>
         <TabsContent value="engenharia" className="pt-4">
           <EngineeringTab opportunityId={id} />
+        </TabsContent>
+        <TabsContent value="triagem" className="pt-4">
+          <GuardTab opportunityId={id} open={open} />
+        </TabsContent>
+        <TabsContent value="cotacao" className="pt-4">
+          <QuotesTab opportunityId={id} open={open} />
+        </TabsContent>
+        <TabsContent value="proposta" className="pt-4">
+          <ProposalsTab opportunityId={id} open={open} />
         </TabsContent>
       </Tabs>
 
