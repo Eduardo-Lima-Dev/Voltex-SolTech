@@ -39,8 +39,8 @@ docker/     composições Docker (dev e produção)
 
 ## Fluxo de desenvolvimento
 
-Branches: `develop` (desenvolvimento) → `homologate` (homologação) → `main` (produção).
+Branches: `develop` (desenvolvimento) → `homolog` (homologação) → `main` (produção).
 
 - Novas funcionalidades partem de `develop` em branches `feat/...`, `fix/...`, `chore/...`.
-- `develop` é promovida para `homologate`, e `homologate` para `main`, somente via pull request.
+- `develop` é promovida para `homolog`, e `homolog` para `main`, somente via pull request.
 - Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (validado por commitlint).

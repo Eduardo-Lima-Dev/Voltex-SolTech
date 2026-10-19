@@ -139,11 +139,11 @@ Para **atualizar a API**: `./scripts/publicar-api.sh ghcr.io/eduardo-lima-dev/vo
 
 ## Publicação automática (GitHub Actions)
 
-Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho a cada push na branch `homologate`** (ou pelo botão _Run workflow_ na aba Actions), seguindo o fluxo `develop → homologate → main`.
+Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho a cada push na branch `homolog`** (ou pelo botão _Run workflow_ na aba Actions), seguindo o fluxo `develop → homolog → main`.
 
 ```mermaid
 flowchart LR
-  P[push em homologate] --> CI[Testes<br/>lint, tipos, testes, e2e]
+  P[merge na main] --> CI[Testes<br/>lint, tipos, testes, e2e]
   CI --> IMG[Imagem da API<br/>no GHCR]
   IMG --> DB[Migrações<br/>no Supabase]
   DB --> API[API<br/>na Render]
@@ -188,5 +188,5 @@ gh variable set VERCEL_SCOPE      --env demo --body SUA_EQUIPE
 ### O que não é automático
 
 - **A Render só troca a imagem**; as variáveis de ambiente (segredos da API) continuam as que estão no serviço. Para mudar uma variável, use `node scripts/render-api.mjs ...`.
-- **Produção real (`main`)** não publica nada ainda. Quando existir um ambiente de produção, cria-se um segundo ambiente no GitHub e um workflow irmão.
+- **Hoje a `main` publica a demonstração.** Quando existir uma produção real, ela terá o próprio ambiente no GitHub (com aprovação manual) e o próprio workflow, e a demonstração passará a sair de outra branch.
 - **A primeira execução do CI no GitHub** ainda não aconteceu (o repositório não recebeu push dessas mudanças). Pode haver ajustes até ele passar; enquanto não passar, nada é publicado.

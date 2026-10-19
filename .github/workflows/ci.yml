@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [develop, homologate, main]
+    branches: [develop, homolog, main]
   pull_request:
   workflow_call: # chamado pela publicação da demonstração (deploy-demo.yml)
 
