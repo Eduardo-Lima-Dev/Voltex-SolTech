@@ -2,6 +2,7 @@ import {
   Building2,
   FileText,
   HardHat,
+  LockKeyhole,
   Percent,
   Receipt,
   Scale,
@@ -24,7 +25,8 @@ export interface AdminTab {
     | 'regras'
     | 'margens'
     | 'contratos'
-    | 'homologacao';
+    | 'homologacao'
+    | 'privacidade';
   label: string;
   description: string;
   icon: LucideIcon;
@@ -102,6 +104,13 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'Checklist de documentos por distribuidora',
     icon: HardHat,
     anyOf: ['platform.rule.read'],
+  },
+  {
+    path: 'privacidade',
+    label: 'Privacidade',
+    description: 'LGPD: prazos de guarda e eliminação de dados',
+    icon: LockKeyhole,
+    anyOf: ['platform.tenant.manage'],
   },
 ];
 

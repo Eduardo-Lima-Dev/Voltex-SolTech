@@ -442,6 +442,20 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'privacidade',
+                lazy: async () => {
+                  const { PrivacyPage } = await import('@/features/admin/privacy/privacy-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('privacidade').anyOf}>
+                        <PrivacyPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Privacidade' },
+                  };
+                },
+              },
+              {
                 path: 'auditoria',
                 lazy: async () => {
                   const { AuditPage } = await import('@/features/admin/audit/audit-page');

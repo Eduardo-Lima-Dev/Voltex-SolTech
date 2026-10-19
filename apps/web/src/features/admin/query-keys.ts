@@ -49,6 +49,8 @@ export const queryKeys = {
   homologation: ['homologation'] as const,
   commercialDashboard: (filters?: unknown) => ['commercial-dashboard', filters] as const,
   branding: ['branding'] as const,
+  retentionPolicy: ['retention-policy'] as const,
+  erasures: (page?: number) => ['erasures', page ?? 1] as const,
   publicProposal: (token: string) => ['public-proposal', token] as const,
   calculationContext: (id: string) => ['opportunity', id, 'calculation-context'] as const,
   tasks: (filters?: unknown) =>
