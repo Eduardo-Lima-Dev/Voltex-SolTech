@@ -1,0 +1,62 @@
+/* Tela de entrada: o mesmo vocabulário do site (rótulos em mono, títulos apertados, arco do sol). */
+.auth-mono {
+  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-arc {
+  -webkit-mask-image: linear-gradient(90deg, transparent 5%, #000 55%);
+  mask-image: linear-gradient(90deg, transparent 5%, #000 55%);
+}
+.auth-arc-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: auth-draw 2.6s cubic-bezier(0.45, 0, 0.2, 1) 0.2s forwards;
+}
+.auth-sun {
+  offset-path: path('M-40 200C160 200 260 40 440 40S690 200 760 200');
+  filter: drop-shadow(0 0 8px rgb(140 221 244 / 0.9));
+  offset-rotate: 0deg;
+  offset-distance: 2%;
+  animation: auth-sun 2.6s cubic-bezier(0.45, 0, 0.2, 1) 0.2s forwards;
+}
+.auth-rise {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: auth-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 150ms);
+}
+
+@keyframes auth-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes auth-sun {
+  to {
+    offset-distance: 40%;
+  }
+}
+@keyframes auth-rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-arc-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .auth-sun {
+    animation: none;
+    offset-distance: 40%;
+  }
+  .auth-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
