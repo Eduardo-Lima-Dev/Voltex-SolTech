@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { GripVertical } from 'lucide-react';
+import { AlertTriangle, Clock, GripVertical, Snowflake } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import {
@@ -20,41 +20,74 @@ import {
   type OpportunityDto,
   type PipelineStageDto,
 } from '@voltex/shared';
-import { Badge, NativeSelect, cn } from '@voltex/ui';
+import { NativeSelect, cn } from '@voltex/ui';
 import { PROJECT_TYPE_LABELS } from '@/i18n/labels';
-import { formatDate, formatRelativeTime } from '@/lib/format';
+import { formatCents, formatDate } from '@/lib/format';
 import { LostDialog } from './lost-dialog';
 import { allowedStages, stageName, useStageChange } from './stage-change';
 
+/** Parado: sem mudar de etapa há tanto tempo (regra simples e visível, não um palpite). */
+export const STALE_AFTER_DAYS = 14;
+
+function indicators(o: OpportunityDto, now = Date.now()) {
+  if (o.status !== 'OPEN') return [];
+  const list: { key: string; label: string; icon: typeof Clock; tone: string }[] = [];
+  if (o.openTaskCount === 0)
+    list.push({
+      key: 'no-task',
+      label: 'Sem próxima tarefa',
+      icon: AlertTriangle,
+      tone: 'text-amber-600 dark:text-amber-400',
+    });
+  else if (o.nextTaskDueAt && new Date(o.nextTaskDueAt).getTime() < now)
+    list.push({
+      key: 'late',
+      label: `Tarefa atrasada (${formatDate(o.nextTaskDueAt)})`,
+      icon: Clock,
+      tone: 'text-destructive',
+    });
+  const days = Math.floor((now - new Date(o.stageChangedAt).getTime()) / 86_400_000);
+  if (days >= STALE_AFTER_DAYS)
+    list.push({
+      key: 'stale',
+      label: `Parada há ${days} dias nesta etapa`,
+      icon: Snowflake,
+      tone: 'text-sky-600 dark:text-sky-400',
+    });
+  return list;
+}
+
 function CardBody({ opportunity }: { opportunity: OpportunityDto }) {
+  const flags = indicators(opportunity);
   return (
-    <div className="min-w-0 space-y-1">
-      <Link
-        to={`/crm/oportunidades/${opportunity.id}`}
-        className="block truncate text-sm font-medium hover:underline"
-      >
-        {opportunity.title}
-      </Link>
-      <div className="truncate text-xs text-muted-foreground">{opportunity.accountName}</div>
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-        <span className="font-mono">{opportunity.projectCode}</span>
-        <span>· {PROJECT_TYPE_LABELS[opportunity.projectType]}</span>
+    <div className="min-w-0 flex-1 space-y-1">
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          to={`/crm/oportunidades/${opportunity.id}`}
+          className="min-w-0 truncate text-sm font-semibold hover:underline"
+        >
+          {opportunity.accountName}
+        </Link>
+        <span className="shrink-0 text-sm font-semibold tabular-nums">
+          {opportunity.valueCents ? formatCents(opportunity.valueCents) : '—'}
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {opportunity.status === 'OPEN' ? (
-          opportunity.openTaskCount === 0 ? (
-            <Badge variant="yellow">Sem próxima tarefa</Badge>
-          ) : (
-            <span
-              className="text-[11px] text-muted-foreground"
-              title={formatDate(opportunity.nextTaskDueAt as string)}
-            >
-              Próxima tarefa {formatRelativeTime(opportunity.nextTaskDueAt as string)}
-            </span>
-          )
-        ) : null}
-        {opportunity.ownerName ? (
-          <span className="text-[11px] text-muted-foreground">· {opportunity.ownerName}</span>
+      <div className="truncate text-xs text-muted-foreground">{opportunity.title}</div>
+      <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-muted-foreground">
+        <span className="truncate">
+          <span className="font-mono">{opportunity.projectCode}</span> ·{' '}
+          {PROJECT_TYPE_LABELS[opportunity.projectType]}
+          {opportunity.ownerName ? ` · ${opportunity.ownerName}` : ''}
+        </span>
+        {flags.length > 0 ? (
+          <span className="flex items-center gap-1">
+            {flags.map((f) => (
+              <span key={f.key} title={f.label} className={f.tone}>
+                <f.icon className="size-3.5" aria-hidden />
+                <span className="sr-only">{f.label}</span>
+              </span>
+            ))}
+          </span>
         ) : null}
       </div>
     </div>
@@ -70,7 +103,7 @@ function OpportunityCard({
   stages: PipelineStageDto[];
   onMove: (to: OpportunityStage) => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: opportunity.id,
     data: { opportunity },
     disabled: opportunity.status === 'WON',
@@ -80,15 +113,20 @@ function OpportunityCard({
   return (
     <li
       ref={setNodeRef}
-      className={cn('rounded-lg border bg-card p-3 shadow-xs', isDragging && 'opacity-40')}
+      {...(opportunity.status === 'WON' ? {} : listeners)}
+      className={cn(
+        'group rounded-lg border bg-card p-3 shadow-xs',
+        opportunity.status !== 'WON' && 'cursor-grab touch-pan-y active:cursor-grabbing',
+        isDragging && 'opacity-40',
+      )}
     >
       <div className="flex items-start gap-2">
         {opportunity.status === 'WON' ? null : (
           <button
             type="button"
             aria-label={`Arrastar ${opportunity.title}`}
-            className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-            {...listeners}
+            ref={setActivatorNodeRef}
+            className="-ml-1 mt-0.5 rounded p-0.5 text-muted-foreground/60 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
             {...attributes}
           >
             <GripVertical className="size-4" aria-hidden />
@@ -97,19 +135,21 @@ function OpportunityCard({
         <CardBody opportunity={opportunity} />
       </div>
       {targets.length > 0 && opportunity.status === 'OPEN' ? (
-        <NativeSelect
-          aria-label={`Mover ${opportunity.title} para`}
-          className="mt-2 h-8 text-xs"
-          value=""
-          onChange={(e) => e.target.value && onMove(e.target.value as OpportunityStage)}
-        >
-          <option value="">Mover para…</option>
-          {targets.map((s) => (
-            <option key={s} value={s}>
-              {stageName(stages, s)}
-            </option>
-          ))}
-        </NativeSelect>
+        <div className="mt-2 hidden group-focus-within:block group-hover:block [@media(hover:none)]:block">
+          <NativeSelect
+            aria-label={`Mover ${opportunity.title} para`}
+            className="h-8 text-xs"
+            value=""
+            onChange={(e) => e.target.value && onMove(e.target.value as OpportunityStage)}
+          >
+            <option value="">Mover para…</option>
+            {targets.map((s) => (
+              <option key={s} value={s}>
+                {stageName(stages, s)}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
       ) : null}
     </li>
   );
@@ -142,11 +182,13 @@ function Column({
         isOver && valid && 'bg-accent',
       )}
     >
-      <header className="flex items-center justify-between gap-2 px-3 py-2.5">
+      <header className="space-y-0.5 px-3 py-2.5">
         <h3 className="truncate text-sm font-semibold">{column.stage.name}</h3>
-        <Badge variant="secondary" aria-label={`${column.total} oportunidades`}>
-          {column.total}
-        </Badge>
+        <p className="text-xs text-muted-foreground">
+          {column.total === 1 ? '1 oportunidade' : `${column.total} oportunidades`}
+          {' · '}
+          <span className="font-medium text-foreground">{formatCents(column.totalValueCents)}</span>
+        </p>
       </header>
       <ul className="flex min-h-16 flex-1 flex-col gap-2 px-2 pb-2">
         {column.items.map((o) => (
@@ -167,7 +209,7 @@ function Column({
   );
 }
 
-/** Quadro Kanban: arraste pelo ícone ou use "Mover para…" (teclado e celular). */
+/** Quadro Kanban: arraste o cartão, ou use o ícone de alça (teclado) e "Mover para…" (celular). */
 export function KanbanBoard({
   columns,
   stages,

@@ -195,13 +195,30 @@ export class OpportunitiesService {
   }
 
   /** Quadro Kanban: uma coluna por etapa; fechadas (ganhas/perdidas) só dos últimos 30 dias. */
-  async board(ownerId?: string): Promise<OpportunityBoardDto> {
+  async board(
+    filters: { ownerId?: string; search?: string; status?: OpportunityStatus } = {},
+  ): Promise<OpportunityBoardDto> {
+    const { ownerId, search, status } = filters;
     const stages = await this.pipeline.list();
     const since = new Date(Date.now() - BOARD_CLOSED_WINDOW_DAYS * 86_400_000);
     const base = {
       deletedAt: null,
       ...(ownerId ? { ownerId } : {}),
-      OR: [{ status: OpportunityStatus.OPEN }, { stageChangedAt: { gte: since } }],
+      AND: [
+        { OR: [{ status: OpportunityStatus.OPEN }, { stageChangedAt: { gte: since } }] },
+        ...(status ? [{ status }] : []),
+        ...(search
+          ? [
+              {
+                OR: [
+                  { title: { contains: search, mode: 'insensitive' as const } },
+                  { projectCode: { contains: search, mode: 'insensitive' as const } },
+                  { account: { name: { contains: search, mode: 'insensitive' as const } } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
     const counts = await this.prisma.db.opportunity.groupBy({
       by: ['stage'],
@@ -209,6 +226,26 @@ export class OpportunitiesService {
       _count: { _all: true },
     });
     const totals = new Map(counts.map((c) => [c.stage, c._count._all]));
+
+    // Valor por etapa: preço da cotação mais recente de cada oportunidade, somado (inclui as não exibidas).
+    const everyone = await this.prisma.db.opportunity.findMany({
+      where: base,
+      select: { id: true, stage: true },
+    });
+    const latestPrice = new Map<string, number>();
+    if (everyone.length > 0) {
+      const quotes = await this.prisma.db.quote.findMany({
+        where: { opportunityId: { in: everyone.map((o) => o.id) }, deletedAt: null },
+        orderBy: { version: 'desc' },
+        select: { opportunityId: true, priceCents: true },
+      });
+      for (const quote of quotes)
+        if (!latestPrice.has(quote.opportunityId))
+          latestPrice.set(quote.opportunityId, quote.priceCents);
+    }
+    const valueByStage = new Map<string, number>();
+    for (const o of everyone)
+      valueByStage.set(o.stage, (valueByStage.get(o.stage) ?? 0) + (latestPrice.get(o.id) ?? 0));
 
     const columns = await Promise.all(
       stages.map(async (stage) => {
@@ -218,7 +255,12 @@ export class OpportunitiesService {
           orderBy: { stageChangedAt: 'desc' },
           take: BOARD_CARDS_PER_STAGE,
         });
-        return { stage, total: totals.get(stage.key) ?? 0, items: await this.toDtos(rows) };
+        return {
+          stage,
+          total: totals.get(stage.key) ?? 0,
+          totalValueCents: valueByStage.get(stage.key) ?? 0,
+          items: await this.toDtos(rows),
+        };
       }),
     );
     return { columns };

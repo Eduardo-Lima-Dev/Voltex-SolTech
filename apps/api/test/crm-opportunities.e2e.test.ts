@@ -378,6 +378,23 @@ describe('CRM · Pipeline, oportunidades, tarefas e Calculator (e2e)', () => {
       expect(lost.items.map((o: { id: string }) => o.id)).not.toContain(old.opp.id);
     });
 
+    it('soma o valor por etapa e filtra por busca e situação', async () => {
+      const all = await get('/opportunities/board', seller);
+      for (const column of all.body.columns)
+        expect(Number.isInteger(column.totalValueCents)).toBe(true);
+
+      const none = await get('/opportunities/board?search=zzz-nao-existe', seller);
+      expect(none.status).toBe(200);
+      expect(none.body.columns.every((c: { total: number }) => c.total === 0)).toBe(true);
+      expect(
+        none.body.columns.every((c: { totalValueCents: number }) => c.totalValueCents === 0),
+      ).toBe(true);
+
+      const lostOnly = await get('/opportunities/board?status=LOST', seller);
+      const open = lostOnly.body.columns.flatMap((c: { items: { status: string }[] }) => c.items);
+      expect(open.every((o: { status: string }) => o.status === 'LOST')).toBe(true);
+    });
+
     it('filtra por responsável', async () => {
       const mine = await get(`/opportunities/board?ownerId=${a.manager.id}`, seller);
       const all = mine.body.columns.flatMap((c: { items: { ownerId: string }[] }) => c.items);

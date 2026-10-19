@@ -1,5 +1,6 @@
-import { LayoutDashboard, Settings } from 'lucide-react';
-import { NavLink } from 'react-router';
+import { useState } from 'react';
+import { ChevronDown, LayoutDashboard, Settings, type LucideIcon } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router';
 import {
   Logo,
   Sidebar,
@@ -14,7 +15,8 @@ import {
 } from '@voltex/ui';
 import { useAuth } from '@/features/auth/auth-provider';
 import { PRODUCTS } from '@/features/products/registry';
-import { ADMIN_PERMISSIONS } from '@/features/admin/admin-nav';
+import { ADMIN_PERMISSIONS, ADMIN_TABS } from '@/features/admin/admin-nav';
+import { CRM_PERMISSIONS, CRM_TABS } from '@/features/crm/crm-nav';
 
 interface SidebarNavProps {
   /** Chamado ao navegar (fecha o menu no celular). */
@@ -25,7 +27,20 @@ interface SidebarNavProps {
 /** Menu lateral: troca entre os produtos da suíte e acesso à administração. Sempre azul-marinho (marca). */
 export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
   const { can, canAny } = useAuth();
-  const products = PRODUCTS.filter((product) => can(product.permission));
+  // O CRM aparece para quem acessa qualquer uma das suas telas (ex.: o instalador só vê Projetos e Tarefas).
+  const products = PRODUCTS.filter((product) =>
+    product.path === '/crm' ? canAny(CRM_PERMISSIONS) : can(product.permission),
+  );
+  const crmItems = CRM_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+    to: `/crm/${tab.path}`,
+    label: tab.label,
+    icon: tab.icon,
+  }));
+  const adminItems = ADMIN_TABS.filter((tab) => canAny(tab.anyOf)).map((tab) => ({
+    to: `/admin/${tab.path}`,
+    label: tab.label,
+    icon: tab.icon,
+  }));
 
   return (
     <Sidebar className={className}>
@@ -63,23 +78,34 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
           <SidebarGroup>
             <SidebarGroupLabel>Produtos</SidebarGroupLabel>
             <SidebarMenu>
-              {products.map((product) => (
-                <SidebarMenuItem key={product.id}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={product.path}
-                      onClick={onNavigate}
-                      className={({ isActive }) => navClass(isActive)}
-                    >
-                      <product.icon />
-                      <span className="flex-1 truncate">{product.name}</span>
-                      {product.availability.status === 'soon' ? (
-                        <span className="sr-only">(em breve)</span>
-                      ) : null}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {products.map((product) =>
+                product.path === '/crm' && crmItems.length > 0 ? (
+                  <NavSubmenu
+                    key={product.id}
+                    base={product.path}
+                    label={product.name}
+                    icon={product.icon}
+                    items={crmItems}
+                    onNavigate={onNavigate}
+                  />
+                ) : (
+                  <SidebarMenuItem key={product.id}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={product.path}
+                        onClick={onNavigate}
+                        className={({ isActive }) => navClass(isActive)}
+                      >
+                        <product.icon />
+                        <span className="flex-1 truncate">{product.name}</span>
+                        {product.availability.status === 'soon' ? (
+                          <span className="sr-only">(em breve)</span>
+                        ) : null}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroup>
         ) : null}
@@ -88,18 +114,13 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
           <SidebarGroup>
             <SidebarGroupLabel>Gestão</SidebarGroupLabel>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/admin"
-                    onClick={onNavigate}
-                    className={({ isActive }) => navClass(isActive)}
-                  >
-                    <Settings />
-                    Administração
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <NavSubmenu
+                base="/admin"
+                label="Administração"
+                icon={Settings}
+                items={adminItems}
+                onNavigate={onNavigate}
+              />
             </SidebarMenu>
           </SidebarGroup>
         ) : null}
@@ -117,3 +138,66 @@ const navClass = (isActive: boolean): string =>
   isActive
     ? 'flex w-full items-center gap-2 font-medium text-sidebar-primary'
     : 'flex w-full items-center gap-2';
+
+interface NavSubmenuProps {
+  base: string;
+  label: string;
+  icon: LucideIcon;
+  items: readonly { to: string; label: string; icon: LucideIcon }[];
+  onNavigate?: () => void;
+}
+
+/** Item do menu que abre uma lista de telas logo abaixo (ex.: CRM Solar → Leads, Oportunidades…). */
+function NavSubmenu({ base, label, icon: Icon, items, onNavigate }: NavSubmenuProps) {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const inside = pathname === base || pathname.startsWith(`${base}/`);
+  const [manual, setManual] = useState<boolean | null>(null);
+  const open = manual ?? inside;
+  const listId = `submenu-${base.replace(/\W/g, '')}`;
+
+  const toggle = () => {
+    // Abrir de fora leva direto à primeira tela; fechar só recolhe a lista.
+    if (!open && !inside && items[0]) void navigate(items[0].to);
+    setManual(!open);
+  };
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls={listId}
+        isActive={inside}
+      >
+        <Icon />
+        <span className="flex-1 truncate text-left">{label}</span>
+        <ChevronDown
+          aria-hidden
+          className={
+            open ? 'size-4 transition-transform' : 'size-4 -rotate-90 transition-transform'
+          }
+        />
+      </SidebarMenuButton>
+      {open ? (
+        <ul id={listId} className="mt-1 ml-4 space-y-0.5 border-l border-sidebar-border pl-2">
+          {items.map((item) => (
+            <li key={item.to}>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={item.to}
+                  onClick={onNavigate}
+                  className={({ isActive }) => navClass(isActive)}
+                >
+                  <item.icon />
+                  {item.label}
+                </NavLink>
+              </SidebarMenuButton>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </SidebarMenuItem>
+  );
+}

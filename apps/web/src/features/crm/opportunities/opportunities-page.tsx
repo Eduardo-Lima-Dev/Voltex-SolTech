@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { LayoutGrid, List, Plus, Search } from 'lucide-react';
+import { LayoutGrid, List, Plus, Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import type { OpportunityStage } from '@voltex/shared';
@@ -9,9 +9,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Input,
   NativeSelect,
   Skeleton,
@@ -26,11 +23,12 @@ import {
 import { Can } from '@/app/guards';
 import { Pagination } from '@/components/pagination';
 import { queryKeys } from '@/features/admin/query-keys';
-import { useCurrentUser } from '@/features/auth/auth-provider';
+import { useAuth } from '@/features/auth/auth-provider';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { OPPORTUNITY_STATUS_LABELS } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
 import { formatDate } from '@/lib/format';
+import { ConfigureStagesDialog } from './configure-stages-dialog';
 import { KanbanBoard } from './kanban';
 import { NewOpportunityDialog } from './new-opportunity-dialog';
 import { stageName } from './stage-change';
@@ -47,28 +45,30 @@ const readView = (): View => {
   }
 };
 
-function ListView({ mine }: { mine: boolean }) {
-  const me = useCurrentUser();
+interface Filters {
+  search: string;
+  status: '' | OpportunityStatus;
+  ownerId: string | undefined;
+}
+
+function ListView({ search, status, ownerId }: Filters) {
   const stages = useQuery({ queryKey: queryKeys.pipeline, queryFn: endpoints.pipeline.list });
-  const [search, setSearch] = useState('');
   const [stage, setStage] = useState<'' | OpportunityStage>('');
-  const [status, setStatus] = useState<'' | OpportunityStatus>('');
   const [noTask, setNoTask] = useState(false);
   const [page, setPage] = useState(1);
-  const debounced = useDebouncedValue(search.trim());
 
-  const filters = { page, search: debounced, stage, status, noTask, mine };
+  const filters = { page, search, stage, status, noTask, ownerId };
   const list = useQuery({
     queryKey: queryKeys.opportunities(filters),
     queryFn: () =>
       endpoints.opportunities.list({
         page,
         pageSize: PAGE_SIZE,
-        search: debounced || undefined,
+        search: search || undefined,
         stage: stage || undefined,
         status: status || undefined,
         withoutNextTask: noTask ? true : undefined,
-        ownerId: mine ? me.id : undefined,
+        ownerId,
       }),
     placeholderData: keepPreviousData,
   });
@@ -82,21 +82,7 @@ function ListView({ mine }: { mine: boolean }) {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_12rem_10rem_12rem]">
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <Input
-              type="search"
-              className="pl-9"
-              placeholder="Buscar por título, conta ou código do projeto"
-              aria-label="Buscar oportunidades"
-              value={search}
-              onChange={(e) => reset(setSearch)(e.target.value)}
-            />
-          </div>
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:max-w-xl">
           <NativeSelect
             aria-label="Filtrar por etapa"
             value={stage}
@@ -106,18 +92,6 @@ function ListView({ mine }: { mine: boolean }) {
             {stages.data?.map((s) => (
               <option key={s.key} value={s.key}>
                 {s.name}
-              </option>
-            ))}
-          </NativeSelect>
-          <NativeSelect
-            aria-label="Filtrar por situação"
-            value={status}
-            onChange={(e) => reset(setStatus)(e.target.value as '' | OpportunityStatus)}
-          >
-            <option value="">Todas</option>
-            {Object.values(OpportunityStatus).map((s) => (
-              <option key={s} value={s}>
-                {OPPORTUNITY_STATUS_LABELS[s]}
               </option>
             ))}
           </NativeSelect>
@@ -213,12 +187,16 @@ function ListView({ mine }: { mine: boolean }) {
   );
 }
 
-function BoardView({ mine }: { mine: boolean }) {
-  const me = useCurrentUser();
+function BoardView({ search, status, ownerId }: Filters) {
   const stages = useQuery({ queryKey: queryKeys.pipeline, queryFn: endpoints.pipeline.list });
+  const filters = {
+    ownerId,
+    search: search || undefined,
+    status: status || undefined,
+  };
   const board = useQuery({
-    queryKey: queryKeys.opportunityBoard(mine ? me.id : undefined),
-    queryFn: () => endpoints.opportunities.board(mine ? me.id : undefined),
+    queryKey: queryKeys.opportunityBoard(filters),
+    queryFn: () => endpoints.opportunities.board(filters),
     placeholderData: keepPreviousData,
   });
 
@@ -236,9 +214,23 @@ function BoardView({ mine }: { mine: boolean }) {
 }
 
 export function OpportunitiesPage() {
+  const { can, user } = useAuth();
   const [view, setView] = useState<View>(readView);
-  const [mine, setMine] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [status, setStatus] = useState<'' | OpportunityStatus>('');
+  const [seller, setSeller] = useState('all');
   const [creating, setCreating] = useState(false);
+  const [configuring, setConfiguring] = useState(false);
+  const search = useDebouncedValue(searchText.trim());
+
+  const canListUsers = can('platform.user.read');
+  const users = useQuery({
+    queryKey: queryKeys.users({ scope: 'sellers' }),
+    queryFn: () => endpoints.users.list({ pageSize: 100, isActive: true }),
+    enabled: canListUsers,
+  });
+  const ownerId = seller === 'all' ? undefined : seller === 'mine' ? user?.id : seller;
+  const filters: Filters = { search, status, ownerId };
 
   const choose = (next: View) => {
     setView(next);
@@ -251,64 +243,103 @@ export function OpportunitiesPage() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row">
-          <div className="space-y-1.5">
-            <CardTitle>Oportunidades</CardTitle>
-            <CardDescription>
-              {view === 'board'
-                ? 'Arraste o cartão pelo ícone para mudar de etapa, ou use “Mover para…”.'
-                : 'Lista com busca e filtros.'}
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <NativeSelect
-              aria-label="Responsável"
-              className="h-9 w-44"
-              value={mine ? 'mine' : 'all'}
-              onChange={(e) => setMine(e.target.value === 'mine')}
-            >
-              <option value="all">Toda a equipe</option>
-              <option value="mine">Só as minhas</option>
-            </NativeSelect>
-            <div
-              role="group"
-              aria-label="Modo de exibição"
-              className="flex rounded-md border p-0.5"
-            >
-              {(
-                [
-                  ['board', 'Quadro', LayoutGrid],
-                  ['list', 'Lista', List],
-                ] as const
-              ).map(([id, label, Icon]) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={view === id}
-                  onClick={() => choose(id)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    view === id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent',
-                  )}
-                >
-                  <Icon className="size-4" aria-hidden /> {label}
-                </button>
-              ))}
-            </div>
-            <Can permission="crm.opportunity.write">
-              <Button size="sm" onClick={() => setCreating(true)}>
-                <Plus /> Nova oportunidade
-              </Button>
-            </Can>
-          </div>
-        </CardHeader>
-      </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Oportunidades</h1>
+        <Can permission="crm.opportunity.write">
+          <Button onClick={() => setCreating(true)}>
+            <Plus /> Nova oportunidade
+          </Button>
+        </Can>
+      </div>
 
-      {view === 'board' ? <BoardView mine={mine} /> : <ListView mine={mine} />}
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="Modo de exibição" className="flex rounded-md border p-0.5">
+          {(
+            [
+              ['board', 'Quadro', LayoutGrid],
+              ['list', 'Lista', List],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              aria-label={label}
+              title={label}
+              aria-pressed={view === id}
+              onClick={() => choose(id)}
+              className={cn(
+                'inline-flex size-8 items-center justify-center rounded outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                view === id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent',
+              )}
+            >
+              <Icon className="size-4" aria-hidden />
+            </button>
+          ))}
+        </div>
+        <div className="relative min-w-52 flex-1 sm:max-w-xs">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            className="h-9 pl-9"
+            placeholder="Buscar cliente"
+            aria-label="Buscar cliente"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+        <div className="w-52">
+          <NativeSelect
+            aria-label="Filtrar por situação"
+            className="h-9"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as '' | OpportunityStatus)}
+          >
+            <option value="">Todas as situações</option>
+            {Object.values(OpportunityStatus).map((s) => (
+              <option key={s} value={s}>
+                {OPPORTUNITY_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        <div className="w-52">
+          <NativeSelect
+            aria-label="Vendedor"
+            className="h-9"
+            value={seller}
+            onChange={(e) => setSeller(e.target.value)}
+          >
+            <option value="all">Todos os vendedores</option>
+            <option value="mine">Só as minhas</option>
+            {(users.data?.data ?? [])
+              .filter((u) => u.id !== user?.id)
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+          </NativeSelect>
+        </div>
+        <Can permission="crm.pipeline.manage">
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setConfiguring(true)}
+          >
+            <Settings2 /> Configurar etapas
+          </Button>
+        </Can>
+      </div>
+
+      {view === 'board' ? <BoardView {...filters} /> : <ListView {...filters} />}
       <NewOpportunityDialog open={creating} onOpenChange={setCreating} />
+      <ConfigureStagesDialog open={configuring} onOpenChange={setConfiguring} />
     </div>
   );
 }

@@ -150,6 +150,8 @@ export interface OpportunityBoardColumnDto {
   stage: PipelineStageDto;
   /** Total de oportunidades na etapa (os cartões podem ser limitados). */
   total: number;
+  /** Soma do valor (preço da cotação mais recente) de TODAS as oportunidades da etapa, mesmo as não exibidas. */
+  totalValueCents: number;
   items: OpportunityDto[];
 }
 

@@ -456,7 +456,7 @@ describe('Administração → Regras', () => {
     );
     renderApp('/admin/regras', { session: makeSession('ENGINEERING') });
     expect(await screen.findByText('Padrão do sistema')).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Seções da administração' });
+    const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
     expect(within(nav).getByRole('link', { name: /Regras/ })).toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: /Tarifas/ })).not.toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: /Irradiação/ })).not.toBeInTheDocument();

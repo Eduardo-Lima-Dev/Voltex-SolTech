@@ -1,9 +1,24 @@
 import { http, HttpResponse } from 'msw';
 import type { OpportunityDto } from '@voltex/shared';
-import { API, makeAccount, makeBill, makeBoard, makeOpportunity, page, stages } from './fixtures';
+import {
+  API,
+  makeAccount,
+  makeBill,
+  makeBoard,
+  makeOpportunity,
+  makeUserSummary,
+  page,
+  stages,
+} from './fixtures';
 
 /** Respostas básicas das telas do CRM, para testes que só passam por elas (ex.: navegação depois de uma ação). */
 export const pipelineHandler = () => http.get(`${API}/pipeline`, () => HttpResponse.json(stages()));
+
+/** Lista de pessoas usada no filtro de vendedor do quadro. */
+export const sellersHandler = () =>
+  http.get(`${API}/users`, () =>
+    HttpResponse.json(page([makeUserSummary({ id: 'user-ana', name: 'Ana Admin' })])),
+  );
 
 export const boardHandler = (items: OpportunityDto[] = []) =>
   http.get(`${API}/opportunities/board`, () => HttpResponse.json(makeBoard(items)));
