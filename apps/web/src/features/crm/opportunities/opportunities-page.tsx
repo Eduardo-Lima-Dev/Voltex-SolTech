@@ -204,7 +204,7 @@ function BoardView({ search, status, ownerId }: Filters) {
     return (
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-64 w-72 shrink-0" />
+          <Skeleton key={i} className="h-64 w-60 shrink-0" />
         ))}
       </div>
     );
