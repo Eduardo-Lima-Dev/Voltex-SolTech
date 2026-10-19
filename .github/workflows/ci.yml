@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, homologate, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Qualidade (lint, tipos, testes, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # a versão vem do campo packageManager do package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cache do Turborepo: tarefas sem mudança não rodam de novo.
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Infraestrutura dos testes e2e (Postgres, Redis, S3)
+        run: |
+          cp .env.example .env
+          pnpm infra:up
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Testes e2e da API
+        run: pnpm --filter @voltex/api test:e2e
+
+      - name: Logs da infraestrutura (só se falhar)
+        if: failure()
+        run: docker compose --project-directory . -f docker/compose.dev.yml logs --tail=200 || true
+
+  docker:
+    name: Imagens de produção
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: Migrations
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/migrate.Dockerfile
+          push: false

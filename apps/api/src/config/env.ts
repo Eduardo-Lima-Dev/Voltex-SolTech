@@ -54,6 +54,8 @@ export const envSchema = z
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('Voltex SolTech <no-reply@voltex.local>'),
 
+    /** Quantos proxies confiáveis ficam na frente da API (nginx = 1): o IP do cliente vem de `X-Forwarded-For`. */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
     THROTTLE_DISABLED: booleanFromString.default(false),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
     /** 0 desliga o worker do outbox (usado nos testes, que o acionam manualmente). */
