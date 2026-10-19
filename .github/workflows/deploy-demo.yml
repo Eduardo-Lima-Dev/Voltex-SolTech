@@ -1,0 +1,142 @@
+# Publica a DEMONSTRAÇÃO na nuvem (Render + Vercel + Supabase) a cada push na branch `homologate`.
+# Guia: docs/08-deploy/nuvem-gratuita.md (seção "Publicação automática").
+#
+# Ordem: testes (CI) → imagem da API no GHCR → migrações no banco → API na Render → site e aplicação na Vercel.
+# Se qualquer etapa falhar, as seguintes NÃO rodam e a demonstração continua na versão anterior.
+name: Publicar demonstração
+
+on:
+  push:
+    branches: [homologate]
+  workflow_dispatch: # também dá para disparar à mão, na aba Actions
+
+# Uma publicação por vez; uma nova espera a atual terminar (não cancela no meio de uma migração).
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Testes
+    uses: ./.github/workflows/ci.yml
+
+  imagem-api:
+    name: Imagem da API (GHCR)
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      imagem: ${{ steps.nome.outputs.imagem }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: nome
+        run: echo "imagem=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/voltex-api" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.nome.outputs.imagem }}:${{ github.sha }}
+            ${{ steps.nome.outputs.imagem }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  banco:
+    name: Migrações do banco (Supabase)
+    needs: imagem-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Só o pacote do banco: não precisa instalar o monorepo inteiro.
+      - run: pnpm install --frozen-lockfile --filter @voltex/database...
+      - name: Aplicar migrações
+        run: pnpm --filter @voltex/database exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+      # O Supabase expõe o esquema public numa API pública: este script a mantém fechada (é seguro repetir).
+      - name: Fechar a API pública do Supabase
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f deploy/nuvem/supabase-travar-api.sql
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+
+  api:
+    name: API (Render)
+    needs: [imagem-api, banco]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Publicar a imagem nova e esperar a API responder
+        run: node scripts/render-deploy.mjs "${{ needs.imagem-api.outputs.imagem }}:${{ github.sha }}"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          API_URL: https://${{ vars.API_HOST }}
+
+  front:
+    name: Site e aplicação (Vercel)
+    needs: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: demo
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Aplicação
+        run: ./scripts/publicar-front.sh app "${{ vars.API_HOST }}"
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+      - name: Site
+        run: ./scripts/publicar-front.sh site "${{ vars.API_HOST }}"
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          LEAD_KEY: ${{ vars.LEAD_KEY }}
+
+  verificar:
+    name: Conferir a demonstração no ar
+    needs: front
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: demo
+    steps:
+      - name: Aplicação, site e API pelo caminho de verdade (a aplicação encaminha /api para a Render)
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 5 --retry-delay 10 -o /dev/null "${{ vars.APP_URL }}/login"
+          curl -fsS --retry 5 --retry-delay 10 -o /dev/null "${{ vars.SITE_URL }}/"
+          curl -fsS --retry 5 --retry-delay 10 "${{ vars.APP_URL }}/api/v1/health" | tee /dev/stderr | grep -q '"status":"ok"'

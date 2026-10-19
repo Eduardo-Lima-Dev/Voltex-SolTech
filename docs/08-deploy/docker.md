@@ -51,6 +51,19 @@ A senha vem só do ambiente (12+ caracteres, letras e números) e não é gravad
 
 Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 
+## Tamanho das imagens
+
+Todas são multi-stage: o estágio de compilação (com Turbo, pnpm e dependências de desenvolvimento) **não** vai para a imagem final.
+
+| Imagem    | Antes   | Agora      | Como                                                                                                                                                                                                                                          |
+| --------- | ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api`     | 805 MB  | **330 MB** | Dependências só de produção, sem a CLI do Prisma (peer opcional que trazia ~150 MB), sem mapas/tipos/documentação, sem os compiladores de consulta de outros bancos, e base Alpine mínima com só o binário do Node (sem npm, yarn e corepack) |
+| `migrate` | 1,04 GB | **493 MB** | Instalação em estágio separado (sem cache do npm) e base mínima                                                                                                                                                                               |
+| `web`     | 105 MB  | **42 MB**  | `nginx-unprivileged:alpine-slim`                                                                                                                                                                                                              |
+| `site`    | 94 MB   | **32 MB**  | `nginx-unprivileged:alpine-slim`                                                                                                                                                                                                              |
+
+A imagem da API foi validada com os 18 testes de navegador e a **jornada completa do integrador** rodando contra ela (`E2E_API_IMAGE=voltex/api:local pnpm jornada`), além da pilha de produção inteira. A API continua rodando **sem root**.
+
 ## Ambientes
 
 | Ambiente        | Branch       | Observação                                   |

@@ -11,6 +11,7 @@
 #   SITE_URL        (app)  endereço público do site, ex.: https://voltex-site.vercel.app       ("Voltar ao site")
 #   LEAD_KEY        (site) chave de captação de leads (CRM → Leads → "Receber contatos do seu site")
 #   VERCEL_TOKEN    (opcional) token da Vercel, no lugar do login interativo (`npx vercel login`)
+#   VERCEL_SCOPE    (opcional) equipe/conta da Vercel (ex.: luizeduardobls-projects)
 # --so-preparar    compila e monta a pasta (.deploy/...), mas NÃO envia nada: para conferir antes.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -40,4 +41,4 @@ echo "Pasta pronta em $pasta ($(du -sh "$pasta" | cut -f1))."
 
 echo "Enviando para a Vercel (produção)…"
 cd "$pasta"
-npx --yes vercel@latest deploy --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"}
+npx --yes vercel@latest deploy --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} ${VERCEL_SCOPE:+--scope "$VERCEL_SCOPE"}

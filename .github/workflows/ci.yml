@@ -4,6 +4,7 @@ on:
   push:
     branches: [develop, homologate, main]
   pull_request:
+  workflow_call: # chamado pela publicação da demonstração (deploy-demo.yml)
 
 concurrency:
   group: ci-${{ github.ref }}

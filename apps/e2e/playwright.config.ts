@@ -18,6 +18,33 @@ const apiEnv = {
   JWT_REFRESH_SECRET: 'e2e-browser-refresh-secret-with-at-least-32-chars',
 };
 
+const apiImage = process.env.E2E_API_IMAGE;
+const dockerEnv = { ...process.env, ...apiEnv } as Record<string, string | undefined>;
+const apiCommand = apiImage
+  ? `docker rm -f voltex-e2e-api >/dev/null 2>&1; docker run --rm --name voltex-e2e-api --network host ${[
+      'NODE_ENV',
+      'API_PORT',
+      'DATABASE_URL',
+      'WEB_URL',
+      'CORS_ORIGIN',
+      'THROTTLE_DISABLED',
+      'OUTBOX_POLL_INTERVAL_MS',
+      'AUTOMATION_SCAN_INTERVAL_MS',
+      'AUTOMATION_QUEUE_PREFIX',
+      'JWT_SECRET',
+      'JWT_REFRESH_SECRET',
+      'S3_ENDPOINT',
+      'S3_REGION',
+      'S3_BUCKET',
+      'S3_ACCESS_KEY',
+      'S3_SECRET_KEY',
+      'REDIS_URL',
+    ]
+      .filter((k) => dockerEnv[k])
+      .map((k) => `-e ${k}='${dockerEnv[k]}'`)
+      .join(' ')} ${apiImage}`
+  : 'node dist/main.js';
+
 export default defineConfig({
   testDir: './tests',
   // Os testes compartilham um banco real: um por vez.
@@ -66,7 +93,8 @@ export default defineConfig({
   webServer: [
     {
       // Recria o banco e só então sobe a API (o Playwright inicia os servidores antes do globalSetup).
-      command: `node "${path.join(__dirname, 'prepare-db.mjs')}" && node dist/main.js`,
+      // Com `E2E_API_IMAGE=voltex/api:slim` a API roda a partir da IMAGEM Docker (para provar que a imagem funciona).
+      command: `node "${path.join(__dirname, 'prepare-db.mjs')}" && ${apiCommand}`,
       cwd: path.join(root, 'apps/api'),
       url: `http://localhost:${API_PORT}/api/v1/health`,
       env: apiEnv,

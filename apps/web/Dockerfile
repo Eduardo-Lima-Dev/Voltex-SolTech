@@ -12,7 +12,7 @@ ARG VITE_SITE_URL
 ENV VITE_SITE_URL=$VITE_SITE_URL
 RUN pnpm turbo run build --filter=@voltex/web
 
-FROM nginxinc/nginx-unprivileged:alpine AS runtime
+FROM nginxinc/nginx-unprivileged:alpine-slim AS runtime
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
 EXPOSE 8080
