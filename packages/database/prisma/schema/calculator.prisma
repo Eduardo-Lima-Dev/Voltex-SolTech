@@ -1,0 +1,59 @@
+// Solar Calculator: sessões de cálculo rápido e snapshots imutáveis (ADR-0006).
+
+enum TrafficLight {
+  GREEN
+  YELLOW
+  RED
+
+  @@map("traffic_light")
+}
+
+model CalculationSession {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  tenantId         String       @map("tenant_id") @db.Uuid
+  createdById      String?      @map("created_by_id") @db.Uuid
+  title            String?
+  customerName     String?      @map("customer_name")
+  input            Json
+  result           Json
+  trafficLight     TrafficLight @map("traffic_light")
+  algorithmVersion String       @map("algorithm_version")
+  /// `builtin@1` ou `<id da regra>@<versão>`.
+  ruleSetRef       String       @map("rule_set_ref")
+  references       Json
+  /// Preenchido pelo CRM (Fase 7A) ao vincular o cálculo a uma oportunidade.
+  opportunityId    String?      @map("opportunity_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  tenant    Tenant                     @relation(fields: [tenantId], references: [id])
+  snapshots QuickCalculationSnapshot[]
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, trafficLight])
+  @@map("calculation_sessions")
+}
+
+/// Registro IMUTÁVEL (trigger no banco): inputs, outputs, versões do algoritmo e da regra, referências, autor.
+model QuickCalculationSnapshot {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  tenantId         String       @map("tenant_id") @db.Uuid
+  sessionId        String       @map("session_id") @db.Uuid
+  createdById      String?      @map("created_by_id") @db.Uuid
+  customerName     String?      @map("customer_name")
+  input            Json
+  result           Json
+  trafficLight     TrafficLight @map("traffic_light")
+  algorithmVersion String       @map("algorithm_version")
+  ruleSetRef       String       @map("rule_set_ref")
+  references       Json
+  note             String?
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id])
+  session CalculationSession @relation(fields: [sessionId], references: [id])
+
+  @@index([tenantId, sessionId])
+  @@index([tenantId, createdAt])
+  @@map("quick_calculation_snapshots")
+}

@@ -1,0 +1,187 @@
+// Contrato, projeto e homologação básica (Fase 7C). Enums espelham os de @voltex/shared.
+
+enum ContractStatus {
+  DRAFT
+  SIGNED
+  CANCELLED
+
+  @@map("contract_status")
+}
+
+enum ProjectStatus {
+  DOCUMENTATION
+  SUBMITTED
+  INSPECTION
+  APPROVED
+  CANCELLED
+
+  @@map("project_status")
+}
+
+enum ChecklistItemStatus {
+  PENDING
+  DONE
+  WAIVED
+  NOT_APPLICABLE
+
+  @@map("checklist_item_status")
+}
+
+/// Modelo de contrato da empresa. Versões novas nascem a cada publicação; as antigas permanecem (IMUTÁVEL, gatilho).
+/// Sem nenhuma versão, vale o modelo-base do sistema (sem revisão jurídica).
+model ContractTemplate {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  version     Int
+  name        String
+  /// Texto do contrato (para modelos em Word: o texto extraído, usado na pré-visualização).
+  body        String
+  /// `TEXT` (editado no sistema) ou `DOCX` (arquivo Word enviado pela empresa).
+  kind        String   @default("TEXT")
+  documentId  String?  @map("document_id") @db.Uuid
+  fileName    String?  @map("file_name")
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, version])
+  @@map("contract_templates")
+}
+
+/// Contrato gerado a partir de uma proposta aceita. O texto final fica gravado (não muda se o modelo mudar).
+/// Depois de ASSINADO é imutável (gatilho). No máximo um contrato não cancelado por oportunidade (índice parcial).
+model Contract {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  tenantId          String         @map("tenant_id") @db.Uuid
+  opportunityId     String         @map("opportunity_id") @db.Uuid
+  proposalId        String         @map("proposal_id") @db.Uuid
+  proposalVersion   Int            @map("proposal_version")
+  quoteId           String         @map("quote_id") @db.Uuid
+  scenarioLabel     String         @map("scenario_label")
+  version           Int
+  status            ContractStatus @default(DRAFT)
+  /// Versão do modelo usada; nulo = modelo-base.
+  templateVersion   Int?           @map("template_version")
+  templateIsDefault Boolean        @map("template_is_default")
+  body              String
+  variables         Json
+  missingVariables  Json           @map("missing_variables")
+  valueCents        Int            @map("value_cents")
+  /// Arquivo gerado (PDF, ou Word quando o modelo da empresa é um .docx).
+  pdfDocumentId     String?        @map("pdf_document_id") @db.Uuid
+  fileKind          String         @default("PDF") @map("file_kind")
+  signedDocumentId  String?        @map("signed_document_id") @db.Uuid
+  signedAt          DateTime?      @map("signed_at")
+  signedByName      String?        @map("signed_by_name")
+  recordedById      String?        @map("recorded_by_id") @db.Uuid
+  cancelledAt       DateTime?      @map("cancelled_at")
+  cancelReason      String?        @map("cancel_reason")
+  createdById       String?        @map("created_by_id") @db.Uuid
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  proposal    Proposal    @relation(fields: [proposalId], references: [id])
+  project     Project?
+
+  @@unique([opportunityId, version])
+  @@index([tenantId, opportunityId])
+  @@index([tenantId, status])
+  @@map("contracts")
+}
+
+/// Regras do checklist de homologação (dado versionado com fonte). Cada publicação é uma versão nova e IMUTÁVEL.
+/// Sem `distributorId` vale como padrão da empresa. Sem nenhuma, vale a base EnergIF 2023 embutida (com ressalvas).
+model HomologationChecklist {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  distributorId String?  @map("distributor_id") @db.Uuid
+  version       Int
+  items         Json
+  deadlines     Json
+  source        String
+  notes         String?
+  reviewedBy    String?  @map("reviewed_by")
+  createdById   String?  @map("created_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  distributor Distributor? @relation(fields: [distributorId], references: [id])
+
+  @@index([tenantId, distributorId])
+  @@map("homologation_checklists")
+}
+
+/// Projeto nascido do contrato assinado, com o MESMO Project ID da oportunidade.
+model Project {
+  id                     String        @id @default(uuid(7)) @db.Uuid
+  tenantId               String        @map("tenant_id") @db.Uuid
+  opportunityId          String        @unique @map("opportunity_id") @db.Uuid
+  projectCode            String        @map("project_code")
+  accountId              String        @map("account_id") @db.Uuid
+  siteId                 String?       @map("site_id") @db.Uuid
+  consumerUnitId         String?       @map("consumer_unit_id") @db.Uuid
+  distributorId          String?       @map("distributor_id") @db.Uuid
+  contractId             String        @unique @map("contract_id") @db.Uuid
+  status                 ProjectStatus @default(DOCUMENTATION)
+  valueCents             Int           @map("value_cents")
+  generationClass        String?       @map("generation_class")
+  responsibleId          String?       @map("responsible_id") @db.Uuid
+  /// Regras do checklist usadas na criação (`ref` + fonte): rastreia de onde veio cada exigência.
+  rulesRef               String        @map("rules_ref")
+  rulesScope             String        @map("rules_scope")
+  rulesSource            String        @map("rules_source")
+  rulesReviewedBy        String?       @map("rules_reviewed_by")
+  rulesNotes             String?       @map("rules_notes")
+  /// Prazos sugeridos da regra (cópia): `[{ code, label, days, source }]`.
+  rulesDeadlines         Json          @map("rules_deadlines")
+  protocolNumber         String?       @map("protocol_number")
+  submittedAt            DateTime?     @map("submitted_at")
+  accessOpinionDueAt     DateTime?     @map("access_opinion_due_at")
+  accessOpinionDueSource String?       @map("access_opinion_due_source")
+  inspectionRequestedAt  DateTime?     @map("inspection_requested_at")
+  inspectionDueAt        DateTime?     @map("inspection_due_at")
+  approvedAt             DateTime?     @map("approved_at")
+  cancelledAt            DateTime?     @map("cancelled_at")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity            @relation(fields: [opportunityId], references: [id])
+  contract    Contract               @relation(fields: [contractId], references: [id])
+  distributor Distributor?           @relation(fields: [distributorId], references: [id])
+  checklist   ProjectChecklistItem[]
+
+  @@unique([tenantId, projectCode])
+  @@index([tenantId, status])
+  @@index([tenantId, responsibleId])
+  @@map("projects")
+}
+
+model ProjectChecklistItem {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  tenantId      String              @map("tenant_id") @db.Uuid
+  projectId     String              @map("project_id") @db.Uuid
+  code          String
+  title         String
+  description   String?
+  required      Boolean
+  position      Int
+  status        ChecklistItemStatus @default(PENDING)
+  note          String?
+  dueAt         DateTime?           @map("due_at")
+  completedAt   DateTime?           @map("completed_at")
+  completedById String?             @map("completed_by_id") @db.Uuid
+  documentId    String?             @map("document_id") @db.Uuid
+  source        String
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, code])
+  @@index([tenantId, projectId])
+  @@map("project_checklist_items")
+}

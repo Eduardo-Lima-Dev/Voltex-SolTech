@@ -1,0 +1,52 @@
+{
+  "name": "voltex-soltech",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Voltex SolTech — suíte para integradores fotovoltaicos (CRM Solar, Solar Calculator, Solar Engine Studio e Off-Grid Designer)",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "node scripts/ensure-env.mjs && pnpm infra:up && turbo run dev",
+    "infra:up": "docker compose --project-directory . -f docker/compose.dev.yml up -d --wait",
+    "infra:down": "docker compose --project-directory . -f docker/compose.dev.yml down",
+    "infra:logs": "docker compose --project-directory . -f docker/compose.dev.yml logs -f --tail=100",
+    "infra:ps": "docker compose --project-directory . -f docker/compose.dev.yml ps -a",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm infra:up && turbo run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @voltex/database db:generate",
+    "db:migrate": "pnpm --filter @voltex/database db:migrate",
+    "db:deploy": "pnpm --filter @voltex/database db:deploy",
+    "db:seed": "pnpm --filter @voltex/database db:seed",
+    "db:studio": "pnpm --filter @voltex/database db:studio",
+    "test:browser": "pnpm --filter @voltex/e2e test:browser",
+    "docker:build": "docker compose --project-directory . -f docker/compose.prod.yml build",
+    "docker:up": "docker compose --project-directory . -f docker/compose.prod.yml up -d --wait",
+    "docker:down": "docker compose --project-directory . -f docker/compose.prod.yml down",
+    "setup": "node scripts/ensure-env.mjs && pnpm install && pnpm infra:up && pnpm db:deploy && pnpm db:seed",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml,css}": "prettier --write"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@voltex/eslint-config": "workspace:^",
+    "@voltex/tsconfig": "workspace:^",
+    "eslint": "^10.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.9",
+    "typescript": "^5.9.3"
+  }
+}

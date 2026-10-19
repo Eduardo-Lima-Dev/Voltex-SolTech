@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voltex SolTech — gestão de vendas e projetos para integradores solares</title>
+    <meta
+      name="description"
+      content="CRM, cálculo de viabilidade, cotação com margem protegida, proposta, contrato e projeto para integradores fotovoltaicos, ligados ao mesmo cliente."
+    />
+    <meta name="theme-color" content="#002362" />
+    <meta property="og:title" content="Voltex SolTech" />
+    <meta
+      property="og:description"
+      content="Do primeiro contato ao projeto, sem perder o fio do negócio. Suíte para integradores fotovoltaicos."
+    />
+    <meta property="og:image" content="/logo-banner.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="header" data-header>
+      <div class="wrap header__bar">
+        <a href="#topo" class="header__logo" aria-label="Voltex SolTech — início">
+          <img src="/logo-horizontal.svg" alt="Voltex SolTech" width="150" height="48" />
+        </a>
+        <nav class="header__nav" aria-label="Seções do site">
+          <a href="#caminho">Como funciona</a>
+          <a href="#margem">Margem</a>
+          <a href="#produtos">Produtos</a>
+          <a href="#seguranca">Segurança</a>
+          <a href="#duvidas">Dúvidas</a>
+        </nav>
+        <div class="header__actions">
+          <a class="btn btn--ghost" data-login href="http://localhost:5173/login">Entrar</a>
+          <a class="btn btn--solid" href="#contato" data-magnet>Pedir demonstração</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      <!-- 1. Abertura -->
+      <section class="hero" id="topo">
+        <svg
+          class="hero__arc"
+          viewBox="0 0 1200 700"
+          aria-hidden="true"
+          preserveAspectRatio="xMidYMax slice"
+        >
+          <path class="hero__horizon" d="M0 560H1200" />
+          <path
+            class="hero__path"
+            id="sunPath"
+            d="M-20 560C240 560 330 150 640 150S1040 560 1220 560"
+          />
+          <g class="hero__ticks"></g>
+          <circle class="hero__sun" r="9" cx="0" cy="0" />
+        </svg>
+        <div class="wrap hero__grid">
+          <div class="hero__copy">
+            <p class="label" data-reveal>Suíte para integradores fotovoltaicos</p>
+            <h1 class="hero__title" data-split>
+              Venda mais projetos solares sem perder o fio do negócio.
+            </h1>
+            <p class="hero__lead" data-reveal>
+              Do primeiro contato ao projeto instalado: cliente, fatura de energia, cálculo,
+              cotação, proposta e contrato ficam ligados no mesmo lugar.
+            </p>
+            <div class="hero__cta" data-reveal>
+              <a class="btn btn--solid btn--lg" href="#contato" data-magnet>Pedir demonstração</a>
+              <a class="btn btn--line btn--lg" href="#caminho">Ver como funciona</a>
+            </div>
+          </div>
+
+          <div
+            class="board"
+            aria-label="Exemplo do quadro de oportunidades (valores ilustrativos)"
+            role="img"
+            data-board
+          >
+            <div class="board__top">
+              <span class="board__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="board__title">Oportunidades</span>
+              <span class="board__note">exemplo</span>
+            </div>
+            <div class="board__cols">
+              <div class="col" data-col="quali">
+                <p class="col__name">Qualificação</p>
+                <p class="col__sum"><b data-n>1</b> oportunidade · <b data-v>R$ 24.800</b></p>
+                <div class="card">
+                  <b>Sítio Boa Vista</b><span>R$ 24.800</span><small>Sem próxima tarefa</small>
+                </div>
+              </div>
+              <div class="col" data-col="cot">
+                <p class="col__name">Cotação</p>
+                <p class="col__sum"><b data-n>2</b> oportunidades · <b data-v>R$ 61.900</b></p>
+                <div class="card">
+                  <b>Padaria Estrela</b><span>R$ 37.100</span
+                  ><small>Margem dentro da política</small>
+                </div>
+                <div class="card card--mover" data-mover>
+                  <b>Clínica Aurora</b><span>R$ 24.800</span><small>Proposta pronta</small>
+                </div>
+              </div>
+              <div class="col" data-col="prop">
+                <p class="col__name">Proposta enviada</p>
+                <p class="col__sum"><b data-n>1</b> oportunidade · <b data-v>R$ 18.300</b></p>
+                <div class="card">
+                  <b>Residência Lima</b><span>R$ 18.300</span><small>Visualizada hoje</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="hero__scroll" aria-hidden="true"><span></span>role para continuar</p>
+      </section>
+
+      <!-- 2. O caminho de um negócio -->
+      <section class="story" id="caminho" aria-labelledby="caminho-titulo">
+        <div class="story__pin">
+          <div class="story__left wrap-left">
+            <p class="label label--dark">01 — O caminho de um negócio</p>
+            <h2 id="caminho-titulo" class="h2">Um cliente, uma história. Do contato ao projeto.</h2>
+            <ol class="story__steps">
+              <li class="step is-active" data-step>
+                <span class="step__n">01</span>
+                <div>
+                  <h3>O contato chega</h3>
+                  <p>
+                    Do formulário do seu site, de uma planilha ou digitado na hora. Contatos
+                    repetidos são avisados.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Lead · Formulário do site</p>
+                  <p class="panel__big">Marcos Andrade</p>
+                  <p class="panel__muted">Fortaleza, CE · conta de luz de R$ 780</p>
+                  <div class="chips"><span>Residencial</span><span>Grupo B</span></div>
+                  <span class="fake-btn">Converter em oportunidade</span>
+                </div>
+              </li>
+              <li class="step" data-step>
+                <span class="step__n">02</span>
+                <div>
+                  <h3>A fatura vira dado</h3>
+                  <p>
+                    O sistema lê a conta de luz e destaca o que precisa de conferência. Ninguém
+                    digita tudo de novo.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Fatura de energia · leitura assistida</p>
+                  <dl class="kv">
+                    <div>
+                      <dt>Consumo médio</dt>
+                      <dd>612 kWh <em class="ok">lido</em></dd>
+                    </div>
+                    <div>
+                      <dt>Distribuidora</dt>
+                      <dd>Enel Ceará <em class="ok">lido</em></dd>
+                    </div>
+                    <div class="kv--warn">
+                      <dt>Tarifa</dt>
+                      <dd>R$ 0,98/kWh <em class="warn">conferir</em></dd>
+                    </div>
+                  </dl>
+                </div>
+              </li>
+              <li class="step" data-step>
+                <span class="step__n">03</span>
+                <div>
+                  <h3>Viabilidade em minutos</h3>
+                  <p>
+                    Potência, geração, economia e retorno do investimento, com um semáforo que diz
+                    se dá para seguir.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Pré-viabilidade</p>
+                  <div class="light"><i class="on"></i><i></i><i></i><span>Pode seguir</span></div>
+                  <dl class="kv kv--cols">
+                    <div>
+                      <dt>Potência</dt>
+                      <dd>5,4 kWp</dd>
+                    </div>
+                    <div>
+                      <dt>Geração/mês</dt>
+                      <dd>690 kWh</dd>
+                    </div>
+                    <div>
+                      <dt>Retorno</dt>
+                      <dd>~4 anos</dd>
+                    </div>
+                  </dl>
+                </div>
+              </li>
+              <li class="step" data-step>
+                <span class="step__n">04</span>
+                <div>
+                  <h3>Cotação com margem protegida</h3>
+                  <p>
+                    Se a margem ficar abaixo do mínimo da sua empresa, a proposta não sai sem a
+                    aprovação do gestor.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Cotação v2</p>
+                  <p class="panel__big">R$ 24.800</p>
+                  <div class="bar"><i style="width: 72%"></i><b style="left: 58%"></b></div>
+                  <p class="panel__muted">Margem 27% · mínimo 20%</p>
+                </div>
+              </li>
+              <li class="step" data-step>
+                <span class="step__n">05</span>
+                <div>
+                  <h3>Proposta que avisa quando é aberta</h3>
+                  <p>
+                    O cliente abre o link, vê a proposta e aceita online. Você recebe a tarefa no
+                    momento certo.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Proposta enviada por link</p>
+                  <div class="alert">
+                    <i></i>
+                    <div>
+                      <b>O cliente abriu a proposta</b
+                      ><small>há 2 minutos · tarefa criada para o vendedor</small>
+                    </div>
+                  </div>
+                  <span class="fake-btn fake-btn--ok">Aceita pelo cliente</span>
+                </div>
+              </li>
+              <li class="step" data-step>
+                <span class="step__n">06</span>
+                <div>
+                  <h3>Contrato assinado, projeto criado</h3>
+                  <p>
+                    O negócio vira projeto sozinho, com o mesmo código, a lista de documentos da
+                    distribuidora e os prazos.
+                  </p>
+                </div>
+                <div class="panel" data-panel aria-hidden="true">
+                  <p class="panel__tag">Projeto VLX-4Q7M2K</p>
+                  <ul class="check">
+                    <li class="done">Contrato assinado</li>
+                    <li class="done">Projeto técnico</li>
+                    <li>ART/TRT emitida</li>
+                    <li>Protocolo na distribuidora</li>
+                  </ul>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Margem -->
+      <section class="margin" id="margem" aria-labelledby="margem-titulo">
+        <div class="wrap margin__grid">
+          <div>
+            <p class="label label--dark">02 — Margem protegida</p>
+            <h2 id="margem-titulo" class="h2">
+              Ninguém manda uma proposta no prejuízo sem você saber.
+            </h2>
+            <p class="lead">
+              Cada empresa define a margem mínima. Abaixo dela, a cotação trava e pede a aprovação
+              de quem manda, com justificativa e registro. Mexa no preço ao lado e veja.
+            </p>
+          </div>
+          <div class="guard" data-guard>
+            <p class="panel__tag">Simulação · valores de exemplo</p>
+            <div class="guard__row"><span>Custo do projeto</span><b>R$ 30.000</b></div>
+            <label class="guard__row guard__row--price" for="preco">
+              <span>Preço para o cliente</span>
+              <b data-price>R$ 38.000</b>
+            </label>
+            <input
+              id="preco"
+              type="range"
+              min="30000"
+              max="50000"
+              step="500"
+              value="38000"
+              data-range
+            />
+            <div class="guard__meter" aria-hidden="true"><i data-fill></i><b data-min></b></div>
+            <div class="guard__row"><span>Margem</span><b data-margin>21,1%</b></div>
+            <p class="guard__status" data-status role="status" aria-live="polite">
+              Dentro da política. Pode enviar.
+            </p>
+            <p class="guard__foot">Margem mínima desta empresa: 20%</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Produtos -->
+      <section class="products" id="produtos" aria-labelledby="produtos-titulo">
+        <div class="wrap">
+          <p class="label">03 — Quatro produtos, um cadastro</p>
+          <h2 id="produtos-titulo" class="h2 h2--light">
+            Use o que precisa hoje. O resto já fala a mesma língua.
+          </h2>
+          <ul class="plist">
+            <li class="prow">
+              <span class="prow__n">01</span>
+              <h3>CRM Solar</h3>
+              <p>Leads, funil de vendas, contas, tarefas, cotação, proposta, contrato e projeto.</p>
+              <span class="badge badge--on">Disponível</span>
+            </li>
+            <li class="prow">
+              <span class="prow__n">02</span>
+              <h3>Solar Calculator</h3>
+              <p>
+                Pré-viabilidade em minutos: potência, geração, economia, retorno e semáforo.
+                Funciona sozinho ou ligado ao CRM.
+              </p>
+              <span class="badge badge--on">Disponível</span>
+            </li>
+            <li class="prow prow--soon">
+              <span class="prow__n">03</span>
+              <h3>Solar Engine Studio</h3>
+              <p>
+                Dimensionamento técnico: compatibilidade de módulos e inversores, strings, proteções
+                e memorial.
+              </p>
+              <span class="badge">Em desenvolvimento</span>
+            </li>
+            <li class="prow prow--soon">
+              <span class="prow__n">04</span>
+              <h3>Off-Grid Designer</h3>
+              <p>Sistemas isolados e híbridos: cargas, autonomia e banco de baterias.</p>
+              <span class="badge">Em desenvolvimento</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 5. Recursos -->
+      <section class="features" aria-labelledby="recursos-titulo">
+        <div class="wrap features__grid">
+          <div class="features__head">
+            <p class="label label--dark">04 — No dia a dia</p>
+            <h2 id="recursos-titulo" class="h2">
+              Feito para a rotina de quem vende e instala energia solar.
+            </h2>
+          </div>
+          <dl class="flist">
+            <div>
+              <dt>Funil do seu jeito</dt>
+              <dd>
+                Renomeie as etapas, esconda as que não usa e crie colunas próprias. Cada empresa tem
+                o seu.
+              </dd>
+            </div>
+            <div>
+              <dt>Triagem com revisão humana</dt>
+              <dd>
+                O sistema aponta o que precisa de olhar técnico ou regulatório antes de prometer
+                qualquer coisa.
+              </dd>
+            </div>
+            <div>
+              <dt>Negócio sem tarefa, nunca</dt>
+              <dd>
+                Aviso de oportunidade sem próxima tarefa, contato sem retorno e proposta aberta pelo
+                cliente.
+              </dd>
+            </div>
+            <div>
+              <dt>Contrato com o seu modelo</dt>
+              <dd>
+                Use o texto-base ou envie o seu documento em Word, e o sistema preenche os dados do
+                cliente.
+              </dd>
+            </div>
+            <div>
+              <dt>Painel comercial</dt>
+              <dd>
+                Leads por origem, conversão por etapa, propostas enviadas e vistas, ticket médio e
+                previsão.
+              </dd>
+            </div>
+            <div>
+              <dt>Projeto e homologação</dt>
+              <dd>
+                Lista de documentos por distribuidora, pendências, datas e responsável técnico.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 6. Segurança -->
+      <section class="trust" id="seguranca" aria-labelledby="seguranca-titulo">
+        <div class="wrap trust__grid">
+          <div>
+            <p class="label">05 — Seus dados</p>
+            <h2 id="seguranca-titulo" class="h2 h2--light">
+              Os dados dos seus clientes ficam com você.
+            </h2>
+            <p class="lead lead--light">
+              A suíte foi pensada para facilitar o cuidado com dados pessoais, como pede a LGPD. Os
+              prazos de guarda e as regras de eliminação devem ser definidos junto com o seu
+              jurídico.
+            </p>
+          </div>
+          <ul class="tlist">
+            <li><b>Empresas separadas.</b> Cada empresa enxerga só os próprios dados.</li>
+            <li>
+              <b>Cada pessoa no seu papel.</b> Vendedor, gestor, engenharia e financeiro com acessos
+              diferentes.
+            </li>
+            <li><b>CPF, CNPJ e contratos protegidos.</b> Gravados com criptografia.</li>
+            <li><b>Histórico de quem fez o quê.</b> Ações importantes ficam registradas.</li>
+            <li>
+              <b>Exportação e eliminação.</b> Baixe os dados da empresa e elimine os de uma pessoa
+              quando for o caso.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 7. Dúvidas -->
+      <section class="faq" id="duvidas" aria-labelledby="duvidas-titulo">
+        <div class="wrap faq__grid">
+          <div>
+            <p class="label label--dark">06 — Dúvidas</p>
+            <h2 id="duvidas-titulo" class="h2">O que costumam perguntar.</h2>
+          </div>
+          <div class="acc">
+            <details>
+              <summary>Preciso usar os quatro produtos?</summary>
+              <p>
+                Não. O CRM Solar e o Solar Calculator funcionam hoje, juntos ou separados. Os outros
+                dois estão em desenvolvimento.
+              </p>
+            </details>
+            <details>
+              <summary>Como minha equipe entra?</summary>
+              <p>
+                Por convite. O administrador da empresa convida cada pessoa e escolhe o perfil de
+                acesso dela.
+              </p>
+            </details>
+            <details>
+              <summary>Posso mudar as etapas do funil?</summary>
+              <p>
+                Pode renomear, esconder e criar colunas novas. A ordem e as regras de passagem
+                seguem o padrão do sistema.
+              </p>
+            </details>
+            <details>
+              <summary>E se eu já tiver um modelo de contrato?</summary>
+              <p>
+                Dá para enviar o seu modelo em Word. O sistema preenche os dados do cliente e guarda
+                cada versão.
+              </p>
+            </details>
+            <details>
+              <summary>Quanto custa?</summary>
+              <p>
+                Depende do tamanho da sua operação. Peça uma demonstração e a gente conversa sobre
+                valores.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Contato -->
+      <section class="contact" id="contato" aria-labelledby="contato-titulo">
+        <img class="contact__mark" src="/brand-grid-cyan.svg" alt="" aria-hidden="true" />
+        <div class="wrap contact__grid">
+          <div>
+            <h2 id="contato-titulo" class="h2 h2--light">
+              Quer ver funcionando com os seus números?
+            </h2>
+            <p class="lead lead--light">
+              Deixe seu contato. A gente chama para uma conversa curta e mostra a suíte com o seu
+              jeito de vender.
+            </p>
+          </div>
+          <form class="form" data-form novalidate>
+            <label>Seu nome<input name="name" autocomplete="name" required minlength="2" /></label>
+            <label
+              >Telefone (com DDD)<input name="phone" type="tel" autocomplete="tel" inputmode="tel"
+            /></label>
+            <label
+              >E-mail<input name="email" type="email" autocomplete="email" inputmode="email"
+            /></label>
+            <label>Sua empresa<input name="company" autocomplete="organization" /></label>
+            <input
+              class="form__trap"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+              aria-hidden="true"
+            />
+            <label class="form__consent"
+              ><input type="checkbox" name="consent" /> Aceito que a Voltex SolTech entre em contato
+              comigo sobre esta demonstração.</label
+            >
+            <p class="form__msg" data-msg role="status" aria-live="polite"></p>
+            <button class="btn btn--solid btn--lg" type="submit">Pedir demonstração</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__bar">
+        <img src="/logo-horizontal.svg" alt="Voltex SolTech" width="130" height="42" />
+        <nav aria-label="Rodapé">
+          <a data-login href="http://localhost:5173/login">Entrar na plataforma</a>
+          <a href="#contato">Pedir demonstração</a>
+        </nav>
+        <p>© <span data-year>2026</span> Voltex SolTech</p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "extends": "@voltex/tsconfig/node.json",
+  "compilerOptions": { "noEmit": true, "noUncheckedIndexedAccess": false, "rootDir": "." },
+  "include": ["src", "prisma/seed.ts", "prisma.config.ts", "vitest.config.ts"]
+}

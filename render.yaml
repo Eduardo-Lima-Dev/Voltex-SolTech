@@ -1,0 +1,49 @@
+# Plano gratuito da Render para a API (Blueprint). Guia: docs/08-deploy/nuvem-gratuita.md
+# A Render monta a imagem a partir do Dockerfile do repositório. Os segredos (sync: false) são preenchidos no painel
+# ou pela CLI; nenhum valor sensível fica neste arquivo.
+services:
+  - type: web
+    name: voltex-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    # Verificação leve (sem tocar em banco, Redis nem armazenamento): o /health completo gastaria os comandos do Redis gratuito.
+    healthCheckPath: /api/v1/health/live
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: '2' # Render + Vercel na frente
+      # Varredura das automações a cada 15 min (padrão: 1 min): poupa os comandos do Redis gratuito.
+      - key: AUTOMATION_SCAN_INTERVAL_MS
+        value: '900000'
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: WEB_URL
+        sync: false # endereço público da aplicação (Vercel)
+      - key: CORS_ORIGIN
+        sync: false # o mesmo valor de WEB_URL
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_FORCE_PATH_STYLE
+        value: 'true'
+      - key: S3_SERVER_SIDE_ENCRYPTION
+        value: none

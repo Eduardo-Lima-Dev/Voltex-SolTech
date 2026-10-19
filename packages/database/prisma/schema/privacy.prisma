@@ -1,0 +1,42 @@
+// Privacidade (LGPD): pedidos de eliminação e anonimização. Enums espelham os de @voltex/shared.
+
+enum PrivacySubjectType {
+  LEAD
+  ACCOUNT
+
+  @@map("privacy_subject_type")
+}
+
+enum PrivacyRequestStatus {
+  COMPLETED
+  BLOCKED
+
+  @@map("privacy_request_status")
+}
+
+/// Registro de cada pedido de eliminação (feito por um usuário ou pela política de retenção). IMUTÁVEL (gatilho).
+/// Não guarda dado pessoal do titular: só a referência, as iniciais e o resultado.
+model PrivacyRequest {
+  id            String               @id @default(uuid(7)) @db.Uuid
+  tenantId      String               @map("tenant_id") @db.Uuid
+  subjectType   PrivacySubjectType   @map("subject_type")
+  subjectId     String               @map("subject_id") @db.Uuid
+  /// Iniciais do titular, para a empresa reconhecer o pedido sem expor o nome.
+  subjectLabel  String               @map("subject_label")
+  status        PrivacyRequestStatus
+  reason        String
+  /// Quando bloqueado: por que (obrigação legal de guarda, negócio em aberto…).
+  blockedReason String?              @map("blocked_reason")
+  /// Quando a obrigação de guarda termina (se for o caso).
+  retainedUntil DateTime?            @map("retained_until")
+  /// O que foi feito: contagens por tipo de dado.
+  summary       Json
+  /// Vazio quando foi a política de retenção.
+  requestedById String?              @map("requested_by_id") @db.Uuid
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("privacy_requests")
+}

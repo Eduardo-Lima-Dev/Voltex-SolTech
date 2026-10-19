@@ -1,0 +1,44 @@
+{
+  "name": "@voltex/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma (schema, migrations, seed) e client tipado do PostgreSQL da suíte Voltex SolTech",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "dev": "prisma generate && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@voltex/eslint-config": "workspace:^",
+    "@voltex/shared": "workspace:^",
+    "@voltex/tsconfig": "workspace:^",
+    "eslint": "^10.13.0",
+    "prisma": "7.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.0",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "dotenv": "^18.0.8",
+    "pg": "^8.23.1"
+  }
+}

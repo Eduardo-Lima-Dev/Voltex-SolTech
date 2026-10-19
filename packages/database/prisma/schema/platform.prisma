@@ -1,0 +1,268 @@
+// Plataforma: tenancy, usuários, sessões, auditoria e outbox de eventos.
+
+/// Espelha `Role` de @voltex/shared (a paridade é verificada por teste).
+enum Role {
+  OWNER
+  ADMIN
+  SALES_MANAGER
+  SDR
+  SALESPERSON
+  ENGINEERING
+  TECHNICAL_LEAD
+  OPERATIONS
+  INSTALLER
+  FINANCE
+  OM
+  PARTNER
+  CUSTOMER
+
+  @@map("role")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("tenant_status")
+}
+
+/// Empresa cliente da suíte (integradora). Unidade de isolamento de dados.
+model Tenant {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  name           String
+  slug           String       @unique
+  document       String? /// CNPJ
+  status         TenantStatus @default(ACTIVE)
+  /// Plano, limites e feature flags (RF-PLAT-013).
+  settings       Json         @default("{}")
+  /// Chave pública do formulário de captação de leads (rotacionável).
+  leadCaptureKey String?      @unique @map("lead_capture_key")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
+
+  branches               Branch[]
+  teams                  Team[]
+  users                  User[]
+  refreshTokens          RefreshToken[]
+  auditLogs              AuditLog[]
+  outboxEvents           OutboxEvent[]
+  invitations            Invitation[]
+  documents              Document[]
+  ruleSets               RuleSet[]
+  distributors           Distributor[]
+  tariffs                Tariff[]
+  solarResources         SolarResource[]
+  calculationSessions    CalculationSession[]
+  calculationSnapshots   QuickCalculationSnapshot[]
+  leads                  Lead[]
+  accounts               Account[]
+  contacts               Contact[]
+  sites                  Site[]
+  consumerUnits          ConsumerUnit[]
+  pipelineStages         PipelineStage[]
+  customPipelineStages   CustomPipelineStage[]
+  opportunities          Opportunity[]
+  timelineEvents         TimelineEvent[]
+  tasks                  Task[]
+  energyBills            EnergyBill[]
+  energyBillSnapshots    EnergyBillSnapshot[]
+  engineeringRequests    EngineeringRequest[]
+  triageSnapshots        TriageSnapshot[]
+  triageOverrides        TriageOverride[]
+  marginPolicies         MarginPolicy[]
+  quotes                 Quote[]
+  approvalRequests       ApprovalRequest[]
+  proposals              Proposal[]
+  proposalSnapshots      ProposalSnapshot[]
+  contractTemplates      ContractTemplate[]
+  contracts              Contract[]
+  homologationChecklists HomologationChecklist[]
+  projects               Project[]
+  projectChecklistItems  ProjectChecklistItem[]
+  privacyRequests        PrivacyRequest[]
+
+  @@map("tenants")
+}
+
+model Branch {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  name      String
+  city      String?
+  state     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  teams  Team[]
+  users  User[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("branches")
+}
+
+model Team {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  branchId  String?   @map("branch_id") @db.Uuid
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+  users  User[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("teams")
+}
+
+model User {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  branchId     String?   @map("branch_id") @db.Uuid
+  teamId       String?   @map("team_id") @db.Uuid
+  name         String
+  /// Único em toda a plataforma: o login não exige informar o tenant.
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role
+  isActive     Boolean   @default(true) @map("is_active")
+  /// Preparado para MFA (RNF-SEG-011); sem uso até a Fase 11.
+  mfaEnabled   Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret    String?   @map("mfa_secret")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  team          Team?          @relation(fields: [teamId], references: [id])
+  refreshTokens RefreshToken[]
+
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+/// Refresh token rotativo. Só o hash é armazenado; `familyId` permite revogar toda a cadeia
+/// quando um token já usado é reapresentado (detecção de reuso).
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash")
+  familyId     String    @map("family_id") @db.Uuid
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  userAgent    String?   @map("user_agent")
+  ip           String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Trilha de auditoria. Imutável: um trigger no banco impede UPDATE e DELETE (ver migration).
+model AuditLog {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  actorId   String?  @map("actor_id") @db.Uuid
+  action    String /// ex.: "opportunity.stage_changed"
+  entity    String /// ex.: "Opportunity"
+  entityId  String?  @map("entity_id")
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  requestId String?  @map("request_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entity, entityId])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: o evento é gravado na mesma transação do dado de negócio e um worker o entrega.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  /// Um valor de DomainEvent (@voltex/shared).
+  type          String
+  /// Project ID global (Digital Thread), quando existir.
+  projectCode   String?   @map("project_code")
+  schemaVersion Int       @default(1) @map("schema_version")
+  payload       Json
+  actorId       String?   @map("actor_id") @db.Uuid
+  occurredAt    DateTime  @default(now()) @map("occurred_at")
+  publishedAt   DateTime? @map("published_at")
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([publishedAt, occurredAt])
+  @@index([tenantId, type])
+  @@map("outbox_events")
+}
+
+/// Convite para um novo usuário entrar no tenant. Só o hash do token é guardado.
+model Invitation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  email       String
+  role        Role
+  branchId    String?   @map("branch_id") @db.Uuid
+  teamId      String?   @map("team_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  invitedById String    @map("invited_by_id") @db.Uuid
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, email])
+  @@map("invitations")
+}
+
+/// Metadados de um arquivo guardado no S3 (faturas, contratos, fotos...). O vínculo é polimórfico:
+/// `entityType`/`entityId` apontam para lead, oportunidade, projeto etc. Cada novo envio sobre um
+/// documento existente cria uma nova versão no mesmo `groupId`.
+model Document {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  uploadedById   String?   @map("uploaded_by_id") @db.Uuid
+  groupId        String    @map("group_id") @db.Uuid
+  version        Int       @default(1)
+  filename       String
+  mimeType       String    @map("mime_type")
+  sizeBytes      Int       @map("size_bytes")
+  storageKey     String    @unique @map("storage_key")
+  checksumSha256 String    @map("checksum_sha256")
+  entityType     String?   @map("entity_type")
+  entityId       String?   @map("entity_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([groupId, version])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("documents")
+}
