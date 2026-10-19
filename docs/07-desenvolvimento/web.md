@@ -37,7 +37,7 @@ apps/web/src/
 
 ## CRM (Fase 7A)
 
-Detalhes de comportamento em [CRM Solar](crm.md). No código: `features/crm/{leads,accounts,opportunities,tasks}`; o Kanban usa `@dnd-kit/core` com sensor de ponteiro (arrasto só pelo ícone, para o cartão continuar clicável) e de teclado, mais o seletor "Mover para…". `stage-change.ts` valida a transição com a **mesma** máquina de estados da API (mensagem imediata) e pede o motivo ao ir para Perdido. A revisão da fatura (`bill-form.ts`) valida com o schema compartilhado e destaca campos de baixa confiança. A importação de CSV de leads e de irradiação usa o leitor comum `lib/csv.ts`.
+Detalhes de comportamento em [CRM Solar](crm.md). No código: `features/crm/{leads,accounts,opportunities,tasks}`; o menu lateral tem submenus (`NavSubmenu` em `app/layout/sidebar-nav.tsx`) para CRM e Administração; o Kanban usa `@dnd-kit/core` com sensor de ponteiro (arrasto pelo cartão inteiro, com limiar de 6 px para o link continuar clicável) e de teclado, mais o seletor "Mover para…". `stage-change.ts` valida a transição com a **mesma** máquina de estados da API (mensagem imediata) e pede o motivo ao ir para Perdido. A revisão da fatura (`bill-form.ts`) valida com o schema compartilhado e destaca campos de baixa confiança. A importação de CSV de leads e de irradiação usa o leitor comum `lib/csv.ts`.
 
 ## Solar Calculator (Fase 6)
 

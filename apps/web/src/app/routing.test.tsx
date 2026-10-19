@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -109,7 +109,7 @@ describe('permissões nas rotas', () => {
   it('o menu só lista os produtos e áreas permitidos ao perfil', async () => {
     renderApp('/', { session: makeSession('SALESPERSON') });
     const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    const links = Array.from(nav.querySelectorAll('a')).map((a) =>
+    const links = Array.from(nav.querySelectorAll('a, button')).map((a) =>
       a.textContent?.replace(/\(em breve\)/, '').trim(),
     );
     expect(links).toEqual(expect.arrayContaining(['Início', 'CRM Solar', 'Solar Calculator']));
@@ -120,7 +120,7 @@ describe('permissões nas rotas', () => {
   it('a barra lateral do proprietário inclui Administração', async () => {
     server.use(healthOk);
     renderApp('/');
-    expect(await screen.findByRole('link', { name: 'Administração' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Administração' })).toBeInTheDocument();
   });
 
   it('/admin leva à primeira aba permitida; Financeiro (sem permissões de admin) fica sem acesso', async () => {
@@ -137,7 +137,8 @@ describe('permissões nas rotas', () => {
       ),
     );
     renderApp('/admin', { session: makeSession('SALES_MANAGER') });
-    const tabs = await screen.findByRole('navigation', { name: 'Seções da administração' });
+    const tabs = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await within(tabs).findByRole('link', { name: 'Usuários' });
     expect(tabs).toHaveTextContent('Usuários');
     expect(tabs).toHaveTextContent('Perfis');
     expect(tabs).not.toHaveTextContent('Empresa');
@@ -169,6 +170,12 @@ describe('painel inicial', () => {
   });
 });
 
+/** Telas do CRM listadas no submenu da barra lateral. */
+const crmLinks = (nav: HTMLElement) =>
+  Array.from(nav.querySelectorAll('a'))
+    .filter((a) => a.getAttribute('href')?.startsWith('/crm/'))
+    .map((a) => a.textContent);
+
 describe('rotas do CRM', () => {
   const crmHandlers = () =>
     server.use(
@@ -187,19 +194,15 @@ describe('rotas do CRM', () => {
   it('/crm leva à primeira área permitida ao perfil (Leads para quem vê leads)', async () => {
     crmHandlers();
     const { router } = renderApp('/crm', { session: makeSession('SDR') });
-    expect(await screen.findByRole('heading', { name: 'CRM Solar', level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(router.state.location.pathname).toBe('/crm/leads'));
   });
 
   it('o SDR vê Leads, Contas e Tarefas, mas não Oportunidades; a rota de oportunidades fica bloqueada', async () => {
     crmHandlers();
     renderApp('/crm/leads', { session: makeSession('SDR') });
-    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
-      'Leads',
-      'Contas',
-      'Tarefas',
-    ]);
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await within(nav).findByRole('link', { name: /Tarefas/ });
+    expect(crmLinks(nav)).toEqual(['Leads', 'Contas', 'Tarefas']);
   });
 
   it('sem acesso a oportunidades, a página mostra "Sem acesso" (a API continua sendo a barreira real)', async () => {
@@ -213,26 +216,21 @@ describe('rotas do CRM', () => {
   it('o vendedor vê as cinco áreas do CRM', async () => {
     crmHandlers();
     renderApp('/crm/contas', { session: makeSession('SALESPERSON') });
-    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
-      'Leads',
-      'Oportunidades',
-      'Contas',
-      'Projetos',
-      'Tarefas',
-    ]);
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await within(nav).findByRole('link', { name: /Tarefas/ });
+    expect(crmLinks(nav)).toEqual(['Leads', 'Oportunidades', 'Contas', 'Projetos', 'Tarefas']);
   });
 
   it('o instalador acessa só projetos e as tarefas atribuídas a ele dentro do CRM', async () => {
     crmHandlers();
     server.use(http.get(`${API}/projects`, () => HttpResponse.json(page([]))));
     const { router } = renderApp('/crm', { session: makeSession('INSTALLER') });
-    const nav = await screen.findByRole('navigation', { name: 'Áreas do CRM' });
-    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
-      'Projetos',
-      'Tarefas',
-    ]);
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await within(nav).findByRole('link', { name: /Tarefas/ });
+    expect(crmLinks(nav)).toEqual(['Projetos', 'Tarefas']);
     await waitFor(() => expect(router.state.location.pathname).toBe('/crm/projetos'));
+    // espera a tela carregar, para nenhuma requisição vazar para o teste seguinte
+    expect(await screen.findByText('Nenhum projeto encontrado.')).toBeInTheDocument();
   });
 
   it('perfil sem nenhuma permissão do CRM vê "Sem acesso"', async () => {
@@ -246,7 +244,7 @@ describe('rotas do CRM', () => {
     crmHandlers();
     renderApp('/crm/leads');
     const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    const crm = Array.from(nav.querySelectorAll('a')).find((a) =>
+    const crm = Array.from(nav.querySelectorAll('a, button')).find((a) =>
       a.textContent?.includes('CRM Solar'),
     );
     expect(crm).toBeDefined();

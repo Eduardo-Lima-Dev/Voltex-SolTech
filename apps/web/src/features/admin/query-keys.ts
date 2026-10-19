@@ -28,7 +28,8 @@ export const queryKeys = {
   pipeline: ['pipeline'] as const,
   opportunities: (filters?: unknown) =>
     filters === undefined ? (['opportunities'] as const) : (['opportunities', filters] as const),
-  opportunityBoard: (ownerId?: string) => ['opportunity-board', ownerId ?? 'all'] as const,
+  opportunityBoard: (filters: { ownerId?: string; search?: string; status?: string } = {}) =>
+    ['opportunity-board', filters] as const,
   opportunity: (id: string) => ['opportunity', id] as const,
   opportunityTimeline: (id: string) => ['opportunity', id, 'timeline'] as const,
   opportunityBills: (id: string) => ['opportunity', id, 'bills'] as const,

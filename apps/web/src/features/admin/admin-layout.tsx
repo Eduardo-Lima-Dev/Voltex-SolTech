@@ -1,5 +1,4 @@
-import { NavLink, Navigate, Outlet } from 'react-router';
-import { cn } from '@voltex/ui';
+import { Navigate, Outlet } from 'react-router';
 import { ForbiddenPage } from '@/app/pages/forbidden-page';
 import { useAuth } from '@/features/auth/auth-provider';
 import { ADMIN_TABS } from './admin-nav';
@@ -17,29 +16,6 @@ export function AdminLayout() {
           Gerencie a empresa, as pessoas e o que cada perfil pode fazer.
         </p>
       </header>
-
-      <nav
-        aria-label="Seções da administração"
-        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1"
-      >
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.path}
-            to={`/admin/${tab.path}`}
-            className={({ isActive }) =>
-              cn(
-                'inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-              )
-            }
-          >
-            <tab.icon className="size-4" aria-hidden />
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
 
       <Outlet />
     </div>

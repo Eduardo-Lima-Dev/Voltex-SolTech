@@ -39,6 +39,7 @@ test.describe('CRM · do lead à oportunidade', () => {
     // Aparece no funil (Kanban).
     await page.goto('/crm/oportunidades');
     await expect(page.getByText(`Sistema solar — ${name}`).first()).toBeVisible();
+    await expect(page.getByText(/^\d+ oportunidades?/).first()).toBeVisible();
   });
 
   test('o seletor de etapa só oferece o que a máquina de estados permite', async ({ page }) => {

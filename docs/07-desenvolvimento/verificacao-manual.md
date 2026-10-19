@@ -36,7 +36,7 @@ Faça `POST /auth/login`, clique em **Authorize** com o `accessToken` e teste `G
 3. **Conta** — adicione um **imóvel** com o levantamento técnico (azimute, inclinação, sombreamento, área) e uma **UC** com a concessionária; na oportunidade, "Editar" para vincular os dois.
 4. **Fatura** — aba **Fatura → Enviar fatura** (PDF com texto). Em **Revisar**, os campos de baixa confiança aparecem destacados; ajuste e **Confirmar**. A oportunidade sai de "Fatura pendente".
 5. **Cálculo** — aba **Cálculos → Novo cálculo**: já vem com o consumo da fatura (no mês certo), a tarifa e os dados do imóvel. Um cliente do **Grupo A** gera semáforo amarelo, abre um pedido de engenharia e move a etapa.
-6. **Kanban** — `Oportunidades`: arraste o cartão pelo ícone (ou use "Mover para…"). Pular etapas é recusado com a lista do que é permitido; "Perdida" pede o motivo.
+6. **Kanban** — `Oportunidades`: arraste o cartão (ou use a alça/"Mover para…"); confira o total por coluna, a busca por cliente e os filtros de situação e vendedor. Pular etapas é recusado com a lista do que é permitido; "Perdida" pede o motivo.
 7. **Formulário público** — como administrador, copie o endereço de captação (Leads, no fim da página) e envie um POST com `{ "name", "phone", "consent": true }`: o lead aparece sem responsável.
 8. **Perfis** — o SDR vê Leads, Contas e Tarefas (não Oportunidades) e converte só em conta; o vendedor vê as quatro áreas.
 

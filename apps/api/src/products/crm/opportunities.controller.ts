@@ -18,6 +18,7 @@ import {
   createNoteSchema,
   createOpportunitySchema,
   listOpportunitiesQuerySchema,
+  OpportunityStatus,
   updateOpportunitySchema,
   updatePipelineStageSchema,
 } from '@voltex/shared';
@@ -34,7 +35,13 @@ class CreateNoteDto extends createZodDto(createNoteSchema) {}
 class UpdatePipelineStageDto extends createZodDto(updatePipelineStageSchema) {}
 class CreateCalculationDto extends createZodDto(createCalculationSchema) {}
 class LinkCalculationDto extends createZodDto(z.object({ sessionId: z.uuid() })) {}
-class BoardQueryDto extends createZodDto(z.object({ ownerId: z.uuid().optional() })) {}
+class BoardQueryDto extends createZodDto(
+  z.object({
+    ownerId: z.uuid().optional(),
+    search: z.string().trim().min(1).max(120).optional(),
+    status: z.enum(OpportunityStatus).optional(),
+  }),
+) {}
 
 @ApiTags('CRM · Pipeline')
 @ApiBearerAuth()
@@ -70,7 +77,7 @@ export class OpportunitiesController {
   @Get('board')
   @RequirePermissions('crm.opportunity.read')
   board(@Query() query: BoardQueryDto) {
-    return this.opportunities.board(query.ownerId);
+    return this.opportunities.board(query);
   }
 
   @Post()

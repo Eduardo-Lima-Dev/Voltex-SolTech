@@ -287,8 +287,8 @@ export function createEndpoints(client: ApiClient) {
         client.get<Paginated<OpportunityDto>>(ROUTES.opportunities, {
           query: query as QueryParams,
         }),
-      board: (ownerId?: string) =>
-        client.get<OpportunityBoardDto>(`${ROUTES.opportunities}/board`, { query: { ownerId } }),
+      board: (filters: { ownerId?: string; search?: string; status?: string } = {}) =>
+        client.get<OpportunityBoardDto>(`${ROUTES.opportunities}/board`, { query: filters }),
       get: (id: string) => client.get<OpportunityDto>(`${ROUTES.opportunities}/${id}`),
       create: (input: CreateOpportunityInput) =>
         client.post<OpportunityDto>(ROUTES.opportunities, input),

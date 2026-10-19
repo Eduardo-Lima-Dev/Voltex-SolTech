@@ -1,12 +1,19 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { OpportunityDto } from '@voltex/shared';
-import { boardHandler, opportunityPageHandlers, pipelineHandler } from '@/test/crm-handlers';
+import {
+  boardHandler,
+  opportunityPageHandlers,
+  pipelineHandler,
+  sellersHandler,
+} from '@/test/crm-handlers';
 import { API, makeAccount, makeOpportunity, makeSession, page, stages } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
+
+beforeEach(() => server.use(sellersHandler()));
 
 const error = (status: number, code: string, message: string, data?: Record<string, unknown>) =>
   HttpResponse.json({ statusCode: status, code, message, ...(data ? { data } : {}) }, { status });
@@ -19,6 +26,7 @@ const items = [
     stage: 'QUOTING',
     accountName: 'Alfa Ltda',
     projectCode: 'VLX-AAAA1111',
+    valueCents: 1_500_000,
     openTaskCount: 2,
     nextTaskDueAt: '2099-01-01T12:00:00.000Z',
     ownerName: 'Ana Admin',
@@ -40,16 +48,17 @@ describe('CRM · Quadro de oportunidades', () => {
     expect(screen.getAllByRole('region', { name: /^Etapa / })).toHaveLength(15);
 
     const newLead = screen.getByRole('region', { name: 'Etapa Novo lead' });
-    expect(within(newLead).getByRole('link', { name: 'Casa da Maria' })).toHaveAttribute(
+    expect(within(newLead).getByRole('link', { name: 'Maria Silva' })).toHaveAttribute(
       'href',
       '/crm/oportunidades/opp-1',
     );
     expect(within(newLead).getByText('VLX-7K3M9QX2')).toBeInTheDocument();
     expect(within(newLead).getByText('Sem próxima tarefa')).toBeInTheDocument();
-    expect(within(newLead).getByLabelText('1 oportunidades')).toBeInTheDocument();
+    expect(within(newLead).getByText(/^1 oportunidade/)).toBeInTheDocument();
 
     const quoting = screen.getByRole('region', { name: 'Etapa Cotação' });
-    expect(within(quoting).getByText(/Próxima tarefa/)).toBeInTheDocument();
+    expect(within(quoting).getByText(/^1 oportunidade/)).toHaveTextContent(/15\.000,00/);
+    expect(within(quoting).getAllByText(/15\.000,00/)).toHaveLength(2);
     expect(within(quoting).queryByText('Sem próxima tarefa')).not.toBeInTheDocument();
     expect(within(quoting).getByText(/Ana Admin/)).toBeInTheDocument();
   });
@@ -147,7 +156,7 @@ describe('CRM · Quadro de oportunidades', () => {
     );
     renderApp('/crm/oportunidades');
     await waitFor(() => expect(owners).toEqual([null]));
-    await userEvent.setup().selectOptions(await screen.findByLabelText('Responsável'), 'mine');
+    await userEvent.setup().selectOptions(await screen.findByLabelText('Vendedor'), 'mine');
     await waitFor(() => expect(owners.at(-1)).toBe('user-owner'));
   });
 
@@ -165,7 +174,9 @@ describe('CRM · Quadro de oportunidades', () => {
     server.use(
       http.get(`${API}/pipeline`, () => HttpResponse.json(custom)),
       http.get(`${API}/opportunities/board`, () =>
-        HttpResponse.json({ columns: custom.map((stage) => ({ stage, total: 0, items: [] })) }),
+        HttpResponse.json({
+          columns: custom.map((stage) => ({ stage, total: 0, totalValueCents: 0, items: [] })),
+        }),
       ),
     );
     renderApp('/crm/oportunidades');
@@ -198,7 +209,7 @@ describe('CRM · Lista de oportunidades', () => {
       within(screen.getByRole('row', { name: /Casa da Maria/ })).getByText('Sem próxima tarefa'),
     ).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText('Buscar oportunidades'), 'alfa');
+    await user.type(screen.getByLabelText('Buscar cliente'), 'alfa');
     await waitFor(() => expect(queries.at(-1)?.get('search')).toBe('alfa'));
     await user.selectOptions(screen.getByLabelText('Filtrar por etapa'), 'QUOTING');
     await waitFor(() => expect(queries.at(-1)?.get('stage')).toBe('QUOTING'));
@@ -210,7 +221,7 @@ describe('CRM · Lista de oportunidades', () => {
 
     unmount();
     renderApp('/crm/oportunidades');
-    expect(await screen.findByLabelText('Buscar oportunidades')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Buscar cliente')).toBeInTheDocument();
   });
 });
 

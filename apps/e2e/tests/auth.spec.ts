@@ -4,8 +4,15 @@ import { USERS, loginAs, loginUi } from './helpers';
 test.describe('Acesso', () => {
   test('entra, navega entre os produtos e sai', async ({ page }) => {
     await loginAs(page, USERS.owner);
-    await page.getByRole('link', { name: 'CRM Solar' }).first().click();
-    await expect(page.getByRole('heading', { name: 'CRM Solar' })).toBeVisible();
+    // O CRM abre um submenu na barra lateral com as telas.
+    await page.getByRole('button', { name: 'CRM Solar' }).click();
+    await expect(page).toHaveURL(/\/crm\/leads/);
+    await page.getByRole('link', { name: 'Oportunidades' }).click();
+    await expect(page).toHaveURL(/\/crm\/oportunidades/);
+    await expect(page.getByRole('button', { name: 'Quadro' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await page.getByRole('link', { name: 'Solar Calculator' }).first().click();
     await expect(page).toHaveURL(/\/calculator/);
     await page
@@ -39,7 +46,7 @@ test.describe('Acesso', () => {
 
   test('o vendedor não vê a Administração nem acessa a rota', async ({ page }) => {
     await loginAs(page, USERS.seller);
-    await expect(page.getByRole('link', { name: 'Administração' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Administração' })).toHaveCount(0);
     await page.goto('/admin/empresa');
     await expect(page.getByRole('heading', { name: 'Sem acesso a esta área' })).toBeVisible();
   });

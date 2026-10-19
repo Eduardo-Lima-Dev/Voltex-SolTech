@@ -300,7 +300,8 @@ export const makeOpportunity = (overrides: Partial<OpportunityDto> = {}): Opport
 export const makeBoard = (items: OpportunityDto[] = []): OpportunityBoardDto => ({
   columns: stages().map((stage) => {
     const inStage = items.filter((o) => o.stage === stage.key);
-    return { stage, total: inStage.length, items: inStage };
+    const totalValueCents = inStage.reduce((sum, o) => sum + (o.valueCents ?? 0), 0);
+    return { stage, total: inStage.length, totalValueCents, items: inStage };
   }),
 });
 
