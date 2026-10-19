@@ -18,15 +18,17 @@ import {
   formatYears,
 } from '@/lib/format';
 
+import '@/components/brand-motion.css';
+
 const Charts = lazy(() => import('./charts'));
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const DEFAULT_COLOR = '#0a7d3b';
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border p-3">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-semibold">{value}</dd>
+    <div className="border-t border-border pt-3">
+      <dt className="brand-mono text-[0.68rem] leading-4 text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-xl font-semibold tracking-[-0.02em] tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -35,15 +37,16 @@ function Scenario({ scenario, color }: { scenario: PublicProposalScenarioDto; co
   return (
     <section
       aria-label={scenario.label}
-      className="space-y-4 rounded-xl border bg-card p-5 shadow-sm"
+      className="space-y-6 border-t-[3px] pt-5"
+      style={{ borderColor: color }}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-semibold">{scenario.label}</h2>
-        <p className="text-2xl font-bold" style={{ color }}>
+        <h2 className="text-2xl font-semibold tracking-[-0.03em]">{scenario.label}</h2>
+        <p className="text-3xl font-semibold tracking-[-0.03em] tabular-nums" style={{ color }}>
           {formatCents(scenario.priceCents)}
         </p>
       </div>
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
         <Metric
           label="Potência instalada"
           value={`${formatNumber(scenario.installedPowerKwp, 2)} kWp`}
@@ -75,7 +78,7 @@ function Scenario({ scenario, color }: { scenario: PublicProposalScenarioDto; co
   );
 }
 
-function AcceptForm({ token }: { token: string }) {
+function AcceptForm({ token, color }: { token: string; color: string }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [document, setDocument] = useState('');
@@ -103,13 +106,14 @@ function AcceptForm({ token }: { token: string }) {
     <form
       noValidate
       aria-label="Aceite da proposta"
-      className="space-y-4 rounded-xl border bg-card p-5 shadow-sm"
+      className="space-y-4 rounded-2xl border bg-card p-6"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <h2 className="text-lg font-semibold">Aceitar a proposta</h2>
+      <p className="brand-mono text-xs text-muted-foreground">Seu aceite</p>
+      <h2 className="text-2xl font-semibold tracking-[-0.03em]">Aceitar a proposta</h2>
       <p className="text-sm text-muted-foreground">
         O aceite fica registrado com o seu nome, a data e o horário. Depois dele, a equipe entra em
         contato para o contrato.
@@ -152,7 +156,12 @@ function AcceptForm({ token }: { token: string }) {
           {errorMessage(accept.error, 'Não foi possível registrar o aceite.')}
         </p>
       ) : null}
-      <Button type="submit" disabled={accept.isPending}>
+      <Button
+        type="submit"
+        className="h-11 rounded-full px-6 text-white hover:opacity-90"
+        style={{ backgroundColor: color }}
+        disabled={accept.isPending}
+      >
         {accept.isPending ? <Spinner /> : null}
         Aceitar proposta
       </Button>
@@ -209,7 +218,8 @@ export function PublicProposalPage() {
   if (proposal.isError)
     return (
       <main className="mx-auto max-w-xl space-y-3 p-8 text-center">
-        <h1 className="text-2xl font-semibold">Proposta não encontrada</h1>
+        <p className="brand-mono text-xs text-muted-foreground">Proposta</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.035em]">Proposta não encontrada</h1>
         <p className="text-muted-foreground">
           {isApiError(proposal.error) && proposal.error.status === 404
             ? 'O link está incorreto ou foi substituído por um mais novo. Peça o link atual a quem atende você.'
@@ -228,10 +238,7 @@ export function PublicProposalPage() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-8">
-      <header
-        className="flex flex-wrap items-center justify-between gap-4 border-b-4 pb-4"
-        style={{ borderColor: color }}
-      >
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
         <div className="flex items-center gap-3">
           {data.brand.hasLogo ? (
             <img
@@ -240,17 +247,23 @@ export function PublicProposalPage() {
               className="max-h-14 max-w-40 object-contain"
             />
           ) : null}
-          <p className="text-lg font-semibold">{data.tenantName}</p>
+          <p className="text-lg font-semibold tracking-[-0.02em]">{data.tenantName}</p>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="brand-mono text-[0.68rem] text-muted-foreground">
           Proposta v{data.version} · válida até {formatDate(data.validUntil)}
         </p>
       </header>
 
-      <section className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">{data.title}</h1>
+      <section className="brand-rise space-y-3 py-2">
+        <p className="brand-mono text-xs" style={{ color }}>
+          Proposta comercial
+        </p>
+        <h1 className="text-[clamp(2rem,5vw,3.2rem)] font-semibold leading-[1.05] tracking-[-0.04em] text-balance">
+          {data.title}
+        </h1>
         <p className="text-muted-foreground">
-          Para {data.customerName} · <span className="font-mono">{data.projectCode}</span>
+          Para {data.customerName} ·{' '}
+          <span className="brand-mono text-xs tracking-[0.08em]">{data.projectCode}</span>
         </p>
       </section>
 
@@ -263,8 +276,8 @@ export function PublicProposalPage() {
       </div>
 
       {data.conditions.paymentTerms || data.conditions.notes ? (
-        <section className="space-y-2 rounded-xl border bg-card p-5 shadow-sm">
-          <h2 className="text-lg font-semibold">Condições</h2>
+        <section className="space-y-2 border-t pt-5">
+          <p className="brand-mono text-xs text-muted-foreground">Condições</p>
           {data.conditions.paymentTerms ? (
             <p className="text-sm">
               <span className="font-medium">Pagamento:</span> {data.conditions.paymentTerms}
@@ -275,7 +288,7 @@ export function PublicProposalPage() {
       ) : null}
 
       {canDownload ? (
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="h-11 rounded-full px-6">
           <a
             href={`${API_BASE_URL}${endpoints.publicProposals.pdfUrl(token)}`}
             target="_blank"
@@ -286,9 +299,11 @@ export function PublicProposalPage() {
         </Button>
       ) : null}
 
-      {canAccept ? <AcceptForm token={token} /> : null}
+      {canAccept ? <AcceptForm token={token} color={color} /> : null}
 
-      <footer className="border-t pt-4 text-xs text-muted-foreground">{data.disclaimer}</footer>
+      <footer className="border-t pt-4 text-xs leading-5 text-muted-foreground">
+        {data.disclaimer}
+      </footer>
     </main>
   );
 }
