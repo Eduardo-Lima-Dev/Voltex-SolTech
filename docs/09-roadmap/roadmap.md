@@ -19,6 +19,7 @@ Plano de implementação por fases. Cada fase termina em um checkpoint verificá
 | 10   | **MVP3** — Off-Grid Designer                                                                                                                    | ⏳           |
 | 11   | Execução e lifecycle (WhatsApp, field, instalação, comissionamento, O&M, portal)                                                                | ⏳           |
 | 12   | Inteligência e ecossistema (IA, procurement, previsões)                                                                                         | ⏳           |
+| 13   | _(backlog, só se for desenvolvida)_ Backoffice do dono da plataforma: empresas clientes, planos, cobrança, uso e suporte                        | ⏳           |
 
 > **Notas da Fase 3:** (1) o Prisma é o 7.x e o armazenamento S3 local é o RustFS — ver [ADR-0009](../04-arquitetura/adr/0009-prisma-7.md) e [ADR-0010](../04-arquitetura/adr/0010-rustfs-no-lugar-do-minio.md); (2) o `compose.prod.yml` traz infraestrutura + `migrate`, e os serviços `api`/`web` entram na Fase 8; (3) o pipeline padrão entra no seed junto das tabelas do CRM (Fase 7).
 
