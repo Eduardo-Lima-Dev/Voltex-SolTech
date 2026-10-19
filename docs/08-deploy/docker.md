@@ -63,7 +63,8 @@ Comandos: `pnpm docker:build`, `pnpm docker:up`, `pnpm docker:down`.
 
 A composição `compose.prod.yml` é a base de todos. Cada tipo de deploy acrescenta o que precisa:
 
-| Tipo                                        | Para quê                                           | Guia                                      |
-| ------------------------------------------- | -------------------------------------------------- | ----------------------------------------- |
-| **1. Servidor de teste em casa** (notebook) | Demonstrar e testar com dados fictícios, sem custo | [Servidor de teste](servidor-de-teste.md) |
-| 2. Servidor pago ou gerenciado              | Cliente real, backup fora de casa                  | _a definir_                               |
+| Tipo                                                          | Para quê                                           | Guia                                      |
+| ------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| **1. Servidor de teste em casa** (notebook)                   | Demonstrar e testar com dados fictícios, sem custo | [Servidor de teste](servidor-de-teste.md) |
+| **2. Serviços gratuitos na nuvem** (Vercel, Render, Supabase) | Demonstrar sem pagar e sem depender do notebook    | [Nuvem gratuita](nuvem-gratuita.md)       |
+| 3. Servidor pago ou gerenciado                                | Cliente real, backup fora de casa                  | _a definir_                               |
