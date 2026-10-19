@@ -30,8 +30,13 @@ export const DomainEvent = {
   OFFGRID_SCENARIO_APPROVED: 'OffGridScenarioApproved',
   // Venda
   QUOTE_CREATED: 'QuoteCreated',
+  /** Itens, custos ou preço da cotação mudaram: a triagem e as propostas dependentes ficam desatualizadas. */
+  QUOTE_CHANGED: 'QuoteChanged',
   MARGIN_THRESHOLD_VIOLATED: 'MarginThresholdViolated',
+  MARGIN_APPROVAL_REQUESTED: 'MarginApprovalRequested',
+  MARGIN_APPROVAL_DECIDED: 'MarginApprovalDecided',
   PROPOSAL_GENERATED: 'ProposalGenerated',
+  PROPOSAL_SENT: 'ProposalSent',
   PROPOSAL_VIEWED: 'ProposalViewed',
   PROPOSAL_ACCEPTED: 'ProposalAccepted',
   CONTRACT_SIGNED: 'ContractSigned',
