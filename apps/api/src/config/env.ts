@@ -77,6 +77,8 @@ export const envSchema = z
     AUTOMATION_SCAN_INTERVAL_MS: z.coerce.number().int().min(0).default(60_000),
     /** Prefixo das chaves da fila no Redis (os testes usam um por processo). */
     AUTOMATION_QUEUE_PREFIX: z.string().default('voltex'),
+    /** Rotina diária da política de retenção (LGPD). 0 desliga o agendamento. */
+    AUTOMATION_RETENTION_INTERVAL_MS: z.coerce.number().int().min(0).default(86_400_000),
   })
   .superRefine((env, ctx) => {
     const previous = env.DATA_ENCRYPTION_KEY_PREVIOUS.split(',')

@@ -8,6 +8,8 @@ import { DashboardController } from './dashboard/dashboard.controller';
 import { DashboardService } from './dashboard/dashboard.service';
 import { HomologationRulesController } from './projects/homologation-rules.controller';
 import { HomologationRulesService } from './projects/homologation-rules.service';
+import { PrivacyController } from './privacy/privacy.controller';
+import { PrivacyService } from './privacy/privacy.service';
 import { ProjectsController } from './projects/projects.controller';
 import { ProjectsService } from './projects/projects.service';
 import { AccountsController } from './accounts.controller';
@@ -50,6 +52,7 @@ import { TasksService } from './tasks.service';
     ProjectsController,
     HomologationRulesController,
     DashboardController,
+    PrivacyController,
     QuotesController,
     ProposalsController,
     PublicProposalsController,
@@ -73,6 +76,7 @@ import { TasksService } from './tasks.service';
     ProjectsService,
     ContractsService,
     DashboardService,
+    PrivacyService,
     AutomationsService,
     { provide: BILL_PARSER, useExisting: PdfTextBillParser },
   ],

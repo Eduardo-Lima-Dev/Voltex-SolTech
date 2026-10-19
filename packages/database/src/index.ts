@@ -41,6 +41,7 @@ export type {
   HomologationChecklist,
   Project,
   ProjectChecklistItem,
+  PrivacyRequest,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

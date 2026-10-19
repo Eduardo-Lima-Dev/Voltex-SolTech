@@ -42,6 +42,7 @@ export const TENANT_SCOPED_MODELS = [
   'HomologationChecklist',
   'Project',
   'ProjectChecklistItem',
+  'PrivacyRequest',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

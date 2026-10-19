@@ -47,6 +47,8 @@ describe('paridade com @voltex/shared', () => {
     'ContractStatus',
     'ProjectStatus',
     'ChecklistItemStatus',
+    'PrivacySubjectType',
+    'PrivacyRequestStatus',
     'CustomerGroup',
     'TrafficLight',
   ])('o enum %s do Prisma tem os mesmos valores do compartilhado', (name) => {

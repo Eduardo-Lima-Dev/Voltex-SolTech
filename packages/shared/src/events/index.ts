@@ -40,6 +40,7 @@ export const DomainEvent = {
   PROPOSAL_VIEWED: 'ProposalViewed',
   PROPOSAL_ACCEPTED: 'ProposalAccepted',
   CONTRACT_GENERATED: 'ContractGenerated',
+  PRIVACY_ERASURE_COMPLETED: 'PrivacyErasureCompleted',
   CONTRACT_SIGNED: 'ContractSigned',
   DEAL_WON: 'DealWon',
   // Execução

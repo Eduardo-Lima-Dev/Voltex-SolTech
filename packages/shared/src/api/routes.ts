@@ -35,6 +35,7 @@ export const ROUTES = {
   publicProposals: '/public/proposals',
   projects: '/projects',
   contracts: '/contracts',
+  privacy: '/privacy',
   contractTemplate: '/contract-template',
   homologationChecklists: '/homologation/checklists',
   commercialDashboard: '/dashboard/commercial',

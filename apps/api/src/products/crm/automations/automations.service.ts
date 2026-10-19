@@ -15,6 +15,7 @@ import type { Env } from '../../../config/env';
 import { AuditService } from '../../../platform/audit/audit.service';
 import { EventBus } from '../../../platform/events/event-bus.service';
 import { PrismaService } from '../../../platform/prisma/prisma.service';
+import { PrivacyService } from '../privacy/privacy.service';
 import { TimelineService } from '../support/timeline.service';
 
 const QUEUE = 'crm-automations';
@@ -50,6 +51,7 @@ export class AutomationsService implements OnModuleInit, OnModuleDestroy {
     private readonly audit: AuditService,
     private readonly events: EventBus,
     private readonly timeline: TimelineService,
+    private readonly privacy: PrivacyService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -72,6 +74,13 @@ export class AutomationsService implements OnModuleInit, OnModuleDestroy {
       this.logger.error({ err: error, job: job?.name }, 'Falha numa automação'),
     );
     this.worker.on('error', (error) => this.logger.warn(`Worker das automações: ${error.message}`));
+    const retention = this.config.get('AUTOMATION_RETENTION_INTERVAL_MS', { infer: true });
+    if (retention > 0)
+      await this.queue
+        .upsertJobScheduler('retention', { every: retention }, { name: 'retention' })
+        .catch((error: unknown) =>
+          this.logger.error({ err: error }, 'Não foi possível agendar a retenção'),
+        );
     if (interval > 0)
       await this.queue
         .upsertJobScheduler('scan', { every: interval }, { name: 'scan' })
@@ -98,6 +107,7 @@ export class AutomationsService implements OnModuleInit, OnModuleDestroy {
 
   private async process(job: Job): Promise<unknown> {
     if (job.name === 'scan') return this.runScan();
+    if (job.name === 'retention') return this.privacy.sweepAll();
     if (job.name === 'proposal-viewed') return this.proposalViewedTask(job.data as ViewedPayload);
     return undefined;
   }
