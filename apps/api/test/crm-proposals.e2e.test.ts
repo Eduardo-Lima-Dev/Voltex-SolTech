@@ -74,7 +74,7 @@ describe('CRM · Proposta (e2e)', () => {
   beforeAll(async () => {
     t = await createTestApp();
     const { OutboxPublisher } = await import('../src/platform/events/outbox-publisher.service');
-    publish = () => t.app.get(OutboxPublisher).publishPending(500);
+    publish = () => t.app.get(OutboxPublisher).publishPending(500, a.id);
     a = await seedTenant(t.prisma, 'prop');
     b = await seedTenant(t.prisma, 'propb');
     admin = await tokenFor(t.http, a.admin);

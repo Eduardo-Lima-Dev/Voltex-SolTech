@@ -128,7 +128,7 @@ export class OpportunitiesService {
         opportunityId: opportunity.id,
         type: TimelineEventType.CREATED,
         summary: `Oportunidade criada (${projectCode})`,
-        data: { projectCode, leadId: input.leadId ?? null },
+        data: { projectCode, leadId: input.leadId ?? null, stage: opportunity.stage },
       },
       tx,
     );

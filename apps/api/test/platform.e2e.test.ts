@@ -58,7 +58,7 @@ describe('plataforma: health, eventos, auditoria e OpenAPI (e2e)', () => {
         });
         expect(before.attempts).toBe(0);
 
-        expect(await publisher.publishPending()).toBeGreaterThanOrEqual(1);
+        expect(await publisher.publishPending(500)).toBeGreaterThanOrEqual(1);
         const mine = received.find((e) => e.payload.documentId === doc.body.id)!;
         expect(mine).toMatchObject({
           type: 'DocumentUploaded',

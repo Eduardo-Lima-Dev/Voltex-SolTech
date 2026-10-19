@@ -40,8 +40,8 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** Processa até `limit` eventos pendentes. Devolve quantos foram entregues com sucesso. */
-  async publishPending(limit = 50): Promise<number> {
+  /** Processa até `limit` eventos pendentes (de um tenant, se informado: os testes isolam assim o próprio ruído). Devolve quantos foram entregues com sucesso. */
+  async publishPending(limit = 50, tenantId?: string): Promise<number> {
     if (this.running) return 0;
     this.running = true;
     try {
@@ -50,6 +50,7 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
           const claimed = await tx.$queryRaw<{ id: string }[]>`
             SELECT id FROM outbox_events
             WHERE published_at IS NULL AND attempts < ${OUTBOX_MAX_ATTEMPTS}
+              AND (${tenantId ?? null}::uuid IS NULL OR tenant_id = ${tenantId ?? null}::uuid)
             ORDER BY occurred_at
             LIMIT ${limit}
             FOR UPDATE SKIP LOCKED`;

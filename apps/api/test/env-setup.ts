@@ -30,6 +30,8 @@ Object.assign(process.env, {
   S3_BUCKET: 'voltex-documents-test',
   THROTTLE_DISABLED: 'true',
   OUTBOX_POLL_INTERVAL_MS: '0',
+  AUTOMATION_SCAN_INTERVAL_MS: '0',
+  AUTOMATION_QUEUE_PREFIX: `voltex-test-${process.pid}`,
   REFRESH_REUSE_GRACE_MS: '0',
   JWT_SECRET: 'e2e-jwt-secret-with-at-least-32-characters-0123456789',
 });

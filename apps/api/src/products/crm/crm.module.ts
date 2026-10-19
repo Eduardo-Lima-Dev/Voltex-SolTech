@@ -1,6 +1,15 @@
 import { Module } from '@nestjs/common';
 import { DocumentsModule } from '../../platform/documents/documents.module';
 import { CalculatorModule } from '../calculator/calculator.module';
+import { AutomationsService } from './automations/automations.service';
+import { ContractsController } from './contracts/contracts.controller';
+import { ContractsService } from './contracts/contracts.service';
+import { DashboardController } from './dashboard/dashboard.controller';
+import { DashboardService } from './dashboard/dashboard.service';
+import { HomologationRulesController } from './projects/homologation-rules.controller';
+import { HomologationRulesService } from './projects/homologation-rules.service';
+import { ProjectsController } from './projects/projects.controller';
+import { ProjectsService } from './projects/projects.service';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { BILL_PARSER } from './energy-bills/bill-parser';
@@ -37,6 +46,10 @@ import { TasksService } from './tasks.service';
     TasksController,
     EnergyBillsController,
     GuardController,
+    ContractsController,
+    ProjectsController,
+    HomologationRulesController,
+    DashboardController,
     QuotesController,
     ProposalsController,
     PublicProposalsController,
@@ -56,6 +69,11 @@ import { TasksService } from './tasks.service';
     QuotesService,
     BrandingService,
     ProposalsService,
+    HomologationRulesService,
+    ProjectsService,
+    ContractsService,
+    DashboardService,
+    AutomationsService,
     { provide: BILL_PARSER, useExisting: PdfTextBillParser },
   ],
   exports: [
