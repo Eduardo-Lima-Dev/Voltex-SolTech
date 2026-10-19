@@ -183,6 +183,8 @@ gh variable set SITE_URL          --env demo --body https://voltex-site-one.verc
 gh variable set VERCEL_SCOPE      --env demo --body SUA_EQUIPE
 ```
 
+**Estado atual:** o ambiente `demo` já foi criado, **restrito à branch `main`** (nenhuma outra branch, nem um pull request, consegue usar os segredos dele), com os segredos `DEMO_DATABASE_URL` e `RENDER_API_KEY` e todas as variáveis da tabela. **Falta só o `VERCEL_TOKEN`**, que precisa ser criado por você em vercel.com/account/tokens (`./scripts/guardar-segredo.sh vercel-token`) e então enviado com `gh secret set VERCEL_TOKEN --env demo < ~/.voltex-deploy/vercel-token`. Atenção: o repositório do GitHub é **público**; por isso os segredos ficam só no ambiente `demo` (e a imagem da API fica em um pacote privado).
+
 **Pacote de imagens:** o pacote `voltex-api` do GHCR foi criado à mão. Para o Actions poder gravar nele, vá em _github.com → seu perfil → Packages → voltex-api → Package settings → Manage Actions access_ e adicione o repositório com permissão **Write**. (Na primeira imagem publicada pelo workflow, o pacote também passa a apontar para o repositório.)
 
 ### O que não é automático
