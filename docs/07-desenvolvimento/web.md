@@ -23,6 +23,7 @@ apps/web/src/
 │   ├── dashboard/           # início da suíte
 │   ├── products/            # registro dos 4 produtos + página "em desenvolvimento"
 │   ├── calculator/          # Solar Calculator: lista, wizard, resultado, snapshots
+│   ├── crm/                 # CRM: leads, contas, oportunidades (Kanban), tarefas, revisão de fatura
 │   └── admin/               # empresa, usuários/convites, perfis, auditoria,
 │       └── reference/       #   tarifas, irradiação (CSV) e regras
 ├── lib/
@@ -33,6 +34,10 @@ apps/web/src/
 ├── components/ · hooks/
 └── test/                    # setup (MSW), fixtures, renderApp
 ```
+
+## CRM (Fase 7A)
+
+Detalhes de comportamento em [CRM Solar](crm.md). No código: `features/crm/{leads,accounts,opportunities,tasks}`; o Kanban usa `@dnd-kit/core` com sensor de ponteiro (arrasto só pelo ícone, para o cartão continuar clicável) e de teclado, mais o seletor "Mover para…". `stage-change.ts` valida a transição com a **mesma** máquina de estados da API (mensagem imediata) e pede o motivo ao ir para Perdido. A revisão da fatura (`bill-form.ts`) valida com o schema compartilhado e destaca campos de baixa confiança. A importação de CSV de leads e de irradiação usa o leitor comum `lib/csv.ts`.
 
 ## Solar Calculator (Fase 6)
 
