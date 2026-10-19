@@ -53,7 +53,15 @@ Há uma dependência circular de endereços (a API precisa saber o endereço da 
    3. Copiar a **string de conexão** (use a conexão **direta** ou a do _session pooler_, não a do _transaction pooler_: o Prisma precisa de sessão).
    4. Em _Storage_, criar um bucket **privado** (`voltex-documents`) e gerar as **chaves S3** em _Storage → S3 Connection_.
    5. **Testar o armazenamento:** `S3_ENDPOINT=https://<projeto>.supabase.co/storage/v1/s3 S3_REGION=<região> S3_BUCKET=voltex-documents S3_ACCESS_KEY=... S3_SECRET_KEY=... node apps/api/dist/cli/check-storage.js`. Os cinco itens devem dar **OK**. Se o quarto avisar que o nome do arquivo foi ignorado, é só um incômodo (o download sai com outro nome).
-2. **Banco:** aplicar as migrações no Supabase: `DATABASE_URL='postgresql://...' pnpm --filter @voltex/database exec prisma migrate deploy`.
+2. **Banco:** aplicar as migrações no Supabase e **fechar a API pública dele**:
+
+   ```bash
+   DATABASE_URL='postgresql://...' pnpm --filter @voltex/database exec prisma migrate deploy
+   psql "$DATABASE_URL" -f deploy/nuvem/supabase-travar-api.sql
+   ```
+
+   **O segundo comando é obrigatório.** O Supabase expõe as tabelas do esquema `public` numa API pública, acessível com a chave "anon" (que não é secreta). Sem o bloqueio, qualquer pessoa com o endereço do projeto poderia ler os dados. A nossa API não usa isso, então o script liga a segurança por linha em todas as tabelas e retira o acesso dessas funções. (Em Configurações → Data API você também pode desligar a API de dados do Supabase.)
+
 3. **Vercel, primeira vez:** publicar a aplicação e o site com um `<host-da-api>` provisório só para conhecer os endereços finais.
 4. **Render:** criar o serviço da API (veja [Como enviar a API](#como-enviar-a-api-para-a-render)), preenchendo as variáveis (`WEB_URL` e `CORS_ORIGIN` = endereço da aplicação na Vercel).
 5. **Vercel, de novo:** publicar a aplicação e o site com o host real da API:
