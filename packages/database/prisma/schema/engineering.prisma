@@ -1,0 +1,150 @@
+// Solar Engine Studio (Fase 9D, ADR-0015): projeto técnico com versões. O desenho é um documento JSON validado por
+// schema; os resultados são recalculados. Versão enviada ou decidida é congelada (gatilho). O snapshot da versão aprovada
+// é imutável e é o que o CRM consome.
+
+enum EngineeringProjectStatus {
+  IN_PROGRESS
+  APPROVED
+  CANCELLED
+
+  @@map("engineering_project_status")
+}
+
+enum EngineeringVersionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SUPERSEDED
+
+  @@map("engineering_version_status")
+}
+
+enum ReviewCommentStatus {
+  OPEN
+  RESOLVED
+
+  @@map("review_comment_status")
+}
+
+model EngineeringProject {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  /// Project ID global da oportunidade, quando houver; senão `ENG-AAAA-NNNN` gerado pela empresa.
+  code          String
+  name          String
+  status        EngineeringProjectStatus @default(IN_PROGRESS)
+  opportunityId String?                  @map("opportunity_id") @db.Uuid
+  responsibleId String?                  @map("responsible_id") @db.Uuid
+  createdById   String?                  @map("created_by_id") @db.Uuid
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant      Tenant                @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity?          @relation(fields: [opportunityId], references: [id])
+  versions    EngineeringVersion[]
+  snapshots   EngineeringSnapshot[]
+  requests    EngineeringRequest[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, opportunityId])
+  @@map("engineering_projects")
+}
+
+model EngineeringVersion {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  projectId     String                   @map("project_id") @db.Uuid
+  number        Int
+  status        EngineeringVersionStatus @default(DRAFT)
+  /// Documento do desenho (`engineeringDesignSchema`).
+  design        Json
+  /// Resultados recalculados a partir do desenho (nulo até o primeiro cálculo).
+  results       Json?
+  /// Hash do desenho: detecta mudança de premissa e identifica o que foi aprovado.
+  fingerprint   String?
+  /// Marcada quando regra, catálogo ou premissa mudaram depois do cálculo.
+  stale         Boolean                  @default(false)
+  staleReasons  Json                     @default("[]") @map("stale_reasons")
+  /// `<id>@<versão>` das regras usadas no cálculo.
+  ruleRefs      Json                     @default("[]") @map("rule_refs")
+  dataRefs      Json                     @default("[]") @map("data_refs")
+  submittedAt   DateTime?                @map("submitted_at")
+  submittedById String?                  @map("submitted_by_id") @db.Uuid
+  decidedAt     DateTime?                @map("decided_at")
+  decidedById   String?                  @map("decided_by_id") @db.Uuid
+  decisionNote  String?                  @map("decision_note")
+  createdById   String?                  @map("created_by_id") @db.Uuid
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant    Tenant                        @relation(fields: [tenantId], references: [id])
+  project   EngineeringProject            @relation(fields: [projectId], references: [id])
+  equipment EngineeringVersionEquipment[]
+  comments  EngineeringReviewComment[]
+  snapshot  EngineeringSnapshot?
+
+  @@unique([projectId, number])
+  @@index([tenantId, projectId])
+  @@index([tenantId, status])
+  @@map("engineering_versions")
+}
+
+/// Equipamentos do catálogo usados numa versão (consulta de impacto: "quais projetos usam este módulo?").
+model EngineeringVersionEquipment {
+  id          String @id @default(uuid(7)) @db.Uuid
+  tenantId    String @map("tenant_id") @db.Uuid
+  versionId   String @map("version_id") @db.Uuid
+  equipmentId String @map("equipment_id") @db.Uuid
+  kind        String
+  quantity    Int    @default(1)
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id])
+  version EngineeringVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, equipmentId])
+  @@index([tenantId, equipmentId])
+  @@map("engineering_version_equipment")
+}
+
+/// Comentário do responsável técnico em uma seção da versão. Comentário aberto bloqueia a aprovação.
+model EngineeringReviewComment {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  tenantId     String              @map("tenant_id") @db.Uuid
+  versionId    String              @map("version_id") @db.Uuid
+  /// Seção do projeto (`site`, `surfaces`, `strings`...).
+  section      String
+  authorId     String?             @map("author_id") @db.Uuid
+  text         String
+  status       ReviewCommentStatus @default(OPEN)
+  resolvedById String?             @map("resolved_by_id") @db.Uuid
+  resolvedAt   DateTime?           @map("resolved_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id])
+  version EngineeringVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, versionId, status])
+  @@map("engineering_review_comments")
+}
+
+/// Fotografia imutável da versão aprovada: desenho, resultados, fichas copiadas, regras e fontes, dados externos com
+/// proveniência. É o que o CRM consome (Project Guard, cotação).
+model EngineeringSnapshot {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  versionId    String   @unique @map("version_id") @db.Uuid
+  content      Json
+  hash         String
+  approvedById String?  @map("approved_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id])
+  project EngineeringProject @relation(fields: [projectId], references: [id])
+  version EngineeringVersion @relation(fields: [versionId], references: [id])
+
+  @@index([tenantId, projectId])
+  @@map("engineering_snapshots")
+}

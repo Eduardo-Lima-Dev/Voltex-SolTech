@@ -60,7 +60,7 @@ export const PRODUCTS: readonly ProductDef[] = [
     icon: CircuitBoard,
     tagline: 'Projeto e validação técnica fotovoltaica.',
     permission: 'engine.project.read',
-    availability: { status: 'soon', phase: 'Fase 9' },
+    availability: { status: 'available' },
     highlights: [
       'Catálogo de módulos e inversores',
       'Strings, MPPT e compatibilidade',

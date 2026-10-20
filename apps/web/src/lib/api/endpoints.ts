@@ -98,7 +98,17 @@ import {
   type RuleSource,
   type Thresholds,
   type CreateDistributorInput,
+  type CreateEngineeringProjectInput,
   type CreateEquipmentInput,
+  type EngineeringDesignInput,
+  type EngineeringProjectDetailDto,
+  type EngineeringProjectDto,
+  type EngineeringRequestListItemDto,
+  type EngineeringVersionDetailDto,
+  type HorizonResultDto,
+  type ListEngineeringProjectsQuery,
+  type ListEngineeringRequestsQuery,
+  type WeatherResultDto,
   type CreateSourceWatchInput,
   type EquipmentDetailDto,
   type EquipmentDto,
@@ -262,6 +272,42 @@ export function createEndpoints(client: ApiClient) {
         client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
     },
+    engineering: {
+      requests: (query: Partial<ListEngineeringRequestsQuery> = {}) =>
+        client.get<EngineeringRequestListItemDto[]>('/engineering/requests', {
+          query: query as QueryParams,
+        }),
+      assign: (id: string) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/assign`),
+      cancelRequest: (id: string, reason: string) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/cancel`, {
+          reason,
+        }),
+      projects: (query: Partial<ListEngineeringProjectsQuery> = {}) =>
+        client.get<Paginated<EngineeringProjectDto>>('/engineering/projects', {
+          query: query as QueryParams,
+        }),
+      project: (id: string) =>
+        client.get<EngineeringProjectDetailDto>(`/engineering/projects/${id}`),
+      createProject: (input: CreateEngineeringProjectInput) =>
+        client.post<EngineeringProjectDetailDto>('/engineering/projects', input),
+      fromRequest: (requestId: string, coordinates?: { latitude: number; longitude: number }) =>
+        client.post<EngineeringProjectDetailDto>(
+          `/engineering/projects/from-request/${requestId}`,
+          coordinates ?? {},
+        ),
+      cancelProject: (id: string, reason: string) =>
+        client.post<EngineeringProjectDetailDto>(`/engineering/projects/${id}/cancel`, { reason }),
+      version: (id: string) =>
+        client.get<EngineeringVersionDetailDto>(`/engineering/versions/${id}`),
+      saveDesign: (id: string, design: EngineeringDesignInput) =>
+        client.put<EngineeringVersionDetailDto>(`/engineering/versions/${id}/design`, { design }),
+      recalculate: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
+      newVersion: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/new-version`),
+      removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
+    },
     catalog: {
       list: (query: Partial<ListEquipmentQuery> = {}) =>
         client.get<Paginated<EquipmentDto>>('/catalog/items', { query: query as QueryParams }),
@@ -305,6 +351,21 @@ export function createEndpoints(client: ApiClient) {
       },
     },
     dataHub: {
+      weather: (query: {
+        latitude: number;
+        longitude: number;
+        source?: 'nasa-power' | 'pvgis';
+        kind?: 'climatology' | 'hourly';
+        year?: number;
+        refresh?: boolean;
+      }) =>
+        client.get<WeatherResultDto>(`${ROUTES.dataHub}/weather`, {
+          query: Object.fromEntries(
+            Object.entries(query).map(([k, v]) => [k, String(v)]),
+          ) as QueryParams,
+        }),
+      horizon: (query: { latitude: number; longitude: number }) =>
+        client.get<HorizonResultDto>(`${ROUTES.dataHub}/horizon`, { query: query as QueryParams }),
       proposeSolarResource: (input: ProposeSolarResourceInput) =>
         client.post<UpdateProposalDto>(`${ROUTES.dataHub}/solar-resources/propose`, input),
       sources: () => client.get<DataSourceDto[]>(`${ROUTES.dataHub}/sources`),

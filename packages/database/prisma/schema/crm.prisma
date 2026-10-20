@@ -320,6 +320,7 @@ model Opportunity {
   tasks               Task[]
   energyBills         EnergyBill[]
   engineeringRequests EngineeringRequest[]
+  engineeringProjects EngineeringProject[]
   triageSnapshots     TriageSnapshot[]
   quotes              Quote[]
   approvalRequests    ApprovalRequest[]
@@ -439,13 +440,21 @@ model EngineeringRequest {
   reason               String
   status               EngineeringRequestStatus @default(PENDING)
   createdById          String?                  @map("created_by_id") @db.Uuid
+  /// Engenheiro que pegou o pedido.
+  assigneeId           String?                  @map("assignee_id") @db.Uuid
+  projectId            String?                  @map("project_id") @db.Uuid
+  /// Motivo do cancelamento ou resumo do atendimento.
+  resolution           String?
+  resolvedAt           DateTime?                @map("resolved_at")
   createdAt            DateTime                 @default(now()) @map("created_at")
   updatedAt            DateTime                 @updatedAt @map("updated_at")
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity         @relation(fields: [opportunityId], references: [id])
+  project     EngineeringProject? @relation(fields: [projectId], references: [id])
 
   @@index([tenantId, status])
   @@index([tenantId, opportunityId])
+  @@index([tenantId, assigneeId])
   @@map("engineering_requests")
 }

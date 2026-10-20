@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { PRODUCTS } from '@/features/products/registry';
 import { ADMIN_PERMISSIONS, ADMIN_TABS } from '@/features/admin/admin-nav';
 import { CRM_PERMISSIONS, CRM_TABS } from '@/features/crm/crm-nav';
+import { ENGINE_PERMISSIONS, ENGINE_TABS } from '@/features/engine/engine-nav';
 
 interface SidebarNavProps {
   /** Chamado ao navegar (fecha o menu no celular). */
@@ -29,10 +30,19 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
   const { can, canAny } = useAuth();
   // O CRM aparece para quem acessa qualquer uma das suas telas (ex.: o instalador só vê Projetos e Tarefas).
   const products = PRODUCTS.filter((product) =>
-    product.path === '/crm' ? canAny(CRM_PERMISSIONS) : can(product.permission),
+    product.path === '/crm'
+      ? canAny(CRM_PERMISSIONS)
+      : product.path === '/engine'
+        ? canAny(ENGINE_PERMISSIONS)
+        : can(product.permission),
   );
   const crmItems = CRM_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
     to: `/crm/${tab.path}`,
+    label: tab.label,
+    icon: tab.icon,
+  }));
+  const engineItems = ENGINE_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+    to: `/engine/${tab.path}`,
     label: tab.label,
     icon: tab.icon,
   }));
@@ -79,13 +89,14 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
             <SidebarGroupLabel>Produtos</SidebarGroupLabel>
             <SidebarMenu>
               {products.map((product) =>
-                product.path === '/crm' && crmItems.length > 0 ? (
+                (product.path === '/crm' && crmItems.length > 0) ||
+                (product.path === '/engine' && engineItems.length > 0) ? (
                   <NavSubmenu
                     key={product.id}
                     base={product.path}
                     label={product.name}
                     icon={product.icon}
-                    items={crmItems}
+                    items={product.path === '/crm' ? crmItems : engineItems}
                     onNavigate={onNavigate}
                   />
                 ) : (

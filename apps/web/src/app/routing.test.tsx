@@ -98,11 +98,9 @@ describe('permissões nas rotas', () => {
   });
 
   it('a página de um produto indica a fase em que ele chega', async () => {
-    renderApp('/engine');
-    expect(
-      await screen.findByRole('heading', { name: 'Solar Engine Studio', level: 1 }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Fase 9')).toBeInTheDocument();
+    renderApp('/offgrid');
+    expect(await screen.findByRole('heading', { name: /Off-Grid/, level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Fase 10')).toBeInTheDocument();
     expect(screen.getByText('Em desenvolvimento')).toBeInTheDocument();
   });
 
