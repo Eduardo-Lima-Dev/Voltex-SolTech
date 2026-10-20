@@ -9,6 +9,21 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type ChangeOffgridRequestInput,
+  type CreateOffgridProjectInput,
+  type CreateOffgridRequestInput,
+  type ListOffgridProjectsQuery,
+  type ListOffgridRequestsQuery,
+  type OffgridCommentDto,
+  type OffgridDashboardDto,
+  type OffgridDesign,
+  type OffgridProjectDetailDto,
+  type OffgridProjectDto,
+  type OffgridRequestDetailDto,
+  type OffgridRequestDto,
+  type OffgridSuggestion,
+  type OffgridVersionDetailDto,
+  type UpdateOffgridProjectInput,
   type AcceptProposalInput,
   type CreateErasureInput,
   type PrivacyRequestDto,
@@ -420,6 +435,49 @@ export function createEndpoints(client: ApiClient) {
         file: 'report.pdf' | 'single-line.pdf' | 'single-line.svg' | 'single-line.dxf',
       ) => client.getBlob(`/engineering/versions/${id}/${file}`),
       removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
+    },
+    offgrid: {
+      requests: (query: Partial<ListOffgridRequestsQuery> = {}) =>
+        client.get<OffgridRequestDto[]>('/offgrid/requests', { query: query as QueryParams }),
+      request: (id: string) => client.get<OffgridRequestDetailDto>(`/offgrid/requests/${id}`),
+      createRequest: (input: CreateOffgridRequestInput) =>
+        client.post<OffgridRequestDto>('/offgrid/requests', input),
+      changeRequest: (id: string, input: ChangeOffgridRequestInput) =>
+        client.patch<OffgridRequestDetailDto>(`/offgrid/requests/${id}`, input),
+      commentRequest: (id: string, text: string) =>
+        client.post<OffgridRequestDetailDto>(`/offgrid/requests/${id}/comments`, { text }),
+      dashboard: () => client.get<OffgridDashboardDto>('/offgrid/dashboard'),
+      projects: (query: Partial<ListOffgridProjectsQuery> = {}) =>
+        client.get<Paginated<OffgridProjectDto>>('/offgrid/projects', {
+          query: query as QueryParams,
+        }),
+      project: (id: string) => client.get<OffgridProjectDetailDto>(`/offgrid/projects/${id}`),
+      createProject: (input: CreateOffgridProjectInput) =>
+        client.post<OffgridProjectDetailDto>('/offgrid/projects', input),
+      updateProject: (id: string, input: UpdateOffgridProjectInput) =>
+        client.patch<OffgridProjectDetailDto>(`/offgrid/projects/${id}`, input),
+      version: (id: string) => client.get<OffgridVersionDetailDto>(`/offgrid/versions/${id}`),
+      saveDesign: (id: string, design: OffgridDesign) =>
+        client.put<OffgridVersionDetailDto>(`/offgrid/versions/${id}/design`, { design }),
+      recalculate: (id: string) =>
+        client.post<OffgridVersionDetailDto>(`/offgrid/versions/${id}/recalculate`),
+      suggest: (id: string, design: OffgridDesign) =>
+        client.post<OffgridSuggestion[]>(`/offgrid/versions/${id}/suggest`, { design, limit: 5 }),
+      submit: (id: string) =>
+        client.post<OffgridVersionDetailDto>(`/offgrid/versions/${id}/submit`),
+      newVersion: (id: string) =>
+        client.post<OffgridVersionDetailDto>(`/offgrid/versions/${id}/new-version`),
+      removeVersion: (id: string) => client.delete<void>(`/offgrid/versions/${id}`),
+      comments: (id: string) => client.get<OffgridCommentDto[]>(`/offgrid/versions/${id}/comments`),
+      addComment: (id: string, input: { section: string; text: string }) =>
+        client.post<OffgridCommentDto>(`/offgrid/versions/${id}/comments`, input),
+      resolveComment: (id: string, commentId: string) =>
+        client.post<OffgridCommentDto>(`/offgrid/versions/${id}/comments/${commentId}/resolve`),
+      approve: (id: string, input: { note: string }) =>
+        client.post<OffgridVersionDetailDto>(`/offgrid/versions/${id}/approve`, input),
+      reject: (id: string, input: { note: string }) =>
+        client.post<OffgridVersionDetailDto>(`/offgrid/versions/${id}/reject`, input),
+      report: (id: string) => client.getBlob(`/offgrid/versions/${id}/report.pdf`),
     },
     catalog: {
       list: (query: Partial<ListEquipmentQuery> = {}) =>

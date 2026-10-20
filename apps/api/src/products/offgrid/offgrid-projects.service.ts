@@ -331,8 +331,29 @@ export class OffgridProjectsService {
       this.prisma.db.offgridProject.findFirstOrThrow({ where: { id: row.projectId } }),
       this.prisma.db.offgridReviewComment.count({ where: { versionId: id, status: 'OPEN' } }),
     ]);
+    const design = row.design as unknown as OffgridDesign;
+    const ids = Object.values(offgridEquipmentIds(design)).flat();
+    const [items, rules] = await Promise.all([
+      ids.length
+        ? this.prisma.db.equipmentItem.findMany({ where: { id: { in: ids } } })
+        : Promise.resolve([]),
+      this.designRules(design),
+    ]);
+    const priceMap = await this.prices.currentPrices(items.map((i) => i.id));
     return {
       ...toVersionDto(row),
+      catalog: {
+        ruleRef: rules.ref,
+        parameters: rules.parameters,
+        items: items.map((i) => ({
+          id: i.id,
+          kind: i.kind,
+          status: i.status,
+          label: `${i.manufacturer} ${i.model}`,
+          spec: i.spec as Record<string, unknown>,
+          priceCents: priceMap.get(i.id)?.priceCents ?? i.referenceCostCents,
+        })),
+      },
       project: {
         id: project.id,
         code: project.code,

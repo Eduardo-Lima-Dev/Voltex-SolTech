@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import type { SiteDesign } from '@voltex/shared';
 import { CloudDownload } from 'lucide-react';
 import {
   Badge,
@@ -26,10 +27,25 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
 /** Etapa 1: local, clima (da Central de Dados) e temperatura de projeto. */
 export function SiteStep() {
   const { design, update, readOnly } = useEditor();
-  const site = design.site;
-  const set = (patch: Partial<typeof site>) =>
-    update((d) => ({ ...d, site: { ...d.site, ...patch } }));
+  return (
+    <SiteStepView
+      site={design.site}
+      readOnly={readOnly}
+      set={(patch) => update((d) => ({ ...d, site: { ...d.site, ...patch } }))}
+    />
+  );
+}
 
+/** Mesmas telas do local para qualquer produto que tenha um `SiteDesign` (Engine e Off-Grid). */
+export function SiteStepView({
+  site,
+  set,
+  readOnly,
+}: {
+  site: SiteDesign;
+  set: (patch: Partial<SiteDesign>) => void;
+  readOnly: boolean;
+}) {
   const climate = useMutation({
     mutationFn: () =>
       endpoints.dataHub.weather({

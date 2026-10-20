@@ -295,7 +295,22 @@ export interface OffgridDashboardDto {
   overdueRequests: number;
 }
 
+export interface OffgridCatalogItemDto {
+  id: string;
+  kind: string;
+  status: 'DRAFT' | 'APPROVED' | 'RETIRED';
+  label: string;
+  spec: Record<string, unknown>;
+  priceCents: number | null;
+}
+
 export interface OffgridVersionDetailDto extends OffgridVersionDto {
+  /** Fichas usadas no desenho (mesmo aposentadas) e a regra em vigor, para a prévia ao vivo no navegador. */
+  catalog: {
+    ruleRef: string | null;
+    parameters: Record<string, number>;
+    items: OffgridCatalogItemDto[];
+  };
   project: { id: string; code: string; name: string; systemType: OffgridSystemType };
   openComments: number;
   /** Quem pode agir agora: a versão enviada aguarda o responsável técnico. */
