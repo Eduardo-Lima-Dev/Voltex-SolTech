@@ -1,5 +1,5 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileDown, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, FileDown, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { offgridDesignSchema, type EquipmentDto, type OffgridDesign } from '@voltex/shared';
@@ -36,6 +36,7 @@ import { OffgridEditorContext, useOffgrid, type OffgridEditorValue } from './off
 import { PremisesStep } from './premises-step';
 import { ScenariosStep } from './scenarios-step';
 import { SimulationStep } from './simulation-step';
+import { STEP_META, StepNav, stepForPending, stepStates, type StepId } from './step-nav';
 
 function LocalStep() {
   const { design, update, readOnly } = useOffgrid();
@@ -79,7 +80,7 @@ export function OffgridVersionEditorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can } = useAuth();
-  const [stepId, setStepId] = useState<(typeof OFFGRID_STEPS)[number]['id']>('local');
+  const [stepId, setStepId] = useState<StepId>('local');
   const [design, setDesign] = useState<OffgridDesign | null>(null);
   const [dirty, setDirty] = useState(false);
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
@@ -273,9 +274,11 @@ export function OffgridVersionEditorPage() {
     labelOf: (id) => (id ? (labels[id] ?? 'Equipamento do catálogo') : 'Nenhum'),
     approved,
     goToStep: (target) => {
-      if (OFFGRID_STEPS.some((s) => s.id === target)) setStepId(target as typeof stepId);
+      if (OFFGRID_STEPS.some((s) => s.id === target)) setStepId(target as StepId);
     },
   };
+  const states = stepStates(design, results);
+  const stepIndex = OFFGRID_STEPS.findIndex((s) => s.id === stepId);
   const Step = OFFGRID_STEPS.find((s) => s.id === stepId)?.component ?? LocalStep;
 
   return (
@@ -345,31 +348,59 @@ export function OffgridVersionEditorPage() {
           </p>
         ) : null}
         {results.pending.length > 0 ? (
-          <ul
-            className="space-y-1 rounded border border-warning/50 bg-warning/10 p-3 text-sm"
-            aria-label="Pendências do projeto"
+          <details
+            className="rounded border border-warning/50 bg-warning/10 p-3 text-sm"
+            open={stepId === 'local'}
           >
-            {results.pending.map((p) => (
-              <li key={p.code}>{p.message}</li>
-            ))}
-          </ul>
+            <summary className="cursor-pointer font-medium">
+              {results.pending.length} pendência(s) para concluir o projeto
+            </summary>
+            <ul className="mt-2 space-y-1" aria-label="Pendências do projeto">
+              {results.pending.map((p) => {
+                const target = stepForPending(p.code);
+                return (
+                  <li key={p.code} className="flex flex-wrap items-baseline gap-2">
+                    <span>{p.message}</span>
+                    {target ? (
+                      <Button
+                        size="sm"
+                        variant="link"
+                        className="h-auto p-0"
+                        onClick={() => setStepId(target)}
+                      >
+                        Ir para {STEP_META.find((m) => m.id === target)?.label}
+                      </Button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
         ) : null}
 
-        <nav aria-label="Etapas do projeto" className="flex flex-wrap gap-2">
-          {OFFGRID_STEPS.map((step, index) => (
-            <Button
-              key={step.id}
-              variant={step.id === stepId ? 'default' : 'outline'}
-              size="sm"
-              aria-current={step.id === stepId ? 'step' : undefined}
-              onClick={() => setStepId(step.id)}
-            >
-              {index + 1}. {step.label}
-            </Button>
-          ))}
-        </nav>
+        <StepNav current={stepId} states={states} onSelect={(id) => setStepId(id)} />
 
         <Step />
+
+        <div className="flex items-center justify-between gap-2 border-t pt-4">
+          <Button
+            variant="outline"
+            disabled={stepIndex <= 0}
+            onClick={() => setStepId(OFFGRID_STEPS[stepIndex - 1]?.id ?? stepId)}
+          >
+            <ArrowLeft /> Etapa anterior
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Etapa {stepIndex + 1} de {OFFGRID_STEPS.length}
+            {STEP_META[stepIndex]?.required ? '' : ' · opcional'}
+          </span>
+          <Button
+            disabled={stepIndex >= OFFGRID_STEPS.length - 1}
+            onClick={() => setStepId(OFFGRID_STEPS[stepIndex + 1]?.id ?? stepId)}
+          >
+            Próxima etapa <ArrowRight />
+          </Button>
+        </div>
 
         {v.status === 'SUBMITTED' ? (
           <section className="space-y-3 rounded border p-4" aria-label="Revisão técnica">

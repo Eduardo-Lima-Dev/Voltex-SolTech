@@ -709,3 +709,38 @@ describe('Off-Grid Designer: diagrama e terreno 2D/3D', () => {
     expect(screen.getByText(/Adicione a casa de máquinas/)).toBeInTheDocument();
   });
 });
+
+describe('Off-Grid Designer: trilha de etapas', () => {
+  it('numera e liga as etapas, marca obrigatórias e opcionais, e deixa abrir qualquer uma', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(
+          version({ design: newOffgridDesign({ latitude: -15.8, longitude: -47.9 }) as never }),
+        ),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    const nav = await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    expect(
+      within(nav).getByRole('button', { name: '2. Cargas (pendente, obrigatória)' }),
+    ).toBeInTheDocument();
+    expect(
+      within(nav).getByRole('button', { name: '9. Terreno 2D/3D (opcional)' }),
+    ).toBeInTheDocument();
+    expect(
+      within(nav).getByText(/Pode abrir qualquer etapa, em qualquer ordem/),
+    ).toBeInTheDocument();
+    const user = userEvent.setup();
+    // Pula direto para uma etapa opcional sem preencher as anteriores.
+    await user.click(within(nav).getByRole('button', { name: /9\. Terreno/ }));
+    expect(await screen.findByText('Projeto visual do terreno')).toBeInTheDocument();
+    expect(screen.getByText('Etapa 9 de 11 · opcional')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Próxima etapa/ }));
+    expect(await screen.findByText('Etapa 10 de 11 · opcional')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Etapa anterior/ }));
+    // A pendência leva direto à etapa que a resolve.
+    await user.click(screen.getByText(/pendência\(s\) para concluir/));
+    await user.click(screen.getAllByRole('button', { name: /Ir para Cargas/ })[0] as HTMLElement);
+    expect(await screen.findByText('Perfil de consumo')).toBeInTheDocument();
+  });
+});
