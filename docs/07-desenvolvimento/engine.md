@@ -64,9 +64,14 @@ Base: EnergIF 2023 (EF-R01 etapas, R04 documentos, R05/R06 passos e prazos, R09 
 - **Permissões novas:** `engine.survey.read/write` (engenharia e **instalador**: o campo preenche e conclui o levantamento sem ver o resto do projeto) e `engine.request.manage` (coordenação: prioridade, prazo, reatribuição, painel).
 - **Limites:** a reatribuição existe na API (`POST requests/:id/reassign`) mas ainda não na tela; fotos do levantamento são documentos da plataforma (a tela do levantamento ainda não tem o envio); o instalador não tem lista de projetos (acessa pelo link/tarefa).
 
-## Visualização 2D/3D
+## Visualização 2D/3D (Fase 9L)
 
-A etapa **3. Visualização 2D/3D** do editor mostra: (2D) a planta de cada superfície com o layout dos módulos e (3D) uma cena girável com telhado/laje inclinados, módulos, obstáculos (caixas) e a **sombra dos obstáculos no chão** para a data e a hora escolhidas (posição do sol do próprio motor). É projeção ortográfica em SVG, sem biblioteca 3D: serve para conferir geometria, não é um editor 3D (arrastar módulos, importar modelos, sombra sobre o telhado) nem substitui o CAD.
+A etapa **3. Visualização 2D/3D** do editor é o estúdio visual do projeto:
+
+- **Planta 2D** (norte para cima, grade de 5 m): cada superfície aparece com o contorno visto de cima (largura × profundidade·cos da inclinação, girado pelo azimute), os módulos do layout e os obstáculos. **Arraste** a superfície (a posição do centro fica em `positionM` no desenho, em metros: x leste, y norte) ou o obstáculo (a direção e a distância a partir do centro da superfície viram a ficha dele); também funciona pelo **teclado** (setas = 0,1 m; Shift = 1 m). Adicionar superfície/obstáculo e editar nome, medidas, inclinação, azimute e posição no painel de detalhes. Versão congelada: só visualização.
+- **Cena 3D**: telhado/laje inclinados, módulos, obstáculos como caixas e a **sombra no chão** para a data e a hora do sol (posição do próprio motor). **Arraste para girar**, **roda do mouse (ou controle) para aproximar**, **clique** numa superfície/obstáculo para selecionar (sincroniza com a planta). Predefinições: frente (sul), isométrica, de cima.
+- Salvar o projeto recalcula tudo (layout, sombreamento e geração usam as medidas e obstáculos editados aqui).
+- **Limites:** projeção ortográfica em SVG, sem biblioteca 3D; superfícies retangulares (sem polígonos livres, sem redimensionar por alças), sombra só dos obstáculos no chão (não sobre o telhado), sem importar modelo 3D ou imagem de satélite, e não substitui o CAD.
 
 ## Busca de equipamentos no editor
 

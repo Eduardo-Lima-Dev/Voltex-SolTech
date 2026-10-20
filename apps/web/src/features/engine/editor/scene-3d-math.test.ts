@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { surfaceSchema, obstacleSchema, type SurfaceLayoutResult } from '@voltex/shared';
-import { buildScene, obstacleBox, project, projectScene, surfacePoint } from './scene-3d-math';
+import {
+  buildScene,
+  obstacleBox,
+  obstacleFromPoint,
+  planOutline,
+  project,
+  projectScene,
+  resolveCenters,
+  snapTo,
+  surfacePoint,
+} from './scene-3d-math';
 
 const surface = (over: Record<string, unknown> = {}) =>
   surfaceSchema.parse({
@@ -154,5 +164,68 @@ describe('cena e câmera', () => {
     expect(order.lastIndexOf('ROOF')).toBeLessThan(order.indexOf('MODULE'));
     expect(viewBox.split(' ')).toHaveLength(4);
     expect(projectScene([], 0, 0).viewBox).toBe('0 0 10 10');
+  });
+});
+
+describe('planta: posição, contorno e arraste', () => {
+  it('usa a posição do projeto; sem ela, organiza lado a lado sem sobrepor', () => {
+    const placed = resolveCenters([
+      surface({ positionM: { x: 12, y: -3 } }),
+      surface({ id: 's2' }),
+    ]);
+    expect(placed[0]).toEqual({ x: 12, y: -3, z: 0 });
+    const auto = resolveCenters([surface(), surface({ id: 's2' })]);
+    expect(auto[1]!.x).toBeGreaterThan(auto[0]!.x + 5);
+    expect(auto[0]!.y).toBe(0);
+  });
+
+  it('contorno visto de cima: largura inteira e profundidade × cos(inclinação)', () => {
+    const outline = planOutline(surface({ tiltDegrees: 60, depthM: 6 }), origin);
+    const xs = outline.map((p) => p.x);
+    const ys = outline.map((p) => p.y);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(10, 9);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(3, 9); // 6 × cos 60°
+  });
+
+  it('um ponto da planta vira direção e distância do obstáculo (0° = norte, 90° = leste)', () => {
+    expect(obstacleFromPoint({ x: 0, y: 5 }, { x: 0, y: 0 })).toEqual({
+      azimuthDegrees: 0,
+      distanceM: 5,
+    });
+    expect(obstacleFromPoint({ x: 4, y: 0 }, { x: 0, y: 0 })).toEqual({
+      azimuthDegrees: 90,
+      distanceM: 4,
+    });
+    expect(obstacleFromPoint({ x: -3, y: -3 }, { x: 0, y: 0 })).toEqual({
+      azimuthDegrees: 225,
+      distanceM: 4.2,
+    });
+    expect(obstacleFromPoint({ x: 0, y: 0 }, { x: 0, y: 0 }).distanceM).toBe(0.1); // nunca zero
+  });
+
+  it('ida e volta: arrastar até o ponto de um obstáculo reproduz a sua ficha', () => {
+    const o = obstacleSchema.parse({
+      id: 'o',
+      name: 'X',
+      azimuthDegrees: 135,
+      distanceM: 7,
+      heightM: 2,
+      widthM: 1,
+    });
+    const base = obstacleBox(o, { x: 10, y: 5, z: 0 }).base;
+    const middle = {
+      x: base.reduce((s, p) => s + p.x, 0) / 4,
+      y: base.reduce((s, p) => s + p.y, 0) / 4,
+    };
+    expect(obstacleFromPoint(middle, { x: 10, y: 5 })).toEqual({
+      azimuthDegrees: 135,
+      distanceM: 7,
+    });
+  });
+
+  it('snap sem ruído de ponto flutuante', () => {
+    expect(snapTo(5.0499999, 0.1)).toBe(5);
+    expect(snapTo(5.06, 0.1)).toBe(5.1);
+    expect(snapTo(-0.04, 0.1)).toBeCloseTo(0, 9);
   });
 });

@@ -16,6 +16,9 @@ export interface ScenePolygon {
   kind: PolygonKind;
   points: Vec3[];
   label?: string;
+  /** A que superfície/obstáculo pertence (para selecionar clicando). */
+  surfaceId?: string;
+  obstacleId?: string;
 }
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -92,18 +95,55 @@ export function obstacleBox(obstacle: Obstacle, center: Vec3): { base: Vec3[]; t
   return { base, top: base.map((p) => ({ ...p, z: h })) };
 }
 
+/** Centro de cada superfície na planta: a posição do projeto ou, sem ela, lado a lado em linha. */
+export function resolveCenters(surfaces: readonly Surface[]): Vec3[] {
+  let cursor = 0;
+  return surfaces.map((surface) => {
+    if (surface.positionM) return { x: surface.positionM.x, y: surface.positionM.y, z: 0 };
+    const tilt = rad(surface.tiltDegrees);
+    const footprint = Math.max(surface.widthM, surface.depthM * Math.cos(tilt));
+    const center: Vec3 = { x: cursor + footprint / 2, y: 0, z: 0 };
+    cursor += footprint + Math.max(3, footprint * 0.25);
+    return center;
+  });
+}
+
+/** Contorno da superfície visto de cima (projeção horizontal), 4 cantos em (x, y). */
+export function planOutline(surface: Surface, center: Vec3): { x: number; y: number }[] {
+  return [
+    surfacePoint(surface, center, -surface.widthM / 2, 0),
+    surfacePoint(surface, center, surface.widthM / 2, 0),
+    surfacePoint(surface, center, surface.widthM / 2, surface.depthM),
+    surfacePoint(surface, center, -surface.widthM / 2, surface.depthM),
+  ].map((p) => ({ x: p.x, y: p.y }));
+}
+
+/** Direção e distância (a partir do centro da superfície) de um ponto da planta: o que a ficha do obstáculo guarda. */
+export function obstacleFromPoint(
+  point: { x: number; y: number },
+  center: { x: number; y: number },
+): { azimuthDegrees: number; distanceM: number } {
+  const dx = point.x - center.x;
+  const dy = point.y - center.y;
+  const azimuth = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
+  return {
+    azimuthDegrees: Math.round(azimuth * 10) / 10,
+    distanceM: Math.max(0.1, Math.round(Math.hypot(dx, dy) * 10) / 10),
+  };
+}
+
+export const snapTo = (value: number, step: number): number =>
+  Number((Math.round(value / step) * step).toFixed(6));
+
 export function buildScene(
   surfaces: readonly Surface[],
   layouts: readonly SurfaceLayoutResult[],
   sun: SunDirection | null,
 ): ScenePolygon[] {
   const polygons: ScenePolygon[] = [];
-  let cursor = 0;
+  const centers = resolveCenters(surfaces);
   surfaces.forEach((surface, index) => {
-    const tilt = rad(surface.tiltDegrees);
-    const footprint = Math.max(surface.widthM, surface.depthM * Math.cos(tilt));
-    const center: Vec3 = { x: cursor + footprint / 2, y: 0, z: 0 };
-    cursor += footprint + Math.max(3, footprint * 0.25);
+    const center = centers[index] as Vec3;
 
     // Chão sob a superfície (projeção horizontal).
     const ground = [
@@ -112,7 +152,12 @@ export function buildScene(
       surfacePoint(surface, center, surface.widthM / 2, surface.depthM),
       surfacePoint(surface, center, -surface.widthM / 2, surface.depthM),
     ].map((p) => ({ ...p, z: 0 }));
-    polygons.push({ kind: 'GROUND', points: ground, label: `Base de ${surface.name}` });
+    polygons.push({
+      kind: 'GROUND',
+      points: ground,
+      label: `Base de ${surface.name}`,
+      surfaceId: surface.id,
+    });
 
     polygons.push({
       kind: 'ROOF',
@@ -123,6 +168,7 @@ export function buildScene(
         surfacePoint(surface, center, -surface.widthM / 2, surface.depthM),
       ],
       label: surface.name,
+      surfaceId: surface.id,
     });
 
     const layout = layouts.find((l) => l.surfaceId === surface.id) ?? layouts[index];
@@ -134,6 +180,7 @@ export function buildScene(
       const vBottom = vTop - r.h;
       polygons.push({
         kind: 'MODULE',
+        surfaceId: surface.id,
         points: [
           surfacePoint(surface, center, u0, vBottom),
           surfacePoint(surface, center, u1, vBottom),
@@ -148,7 +195,13 @@ export function buildScene(
       if (sun) {
         const shadow = shadowOf(base, Math.max(0, obstacle.heightM), sun);
         if (shadow)
-          polygons.push({ kind: 'SHADOW', points: shadow, label: `Sombra de ${obstacle.name}` });
+          polygons.push({
+            kind: 'SHADOW',
+            points: shadow,
+            label: `Sombra de ${obstacle.name}`,
+            surfaceId: surface.id,
+            obstacleId: obstacle.id,
+          });
       }
       for (let k = 0; k < 4; k++) {
         const n = (k + 1) % 4;
@@ -156,9 +209,17 @@ export function buildScene(
           kind: 'OBSTACLE',
           points: [base[k]!, base[n]!, top[n]!, top[k]!],
           label: obstacle.name,
+          surfaceId: surface.id,
+          obstacleId: obstacle.id,
         });
       }
-      polygons.push({ kind: 'OBSTACLE', points: top, label: obstacle.name });
+      polygons.push({
+        kind: 'OBSTACLE',
+        points: top,
+        label: obstacle.name,
+        surfaceId: surface.id,
+        obstacleId: obstacle.id,
+      });
     }
   });
   return polygons;
@@ -167,6 +228,8 @@ export function buildScene(
 export interface ProjectedPolygon {
   kind: PolygonKind;
   label?: string;
+  surfaceId?: string;
+  obstacleId?: string;
   /** Pontos no plano da tela (SVG: y para baixo). */
   points: { x: number; y: number }[];
   depth: number;
@@ -205,6 +268,8 @@ export function projectScene(
     return {
       kind: poly.kind,
       ...(poly.label ? { label: poly.label } : {}),
+      ...(poly.surfaceId ? { surfaceId: poly.surfaceId } : {}),
+      ...(poly.obstacleId ? { obstacleId: poly.obstacleId } : {}),
       points: pts.map(({ x, y }) => ({ x, y })),
       depth,
     };

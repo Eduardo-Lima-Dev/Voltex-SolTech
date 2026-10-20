@@ -57,6 +57,10 @@ export const surfaceSchema = z.object({
   moduleGapM: z.number().min(0).max(0.2).default(0.02),
   /** Espaçamento entre fileiras (FLAT_RACK). Vazio = o mínimo calculado para o inverno. */
   rowSpacingM: z.number().min(0).max(20).optional(),
+  /** Posição do centro da superfície na planta do local (m; x = leste, y = norte). Vazio = organizada automaticamente. */
+  positionM: z
+    .object({ x: z.number().min(-2000).max(2000), y: z.number().min(-2000).max(2000) })
+    .optional(),
   /** Módulo desta superfície (catálogo aprovado). Vazio = o módulo padrão do projeto. */
   moduleId: z.uuid().optional(),
   /** Limita a quantidade (menor que o máximo que cabe). */

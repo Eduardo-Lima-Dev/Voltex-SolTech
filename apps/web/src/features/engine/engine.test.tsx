@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -969,60 +969,114 @@ describe('Engine: equipamentos e strings', () => {
 });
 
 describe('Engine: visualização 2D/3D', () => {
-  it('mostra a planta de cada superfície e a cena 3D girável com o sol; sem superfície, leva à etapa certa', async () => {
-    const surface = {
-      id: 's1',
-      name: 'Água norte',
-      kind: 'PITCHED' as const,
-      azimuthDegrees: 0,
-      tiltDegrees: 20,
-      widthM: 10,
-      depthM: 5,
-      setbackM: { left: 0.3, right: 0.3, top: 0.3, bottom: 0.3 },
-      moduleOrientation: 'PORTRAIT' as const,
-      moduleGapM: 0.02,
-      obstacles: [
-        {
-          id: 'o1',
-          name: 'Caixa d água',
-          azimuthDegrees: 90,
-          distanceM: 4,
-          heightM: 3,
-          widthM: 1.5,
-        },
-      ],
-    };
+  const surface = {
+    id: 's1',
+    name: 'Água norte',
+    kind: 'PITCHED' as const,
+    azimuthDegrees: 0,
+    tiltDegrees: 20,
+    widthM: 10,
+    depthM: 5,
+    setbackM: { left: 0.3, right: 0.3, top: 0.3, bottom: 0.3 },
+    moduleOrientation: 'PORTRAIT' as const,
+    moduleGapM: 0.02,
+    obstacles: [
+      { id: 'o1', name: 'Caixa d água', azimuthDegrees: 90, distanceM: 4, heightM: 3, widthM: 1.5 },
+    ],
+  };
+  const openVisual = async (
+    v = version({ design: design({ defaultModuleId: MODULE_ID, surfaces: [surface] }) }),
+  ) => {
     server.use(
-      http.get(`${API}/engineering/versions/v-1`, () =>
-        HttpResponse.json(
-          version({ design: design({ defaultModuleId: MODULE_ID, surfaces: [surface] }) }),
-        ),
-      ),
+      http.get(`${API}/engineering/versions/v-1`, () => HttpResponse.json(v)),
       modulesList(),
     );
     renderApp('/engine/projetos/pj-1/versoes/v-1', { session: makeSession('ENGINEERING') });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /3\. Visualização 2D\/3D/ }));
+    return user;
+  };
+
+  it('planta 2D: mostra superfícies e obstáculos, seleciona e edita os detalhes', async () => {
+    const user = await openVisual();
+    expect(await screen.findByRole('img', { name: /Planta com 1 superfície/ })).toBeInTheDocument();
+    expect(screen.getByText(/Clique numa superfície ou obstáculo/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Superfície Água norte' }));
+    expect(await screen.findByText('Superfície: Água norte')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Inclinação/)).toHaveValue('20');
+    await user.click(screen.getByRole('button', { name: 'Obstáculo Caixa d água' }));
+    expect(await screen.findByText('Obstáculo: Caixa d água')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Distância/)).toHaveValue('4');
+    const height = screen.getByLabelText(/^Altura/);
+    await user.clear(height);
+    await user.type(height, '5');
+    expect(height).toHaveValue('5');
+  });
+
+  it('setas do teclado movem a superfície (0,1 m; Shift 1 m) e o obstáculo na planta', async () => {
+    const user = await openVisual();
+    const roof = await screen.findByRole('button', { name: 'Superfície Água norte' });
+    roof.focus();
+    expect(await screen.findByLabelText(/Posição leste/)).toHaveValue('5'); // organização automática: x = metade da largura
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText(/Posição leste/)).toHaveValue('5,1');
+    await user.keyboard('{Shift>}{ArrowUp}{/Shift}');
+    expect(screen.getByLabelText(/Posição norte/)).toHaveValue('1');
+    // Obstáculo a leste (90°, 4 m): 1 m para o norte muda a direção e a distância.
+    screen.getByRole('button', { name: 'Obstáculo Caixa d água' }).focus();
+    await user.keyboard('{Shift>}{ArrowUp}{/Shift}');
+    expect(await screen.findByLabelText(/^Distância/)).not.toHaveValue('4');
+    expect(screen.getByLabelText(/^Direção/)).not.toHaveValue('90');
+  });
+
+  it('versão congelada: só visualização, setas não movem e não há botões de adicionar', async () => {
+    const user = await openVisual(
+      version({
+        status: 'SUBMITTED',
+        design: design({ defaultModuleId: MODULE_ID, surfaces: [surface] }),
+      }),
+    );
+    const roof = await screen.findByRole('button', { name: 'Superfície Água norte' });
+    roof.focus();
+    expect(await screen.findByLabelText(/Posição leste/)).toBeDisabled();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText(/Posição leste/)).toHaveValue('5');
+    expect(screen.queryByRole('button', { name: /Adicionar superfície/ })).not.toBeInTheDocument();
+  });
+
+  it('adiciona superfície e obstáculo pela própria visualização', async () => {
+    const user = await openVisual();
+    await screen.findByRole('img', { name: /Planta com 1 superfície/ });
+    await user.click(screen.getByRole('button', { name: /Adicionar superfície/ }));
+    expect(await screen.findByRole('img', { name: /Planta com 2 superfície/ })).toBeInTheDocument();
+    expect(screen.getByText('Superfície: Superfície 2')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Adicionar obstáculo/ }));
+    expect(await screen.findByText('Obstáculo: Obstáculo')).toBeInTheDocument();
+  });
+
+  it('cena 3D: gira, aproxima, mostra o sol e seleciona clicando na superfície', async () => {
+    const user = await openVisual();
+    await user.click(await screen.findByRole('button', { name: '3D (cena)' }));
     const scene = await screen.findByRole('img', { name: /Cena 3D com 1 superfície/ });
     expect(scene.querySelectorAll('polygon').length).toBeGreaterThan(10); // chão, telhado, módulos, caixa e sombra
     expect(screen.getByText(/Sol: altura/)).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText('Data do sol'), '06-21');
     await user.click(screen.getByRole('button', { name: 'De cima' }));
     expect(screen.getByLabelText('Inclinar a câmera')).toHaveValue('90');
-    await user.click(screen.getByRole('button', { name: '2D (planta)' }));
-    expect(
-      await screen.findByRole('img', { name: /Prévia do layout de Água norte/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Aproximar')).toHaveValue('1');
+    fireEvent.wheel(scene, { deltaY: -100 });
+    expect(Number((screen.getByLabelText('Aproximar') as HTMLInputElement).value)).toBeGreaterThan(
+      1,
+    );
+    const roof = Array.from(scene.querySelectorAll('polygon')).find(
+      (p) => p.querySelector('title')?.textContent === 'Água norte',
+    ) as SVGElement;
+    await user.click(roof);
+    expect(await screen.findByText('Superfície: Água norte')).toBeInTheDocument();
   });
 
-  it('sem superfícies explica e oferece ir para Superfícies', async () => {
-    server.use(
-      http.get(`${API}/engineering/versions/v-1`, () => HttpResponse.json(version())),
-      modulesList(),
-    );
-    renderApp('/engine/projetos/pj-1/versoes/v-1', { session: makeSession('ENGINEERING') });
-    const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /3\. Visualização 2D\/3D/ }));
+  it('sem superfícies explica e oferece adicionar ou ir para Superfícies', async () => {
+    const user = await openVisual(version());
     expect(await screen.findByText(/Ainda não há superfícies/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ir para Superfícies' }));
     expect(await screen.findByText(/Adicione uma superfície/)).toBeInTheDocument();

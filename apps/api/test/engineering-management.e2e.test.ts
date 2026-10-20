@@ -435,3 +435,47 @@ describe('Engenharia: gestão do pedido e do projeto (9K, e2e)', () => {
     });
   });
 });
+
+describe('Visualização: posição das superfícies no projeto (9L)', () => {
+  it('a posição na planta é validada e guardada no desenho', async () => {
+    const t = await createTestApp();
+    try {
+      const a = await seedTenant(t.prisma, 'vis');
+      const eng = (await tokenWithRole(t, a, 'ENGINEERING')).token;
+      const created = await t.http
+        .post(`${API}/engineering/projects`)
+        .set(bearer(eng))
+        .send({ name: 'Visual', site: { latitude: -15.78, longitude: -47.93 } });
+      const versionId = created.body.versions[0].id;
+      const surface = (positionM: object) => ({
+        id: 's1',
+        name: 'Norte',
+        azimuthDegrees: 0,
+        tiltDegrees: 20,
+        widthM: 10,
+        depthM: 5,
+        positionM,
+      });
+      const design = (positionM: object) => ({
+        design: {
+          schemaVersion: 1,
+          site: { latitude: -15.78, longitude: -47.93 },
+          surfaces: [surface(positionM)],
+        },
+      });
+      const ok = await t.http
+        .put(`${API}/engineering/versions/${versionId}/design`)
+        .set(bearer(eng))
+        .send(design({ x: 12.5, y: -3 }));
+      expect(ok.status).toBe(200);
+      expect(ok.body.design.surfaces[0].positionM).toEqual({ x: 12.5, y: -3 });
+      const bad = await t.http
+        .put(`${API}/engineering/versions/${versionId}/design`)
+        .set(bearer(eng))
+        .send(design({ x: 99999, y: 0 }));
+      expect(bad.status).toBe(422);
+    } finally {
+      await t.close();
+    }
+  });
+});
