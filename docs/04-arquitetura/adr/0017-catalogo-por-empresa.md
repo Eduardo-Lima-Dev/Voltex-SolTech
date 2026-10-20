@@ -24,3 +24,11 @@ O Engine precisa de fichas de módulos, inversores, proteções e cabos. Um cat�
 ## Alternativas consideradas
 
 Catálogo global mantido pela plataforma (depende do painel do dono, Fase 13, e esconde preço/fornecedor); catálogo livre sem aprovação (cálculo sobre dado não conferido, contra RN-013).
+
+## Como ficou na implementação (Fase 9C)
+
+- **Uma tabela só** (`equipment_items`) com `kind` e a ficha em `spec` (JSON validado por tipo), em vez de quatro tabelas: um gatilho de imutabilidade, um controlador, uma lista. O custo é consultar campo interno da ficha só por JSON; o que precisa ser consultado (fabricante, modelo, situação, INMETRO) tem coluna.
+- **Aprovar e aposentar exigem `engine.project.approve`** (responsável técnico). Cadastrar, importar, propor e conferir o INMETRO ficam com `platform.catalog.manage` (engenharia).
+- **Revisão:** índice único parcial garante uma revisão aprovada por modelo; aprovar a nova aposenta a anterior. Aposentado não volta (gatilho).
+- **INMETRO é verificação assistida:** guarda o que a pessoa conferiu; o sistema só lembra de reconferir (183 dias), sem raspar o site.
+- Detalhes, formatos de importação e limites: [Catálogo técnico](../../07-desenvolvimento/catalogo-tecnico.md).
