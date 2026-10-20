@@ -1,0 +1,132 @@
+import type {
+  EngineeringDesign,
+  EngineeringResults,
+  SurfaceLayoutResult,
+  SurfaceShadingResult,
+} from '@voltex/shared';
+import { roundTo } from '../units/index.js';
+import { LAYOUT_ALGORITHM_VERSION, layoutSurface, type LayoutModule } from './layout.js';
+import { SHADING_ALGORITHM_VERSION, computeShading } from './shading.js';
+
+/**
+ * Orquestra os cálculos do projeto de engenharia a partir do desenho e das fichas dos equipamentos. Puro e
+ * determinístico: roda no navegador (prévia ao vivo) e no servidor (fonte oficial ao salvar). Cada fase do Engine
+ * acrescenta aqui o seu cálculo.
+ */
+export const ENGINEERING_RESULTS_VERSION = 'engine-results-1.0.0';
+
+export interface ComputeContext {
+  /** Fichas dos módulos usados no desenho, por id do catálogo. */
+  modules: Record<string, LayoutModule | undefined>;
+}
+
+export function computeEngineeringResults(
+  design: EngineeringDesign,
+  context: ComputeContext,
+): EngineeringResults {
+  const pending: EngineeringResults['pending'] = [];
+  const layout: SurfaceLayoutResult[] = [];
+  const shading: SurfaceShadingResult[] = [];
+
+  if (design.surfaces.length === 0)
+    pending.push({
+      code: 'NO_SURFACES',
+      message: 'Nenhuma superfície de instalação foi cadastrada.',
+    });
+
+  for (const surface of design.surfaces) {
+    const moduleId = surface.moduleId ?? design.defaultModuleId ?? null;
+    const module = moduleId ? context.modules[moduleId] : undefined;
+    if (!moduleId)
+      pending.push({
+        code: 'MODULE_NOT_SELECTED',
+        message: `A superfície "${surface.name}" não tem módulo: escolha o módulo do projeto.`,
+      });
+    else if (!module)
+      pending.push({
+        code: 'MODULE_NOT_FOUND',
+        message: `O módulo da superfície "${surface.name}" não está no catálogo.`,
+      });
+
+    if (module) {
+      const result = layoutSurface({ surface, module, latitudeDegrees: design.site.latitude });
+      layout.push({ surfaceId: surface.id, moduleId, ...result });
+    } else {
+      layout.push({
+        surfaceId: surface.id,
+        moduleId,
+        fitCount: 0,
+        moduleCount: 0,
+        rows: 0,
+        columns: 0,
+        usableWidthM: 0,
+        usableDepthM: 0,
+        rowSpacingM: null,
+        minRowSpacingM: null,
+        powerKwp: null,
+        moduleAreaM2: null,
+        rects: [],
+        warnings: ['Sem módulo escolhido, não há como calcular o layout.'],
+      });
+    }
+
+    const warnings: string[] = [];
+    if (!design.site.horizon && surface.obstacles.length === 0)
+      warnings.push(
+        'Sem perfil de horizonte nem obstáculos: a perda por sombra calculada é zero. Busque o horizonte do local ou informe os obstáculos.',
+      );
+    const calculated = computeShading({ site: design.site, surface });
+    if (surface.shadingLossOverride) {
+      warnings.push('Perda por sombra informada à mão: o cálculo por posição solar não foi usado.');
+      shading.push({
+        surfaceId: surface.id,
+        monthlyLossPct: Array<number>(12).fill(surface.shadingLossOverride.pct),
+        annualLossPct: surface.shadingLossOverride.pct,
+        overridden: true,
+        overrideSource: surface.shadingLossOverride.source,
+        sunPaths: calculated.sunPaths,
+        obstacles: calculated.obstacles,
+        warnings,
+      });
+    } else {
+      shading.push({
+        surfaceId: surface.id,
+        monthlyLossPct: calculated.monthlyLossPct,
+        annualLossPct: calculated.annualLossPct,
+        overridden: false,
+        overrideSource: null,
+        sunPaths: calculated.sunPaths,
+        obstacles: calculated.obstacles,
+        warnings,
+      });
+    }
+  }
+
+  const modulesUsed = layout.reduce((sum, l) => sum + l.moduleCount, 0);
+  const havePower = layout.length > 0 && layout.every((l) => l.powerKwp !== null);
+  return {
+    algorithmVersions: {
+      results: ENGINEERING_RESULTS_VERSION,
+      layout: LAYOUT_ALGORITHM_VERSION,
+      shading: SHADING_ALGORITHM_VERSION,
+    },
+    layout,
+    shading,
+    totals: {
+      moduleCount: modulesUsed,
+      powerKwp: havePower
+        ? roundTo(
+            layout.reduce((s, l) => s + (l.powerKwp ?? 0), 0),
+            3,
+          )
+        : null,
+      moduleAreaM2: havePower
+        ? roundTo(
+            layout.reduce((s, l) => s + (l.moduleAreaM2 ?? 0), 0),
+            2,
+          )
+        : null,
+    },
+    pending,
+  };
+}
