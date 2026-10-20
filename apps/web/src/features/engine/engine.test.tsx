@@ -134,6 +134,7 @@ beforeEach(() => {
   server.use(
     http.get(`${API}/engineering/versions/:id/comments`, () => HttpResponse.json([])),
     http.get(`${API}/engineering/versions/:id`, () => HttpResponse.json(version())),
+    http.get(`${API}/engineering/projects/pj-1`, () => HttpResponse.json(detail())),
   );
 });
 
@@ -529,6 +530,90 @@ describe('Engine: editor da versão', () => {
   it('rascunho aberto por quem pode escrever tem os campos habilitados', async () => {
     mount(version());
     expect(await screen.findByLabelText(/Latitude/)).toBeEnabled();
+  });
+
+  it('compara com outra versão do projeto: indicadores e o que mudou no desenho', async () => {
+    mount(version({ id: 'v-2', number: 2, status: 'SUBMITTED' }), [
+      http.get(`${API}/engineering/projects/pj-1`, () =>
+        HttpResponse.json(
+          detail({
+            versions: [
+              {
+                id: 'v-2',
+                number: 2,
+                status: 'SUBMITTED',
+                stale: false,
+                createdAt: now,
+                decidedAt: null,
+              },
+              {
+                id: 'v-1',
+                number: 1,
+                status: 'DRAFT',
+                stale: false,
+                createdAt: now,
+                decidedAt: null,
+              },
+            ],
+          }),
+        ),
+      ),
+      http.get(`${API}/engineering/versions/v-2/compare`, ({ request: req }) => {
+        expect(new URL(req.url).searchParams.get('with')).toBe('v-1');
+        return HttpResponse.json({
+          from: { id: 'v-1', number: 1, status: 'DRAFT' },
+          to: { id: 'v-2', number: 2, status: 'SUBMITTED' },
+          designChanges: [
+            {
+              section: 'surfaces',
+              path: 'surfaces[s1].tiltDegrees',
+              kind: 'CHANGED',
+              before: 20,
+              after: 25,
+            },
+          ],
+          resultChanges: [{ metric: 'modules', label: 'Módulos', before: 8, after: 10, delta: 2 }],
+          truncated: false,
+        });
+      }),
+    ]);
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('Versão para comparar'), 'v-1');
+    expect(await screen.findByText('surfaces[s1].tiltDegrees')).toBeInTheDocument();
+    expect(screen.getByText('alterado')).toBeInTheDocument();
+    expect(screen.getByText('Módulos')).toBeInTheDocument();
+    expect(screen.getByText(/Da versão 1 para a versão 2/)).toBeInTheDocument();
+  });
+
+  it('versão aprovada gera o link do relatório do cliente (aparece uma vez) e permite revogar', async () => {
+    let revoked = '';
+    const link = {
+      id: 'l-1',
+      expiresAt: now,
+      revokedAt: null,
+      viewCount: 2,
+      lastViewedAt: null,
+      createdAt: now,
+    };
+    mount(version({ id: 'v-3', number: 3, status: 'APPROVED' }), [
+      http.get(`${API}/engineering/versions/v-3/share-links`, () => HttpResponse.json([link])),
+      http.post(`${API}/engineering/versions/v-3/share-links`, () =>
+        HttpResponse.json(
+          { ...link, id: 'l-2', token: 'tok123', path: '/r/tok123' },
+          { status: 201 },
+        ),
+      ),
+      http.post(`${API}/engineering/share-links/l-1/revoke`, () => {
+        revoked = 'l-1';
+        return HttpResponse.json({ ...link, revokedAt: now });
+      }),
+    ]);
+    const user = userEvent.setup();
+    expect(await screen.findByText(/2 visualização/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Gerar link/ }));
+    expect(await screen.findByText(/\/r\/tok123/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Revogar' }));
+    await waitFor(() => expect(revoked).toBe('l-1'));
   });
 
   it('Engine aparece no menu e o catálogo vive em /engine/catalogo', async () => {

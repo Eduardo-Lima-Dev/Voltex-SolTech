@@ -9,6 +9,7 @@ import {
   engineRulesDefinitionSchema,
   type EngineeringDesign,
   type EngineeringResults,
+  type EngineeringVersionComparisonDto,
   type EngineeringVersionDetailDto,
   type CableSpec,
   type InverterSpec,
@@ -20,6 +21,7 @@ import {
   type EngineeringReviewCommentInput,
 } from '@voltex/shared';
 import {
+  compareVersions,
   computeEngineeringResults,
   validateSpec,
   type Candidate,
@@ -120,6 +122,29 @@ export class EngineeringVersionsService {
     const row = await this.prisma.db.engineeringVersion.findFirst({ where: { id } });
     if (!row) throw new NotFoundException('Versão não encontrada');
     return row;
+  }
+
+  /** O que mudou entre duas versões do mesmo projeto (desenho e indicadores), para a revisão. */
+  async compare(id: string, otherId: string): Promise<EngineeringVersionComparisonDto> {
+    const to = await this.require(id);
+    const from = await this.require(otherId);
+    if (from.projectId !== to.projectId)
+      throw new UnprocessableEntityException({
+        message: 'As versões precisam ser do mesmo projeto',
+        code: 'VERSIONS_FROM_DIFFERENT_PROJECTS',
+      });
+    const diff = compareVersions(
+      { design: from.design, results: from.results as unknown as EngineeringResults | null },
+      { design: to.design, results: to.results as unknown as EngineeringResults | null },
+    );
+    const brief = (v: typeof from) => ({ id: v.id, number: v.number, status: v.status });
+    return {
+      from: brief(from),
+      to: brief(to),
+      designChanges: diff.designChanges,
+      resultChanges: diff.resultChanges,
+      truncated: diff.truncated,
+    };
   }
 
   /** Parâmetros numéricos da regra `engine.design` para o local do projeto (sem regra: vazio, e o cálculo fica pendente). */

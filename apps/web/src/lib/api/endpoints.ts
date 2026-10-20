@@ -105,6 +105,9 @@ import {
   type EngineeringProjectDetailDto,
   type EngineeringProjectDto,
   type EngineeringRequestListItemDto,
+  type EngineeringVersionComparisonDto,
+  type EngineeringShareLinkDto,
+  type PublicEngineeringReportDto,
   type EngineeringVersionDetailDto,
   type EngineeringDecisionInput,
   type EngineeringReviewCommentInput,
@@ -338,6 +341,24 @@ export function createEndpoints(client: ApiClient) {
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/reject`, input),
       newVersion: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/new-version`),
+      compare: (id: string, withId: string) =>
+        client.get<EngineeringVersionComparisonDto>(`/engineering/versions/${id}/compare`, {
+          query: { with: withId },
+        }),
+      shareLinks: (id: string) =>
+        client.get<EngineeringShareLinkDto[]>(`/engineering/versions/${id}/share-links`),
+      createShareLink: (id: string, validDays: number) =>
+        client.post<EngineeringShareLinkDto & { token: string; path: string }>(
+          `/engineering/versions/${id}/share-links`,
+          { validDays },
+        ),
+      revokeShareLink: (linkId: string) =>
+        client.post<EngineeringShareLinkDto>(`/engineering/share-links/${linkId}/revoke`),
+      /** Entregáveis do projeto: memorial e unifilar (PDF), unifilar em SVG e DXF. */
+      deliverable: (
+        id: string,
+        file: 'report.pdf' | 'single-line.pdf' | 'single-line.svg' | 'single-line.dxf',
+      ) => client.getBlob(`/engineering/versions/${id}/${file}`),
       removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
     },
     catalog: {
@@ -618,6 +639,10 @@ export function createEndpoints(client: ApiClient) {
         }),
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
+    },
+    publicEngineering: {
+      get: (token: string) =>
+        client.get<PublicEngineeringReportDto>(`/public/engineering/${token}`, { auth: false }),
     },
     privacy: {
       policy: () => client.get<RetentionPolicyDto>(`${ROUTES.privacy}/retention`),

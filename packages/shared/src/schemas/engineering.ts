@@ -404,3 +404,9 @@ export type EngineCablesParameter = keyof typeof ENGINE_CABLES_PARAMETERS;
 
 /** Tabela de capacidade de condução da regra `engine.cables`: `tables.ampacity` com estas colunas. */
 export const AMPACITY_TABLE = 'ampacity';
+
+export const createEngineeringShareLinkSchema = z.object({
+  /** Validade do link em dias. */
+  validDays: z.number().int().min(1).max(365).default(30),
+});
+export type CreateEngineeringShareLinkInput = z.input<typeof createEngineeringShareLinkSchema>;

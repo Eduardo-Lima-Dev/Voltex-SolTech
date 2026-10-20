@@ -17,6 +17,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import {
   cancelEngineeringRequestSchema,
+  createEngineeringShareLinkSchema,
   engineeringDecisionSchema,
   engineeringReviewCommentSchema,
   createEngineeringProjectSchema,
@@ -27,9 +28,10 @@ import {
 } from '@voltex/shared';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
-import { RequirePermissions } from '../../common/decorators';
+import { Public, RequirePermissions } from '../../common/decorators';
 import { EngineeringConfiguratorService } from './engineering-configurator.service';
 import { EngineeringProjectsService } from './engineering-projects.service';
+import { EngineeringShareService } from './engineering-share.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
 
@@ -40,6 +42,7 @@ class CreateProjectDto extends createZodDto(createEngineeringProjectSchema) {}
 class SaveDesignDto extends createZodDto(saveDesignSchema) {}
 class SuggestDto extends createZodDto(suggestConfigurationsSchema) {}
 class ReviewCommentDto extends createZodDto(engineeringReviewCommentSchema) {}
+class ShareLinkDto extends createZodDto(createEngineeringShareLinkSchema) {}
 class DecisionDto extends createZodDto(engineeringDecisionSchema) {}
 class FromRequestDto extends createZodDto(
   z.object({
@@ -61,6 +64,7 @@ export class EngineeringController {
     private readonly projects: EngineeringProjectsService,
     private readonly versions: EngineeringVersionsService,
     private readonly configurator: EngineeringConfiguratorService,
+    private readonly shares: EngineeringShareService,
   ) {}
 
   // ---- Fila de pedidos ----
@@ -131,6 +135,31 @@ export class EngineeringController {
   @RequirePermissions('engine.project.read')
   getVersion(@Param('id', ParseUUIDPipe) id: string) {
     return this.versions.detail(id);
+  }
+
+  @Post('versions/:id/share-links')
+  @RequirePermissions('engine.project.write')
+  createShareLink(@Param('id', ParseUUIDPipe) id: string, @Body() body: ShareLinkDto) {
+    return this.shares.create(id, body);
+  }
+
+  @Get('versions/:id/share-links')
+  @RequirePermissions('engine.project.read')
+  listShareLinks(@Param('id', ParseUUIDPipe) id: string) {
+    return this.shares.list(id);
+  }
+
+  @Post('share-links/:linkId/revoke')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  revokeShareLink(@Param('linkId', ParseUUIDPipe) linkId: string) {
+    return this.shares.revoke(linkId);
+  }
+
+  @Get('versions/:id/compare')
+  @RequirePermissions('engine.project.read')
+  compare(@Param('id', ParseUUIDPipe) id: string, @Query('with', ParseUUIDPipe) other: string) {
+    return this.versions.compare(id, other);
   }
 
   @Get('versions/:id/single-line.svg')
@@ -250,5 +279,19 @@ export class EngineeringController {
   @RequirePermissions('engine.project.write')
   removeVersion(@Param('id', ParseUUIDPipe) id: string) {
     return this.versions.remove(id);
+  }
+}
+
+/** Relatório técnico simplificado do projeto aprovado (link com token): sem login, com limite de requisições. */
+@ApiTags('Engenharia · Relatório público')
+@Controller('public/engineering')
+export class PublicEngineeringController {
+  constructor(private readonly shares: EngineeringShareService) {}
+
+  @Get(':token')
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  open(@Param('token') token: string) {
+    return this.shares.openPublic(token);
   }
 }

@@ -435,3 +435,56 @@ export interface SuggestConfigurationsResult {
   discarded: { moduleId: string; inverterId: string; reason: string }[];
   pending: CompatibilityResult['pending'];
 }
+
+/** Comparação entre duas versões do mesmo projeto (9I). */
+export interface EngineeringVersionComparisonDto {
+  from: { id: string; number: number; status: string };
+  to: { id: string; number: number; status: string };
+  designChanges: {
+    section: string;
+    path: string;
+    kind: 'ADDED' | 'REMOVED' | 'CHANGED';
+    before: unknown;
+    after: unknown;
+  }[];
+  resultChanges: {
+    metric: string;
+    label: string;
+    before: number | string | null;
+    after: number | string | null;
+    delta: number | null;
+  }[];
+  truncated: boolean;
+}
+
+/** Relatório técnico simplificado para o cliente final (link público, sem custos nem margem). */
+export interface PublicEngineeringReportDto {
+  companyName: string;
+  projectName: string;
+  city: string | null;
+  state: string | null;
+  approvedAt: string;
+  powerKwp: number | null;
+  moduleCount: number;
+  moduleAreaM2: number | null;
+  annualEnergyKwh: number | null;
+  performanceRatio: number | null;
+  monthlyKwh: number[] | null;
+  monthlyConsumptionKwh: number | null;
+  economics: {
+    firstYearSavingsCents: number | null;
+    accumulatedSavingsCents: number | null;
+    simplePaybackYears: number | null;
+    horizonYears: number | null;
+  } | null;
+  notes: string[];
+}
+
+export interface EngineeringShareLinkDto {
+  id: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  viewCount: number;
+  lastViewedAt: string | null;
+  createdAt: string;
+}

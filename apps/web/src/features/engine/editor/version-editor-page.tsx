@@ -33,6 +33,7 @@ import { EditorContext, type EditorContextValue } from './editor-context';
 import { SiteStep } from './site-step';
 import { StringsStep } from './strings-step';
 import { SurfacesStep } from './surfaces-step';
+import { ComparePanel, DeliverablesPanel, ShareLinksPanel } from './version-extras';
 import { ProtectionsCablesStep } from './protections-cables-step';
 import { SimulationStep } from './simulation-step';
 import { ConnectionStep } from './connection-step';
@@ -327,6 +328,10 @@ export function VersionEditorPage() {
         </nav>
 
         <Step />
+
+        <DeliverablesPanel versionId={versionId} />
+        <ComparePanel versionId={versionId} projectId={projectId} />
+        {v.status === 'APPROVED' ? <ShareLinksPanel versionId={versionId} /> : null}
 
         {v.status === 'SUBMITTED' ? (
           <section className="space-y-3 rounded border p-4" aria-label="Revisão técnica">

@@ -12,3 +12,4 @@ export * from './simulation.js';
 export * from './connection.js';
 export * from './economics.js';
 export * from './single-line.js';
+export * from './compare.js';
