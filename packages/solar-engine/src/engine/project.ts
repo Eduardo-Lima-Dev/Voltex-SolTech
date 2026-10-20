@@ -1,10 +1,17 @@
 import type {
   EngineeringDesign,
+  InverterSpec,
+  ModuleSpec,
   EngineeringResults,
   SurfaceLayoutResult,
   SurfaceShadingResult,
 } from '@voltex/shared';
 import { roundTo } from '../units/index.js';
+import {
+  COMPATIBILITY_ALGORITHM_VERSION,
+  evaluateCompatibility,
+  type EquipmentStatusLite,
+} from './compatibility.js';
 import { LAYOUT_ALGORITHM_VERSION, layoutSurface, type LayoutModule } from './layout.js';
 import { SHADING_ALGORITHM_VERSION, computeShading } from './shading.js';
 
@@ -16,8 +23,13 @@ import { SHADING_ALGORITHM_VERSION, computeShading } from './shading.js';
 export const ENGINEERING_RESULTS_VERSION = 'engine-results-1.0.0';
 
 export interface ComputeContext {
-  /** Fichas dos módulos usados no desenho, por id do catálogo. */
-  modules: Record<string, LayoutModule | undefined>;
+  /** Fichas dos módulos usados no desenho, por id do catálogo (para o layout bastam dimensões e potência). */
+  modules: Record<string, (LayoutModule & Partial<ModuleSpec>) | undefined>;
+  inverters?: Record<string, InverterSpec | undefined>;
+  /** Situação no catálogo dos equipamentos citados. Ausente = não encontrado. */
+  status?: Record<string, EquipmentStatusLite | undefined>;
+  /** Parâmetros da regra `engine.design` em vigor (vazio = sem regra). */
+  parameters?: Record<string, number>;
 }
 
 export function computeEngineeringResults(
@@ -102,6 +114,15 @@ export function computeEngineeringResults(
     }
   }
 
+  const compatibility = evaluateCompatibility({
+    design,
+    layoutCountBySurface: Object.fromEntries(layout.map((l) => [l.surfaceId, l.moduleCount])),
+    modules: context.modules as Record<string, ModuleSpec | undefined>,
+    inverters: context.inverters ?? {},
+    status: context.status ?? {},
+    parameters: context.parameters ?? {},
+  });
+
   const modulesUsed = layout.reduce((sum, l) => sum + l.moduleCount, 0);
   const havePower = layout.length > 0 && layout.every((l) => l.powerKwp !== null);
   return {
@@ -109,9 +130,11 @@ export function computeEngineeringResults(
       results: ENGINEERING_RESULTS_VERSION,
       layout: LAYOUT_ALGORITHM_VERSION,
       shading: SHADING_ALGORITHM_VERSION,
+      compatibility: COMPATIBILITY_ALGORITHM_VERSION,
     },
     layout,
     shading,
+    compatibility,
     totals: {
       moduleCount: modulesUsed,
       powerKwp: havePower
