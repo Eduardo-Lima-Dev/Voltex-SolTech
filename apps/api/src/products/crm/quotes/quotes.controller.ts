@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import {
   createMarginPolicySchema,
+  createQuoteFromEngineeringSchema,
   decideApprovalSchema,
   listApprovalsQuerySchema,
   requestApprovalSchema,
@@ -25,6 +26,7 @@ import { MarginPoliciesService } from './margin-policies.service';
 import { QuotesService } from './quotes.service';
 
 class SaveQuoteDto extends createZodDto(saveQuoteSchema) {}
+class CreateQuoteFromEngineeringDto extends createZodDto(createQuoteFromEngineeringSchema) {}
 class UpdateQuoteDto extends createZodDto(updateQuoteSchema) {}
 class RequestApprovalDto extends createZodDto(requestApprovalSchema) {}
 class DecideApprovalDto extends createZodDto(decideApprovalSchema) {}
@@ -51,6 +53,17 @@ export class QuotesController {
   @RequirePermissions('crm.quote.write')
   create(@Param('id', ParseUUIDPipe) id: string, @Body() body: SaveQuoteDto) {
     return this.quotes.create(id, body);
+  }
+
+  @Post('opportunities/:id/quotes/from-engineering')
+  // A cotação usa apenas um snapshot já aprovado e vinculado à oportunidade.
+  // O vendedor que pode criar cotações não precisa ganhar acesso ao Studio inteiro.
+  @RequirePermissions('crm.quote.write')
+  createFromEngineering(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CreateQuoteFromEngineeringDto,
+  ) {
+    return this.quotes.createFromEngineering(id, body);
   }
 
   @Get('quotes/:id')

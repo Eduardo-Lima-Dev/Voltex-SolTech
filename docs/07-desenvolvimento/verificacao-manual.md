@@ -63,3 +63,22 @@ Continue da proposta aceita pelo cliente (a oportunidade vai para **Contrato**).
 5. **Painel** — `CRM → Painel`: leads por origem, funil, propostas, ticket médio e previsão (sem total ponderado até definir pesos).
 6. **Automações** — deixe um lead sem contato além do prazo, ou uma oportunidade em "Fatura pendente" por mais de 24 h: em até 1 minuto nasce a tarefa (veja em **Tarefas**). Abra o link de uma proposta enviada: o responsável recebe a tarefa de follow-up.
 7. **Perfis** — o vendedor lê contratos e projetos mas não gera nem assina; o financeiro vê o painel; operação e engenharia atualizam o projeto.
+
+## Fase 9 — Solar Engine Studio
+
+Pré-requisitos: um módulo e um inversor **aprovados** no catálogo (Engine → Catálogo), regras `engine.design`, `engine.cables`, `engine.connection` e `engine.economics` **ativadas por quem revisa** (use valores reais do responsável técnico; os dos testes são de exemplo) e a série horária do local em cache (Administração → Fontes de dados, com a fonte ligada em `DATA_HUB_ENABLED_SOURCES` depois da conferência de licença).
+
+1. **Engenheiro** — `Engine → Pedidos`: pegue o pedido amarelo e abra o projeto (informe latitude e longitude se faltarem). Em cada etapa confira o resultado: compatibilidade com a fórmula de cada verificação; proteções e cabos com a justificativa; simulação (gráficos mensal, dia típico e cascata de perdas, comparação com PVGIS/Calculator); conexão (regras da distribuidora); economia (financiamento, cenários, tornado).
+2. **Pendências** — remova uma regra ou deixe um campo vazio: a etapa mostra "pendente" e **Enviar para revisão** é recusado. Nada é presumido.
+3. **Enviar** — **Enviar para revisão** congela a versão.
+4. **Responsável técnico** — comente por seção; **Aprovar** é recusado enquanto houver comentário aberto; resolva e aprove com justificativa. A versão fica congelada e nasce o snapshot.
+5. **Entregáveis** — baixe memorial e unifilar (PDF/SVG/DXF). **Comparar com outra versão** mostra o que mudou.
+6. **Cliente** — **Gerar link** e abra em janela anônima: nenhum custo ou margem aparece. **Revogar** derruba o link.
+7. **CRM** — a linha do tempo da oportunidade registra a aprovação, o pedido vai para "Concluído" e a cotação pode **importar a lista de materiais** do snapshot. **Anexar à homologação** coloca memorial e unifilar no checklist do projeto (depois do contrato).
+
+### Fase 9K — gestão do pedido e do projeto
+
+1. **Pedido** — `Engine → Pedidos → Ver pedido`: confira o contexto do CRM; mude para **Aguardando visita** (pede motivo); use **Pedir informação ao vendedor** (o vendedor recebe uma tarefa no CRM); como coordenador, defina **Prioridade e prazo** e veja o atraso na lista.
+2. **Projeto** — abra o projeto: preencha a **Ficha** (potência-alvo muda a classe; informe a ART) e veja o pacote em **Documentos** mudar entre micro e mini.
+3. **Levantamento** — preencha em **Levantamento**; **Concluir** só é aceito com os dados mínimos; ao concluir, o pedido volta a "Em andamento". Entre como instalador: ele acessa só o levantamento.
+4. **Carga** e **Histórico** — conferir consumo, cargas e a linha do tempo do pedido e do projeto. **Painel** (coordenador): totais e carga por engenheiro.

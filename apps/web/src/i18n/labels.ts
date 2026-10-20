@@ -107,6 +107,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'engine.project.read': 'Ver projetos técnicos',
   'engine.project.write': 'Criar e editar projetos técnicos',
   'engine.project.approve': 'Aprovar e congelar projetos técnicos',
+  'engine.survey.read': 'Ver o levantamento do local (visita técnica)',
+  'engine.survey.write': 'Preencher e concluir o levantamento do local',
+  'engine.request.manage':
+    'Definir prioridade e prazo, reatribuir pedidos e ver o painel da engenharia',
   'offgrid.project.read': 'Ver projetos off-grid',
   'offgrid.project.write': 'Criar e editar projetos off-grid',
   'offgrid.scenario.approve': 'Aprovar cenários off-grid',
@@ -476,6 +480,9 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   BILL_VALIDATED: 'Fatura validada',
   CALCULATION_LINKED: 'Cálculo vinculado',
   ENGINEERING_REQUESTED: 'Pedido de engenharia',
+  ENGINEERING_STARTED: 'Projeto de engenharia iniciado',
+  ENGINEERING_APPROVED: 'Projeto de engenharia aprovado',
+  ENGINEERING_REJECTED: 'Projeto de engenharia recusado',
   GUARD_EVALUATED: 'Triagem avaliada',
   GUARD_OVERRIDDEN: 'Triagem liberada',
   QUOTE_CREATED: 'Cotação criada',
@@ -529,6 +536,9 @@ export const BILL_FIELD_LABELS: Record<EnergyBillField, string> = {
 export const ENGINEERING_STATUS_LABELS = {
   PENDING: 'Pendente',
   IN_PROGRESS: 'Em andamento',
+  WAITING_VISIT: 'Aguardando visita',
+  WAITING_INFO: 'Aguardando informação',
+  IN_REVIEW: 'Em revisão',
   DONE: 'Concluído',
   CANCELLED: 'Cancelado',
 } as const;

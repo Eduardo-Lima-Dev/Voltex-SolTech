@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -12,13 +13,20 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { activateRuleSetSchema, createRuleSetSchema } from '@voltex/shared';
+import {
+  CALCULATOR_RULESET_KEY,
+  activateRuleSetSchema,
+  createRuleSetSchema,
+  effectiveRuleQuerySchema,
+  isRuleSetKey,
+} from '@voltex/shared';
 import { RequirePermissions } from '../../common/decorators';
 import { RulesService } from './rules.service';
 
 class CreateRuleSetDto extends createZodDto(createRuleSetSchema) {}
 class ActivateRuleSetDto extends createZodDto(activateRuleSetSchema) {}
 class KeyQueryDto extends createZodDto(z.object({ key: z.string().trim().optional() })) {}
+class EffectiveQueryDto extends createZodDto(effectiveRuleQuerySchema) {}
 
 @ApiTags('Regras')
 @ApiBearerAuth()
@@ -34,8 +42,13 @@ export class RulesController {
 
   @Get('effective')
   @RequirePermissions('platform.rule.read')
-  effective(@Query() query: KeyQueryDto) {
-    return this.rules.effective(query.key);
+  async effective(@Query() query: EffectiveQueryDto) {
+    const key = query.key ?? CALCULATOR_RULESET_KEY;
+    if (key === CALCULATOR_RULESET_KEY) return this.rules.effective(key);
+    if (!isRuleSetKey(key)) throw new BadRequestException(`Chave de regra desconhecida: ${key}`);
+    const { key: _key, ...scope } = query;
+    // Chaves do Engine não têm padrão: sem regra ativa o consumidor recebe `null` e trava a aprovação.
+    return (await this.rules.resolve(key, scope)) ?? { ref: null, key, definition: null };
   }
 
   @Post()

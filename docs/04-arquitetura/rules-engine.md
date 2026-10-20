@@ -57,3 +57,12 @@ O servidor busca o local e a tarifa escolhidos **no banco** (não confia no clie
 ## Fora desta fase
 
 Avaliador de condições (YAML da seção 41 da modelagem), regras por concessionária/estado, aprovação em duas etapas e criação/ativação de regras pela interface (hoje é pela API; a tela mostra a regra em vigor e as versões).
+
+## Regras por chave e escopo (Fase 9A, [ADR-0016](adr/0016-regras-por-chave-escopo-e-avaliador.md))
+
+- **Chaves:** `calculator.rules` (como antes), `engine.design`, `engine.cables`, `engine.transposition`, `engine.connection`, `engine.economics`. Cada uma tem schema próprio no registro `RULESET_DEFINITIONS`.
+- **Escopo opcional** (`distributorId`, `state`, `projectType`, `customerGroup`) nas chaves que o aceitam: uma ativa **por chave e escopo**; a mais específica que casa com o contexto vence (`RulesService.resolve`). Ativar aposenta só a ativa do **mesmo** escopo.
+- **Sem padrão nas chaves do Engine:** sem regra ativa, `GET /rules/effective?key=engine.x` devolve `{ ref: null, definition: null }` e quem consome trava a aprovação. O `calculator.rules` mantém o `builtin@1`.
+- **Consulta:** `GET /rules/effective?key=engine.connection&state=MG&projectType=ON_GRID`.
+- **Evento:** toda ativação publica `RuleSetActivated` (`key`, `ref`, `previousRef`, `scope`, `reviewedBy`).
+- **Definição do Engine:** `parameters` (números), `tables` (linhas) e `rules` (condicionais: `when` com `=`, `!=`, `>`, `>=`, `<`, `<=`, `in`, `between`, `exists`, `all/any/not`; `then` com severidade, código, mensagem e **fonte obrigatória**). Avaliador puro em `@voltex/solar-engine` (`evaluateRules`).

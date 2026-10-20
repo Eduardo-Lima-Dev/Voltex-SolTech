@@ -1,0 +1,684 @@
+{
+  "documentText": "Datasheet | DS3-H microinversores APsystems. Liderando a Indústria em Tecnologia de Microinversores Solares",
+  "lines": [
+    {
+      "cells": [
+        {
+          "text": "Datasheet | DS3-H microinversores",
+          "x0": 46,
+          "x1": 250
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Modelo",
+          "x0": 36,
+          "x1": 73
+        },
+        {
+          "text": "DS3-H",
+          "x0": 408,
+          "x1": 439
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Região",
+          "x0": 36,
+          "x1": 71
+        },
+        {
+          "text": "Brasil",
+          "x0": 410,
+          "x1": 437
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados de Entrada (DC)",
+          "x0": 36,
+          "x1": 161
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa recomendada de potência do módulo fotovoltaico",
+          "x0": 40,
+          "x1": 276
+        },
+        {
+          "text": "330Wp-660Wp+",
+          "x0": 387,
+          "x1": 459
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de tensão do MPPT",
+          "x0": 40,
+          "x1": 146
+        },
+        {
+          "text": "28V-45V",
+          "x0": 405,
+          "x1": 442
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de tensão de operação",
+          "x0": 40,
+          "x1": 161
+        },
+        {
+          "text": "26V-60V",
+          "x0": 404,
+          "x1": 442
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão máxima de entrada",
+          "x0": 40,
+          "x1": 153
+        },
+        {
+          "text": "60V",
+          "x0": 414,
+          "x1": 432
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máxima corrente de entrada",
+          "x0": 40,
+          "x1": 158
+        },
+        {
+          "text": "20A x 2",
+          "x0": 407,
+          "x1": 440
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Isc PV",
+          "x0": 40,
+          "x1": 66
+        },
+        {
+          "text": "20A x 2",
+          "x0": 407,
+          "x1": 440
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados de Saída (AC)",
+          "x0": 36,
+          "x1": 148
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máxima potência continua de saída",
+          "x0": 40,
+          "x1": 188
+        },
+        {
+          "text": "1050VA",
+          "x0": 407,
+          "x1": 440
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão nominal de saída/faixa de tensão de saída(1)",
+          "x0": 40,
+          "x1": 254
+        },
+        {
+          "text": "220V/ 176V-246.4V",
+          "x0": 383,
+          "x1": 464
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente nominal de saída",
+          "x0": 40,
+          "x1": 150
+        },
+        {
+          "text": "4.8A",
+          "x0": 413,
+          "x1": 433
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Frequência nominal de saída/ faixa de freq. de saída(1)",
+          "x0": 40,
+          "x1": 266
+        },
+        {
+          "text": "60Hz/57.4Hz-62.6Hz",
+          "x0": 379,
+          "x1": 467
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente c.a. máxima absorvida",
+          "x0": 40,
+          "x1": 173
+        },
+        {
+          "text": "<0.2A",
+          "x0": 411,
+          "x1": 436
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Quantid. máxima de unidades por seguimento de 4mm² (2)",
+          "x0": 40,
+          "x1": 285
+        },
+        {
+          "text": "5",
+          "x0": 421,
+          "x1": 426
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência",
+          "x0": 36,
+          "x1": 89
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência europeia",
+          "x0": 40,
+          "x1": 120
+        },
+        {
+          "text": "95.0%",
+          "x0": 411,
+          "x1": 437
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência máxima",
+          "x0": 40,
+          "x1": 116
+        },
+        {
+          "text": "96.5%",
+          "x0": 411,
+          "x1": 436
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência nominal MPPT",
+          "x0": 40,
+          "x1": 143
+        },
+        {
+          "text": "99.5%",
+          "x0": 411,
+          "x1": 436
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Consumo de energia noturno",
+          "x0": 40,
+          "x1": 163
+        },
+        {
+          "text": "20mW",
+          "x0": 409,
+          "x1": 438
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados Mecânicos",
+          "x0": 36,
+          "x1": 130
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de temperatura ambiente de operação(3)",
+          "x0": 40,
+          "x1": 234
+        },
+        {
+          "text": "- 40 °C to + 65 °C",
+          "x0": 386,
+          "x1": 461
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de temperature interna de operação",
+          "x0": 40,
+          "x1": 217
+        },
+        {
+          "text": "- 40 °C to + 85 °C",
+          "x0": 386,
+          "x1": 461
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dimensões (C x L x A)",
+          "x0": 40,
+          "x1": 134
+        },
+        {
+          "text": "263mm x 218mm x 42.5mm",
+          "x0": 366,
+          "x1": 481
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Peso",
+          "x0": 40,
+          "x1": 60
+        },
+        {
+          "text": "3.1kg",
+          "x0": 413,
+          "x1": 433
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Cabo de autocarro AC",
+          "x0": 40,
+          "x1": 134
+        },
+        {
+          "text": "4mm2(28A)",
+          "x0": 399,
+          "x1": 448
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de conector DC",
+          "x0": 40,
+          "x1": 127
+        },
+        {
+          "text": "Stäubli MC4 PV-ADBP4-S2&ADSP4-S2",
+          "x0": 342,
+          "x1": 505
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Refrigeração",
+          "x0": 40,
+          "x1": 94
+        },
+        {
+          "text": "Convecção Natural - Sem Fans",
+          "x0": 359,
+          "x1": 488
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Classificação de proteção",
+          "x0": 40,
+          "x1": 148
+        },
+        {
+          "text": "IP67",
+          "x0": 414,
+          "x1": 433
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Características",
+          "x0": 36,
+          "x1": 116
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Comunicação (Inversor com ECU)(4)",
+          "x0": 40,
+          "x1": 190
+        },
+        {
+          "text": "ZigBee Encriptado",
+          "x0": 384,
+          "x1": 463
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de transformadores",
+          "x0": 40,
+          "x1": 144
+        },
+        {
+          "text": "Transform. de alta frequência, Galvanicamente Isolado",
+          "x0": 309,
+          "x1": 537
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento",
+          "x0": 40,
+          "x1": 104
+        },
+        {
+          "text": "Energy Management Analysis (EMA) system",
+          "x0": 330,
+          "x1": 517
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Garantia(5)",
+          "x0": 40,
+          "x1": 83
+        },
+        {
+          "text": "15 anos padrão; 25 anos Opcional",
+          "x0": 353,
+          "x1": 494
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Certificado e Conformidade",
+          "x0": 36,
+          "x1": 187
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Conformidade",
+          "x0": 40,
+          "x1": 100
+        },
+        {
+          "text": "ABNT NBR 16149:2013; ABNT NBR 16150;",
+          "x0": 337,
+          "x1": 509
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "PORTARIA Nº 140, DE 21 DE MARÇO DE 2022;",
+          "x0": 325,
+          "x1": 521
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "PORTARIA Nº 515, DE 10 DE NOVEMBRO DE 2023",
+          "x0": 317,
+          "x1": 529
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "(1) A faixa nominal de tensão/frequência pode ser estendida além do nominal, se necessário",
+          "x0": 36,
+          "x1": 304
+        },
+        {
+          "text": "© Todos os direitos reservados",
+          "x0": 323,
+          "x1": 428
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "pela concessionária de energia.",
+          "x0": 36,
+          "x1": 128
+        },
+        {
+          "text": "As especificações estão sujeitas a modificações sem aviso prévio",
+          "x0": 323,
+          "x1": 545
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "(2) Os limites podem variar. Consulte os requisitos locais para definir o número de",
+          "x0": 36,
+          "x1": 304
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "microinversores por ramo em sua área.",
+          "x0": 36,
+          "x1": 150
+        },
+        {
+          "text": "Por favor, certifique-se de que está utilizando a versão mais recente",
+          "x0": 323,
+          "x1": 558
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "(3) O inversor pode entrar no modo de degradação de energia em caso de instalação com",
+          "x0": 36,
+          "x1": 304
+        },
+        {
+          "text": "disponível em:latam.APsystems.com.",
+          "x0": 323,
+          "x1": 450
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "ventilação deficiente e dissipação de calor.",
+          "x0": 36,
+          "x1": 160
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "(4) Recomenda-se registrar no máximo 80 inversores em uma ECU para garantir uma",
+          "x0": 36,
+          "x1": 304
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "comunicação estável.",
+          "x0": 36,
+          "x1": 99
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "(5) Para se qualificar para a garantia, os microinversores da APsystems precisam ser",
+          "x0": 36,
+          "x1": 304
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "monitorados através do portal EMA. Consulte nossos termos e condições de garantia",
+          "x0": 36,
+          "x1": 304
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "disponíveis em latam.APsystems.com.",
+          "x0": 36,
+          "x1": 148
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "APsystems en Guadalajara",
+          "x0": 36,
+          "x1": 167
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "APsystems",
+          "x0": 36,
+          "x1": 85
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "AV. Lazaro Cardenas 2850-5o Piso, Colonia Jardines del",
+          "x0": 36,
+          "x1": 284
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Bosque C.P. 44520, Guadalajara, Jalisco",
+          "x0": 36,
+          "x1": 213
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "info.latam@apsystems.com",
+          "x0": 36,
+          "x1": 157
+        }
+      ]
+    }
+  ]
+}

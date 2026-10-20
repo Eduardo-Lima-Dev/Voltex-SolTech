@@ -1,5 +1,7 @@
 import {
   Building2,
+  DatabaseZap,
+  Inbox,
   FileText,
   HardHat,
   LockKeyhole,
@@ -23,6 +25,8 @@ export interface AdminTab {
     | 'tarifas'
     | 'irradiacao'
     | 'regras'
+    | 'fontes'
+    | 'atualizacoes'
     | 'margens'
     | 'contratos'
     | 'homologacao'
@@ -82,6 +86,20 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     label: 'Regras',
     description: 'Limites e parâmetros do Solar Calculator',
     icon: Scale,
+    anyOf: ['platform.rule.read'],
+  },
+  {
+    path: 'fontes',
+    label: 'Fontes de dados',
+    description: 'Bases externas, licenças e páginas vigiadas',
+    icon: DatabaseZap,
+    anyOf: ['platform.rule.read'],
+  },
+  {
+    path: 'atualizacoes',
+    label: 'Atualizações',
+    description: 'Dados vindos de fora que esperam a sua decisão',
+    icon: Inbox,
     anyOf: ['platform.rule.read'],
   },
   {

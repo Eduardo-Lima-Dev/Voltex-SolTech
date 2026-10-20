@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { CloudDownload, Download, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@voltex/ui';
@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@voltex/ui';
+import { NasaProposalDialog } from './nasa-proposal-dialog';
 import { Can } from '@/app/guards';
 import { Pagination } from '@/components/pagination';
 import { Field } from '@/components/field';
@@ -339,6 +340,7 @@ export function SolarResourcesPage() {
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [nasa, setNasa] = useState(false);
   const [deleting, setDeleting] = useState<SolarResourceDto | null>(null);
   const debouncedSearch = useDebouncedValue(search.trim());
 
@@ -375,6 +377,9 @@ export function SolarResourcesPage() {
         </div>
         <Can permission="platform.rule.manage">
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setNasa(true)}>
+              <CloudDownload /> Buscar da NASA
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setImporting(true)}>
               <Upload /> Importar planilha
             </Button>
@@ -471,6 +476,7 @@ export function SolarResourcesPage() {
       </CardContent>
       <ResourceDialog open={creating} onOpenChange={setCreating} />
       <ImportDialog open={importing} onOpenChange={setImporting} />
+      <NasaProposalDialog open={nasa} onOpenChange={setNasa} />
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}

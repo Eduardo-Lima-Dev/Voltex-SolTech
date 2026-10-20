@@ -98,6 +98,66 @@ import {
   type RuleSource,
   type Thresholds,
   type CreateDistributorInput,
+  type CreateEngineeringProjectInput,
+  type CreateQuoteFromEngineeringInput,
+  type CreateEquipmentInput,
+  type EngineeringDesignInput,
+  type EngineeringProjectDetailDto,
+  type EngineeringProjectDto,
+  type EngineeringRequestListItemDto,
+  type CatalogLinkDocumentDto,
+  type EquipmentKind,
+  type CatalogSearchResultDto,
+  type CatalogSourceLinkDto,
+  type CreateCatalogSourceLinkInput,
+  type ListLinkDocumentsQuery,
+  type CatalogSourceDocumentDto,
+  type CatalogSourceDto,
+  type ListSourceDocumentsQuery,
+  type ChangeRequestStatusInput,
+  type EngineeringDashboardDto,
+  type EngineeringEventDto,
+  type EngineeringRequestDetailDto,
+  type EngineeringSurveyDto,
+  type LoadAnalysisDto,
+  type ProjectDocumentItemDto,
+  type SurveyInput,
+  type UpdateDocumentItemInput,
+  type UpdateProjectProfileInput,
+  type UpdateRequestPlanInput,
+  type EngineeringVersionComparisonDto,
+  type EngineeringShareLinkDto,
+  type PublicEngineeringReportDto,
+  type EngineeringVersionDetailDto,
+  type EngineeringDecisionInput,
+  type EngineeringReviewCommentInput,
+  type HorizonResultDto,
+  type ListEngineeringProjectsQuery,
+  type SuggestConfigurationsInput,
+  type SuggestConfigurationsResult,
+  type ListEngineeringRequestsQuery,
+  type WeatherResultDto,
+  type CreateSourceWatchInput,
+  type EquipmentDetailDto,
+  type EquipmentDto,
+  type ExternalReferenceDto,
+  type ImportCommitInput,
+  type ImportFormat,
+  type ImportPreviewDto,
+  type InmetroCheckInput,
+  type ListEquipmentQuery,
+  type ListReferencesQuery,
+  type PriceImportResultDto,
+  type PriceItemDto,
+  type ProposeSolarResourceInput,
+  type UpdateEquipmentInput,
+  type DataSourceDto,
+  type DecideProposalInput,
+  type ListProposalsQuery,
+  type SourceWatchDto,
+  type UpdateProposalDto,
+  type UpdateSourceWatchInput,
+  type TariffScanResultDto,
   type CreateRuleSetInput,
   type CreateSolarResourceInput,
   type CreateTariffInput,
@@ -239,6 +299,241 @@ export function createEndpoints(client: ApiClient) {
       activate: (id: string, input: ActivateRuleSetInput) =>
         client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
+    },
+    engineering: {
+      requests: (query: Partial<ListEngineeringRequestsQuery> = {}) =>
+        client.get<EngineeringRequestListItemDto[]>('/engineering/requests', {
+          query: query as QueryParams,
+        }),
+      requestDetail: (id: string) =>
+        client.get<EngineeringRequestDetailDto>(`/engineering/requests/${id}`),
+      changeRequestStatus: (id: string, input: ChangeRequestStatusInput) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/status`, input),
+      commentRequest: (id: string, text: string) =>
+        client.post<EngineeringRequestDetailDto>(`/engineering/requests/${id}/comments`, { text }),
+      requestInfo: (id: string, question: string) =>
+        client.post<EngineeringRequestDetailDto>(`/engineering/requests/${id}/info-requests`, {
+          question,
+        }),
+      updateRequestPlan: (id: string, input: UpdateRequestPlanInput) =>
+        client.patch<EngineeringRequestListItemDto>(`/engineering/requests/${id}/plan`, input),
+      dashboard: () => client.get<EngineeringDashboardDto>('/engineering/dashboard'),
+      updateProfile: (id: string, input: UpdateProjectProfileInput) =>
+        client.patch<EngineeringProjectDetailDto>(`/engineering/projects/${id}`, input),
+      projectTimeline: (id: string) =>
+        client.get<EngineeringEventDto[]>(`/engineering/projects/${id}/timeline`),
+      survey: (id: string) =>
+        client.get<EngineeringSurveyDto>(`/engineering/projects/${id}/survey`),
+      saveSurvey: (id: string, data: SurveyInput) =>
+        client.put<EngineeringSurveyDto>(`/engineering/projects/${id}/survey`, { data }),
+      completeSurvey: (id: string) =>
+        client.post<EngineeringSurveyDto>(`/engineering/projects/${id}/survey/complete`),
+      reopenSurvey: (id: string) =>
+        client.post<EngineeringSurveyDto>(`/engineering/projects/${id}/survey/reopen`),
+      loadAnalysis: (id: string) =>
+        client.get<LoadAnalysisDto>(`/engineering/projects/${id}/load-analysis`),
+      documentItems: (id: string) =>
+        client.get<ProjectDocumentItemDto[]>(`/engineering/projects/${id}/documents`),
+      updateDocumentItem: (id: string, code: string, input: UpdateDocumentItemInput) =>
+        client.patch<ProjectDocumentItemDto[]>(
+          `/engineering/projects/${id}/documents/${code}`,
+          input,
+        ),
+      assign: (id: string) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/assign`),
+      cancelRequest: (id: string, reason: string) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/cancel`, {
+          reason,
+        }),
+      projects: (query: Partial<ListEngineeringProjectsQuery> = {}) =>
+        client.get<Paginated<EngineeringProjectDto>>('/engineering/projects', {
+          query: query as QueryParams,
+        }),
+      project: (id: string) =>
+        client.get<EngineeringProjectDetailDto>(`/engineering/projects/${id}`),
+      createProject: (input: CreateEngineeringProjectInput) =>
+        client.post<EngineeringProjectDetailDto>('/engineering/projects', input),
+      fromRequest: (requestId: string, coordinates?: { latitude: number; longitude: number }) =>
+        client.post<EngineeringProjectDetailDto>(
+          `/engineering/projects/from-request/${requestId}`,
+          coordinates ?? {},
+        ),
+      cancelProject: (id: string, reason: string) =>
+        client.post<EngineeringProjectDetailDto>(`/engineering/projects/${id}/cancel`, { reason }),
+      version: (id: string) =>
+        client.get<EngineeringVersionDetailDto>(`/engineering/versions/${id}`),
+      saveDesign: (id: string, design: EngineeringDesignInput) =>
+        client.put<EngineeringVersionDetailDto>(`/engineering/versions/${id}/design`, { design }),
+      suggestConfigurations: (id: string, input: SuggestConfigurationsInput) =>
+        client.post<SuggestConfigurationsResult>(
+          `/engineering/versions/${id}/configurations`,
+          input,
+        ),
+      recalculate: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
+      submit: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/submit`),
+      comments: (id: string) =>
+        client.get<
+          {
+            id: string;
+            section: string;
+            text: string;
+            status: 'OPEN' | 'RESOLVED';
+            authorId: string | null;
+            resolvedAt: string | null;
+            createdAt: string;
+          }[]
+        >(`/engineering/versions/${id}/comments`),
+      addComment: (id: string, input: EngineeringReviewCommentInput) =>
+        client.post(`/engineering/versions/${id}/comments`, input),
+      resolveComment: (id: string, commentId: string) =>
+        client.post(`/engineering/versions/${id}/comments/${commentId}/resolve`),
+      approve: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/approve`, input),
+      reject: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/reject`, input),
+      newVersion: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/new-version`),
+      compare: (id: string, withId: string) =>
+        client.get<EngineeringVersionComparisonDto>(`/engineering/versions/${id}/compare`, {
+          query: { with: withId },
+        }),
+      shareLinks: (id: string) =>
+        client.get<EngineeringShareLinkDto[]>(`/engineering/versions/${id}/share-links`),
+      createShareLink: (id: string, validDays: number) =>
+        client.post<EngineeringShareLinkDto & { token: string; path: string }>(
+          `/engineering/versions/${id}/share-links`,
+          { validDays },
+        ),
+      revokeShareLink: (linkId: string) =>
+        client.post<EngineeringShareLinkDto>(`/engineering/share-links/${linkId}/revoke`),
+      attachHomologation: (id: string) =>
+        client.post<{
+          projectId: string;
+          attached: { code: string; documentId: string }[];
+          skipped: { code: string; reason: string }[];
+        }>(`/engineering/versions/${id}/attach-homologation`),
+      /** Entregáveis do projeto: memorial e unifilar (PDF), unifilar em SVG e DXF. */
+      deliverable: (
+        id: string,
+        file: 'report.pdf' | 'single-line.pdf' | 'single-line.svg' | 'single-line.dxf',
+      ) => client.getBlob(`/engineering/versions/${id}/${file}`),
+      removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
+    },
+    catalog: {
+      list: (query: Partial<ListEquipmentQuery> = {}) =>
+        client.get<Paginated<EquipmentDto>>('/catalog/items', { query: query as QueryParams }),
+      get: (id: string) => client.get<EquipmentDetailDto>(`/catalog/items/${id}`),
+      create: (input: CreateEquipmentInput) => client.post<EquipmentDto>('/catalog/items', input),
+      update: (id: string, input: UpdateEquipmentInput) =>
+        client.patch<EquipmentDto>(`/catalog/items/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`/catalog/items/${id}`),
+      approve: (id: string) => client.post<EquipmentDetailDto>(`/catalog/items/${id}/approve`),
+      retire: (id: string) => client.post<EquipmentDto>(`/catalog/items/${id}/retire`),
+      revise: (id: string) => client.post<EquipmentDto>(`/catalog/items/${id}/revise`),
+      inmetro: (id: string, input: InmetroCheckInput) =>
+        client.post<EquipmentDto>(`/catalog/items/${id}/inmetro`, input),
+      preview: (file: File, format: ImportFormat, kind?: string) => {
+        const form = new FormData();
+        form.append('file', file);
+        return client.upload<ImportPreviewDto>('/catalog/import/preview', form, {
+          query: { format, ...(kind ? { kind } : {}) },
+        });
+      },
+      commit: (input: ImportCommitInput) =>
+        client.post<{ created: EquipmentDto[] }>('/catalog/import/commit', input),
+      attachDatasheet: (id: string, documentId: string) =>
+        client.post<EquipmentDto>(`/catalog/items/${id}/datasheet`, { documentId }),
+      search: (q: string, kind?: EquipmentKind, limit = 15) =>
+        client.get<CatalogSearchResultDto[]>('/catalog/search', {
+          query: { q, ...(kind ? { kind } : {}), limit },
+        }),
+      sourceLinks: () => client.get<CatalogSourceLinkDto[]>('/catalog/source-links'),
+      addSourceLink: (input: CreateCatalogSourceLinkInput) =>
+        client.post<CatalogSourceLinkDto>('/catalog/source-links', input),
+      analyzeSourceLink: (id: string) =>
+        client.post<CatalogSourceLinkDto>(`/catalog/source-links/${id}/analyze`),
+      removeSourceLink: (id: string) =>
+        client.delete<{ id: string }>(`/catalog/source-links/${id}`),
+      linkDocuments: (id: string, query: Partial<ListLinkDocumentsQuery> = {}) =>
+        client.get<Paginated<CatalogLinkDocumentDto>>(`/catalog/source-links/${id}/documents`, {
+          query: query as QueryParams,
+        }),
+      previewLinkDocument: (id: string, kind?: EquipmentKind) =>
+        client.post<ImportPreviewDto>(
+          `/catalog/source-links/documents/${id}/preview${kind ? `?kind=${kind}` : ''}`,
+        ),
+      sources: () => client.get<CatalogSourceDto[]>('/catalog/sources'),
+      refreshSource: (key: string) =>
+        client.post<{ pages: number; found: number; created: number }>(
+          `/catalog/sources/${key}/refresh`,
+        ),
+      sourceDocuments: (key: string, query: Partial<ListSourceDocumentsQuery> = {}) =>
+        client.get<Paginated<CatalogSourceDocumentDto>>(`/catalog/sources/${key}/documents`, {
+          query: query as QueryParams,
+        }),
+      previewSourceDocument: (id: string) =>
+        client.post<ImportPreviewDto>(`/catalog/sources/documents/${id}/preview`),
+      references: (query: Partial<ListReferencesQuery> = {}) =>
+        client.get<Paginated<ExternalReferenceDto>>('/catalog/references', {
+          query: query as QueryParams,
+        }),
+      adopt: (id: string, spec?: Record<string, unknown>) =>
+        client.post<EquipmentDto>(`/catalog/references/${id}/adopt`, { spec }),
+      prices: (equipmentId?: string) =>
+        client.get<PriceItemDto[]>('/catalog/prices', {
+          query: equipmentId ? { equipmentId } : {},
+        }),
+      importPrices: (file: File, dryRun: boolean) => {
+        const form = new FormData();
+        form.append('file', file);
+        return client.upload<PriceImportResultDto>('/catalog/prices/import', form, {
+          query: { dryRun: String(dryRun) },
+        });
+      },
+    },
+    dataHub: {
+      weather: (query: {
+        latitude: number;
+        longitude: number;
+        source?: 'nasa-power' | 'pvgis';
+        kind?: 'climatology' | 'hourly';
+        year?: number;
+        refresh?: boolean;
+      }) =>
+        client.get<WeatherResultDto>(`${ROUTES.dataHub}/weather`, {
+          query: Object.fromEntries(
+            Object.entries(query).map(([k, v]) => [k, String(v)]),
+          ) as QueryParams,
+        }),
+      horizon: (query: { latitude: number; longitude: number }) =>
+        client.get<HorizonResultDto>(`${ROUTES.dataHub}/horizon`, { query: query as QueryParams }),
+      proposeSolarResource: (input: ProposeSolarResourceInput) =>
+        client.post<UpdateProposalDto>(`${ROUTES.dataHub}/solar-resources/propose`, input),
+      sources: () => client.get<DataSourceDto[]>(`${ROUTES.dataHub}/sources`),
+      watches: {
+        list: () => client.get<SourceWatchDto[]>(`${ROUTES.dataHub}/watches`),
+        create: (input: CreateSourceWatchInput) =>
+          client.post<SourceWatchDto>(`${ROUTES.dataHub}/watches`, input),
+        update: (id: string, input: UpdateSourceWatchInput) =>
+          client.patch<SourceWatchDto>(`${ROUTES.dataHub}/watches/${id}`, input),
+        remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.dataHub}/watches/${id}`),
+        check: (id: string) =>
+          client.post<{
+            status: 'BASELINE' | 'UNCHANGED' | 'CHANGED' | 'ERROR';
+            watch: SourceWatchDto;
+          }>(`${ROUTES.dataHub}/watches/${id}/check`),
+      },
+      updates: {
+        list: (query: ListProposalsQuery = {}) =>
+          client.get<UpdateProposalDto[]>(`${ROUTES.dataHub}/updates`, {
+            query: query as QueryParams,
+          }),
+        decide: (id: string, input: DecideProposalInput) =>
+          client.post<UpdateProposalDto>(`${ROUTES.dataHub}/updates/${id}/decide`, input),
+      },
+      scanTariffs: () => client.post<TariffScanResultDto>(`${ROUTES.dataHub}/tariffs/scan`),
     },
     leads: {
       list: (query: Partial<ListLeadsQuery>) =>
@@ -396,6 +691,8 @@ export function createEndpoints(client: ApiClient) {
         }),
     },
     quotes: {
+      fromEngineering: (opportunityId: string, input: CreateQuoteFromEngineeringInput) =>
+        client.post<QuoteDto>(`/opportunities/${opportunityId}/quotes/from-engineering`, input),
       update: (id: string, input: UpdateQuoteInput) =>
         client.patch<QuoteDto>(`${ROUTES.quotes}/${id}`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.quotes}/${id}`),
@@ -432,6 +729,10 @@ export function createEndpoints(client: ApiClient) {
         }),
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
+    },
+    publicEngineering: {
+      get: (token: string) =>
+        client.get<PublicEngineeringReportDto>(`/public/engineering/${token}`, { auth: false }),
     },
     privacy: {
       policy: () => client.get<RetentionPolicyDto>(`${ROUTES.privacy}/retention`),

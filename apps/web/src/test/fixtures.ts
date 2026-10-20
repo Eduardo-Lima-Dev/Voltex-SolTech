@@ -183,6 +183,7 @@ export const solarResource = (overrides: Partial<SolarResourceDto> = {}): SolarR
   hspMonthly: Array<number>(12).fill(5.5),
   source: 'CRESESB SunData',
   plane: 'Plano horizontal',
+  temperatures: null,
   createdAt: now,
   ...overrides,
 });
@@ -190,6 +191,8 @@ export const solarResource = (overrides: Partial<SolarResourceDto> = {}): SolarR
 export const ruleSet = (overrides: Partial<RuleSetDto> = {}): RuleSetDto => ({
   id: 'rs-1',
   key: 'calculator.rules',
+  scope: null,
+  scopeKey: '',
   version: 1,
   status: 'ACTIVE',
   validFrom: '2026-02-01T00:00:00.000Z',
@@ -496,6 +499,7 @@ export const makeQuote = (overrides: Partial<QuoteDto> = {}): QuoteDto => ({
   version: 1,
   title: null,
   calculationSessionId: 'calc-1',
+  engineeringSnapshotId: null,
   items: [{ category: 'MODULE', description: 'Módulo 550 Wp', quantity: 8, unitCostCents: 60_000 }],
   costs: {
     freightCents: 40_000,

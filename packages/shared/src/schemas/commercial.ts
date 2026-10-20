@@ -18,6 +18,35 @@ export const createMarginPolicySchema = z.object({
 export type CreateMarginPolicyInput = z.input<typeof createMarginPolicySchema>;
 export type CreateMarginPolicyData = z.output<typeof createMarginPolicySchema>;
 
+/** Importa somente a lista técnica congelada; preço e custos comerciais continuam obrigatórios. */
+export const createQuoteFromEngineeringSchema = z.object({
+  engineeringSnapshotId: z.uuid(),
+  title: z.string().trim().max(120).optional(),
+  priceCents: z.number().int().positive(),
+  costs: z
+    .object({
+      freightCents: z.number().int().min(0).default(0),
+      installationCents: z.number().int().min(0).default(0),
+      travelCents: z.number().int().min(0).default(0),
+      otherCostsCents: z.number().int().min(0).default(0),
+      commissionRate: z.number().min(0).max(1).default(0),
+      taxRate: z.number().min(0).max(1).default(0),
+      financingRate: z.number().min(0).max(1).default(0),
+      contingencyRate: z.number().min(0).max(1).default(0),
+    })
+    .default({
+      freightCents: 0,
+      installationCents: 0,
+      travelCents: 0,
+      otherCostsCents: 0,
+      commissionRate: 0,
+      taxRate: 0,
+      financingRate: 0,
+      contingencyRate: 0,
+    }),
+});
+export type CreateQuoteFromEngineeringInput = z.input<typeof createQuoteFromEngineeringSchema>;
+
 /** Atualização parcial: sem reaplicar padrões. */
 export const updateMarginPolicySchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),

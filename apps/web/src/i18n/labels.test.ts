@@ -143,7 +143,19 @@ describe('rótulos em pt-BR (a interface nunca mostra códigos crus)', () => {
       ['sombreamento', SHADING_LABELS, Object.values(ShadingLevel)],
       ['fatura', BILL_STATUS_LABELS, Object.values(EnergyBillStatus)],
       ['campo da fatura', BILL_FIELD_LABELS, ENERGY_BILL_FIELDS],
-      ['engenharia', ENGINEERING_STATUS_LABELS, ['PENDING', 'IN_PROGRESS', 'DONE', 'CANCELLED']],
+      [
+        'engenharia',
+        ENGINEERING_STATUS_LABELS,
+        [
+          'PENDING',
+          'IN_PROGRESS',
+          'WAITING_VISIT',
+          'WAITING_INFO',
+          'IN_REVIEW',
+          'DONE',
+          'CANCELLED',
+        ],
+      ],
     ];
     for (const [name, labels, values] of cases) {
       for (const value of values) expect(labels[value], `${name}: ${value}`).toBeTruthy();

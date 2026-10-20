@@ -148,6 +148,14 @@ export interface SolarResourceDto {
   hspMonthly: number[];
   source: string;
   plane: string;
+  /** Temperaturas mensais vindas da Central de Dados (não são a temperatura de projeto). */
+  temperatures: {
+    meanC: (number | null)[];
+    minC: (number | null)[];
+    maxC: (number | null)[];
+    source: string;
+    note: string;
+  } | null;
   createdAt: string;
 }
 
@@ -158,6 +166,9 @@ export interface RuleSetDto {
   status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
   validFrom: string | null;
   validTo: string | null;
+  /** Escopo da regra (distribuidora, estado, tipo de projeto, grupo); nulo = geral. */
+  scope: Record<string, string> | null;
+  scopeKey: string;
   definition: Record<string, unknown>;
   sources: { type: string; reference: string; url?: string; notes?: string }[];
   reviewedBy: string | null;
@@ -184,3 +195,7 @@ export * from './crm.js';
 export * from './commercial.js';
 export * from './delivery.js';
 export * from './privacy.js';
+export * from './data-hub.js';
+export * from './equipment.js';
+export * from './engineering.js';
+export * from './engineering-management.js';

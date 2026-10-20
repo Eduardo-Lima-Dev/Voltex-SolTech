@@ -1,4 +1,4 @@
-import { createBrowserRouter, createMemoryRouter, type RouteObject } from 'react-router';
+import { Navigate, createBrowserRouter, createMemoryRouter, type RouteObject } from 'react-router';
 import type { Product } from '@voltex/shared';
 import { AppShell } from './layout/app-shell';
 import { RootLayout } from './root-layout';
@@ -41,6 +41,15 @@ const pageRoutes: RouteObject[] = [
       const { PublicProposalPage } =
         await import('@/features/public-proposal/public-proposal-page');
       return { Component: PublicProposalPage, handle: { title: 'Proposta comercial' } };
+    },
+  },
+  {
+    // Relatório técnico do projeto aprovado para o cliente: link com token, sem login.
+    path: '/r/:token',
+    lazy: async () => {
+      const { PublicEngineeringReportPage } =
+        await import('@/features/public-engineering/public-engineering-page');
+      return { Component: PublicEngineeringReportPage, handle: { title: 'Relatório técnico' } };
     },
   },
   {
@@ -252,6 +261,122 @@ const pageRoutes: RouteObject[] = [
             ],
           },
           {
+            path: 'engine',
+            handle: { title: 'Solar Engine Studio' },
+            lazy: async () => {
+              const { EngineLayout } = await import('@/features/engine/layout');
+              return { Component: EngineLayout };
+            },
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { EngineIndexRedirect } = await import('@/features/engine/layout');
+                  return { Component: EngineIndexRedirect };
+                },
+              },
+              {
+                path: 'pedidos',
+                lazy: async () => {
+                  const { RequestsPage } = await import('@/features/engine/requests-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <RequestsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pedidos de engenharia' },
+                  };
+                },
+              },
+              {
+                path: 'pedidos/:id',
+                lazy: async () => {
+                  const { RequestPage } = await import('@/features/engine/request-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <RequestPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pedido de engenharia' },
+                  };
+                },
+              },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { DashboardPage } = await import('@/features/engine/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.request.manage">
+                        <DashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel da engenharia' },
+                  };
+                },
+              },
+              {
+                path: 'projetos',
+                lazy: async () => {
+                  const { ProjectsPage } = await import('@/features/engine/projects-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <ProjectsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projetos de engenharia' },
+                  };
+                },
+              },
+              {
+                path: 'projetos/:id',
+                lazy: async () => {
+                  const { ProjectPage } = await import('@/features/engine/project-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <ProjectPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projeto' },
+                  };
+                },
+              },
+              {
+                path: 'projetos/:id/versoes/:versionId',
+                lazy: async () => {
+                  const { VersionEditorPage } =
+                    await import('@/features/engine/editor/version-editor-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <VersionEditorPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Versão do projeto' },
+                  };
+                },
+              },
+              {
+                path: 'catalogo',
+                lazy: async () => {
+                  const { CatalogPage } = await import('@/features/admin/catalog/catalog-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="platform.catalog.read">
+                        <CatalogPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Catálogo técnico' },
+                  };
+                },
+              },
+            ],
+          },
+          {
             path: 'calculator',
             handle: { title: 'Solar Calculator' },
             lazy: async () => {
@@ -394,6 +519,35 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Regras' },
+                  };
+                },
+              },
+              { path: 'catalogo', element: <Navigate to="/engine/catalogo" replace /> },
+              {
+                path: 'fontes',
+                lazy: async () => {
+                  const { SourcesPage } = await import('@/features/admin/data-hub/sources-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('fontes').anyOf}>
+                        <SourcesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Fontes de dados' },
+                  };
+                },
+              },
+              {
+                path: 'atualizacoes',
+                lazy: async () => {
+                  const { UpdatesPage } = await import('@/features/admin/data-hub/updates-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('atualizacoes').anyOf}>
+                        <UpdatesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Atualizações' },
                   };
                 },
               },
