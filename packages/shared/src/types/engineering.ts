@@ -237,6 +237,84 @@ export interface BillOfMaterials {
   algorithmVersion: string;
 }
 
+/** Resultado da simulação de geração (9G). Ausente só em versões legadas ainda não recalculadas. */
+export interface EngineeringSimulationResult {
+  status: CompatibilityStatus;
+  energyKwh: number | null;
+  clippingKwh: number | null;
+  performanceRatio: number | null;
+  monthlyKwh?: number[];
+  typicalDayKw?: number[];
+  losses?: { id: string; label: string; kwh: number }[];
+  /** Comparações independentes da geração anual (PVGIS e Calculator). */
+  comparisons?: { source: 'PVGIS' | 'CALCULATOR'; referenceKwh: number; deltaPct: number }[];
+  warnings: string[];
+  algorithmVersion: string;
+}
+
+/** Conexão avaliada exclusivamente a partir de regras versionadas da distribuidora (9G). */
+export interface EngineeringConnectionResult {
+  status: CompatibilityStatus;
+  findings: {
+    ruleId: string;
+    severity: 'INFO' | 'WARNING' | 'BLOCKING';
+    code: string;
+    message: string;
+    source: string;
+  }[];
+  pending: { code: string; message: string }[];
+  algorithmVersion: string;
+}
+
+/** Viabilidade econômica de 25 anos (ou horizonte selecionado), sempre ligada à tarifa e regra usadas. */
+export interface EngineeringEconomicsResult {
+  status: CompatibilityStatus;
+  capexCents: number | null;
+  /** Economia do primeiro ano e acumulado do horizonte; vêm do fluxo de caixa persistido. */
+  firstYearSavingsCents: number | null;
+  accumulatedSavingsCents: number | null;
+  horizonYears: number | null;
+  simplePaybackYears: number | null;
+  discountedPaybackYears: number | null;
+  npvCents: number | null;
+  irrPct: number | null;
+  lcoeCentsPerKwh: number | null;
+  /** Financiamento (Price ou SAC), quando informado. */
+  financing?: {
+    system: 'PRICE' | 'SAC';
+    principalCents: number;
+    downPaymentCents: number;
+    firstInstallmentCents: number;
+    lastInstallmentCents: number;
+    totalPaidCents: number;
+    totalInterestCents: number;
+    annualInstallmentsCents: number[];
+    npvCents: number;
+    simplePaybackYears: number | null;
+    irrPct: number | null;
+  };
+  scenarios?: {
+    name: string;
+    simplePaybackYears: number | null;
+    npvCents: number;
+    irrPct: number | null;
+    lcoeCentsPerKwh: number | null;
+  }[];
+  /** Tornado: efeito de ±10% em cada premissa sobre o VPL, do maior ao menor. */
+  sensitivity?: {
+    variable: string;
+    label: string;
+    lowNpvCents: number;
+    highNpvCents: number;
+    swingCents: number;
+  }[];
+  /** Fluxo anual do caso-base (para o gráfico de caixa acumulado). */
+  cashFlow?: { year: number; netCashFlowCents: number; cumulativeCents: number }[];
+  warnings: string[];
+  pending: { code: string; message: string }[];
+  algorithmVersion: string;
+}
+
 export interface EngineeringResults {
   /** Versões dos algoritmos que produziram estes resultados. */
   algorithmVersions: Record<string, string>;
@@ -250,6 +328,9 @@ export interface EngineeringResults {
   cables: CableResult;
   /** Lista de materiais com preço vigente (9F). */
   bom: BillOfMaterials;
+  simulation?: EngineeringSimulationResult;
+  connection?: EngineeringConnectionResult;
+  economics?: EngineeringEconomicsResult;
   totals: { moduleCount: number; powerKwp: number | null; moduleAreaM2: number | null };
   /** Pendências que impedem concluir (módulo não escolhido, local sem coordenadas...). */
   pending: { code: string; message: string }[];
@@ -306,6 +387,16 @@ export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
       tables: Record<string, Record<string, number | string | null>[]>;
     };
   };
+  /** Proteções e cabos **aprovados** (candidatos à seleção automática) e preços unitários, para o cálculo no navegador. */
+  candidates: {
+    id: string;
+    kind: 'PROTECTION' | 'CABLE';
+    label: string;
+    costCents: number | null;
+    spec: Record<string, unknown>;
+  }[];
+  prices: Record<string, { cents: number; source: 'PRICE_LIST' | 'REFERENCE' }>;
+  labels: Record<string, string>;
   /** Equipamentos do catálogo usados no desenho (ficha para o cálculo no navegador). */
   equipment: {
     id: string;

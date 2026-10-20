@@ -109,9 +109,8 @@ describe('Central de Dados Externos (e2e)', () => {
       expect(byKey['cec-library']?.licenseStatus).toBe('PENDING_REVIEW');
       expect(byKey['cec-library']?.enabled).toBe(false);
       expect(byKey['aneel-tariffs']?.licenseStatus).toBe('CLEARED');
-      // Termos ainda não conferidos: a tela mostra a pendência (nada de "liberado" por omissão).
-      expect(byKey['nasa-power']?.licenseStatus).toBe('PENDING_REVIEW');
-      expect(byKey['pvgis']?.licenseStatus).toBe('PENDING_REVIEW');
+      expect(byKey['nasa-power']?.licenseStatus).toBe('CLEARED');
+      expect(byKey['pvgis']?.licenseStatus).toBe('CLEARED');
       expect(byKey['nasa-power']?.attribution).toContain('NASA POWER');
       expect((await get('/data-hub/sources', seller)).status).toBe(403);
     });
@@ -127,11 +126,11 @@ describe('Central de Dados Externos (e2e)', () => {
         source: 'nasa-power',
         kind: 'CLIMATOLOGY',
         cached: false,
-        licenseStatus: 'PENDING_REVIEW',
+        licenseStatus: 'CLEARED',
       });
       expect(first.body.summary.ghiKwhM2Day[0]).toBe(5.8658);
       expect(first.body.attribution).toContain('NASA POWER');
-      expect(first.body.warnings.join(' ')).toMatch(/termos de uso/);
+      expect(first.body.warnings.join(' ')).not.toMatch(/termos de uso/);
       expect(calls).toHaveLength(1);
       expect(calls[0]).toContain('/temporal/climatology/point');
 

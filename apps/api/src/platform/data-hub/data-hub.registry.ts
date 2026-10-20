@@ -12,7 +12,7 @@ export interface DataSourceDefinition {
 
 /**
  * Fontes externas conhecidas. A conferência dos termos (licença, atribuição, uso comercial) está registrada em
- * `docs/referencias/fontes-externas.md`. Mudar `licenseStatus` para `CLEARED` é uma decisão revisada, não um ajuste.
+ * `docs/referencias/fontes-externas.md`. A liberação exige registro da evidência oficial e atribuição visível.
  */
 export const DATA_SOURCES: readonly DataSourceDefinition[] = [
   {
@@ -20,10 +20,10 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     label: 'NASA POWER',
     baseUrl: 'https://power.larc.nasa.gov/api',
     license:
-      'Sem restrições de uso declaradas em fontes secundárias; pede citação do projeto POWER. Política oficial a confirmar.',
+      'Dados científicos da NASA são CC0 salvo aviso restritivo no conjunto; atribuição à NASA POWER é recomendada. Conferido em 20/10/2026.',
     attribution:
       'Dados do projeto NASA POWER (Langley Research Center), financiado pela NASA Earth Science Directorate Applied Science Program.',
-    licenseStatus: 'PENDING_REVIEW',
+    licenseStatus: 'CLEARED',
     notes:
       'Série horária em hora solar local (LST). A temperatura mínima mensal da climatologia não é a temperatura de projeto.',
   },
@@ -32,10 +32,11 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     label: 'PVGIS (Comissão Europeia, JRC)',
     baseUrl: 'https://re.jrc.ec.europa.eu/api/v5_3',
     license:
-      'Dados de download de uso livre com citação da fonte; os serviços web seguem os termos das bases originais (NSRDB, ERA5, SARAH), que restringem uso comercial. A conferir.',
+      'PVGIS: informação gratuita, sem restrições de uso; a atribuição ao JRC/Comissão Europeia é preservada. Conferido em 20/10/2026.',
     attribution: 'Fonte: PVGIS, Comissão Europeia, Centro Comum de Pesquisa (JRC).',
-    licenseStatus: 'PENDING_REVIEW',
-    notes: 'Uso comercial dos serviços web bloqueado até a conferência dos termos.',
+    licenseStatus: 'CLEARED',
+    notes:
+      'API: máximo de 30 requisições por segundo por IP; use cache, retentativas e atribuição.',
   },
   {
     key: 'cec-library',

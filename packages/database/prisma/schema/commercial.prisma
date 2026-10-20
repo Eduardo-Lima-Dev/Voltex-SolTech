@@ -113,6 +113,8 @@ model Quote {
   version              Int
   title                String?
   calculationSessionId String?             @map("calculation_session_id") @db.Uuid
+  /// Snapshot técnico aprovado que forneceu os materiais; nunca aponta para rascunho.
+  engineeringSnapshotId String?            @map("engineering_snapshot_id") @db.Uuid
   /// Lista de materiais: `[{ category, description, quantity, unitCostCents }]`.
   items                Json
   /// Frete, instalação, deslocamento, outros e taxas (comissão, impostos, custo financeiro, contingência).
@@ -132,10 +134,12 @@ model Quote {
 
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
   opportunity Opportunity       @relation(fields: [opportunityId], references: [id])
+  engineeringSnapshot EngineeringSnapshot? @relation(fields: [engineeringSnapshotId], references: [id])
   approvals   ApprovalRequest[]
 
   @@unique([opportunityId, version])
   @@index([tenantId, opportunityId])
+  @@index([tenantId, engineeringSnapshotId])
   @@map("quotes")
 }
 

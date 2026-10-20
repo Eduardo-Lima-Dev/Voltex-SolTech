@@ -9,12 +9,16 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import {
   cancelEngineeringRequestSchema,
+  engineeringDecisionSchema,
+  engineeringReviewCommentSchema,
   createEngineeringProjectSchema,
   listEngineeringProjectsQuerySchema,
   listEngineeringRequestsQuerySchema,
@@ -22,6 +26,7 @@ import {
   suggestConfigurationsSchema,
 } from '@voltex/shared';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { RequirePermissions } from '../../common/decorators';
 import { EngineeringConfiguratorService } from './engineering-configurator.service';
 import { EngineeringProjectsService } from './engineering-projects.service';
@@ -34,6 +39,8 @@ class ListProjectsQueryDto extends createZodDto(listEngineeringProjectsQuerySche
 class CreateProjectDto extends createZodDto(createEngineeringProjectSchema) {}
 class SaveDesignDto extends createZodDto(saveDesignSchema) {}
 class SuggestDto extends createZodDto(suggestConfigurationsSchema) {}
+class ReviewCommentDto extends createZodDto(engineeringReviewCommentSchema) {}
+class DecisionDto extends createZodDto(engineeringDecisionSchema) {}
 class FromRequestDto extends createZodDto(
   z.object({
     latitude: z.number().min(-90).max(90).optional(),
@@ -112,12 +119,58 @@ export class EngineeringController {
     return this.projects.cancel(id, body.reason);
   }
 
+  @Get('projects/:id/snapshot')
+  @RequirePermissions('engine.project.read')
+  approvedSnapshot(@Param('id', ParseUUIDPipe) id: string) {
+    return this.versions.approvedSnapshot(id);
+  }
+
   // ---- Versões ----
 
   @Get('versions/:id')
   @RequirePermissions('engine.project.read')
   getVersion(@Param('id', ParseUUIDPipe) id: string) {
     return this.versions.detail(id);
+  }
+
+  @Get('versions/:id/single-line.svg')
+  @RequirePermissions('engine.project.read')
+  singleLineSvg(@Param('id', ParseUUIDPipe) id: string) {
+    return this.versions.singleLine(id, 'svg');
+  }
+
+  @Get('versions/:id/single-line.dxf')
+  @RequirePermissions('engine.project.read')
+  singleLineDxf(@Param('id', ParseUUIDPipe) id: string) {
+    return this.versions.singleLine(id, 'dxf');
+  }
+
+  @Get('versions/:id/report.pdf')
+  @RequirePermissions('engine.project.read')
+  async reportPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { buffer, filename } = await this.versions.reportPdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+    });
+    return new StreamableFile(buffer);
+  }
+
+  @Get('versions/:id/single-line.pdf')
+  @RequirePermissions('engine.project.read')
+  async singleLinePdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { buffer, filename } = await this.versions.singleLinePdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+    });
+    return new StreamableFile(buffer);
   }
 
   @Put('versions/:id/design')
@@ -140,6 +193,49 @@ export class EngineeringController {
   @RequirePermissions('engine.project.write')
   recalculate(@Param('id', ParseUUIDPipe) id: string) {
     return this.versions.recalculate(id);
+  }
+
+  @Post('versions/:id/submit')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  submit(@Param('id', ParseUUIDPipe) id: string) {
+    return this.versions.submit(id);
+  }
+
+  @Get('versions/:id/comments')
+  @RequirePermissions('engine.project.read')
+  comments(@Param('id', ParseUUIDPipe) id: string) {
+    return this.versions.comments(id);
+  }
+
+  @Post('versions/:id/comments')
+  @RequirePermissions('engine.project.approve')
+  comment(@Param('id', ParseUUIDPipe) id: string, @Body() body: ReviewCommentDto) {
+    return this.versions.addComment(id, body);
+  }
+
+  @Post('versions/:id/comments/:commentId/resolve')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  resolveComment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+  ) {
+    return this.versions.resolveComment(id, commentId);
+  }
+
+  @Post('versions/:id/approve')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.approve')
+  approve(@Param('id', ParseUUIDPipe) id: string, @Body() body: DecisionDto) {
+    return this.versions.approve(id, body.note);
+  }
+
+  @Post('versions/:id/reject')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.approve')
+  reject(@Param('id', ParseUUIDPipe) id: string, @Body() body: DecisionDto) {
+    return this.versions.reject(id, body.note);
   }
 
   @Post('versions/:id/new-version')

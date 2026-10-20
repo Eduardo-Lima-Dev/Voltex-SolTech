@@ -11,6 +11,8 @@ export interface ProposalScenarioContent extends PublicProposalScenarioDto {
   calculationSessionId: string;
   ruleSetRef: string;
   algorithmVersion: string;
+  /** Snapshot técnico aprovado que substituiu estimativas preliminares, quando a cotação o usa. */
+  engineeringSnapshotId: string | null;
 }
 
 /**

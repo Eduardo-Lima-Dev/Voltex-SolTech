@@ -144,6 +144,7 @@ model EngineeringSnapshot {
   tenant  Tenant             @relation(fields: [tenantId], references: [id])
   project EngineeringProject @relation(fields: [projectId], references: [id])
   version EngineeringVersion @relation(fields: [versionId], references: [id])
+  quotes  Quote[]
 
   @@index([tenantId, projectId])
   @@map("engineering_snapshots")

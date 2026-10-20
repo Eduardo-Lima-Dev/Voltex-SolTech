@@ -25,7 +25,7 @@ Tarifas, mudanças em normas e (nas próximas fases) equipamentos viram **`Updat
 
 Cada fonte está registrada no código (`data-hub.registry.ts`) com licença, atribuição e situação dos termos (`PENDING_REVIEW`, `CLEARED`, `BLOCKED`). **Uma fonte só consulta a internet se estiver na variável `DATA_HUB_ENABLED_SOURCES`** do servidor (ex.: `nasa-power,pvgis,aneel-tariffs`). Vazio (padrão) = nada é buscado. O que já está em cache continua servido.
 
-Hoje: `aneel-tariffs` com termos conferidos (ODbL); **`nasa-power` e `pvgis` com termos NÃO conferidos para uso comercial**. Ligar essas duas é uma decisão sua depois da conferência; as respostas já saem com o aviso e com a atribuição.
+Hoje: `aneel-tariffs` (ODbL), `nasa-power` e `pvgis` estão liberadas para consulta com cache, limite de requisições e atribuição. A CEC/SAM continua bloqueada: a licença do código do SAM não basta para redistribuir suas bibliotecas de terceiros.
 
 ## Clima e horizonte
 

@@ -104,3 +104,151 @@ describe('resultados do projeto', () => {
     expect(r.shading[0]?.warnings.join(' ')).toMatch(/informada à mão/);
   });
 });
+
+describe('simulação, comparações e economia no resultado do projeto', () => {
+  const INVERTER_ID = '0198a000-0000-7000-8000-0000000000a1';
+  const moduleSpec = {
+    technology: 'MONO_SI' as const,
+    pmaxWp: 550,
+    vmppV: 41.7,
+    imppA: 13.19,
+    vocV: 49.7,
+    iscA: 13.98,
+    betaVocPctPerC: -0.27,
+    alphaIscPctPerC: 0.05,
+    gammaPmaxPctPerC: -0.34,
+    noctC: 45,
+    lengthMm: 2278,
+    widthMm: 1134,
+    bifacial: false,
+  };
+  const inverterSpec = {
+    topology: 'STRING' as const,
+    pAcNomW: 5000,
+    vDcMaxV: 1100,
+    mpptMinV: 140,
+    mpptMaxV: 1000,
+    mpptCount: 2,
+    inputsPerMppt: 2,
+    iMaxPerMpptA: 30,
+    vAcV: 220,
+    phases: 1,
+    iAcMaxA: 25,
+    exportLimitation: false,
+  };
+  const hour = (h: number) => (h >= 6 && h <= 17 ? 600 : 0);
+  const series = {
+    startAt: '2025-03-20T00:00:00Z',
+    timeStandard: 'UTC' as const,
+    ghiWhM2: Array.from({ length: 48 }, (_, i) => hour(i % 24)),
+    dhiWhM2: Array.from({ length: 48 }, (_, i) => hour(i % 24) * 0.2),
+    tempC: Array.from({ length: 48 }, () => 26),
+    missingHours: 0,
+  };
+  const d = (economics?: unknown, simulation?: unknown) =>
+    design({
+      defaultModuleId: MODULE_ID,
+      inverters: [{ id: 'e1', inverterId: INVERTER_ID, mppts: [] }],
+      ...(economics ? { economics: economics as never } : {}),
+      ...(simulation ? { simulation: simulation as never } : {}),
+    });
+  const context = (extra: Record<string, unknown> = {}) => ({
+    modules: { [MODULE_ID]: moduleSpec },
+    inverters: { [INVERTER_ID]: inverterSpec as never },
+    prices: {
+      [MODULE_ID]: { cents: 60_000, source: 'REFERENCE' as const },
+      [INVERTER_ID]: { cents: 400_000, source: 'REFERENCE' as const },
+    },
+    ...extra,
+  });
+  const sim = {
+    source: 'nasa-power' as const,
+    year: 2025,
+    lossPct: 14,
+    inverterEfficiencyPct: 96,
+    comparisonWarningPct: 5,
+  };
+
+  it('sem série: simulação incompleta e economia pendente de simulação', () => {
+    const r = computeEngineeringResults(
+      d({ monthlyConsumptionKwh: 300, tariffCentsPerKwh: 90, tariffSource: 'Fatura' }),
+      context(),
+    );
+    expect(r.simulation?.status).toBe('INCOMPLETE');
+    expect(r.economics?.pending.map((p) => p.code)).toEqual([
+      'ECONOMICS_RULE_MISSING',
+      'SIMULATION_MISSING',
+    ]);
+  });
+
+  it('sem premissas econômicas nem regra: pendências explícitas', () => {
+    const r = computeEngineeringResults(d(), context());
+    expect(r.economics?.pending.map((p) => p.code)).toContain('ECONOMICS_INPUT_MISSING');
+  });
+
+  it('com série: energia, mensal, dia típico, cascata e comparações com PVGIS e Calculator', () => {
+    const r = computeEngineeringResults(
+      d(undefined, {
+        ...sim,
+        albedo: 0.2,
+        pvgisReferenceEnergyKwh: 1,
+        calculatorReferenceEnergyKwh: 2,
+      }),
+      context({
+        simulation: {
+          series,
+          lossFraction: 0.14,
+          inverterEfficiencyPct: 96,
+          comparisonWarningPct: 5,
+          albedo: 0.2,
+          pvgisReferenceEnergyKwh: 1,
+          calculatorReferenceEnergyKwh: 2,
+        },
+      }),
+    );
+    const s = r.simulation!;
+    expect(s.energyKwh).toBeGreaterThan(0);
+    expect(s.monthlyKwh).toHaveLength(12);
+    expect(s.typicalDayKw).toHaveLength(24);
+    expect(s.losses?.at(-1)?.id).toBe('AC');
+    expect(s.comparisons?.map((c) => c.source)).toEqual(['PVGIS', 'CALCULATOR']);
+    expect(s.warnings.join(' ')).toMatch(/difere .*% da referência PVGIS/);
+  });
+
+  it('sem referência PVGIS e sem coeficiente de potência no módulo, avisa; economia calcula com financiamento, cenários e tornado', () => {
+    const { gammaPmaxPctPerC: _g, ...noGamma } = moduleSpec;
+    const r = computeEngineeringResults(
+      d(
+        {
+          monthlyConsumptionKwh: 300,
+          tariffCentsPerKwh: 90,
+          tariffSource: 'Fatura de teste',
+          horizonYears: 10,
+          financing: { downPaymentPct: 20, annualRatePct: 18, termMonths: 24, system: 'SAC' },
+          scenarios: [{ name: 'Pessimista', generationFactor: 0.9 }],
+        },
+        sim,
+      ),
+      context({
+        modules: { [MODULE_ID]: noGamma },
+        simulation: {
+          series,
+          lossFraction: 0.14,
+          inverterEfficiencyPct: 96,
+          comparisonWarningPct: 5,
+        },
+        economicsParameters: { compensationFactor: 1 },
+      }),
+    );
+    const w = r.simulation!.warnings.join(' ');
+    expect(w).toMatch(/sem coeficiente de potência/);
+    expect(w).toMatch(/Sem geração de referência PVGIS/);
+    const e = r.economics!;
+    expect(e.status).toBe('VALID');
+    expect(e.financing?.system).toBe('SAC');
+    expect(e.scenarios?.[0]?.name).toBe('Pessimista');
+    expect(e.sensitivity).toHaveLength(6);
+    expect(e.cashFlow).toHaveLength(10);
+    expect(e.horizonYears).toBe(10);
+  });
+});

@@ -99,12 +99,15 @@ import {
   type Thresholds,
   type CreateDistributorInput,
   type CreateEngineeringProjectInput,
+  type CreateQuoteFromEngineeringInput,
   type CreateEquipmentInput,
   type EngineeringDesignInput,
   type EngineeringProjectDetailDto,
   type EngineeringProjectDto,
   type EngineeringRequestListItemDto,
   type EngineeringVersionDetailDto,
+  type EngineeringDecisionInput,
+  type EngineeringReviewCommentInput,
   type HorizonResultDto,
   type ListEngineeringProjectsQuery,
   type SuggestConfigurationsInput,
@@ -311,6 +314,28 @@ export function createEndpoints(client: ApiClient) {
         ),
       recalculate: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
+      submit: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/submit`),
+      comments: (id: string) =>
+        client.get<
+          {
+            id: string;
+            section: string;
+            text: string;
+            status: 'OPEN' | 'RESOLVED';
+            authorId: string | null;
+            resolvedAt: string | null;
+            createdAt: string;
+          }[]
+        >(`/engineering/versions/${id}/comments`),
+      addComment: (id: string, input: EngineeringReviewCommentInput) =>
+        client.post(`/engineering/versions/${id}/comments`, input),
+      resolveComment: (id: string, commentId: string) =>
+        client.post(`/engineering/versions/${id}/comments/${commentId}/resolve`),
+      approve: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/approve`, input),
+      reject: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/reject`, input),
       newVersion: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/new-version`),
       removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
@@ -555,6 +580,8 @@ export function createEndpoints(client: ApiClient) {
         }),
     },
     quotes: {
+      fromEngineering: (opportunityId: string, input: CreateQuoteFromEngineeringInput) =>
+        client.post<QuoteDto>(`/opportunities/${opportunityId}/quotes/from-engineering`, input),
       update: (id: string, input: UpdateQuoteInput) =>
         client.patch<QuoteDto>(`${ROUTES.quotes}/${id}`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.quotes}/${id}`),

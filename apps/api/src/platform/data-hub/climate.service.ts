@@ -13,6 +13,7 @@ import type {
   WeatherSummaryDto,
 } from '@voltex/shared';
 import {
+  type HourlySeries,
   WeatherParseError,
   parseNasaPowerClimatology,
   parseNasaPowerHourly,
@@ -21,7 +22,7 @@ import {
   summarizeHourly,
 } from '@voltex/solar-engine';
 import { createHash } from 'node:crypto';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { PrismaService } from '../prisma/prisma.service';
 import { DataHubHttp, ExternalFetchError, ExternalRateLimitedError } from './data-hub-http';
 import { dataSourceDefinition } from './data-hub.registry';
@@ -112,6 +113,41 @@ export class ClimateService {
     } catch (error) {
       await this.sources.finishCollection(collection.id, 'FAILED', { error: errorMessage(error) });
       throw this.translate(error);
+    }
+  }
+
+  /**
+   * Obtém a série horária normalizada para o Engine. O método público de clima continua retornando só o resumo;
+   * esta variante é interna, para que a carga compactada nunca seja enviada sem necessidade ao navegador.
+   */
+  async hourlySeries(query: WeatherQuery & { kind: 'hourly'; year: number }): Promise<{
+    weather: WeatherResultDto;
+    series: HourlySeries;
+  }> {
+    const weather = await this.weather(query);
+    const source = await this.sources.get(query.source);
+    const row = await this.prisma.system.weatherSeries.findUnique({
+      where: {
+        sourceId_kind_latitude_longitude_period: {
+          sourceId: source.id,
+          kind: 'HOURLY',
+          latitude: roundCoordinate(query.latitude),
+          longitude: roundCoordinate(query.longitude),
+          period: String(query.year),
+        },
+      },
+    });
+    if (!row?.payload)
+      throw new ServiceUnavailableException('A série horária não ficou disponível no cache.');
+    try {
+      return {
+        weather,
+        series: JSON.parse(gunzipSync(row.payload).toString('utf8')) as HourlySeries,
+      };
+    } catch {
+      throw new ServiceUnavailableException(
+        'A série horária em cache está inválida; solicite nova coleta.',
+      );
     }
   }
 

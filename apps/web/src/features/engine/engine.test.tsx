@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type {
   EngineeringDesign,
   EngineeringProjectDetailDto,
@@ -69,6 +69,8 @@ const design = (o: Partial<EngineeringDesign> = {}): EngineeringDesign => ({
   surfaces: [],
   inverters: [],
   ...o,
+  cables: o.cables ?? [],
+  protectionOverrides: o.protectionOverrides ?? [],
 });
 
 const moduleItem: EquipmentDto = {
@@ -115,11 +117,25 @@ const version = (o: Partial<EngineeringVersionDetailDto> = {}): EngineeringVersi
     createdAt: now,
     updatedAt: now,
     project: project(),
-    rules: { engineDesign: { ref: null, parameters: {} } },
+    rules: {
+      engineDesign: { ref: null, parameters: {} },
+      engineCables: { ref: null, parameters: {}, tables: {} },
+    },
+    candidates: [],
+    prices: {},
+    labels: {},
     equipment: [],
     ...o,
   };
 };
+
+// Endpoints auxiliares da revisão: handlers específicos abaixo ainda sobrescrevem estes padrões.
+beforeEach(() => {
+  server.use(
+    http.get(`${API}/engineering/versions/:id/comments`, () => HttpResponse.json([])),
+    http.get(`${API}/engineering/versions/:id`, () => HttpResponse.json(version())),
+  );
+});
 
 const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjectDetailDto => ({
   ...project(),
@@ -558,6 +574,7 @@ describe('Engine: equipamentos e strings', () => {
       ref: 'r@1',
       parameters: { hotCellIrradianceWm2: 1000, dcAcRatioMin: 0.8, dcAcRatioMax: 1.4 },
     },
+    engineCables: { ref: null, parameters: {}, tables: {} },
   };
   const mount = (
     v: EngineeringVersionDetailDto,
@@ -636,7 +653,10 @@ describe('Engine: equipamentos e strings', () => {
       ...v.design,
       site: { ...v.design.site, designTminC: null, designTmaxAmbientC: null },
     };
-    v.rules = { engineDesign: { ref: null, parameters: {} } };
+    v.rules = {
+      engineDesign: { ref: null, parameters: {} },
+      engineCables: { ref: null, parameters: {}, tables: {} },
+    };
     mount(v);
     const user = await openStep();
     const pending = await screen.findByRole('list', { name: /O que falta para concluir/ });

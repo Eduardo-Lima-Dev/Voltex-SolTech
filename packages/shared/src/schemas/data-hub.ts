@@ -22,7 +22,8 @@ export const UPDATE_PROPOSAL_STATUSES = ['PENDING', 'APPROVED', 'DISCARDED'] as 
 export type UpdateProposalStatus = (typeof UPDATE_PROPOSAL_STATUSES)[number];
 
 /** Primeiro ano com série completa que o PVGIS e a NASA oferecem para o Brasil (limite conservador). */
-const MIN_YEAR = 2005;
+export const WEATHER_SERIES_FIRST_YEAR = 2005;
+export const WEATHER_SERIES_LAST_YEAR = 2100;
 
 export const weatherQuerySchema = z
   .object({
@@ -32,7 +33,12 @@ export const weatherQuerySchema = z
     /** `climatology`: 12 meses (leve). `hourly`: série horária de um ano (pesada, guardada em cache). */
     kind: z.enum(['climatology', 'hourly']).default('climatology'),
     /** Ano da série horária. Obrigatório quando `kind=hourly`. */
-    year: z.coerce.number().int().min(MIN_YEAR).max(2100).optional(),
+    year: z.coerce
+      .number()
+      .int()
+      .min(WEATHER_SERIES_FIRST_YEAR)
+      .max(WEATHER_SERIES_LAST_YEAR)
+      .optional(),
     /** Ignora o cache e busca de novo. */
     refresh: z
       .enum(['true', 'false'])

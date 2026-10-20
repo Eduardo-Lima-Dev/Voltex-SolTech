@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { paginationQuerySchema } from './common.js';
+import { WEATHER_SERIES_FIRST_YEAR, WEATHER_SERIES_LAST_YEAR } from './data-hub.js';
 
 /**
  * Projeto de engenharia (Fase 9D, ADR-0015): a versão guarda o **desenho como documento JSON** validado aqui, e os
@@ -197,6 +198,70 @@ export const protectionOverrideSchema = z.object({
 });
 export type ProtectionOverride = z.infer<typeof protectionOverrideSchema>;
 
+// ---------------------------------------------------------------------------------------------------------
+// Simulação e conexão (Fase 9G)
+// ---------------------------------------------------------------------------------------------------------
+
+/** Referência imutável da série horária que será lida do cache global da Central de Dados. */
+export const simulationDesignSchema = z.object({
+  source: z.enum(['nasa-power', 'pvgis']),
+  year: z.number().int().min(WEATHER_SERIES_FIRST_YEAR).max(WEATHER_SERIES_LAST_YEAR),
+  /** Perdas CC agregadas (sujeira, mismatch e cabeamento), em %. */
+  lossPct: z.number().min(0).max(99).default(14),
+  inverterEfficiencyPct: z.number().min(1).max(100).default(96),
+  /** Refletância do solo (0–1) para a componente refletida; ausente = ignorada. */
+  albedo: z.number().min(0).max(1).optional(),
+  /** Referência independente obtida do PVGIS para comparar a geração anual, se disponível. */
+  pvgisReferenceEnergyKwh: z.number().positive().optional(),
+  /** Geração anual estimada pelo Calculator da oportunidade, para a comparação preliminar × projeto. */
+  calculatorReferenceEnergyKwh: z.number().positive().optional(),
+  comparisonWarningPct: z.number().min(0).max(100).default(15),
+});
+export type SimulationDesign = z.infer<typeof simulationDesignSchema>;
+
+/** Dados declarados da UC; limites e exigências ficam na regra `engine.connection`, não no código. */
+export const connectionDesignSchema = z.object({
+  availablePowerKw: z.number().positive().max(100_000).nullable().default(null),
+  phases: z.number().int().min(1).max(3).nullable().default(null),
+  gridZero: z.boolean().default(false),
+});
+export type ConnectionDesign = z.infer<typeof connectionDesignSchema>;
+
+/** Premissas econômicas explícitas. Compensação/Fio B só é aplicado se vier de `engine.economics`. */
+export const economicsDesignSchema = z.object({
+  monthlyConsumptionKwh: z.number().positive().max(1_000_000),
+  tariffCentsPerKwh: z.number().positive().max(100_000),
+  tariffSource: z.string().trim().min(3).max(300),
+  tariffEscalationPct: z.number().min(0).max(100).default(4),
+  degradationPctPerYear: z.number().min(0).max(20).default(0.55),
+  opexPctOfCapex: z.number().min(0).max(100).default(1),
+  discountRatePct: z.number().min(0).max(100).default(10),
+  horizonYears: z.number().int().min(1).max(50).default(25),
+  /** Financiamento (Price ou SAC); ausente = compra à vista. */
+  financing: z
+    .object({
+      downPaymentPct: z.number().min(0).max(100),
+      annualRatePct: z.number().min(0).max(300),
+      termMonths: z.number().int().min(1).max(480),
+      system: z.enum(['PRICE', 'SAC']),
+    })
+    .optional(),
+  /** Até três cenários que alteram premissas sobre o caso-base. */
+  scenarios: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(60),
+        tariffEscalationPct: z.number().min(0).max(100).optional(),
+        discountRatePct: z.number().min(0).max(100).optional(),
+        generationFactor: z.number().positive().max(2).optional(),
+        capexFactor: z.number().positive().max(3).optional(),
+      }),
+    )
+    .max(3)
+    .default([]),
+});
+export type EconomicsDesign = z.infer<typeof economicsDesignSchema>;
+
 export const engineeringDesignSchema = z.object({
   schemaVersion: z
     .literal(ENGINEERING_DESIGN_SCHEMA_VERSION)
@@ -211,6 +276,12 @@ export const engineeringDesignSchema = z.object({
   cables: z.array(cableRunSchema).max(200).default([]),
   /** Proteções escolhidas à mão (o resto é sugerido pelo sistema). */
   protectionOverrides: z.array(protectionOverrideSchema).max(200).default([]),
+  /** Série horária e premissas da simulação; ausente preserva versões 9F. */
+  simulation: simulationDesignSchema.optional(),
+  /** Informações da conexão da UC; a avaliação usa regras revisadas. */
+  connection: connectionDesignSchema.optional(),
+  /** Premissas da viabilidade. A regra revisada define o fator de compensação. */
+  economics: economicsDesignSchema.optional(),
 });
 export type EngineeringDesign = z.output<typeof engineeringDesignSchema>;
 export type EngineeringDesignInput = z.input<typeof engineeringDesignSchema>;
@@ -271,6 +342,17 @@ export const saveDesignSchema = z.object({
   design: engineeringDesignSchema,
 });
 export type SaveDesignInput = z.input<typeof saveDesignSchema>;
+
+export const engineeringReviewCommentSchema = z.object({
+  section: z.string().trim().min(2).max(80),
+  text: z.string().trim().min(3).max(2_000),
+});
+export type EngineeringReviewCommentInput = z.input<typeof engineeringReviewCommentSchema>;
+
+export const engineeringDecisionSchema = z.object({
+  note: z.string().trim().min(3).max(2_000),
+});
+export type EngineeringDecisionInput = z.input<typeof engineeringDecisionSchema>;
 
 /** Parâmetros da regra `engine.design` que o Engine lê (sem valor padrão: ausente = pendente de regra). */
 export const ENGINE_DESIGN_PARAMETERS = {

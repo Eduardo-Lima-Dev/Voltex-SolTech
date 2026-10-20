@@ -1,6 +1,16 @@
 # Fontes externas de dados: licenças, termos e limites de uso
 
-Registro da conferência feita em **2026-10-20** (Fase 9A) para a Central de Dados Externos (ADR-0018). Regra do projeto: **fonte sem licença clara não entra no sistema.** "Conferido" aqui significa que o texto oficial foi lido ou que há fonte pública que o cita; **nenhuma conferência abaixo substitui a leitura jurídica** do responsável antes de ligar o conector (pendência na última coluna).
+Registro da conferência feita em **2026-10-20** (Fase 9A), revisado na mesma data (Fase 9F), para a Central de Dados Externos (ADR-0018). Regra do projeto: **fonte sem licença clara não entra no sistema.** "Conferido" significa que a página oficial foi lida; não substitui a revisão jurídica periódica.
+
+## Decisão de habilitação
+
+| Fonte      | Decisão       | Evidência oficial e controles no produto                                                                                                                                                                                                                                                                                                                              |
+| ---------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PVGIS      | **Liberada**  | As [condições de uso do JRC](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/general-information/usage-conditions-data-protection_en) dizem que a informação é gratuita e sem restrições de uso. A API pede cache e limita a 30 requisições/s por IP; a atribuição JRC/Comissão Europeia fica gravada em cada resposta. |
+| NASA POWER | **Liberada**  | A [política de dados da NASA](https://www.earthdata.nasa.gov/engage/open-data-services-software/data-use-policy) adota CC0 quando o conjunto não tiver aviso restritivo. O conector usa cache, atribui NASA POWER e respeita as orientações de não sobrecarregar a [API](https://power.larc.nasa.gov/docs/tutorials/service-data-request/api/).                       |
+| CEC/SAM    | **Bloqueada** | O código do [SAM é BSD-3-Clause](https://sam.nrel.gov/sam-open-source.html), mas as bibliotecas incluem dados de terceiros. Não importar nem redistribuir automaticamente até registrar a licença específica do arquivo e do proprietário do conjunto.                                                                                                                |
+
+`DATA_HUB_ENABLED_SOURCES=nasa-power,pvgis,aneel-tariffs` habilita apenas as três fontes liberadas. O valor continua sendo uma decisão explícita por ambiente; CEC/SAM não deve entrar nessa lista.
 
 | Fonte                                           | O que traz                                                  | O que consegui confirmar                                                                                                                                                                                                                                                                                                                                                | O que NÃO está confirmado                                                                                                                                                                                                                           | Situação                                                                                                                                                          |
 | ----------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -18,14 +28,12 @@ Registro da conferência feita em **2026-10-20** (Fase 9A) para a Central de Dad
 
 ## Como isso vira regra do sistema
 
-1. Um conector só é ligado em produção quando a linha dele aqui estiver **"Liberado"** (hoje nenhum conector externo de clima ou catálogo está liberado).
+1. Um conector só é ligado em produção quando a linha dele aqui estiver **"Liberado"** (hoje: PVGIS e NASA POWER; CEC/SAM permanece bloqueada).
 2. Toda tela que mostra dado externo exibe a **atribuição** pedida pela fonte.
 3. O cadastro de cada fonte no sistema (`DataSource`, 9B) guarda: licença, texto de atribuição, data em que os termos foram conferidos e por quem.
 4. Mudança nos termos (vigilância de página) gera proposta de revisão para o responsável técnico.
 
 ## Pendências desta conferência (dependem de pessoa)
 
-- Leitura jurídica dos termos do PVGIS e das bases por trás dele (uso comercial de série horária).
-- Confirmação do texto de atribuição e da política no site oficial da NASA POWER.
 - Licença dos arquivos da biblioteca CEC/SAM e dos termos da CEC.
 - Licença dos conjuntos da ANEEL (tarifas) e dos termos do LexML.
