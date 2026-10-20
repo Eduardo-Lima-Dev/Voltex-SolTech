@@ -21,7 +21,8 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
 - [Margem de contribuição](margem.md) — MVP1 (Margin Guard)
 - Solar Engine Studio — MVP2 (Fase 9). Estado: 9A entregou temperatura, strings e posição solar; o resto é memorial de projeto
   - [Temperatura, strings e compatibilidade](engine-compatibilidade.md) — **implementado** (F01–F06)
-  - [Posição solar e sombreamento](engine-posicao-solar-sombreamento.md) — posição **implementada** (F16), sombreamento em projeto
+  - [Posição solar e sombreamento](engine-posicao-solar-sombreamento.md) — **implementados** (F16, F17)
+  - [Layout dos módulos](engine-layout.md) — **implementado** (F15)
   - [Configurador](engine-configurador.md) — projeto (9E)
   - [Proteções, cabos e lista de materiais](engine-protecoes-cabos.md) — projeto (9F)
   - [Irradiação no plano e simulação horária](engine-irradiacao-simulacao.md) — projeto (9G)
