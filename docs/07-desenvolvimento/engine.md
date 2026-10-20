@@ -1,4 +1,4 @@
-# Solar Engine Studio: projeto técnico (Fase 9D em diante)
+# Solar Engine Studio: projeto técnico (Fase 9)
 
 Decisão de arquitetura: [ADR-0015](../04-arquitetura/adr/0015-projeto-como-documento-versionado.md). Cálculos: [memoriais](../06-calculos/README.md). Tela: menu **Solar Engine Studio**.
 
@@ -28,15 +28,19 @@ Decisão de arquitetura: [ADR-0015](../04-arquitetura/adr/0015-projeto-como-docu
 
 ## API (`/engineering`)
 
-| Rota                                                                                                                         | Permissão                         |
-| ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `GET requests` · `GET projects` · `GET projects/:id` · `GET versions/:id`                                                    | `engine.project.read`             |
-| `POST requests/:id/{assign,cancel}` · `POST projects` · `POST projects/from-request/:requestId` · `POST projects/:id/cancel` | `engine.project.write`            |
-| `POST versions/:id/configurations` (sugestões do gerador, ver [memorial](../06-calculos/engine-configurador.md))             | `engine.project.read`             |
-| `PUT versions/:id/design` · `POST versions/:id/{recalculate,new-version}` · `DELETE versions/:id`                            | `engine.project.write`            |
-| `POST versions/:id/submit` · `POST versions/:id/comments/:commentId/resolve`                                                 | `engine.project.write`            |
-| `POST versions/:id/{approve,reject,comments}` · `GET versions/:id/comments`                                                  | revisão: `engine.project.approve` |
-| `GET versions/:id/{report.pdf,single-line.svg,single-line.pdf,single-line.dxf}` · `GET projects/:id/snapshot`                | `engine.project.read`             |
+| Rota                                                                                                                             | Permissão                         |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `GET requests` · `GET projects` · `GET projects/:id` · `GET versions/:id`                                                        | `engine.project.read`             |
+| `POST requests/:id/{assign,cancel}` · `POST projects` · `POST projects/from-request/:requestId` · `POST projects/:id/cancel`     | `engine.project.write`            |
+| `POST versions/:id/configurations` (sugestões do gerador, ver [memorial](../06-calculos/engine-configurador.md))                 | `engine.project.read`             |
+| `PUT versions/:id/design` · `POST versions/:id/{recalculate,new-version}` · `DELETE versions/:id`                                | `engine.project.write`            |
+| `POST versions/:id/submit` · `POST versions/:id/comments/:commentId/resolve`                                                     | `engine.project.write`            |
+| `POST versions/:id/{approve,reject,comments}` · `GET versions/:id/comments`                                                      | revisão: `engine.project.approve` |
+| `GET versions/:id/{report.pdf,single-line.svg,single-line.pdf,single-line.dxf}` · `GET projects/:id/snapshot`                    | `engine.project.read`             |
+| `GET versions/:id/compare?with=<outra versão>` (desenho e indicadores; só do mesmo projeto)                                      | `engine.project.read`             |
+| `GET versions/:id/share-links` · `POST versions/:id/share-links` (cria; o token aparece uma vez) · `POST share-links/:id/revoke` | read / `engine.project.write`     |
+| `POST versions/:id/attach-homologation` (memorial e unifilar ao checklist do projeto do CRM, sem concluir os itens)              | `engine.project.write`            |
+| `GET public/engineering/:token` (relatório simplificado do cliente; sem login; 404 se inexistente/revogado, 410 se vencido)      | pública (limite de requisições)   |
 
 `from-request` é **idempotente** (o mesmo pedido devolve o mesmo projeto), pega o pedido, copia o local da oportunidade (ou usa as coordenadas informadas; sem elas, `400 SITE_COORDINATES_MISSING`) e registra `ENGINEERING_STARTED` na linha do tempo da oportunidade.
 
@@ -49,6 +53,21 @@ O memorial técnico é exportável em PDF e reúne premissas, compatibilidade, g
 ## Impacto e desatualização
 
 Ativar nova versão de regra `engine.*` ou aposentar/revisar um equipamento publica evento e marca como **desatualizadas** (com o motivo) as versões que os usam, inclusive a aprovada (que não muda, só ganha a marca). A tela mostra o aviso; recalcular o rascunho limpa a marca.
+
+## Entregáveis, comparação e relatório do cliente (9I/9J)
+
+- **Entregáveis** no editor: memorial (PDF), unifilar (PDF, SVG e DXF); até a aprovação saem marcados como rascunho.
+- **Comparar versões:** escolha outra versão do mesmo projeto e veja o que mudou no desenho (por caminho, com `id` dos itens) e nos indicadores (módulos, kWp, status, custo, geração, VPL, payback...).
+- **Relatório do cliente:** com a versão aprovada, **Gerar link** cria um endereço `/r/<token>` (30 dias; só o hash fica guardado; pode ser revogado). A página mostra potência, módulos, geração, gráfico mensal × consumo e economia, **nunca** custos, margem, regras ou fichas.
+- **Homologação:** **Anexar à homologação** coloca o memorial e o unifilar nos itens `MEMORIAL` e `SINGLE_LINE` do projeto do CRM (7C) com a nota "confira e assine". Não conclui o item: assinar (ART/TRT) é decisão humana. Se o projeto de homologação já existir na hora da aprovação, o anexo é automático.
+
+## Economia completa (9H)
+
+Fluxo de 25 anos, payback simples e descontado, VPL, TIR, LCOE, financiamento Price/SAC, até 3 cenários e tornado de sensibilidade: [memorial](../06-calculos/engine-economia.md). Sem regra `engine.economics` ativa não há compensação presumida: o resultado fica pendente.
+
+## Testes
+
+Motor: `pnpm --filter @voltex/solar-engine test` (cobertura ≥ 90%; casos de ouro do pvlib para posição solar e simulação). API: `engineering*.e2e.test.ts` (incluindo `engineering-journey` — pedido → aprovação → cotação — com a série horária "gravada" no cache). Navegador: `pnpm --filter @voltex/e2e jornada` roda `jornada-engenharia.spec.ts` com vídeo e capturas.
 
 ## Limites da 9D e 9E
 

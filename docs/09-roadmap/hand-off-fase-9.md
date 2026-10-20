@@ -116,15 +116,27 @@ packages/database/prisma/migrations/20261021130000_cotacao_snapshot_engenharia/m
 docs/07-desenvolvimento/engine.md
 ```
 
-## Pendências objetivas para concluir o plano
+## Situação das pendências do plano (atualizada em 20/10/2026)
 
-Não declare a Fase 9 concluída sem tratar e verificar estes pontos do plano original:
+**Resolvidas no código, com testes:**
 
-1. **9G:** gráficos de geração × consumo mensal, perfil de dia típico, diagrama de perdas e comparação explícita com Calculator/PVGIS na UI; validação contra casos de ouro externos gravados.
-2. **9H:** Price/SAC; cenários econômicos (máximo três); sensibilidade/tornado; planilha de referência documentada e validação por responsável financeiro.
-3. **9I:** comparação entre versões; relatório técnico simplificado e público; possível persistência/anexo do memorial e unifilar no fluxo de homologação.
-4. **9J:** anexar memorial/unifilar/fichas ao checklist de homologação quando houver projeto 7C; criar `jornada-engenharia.spec.ts` ponta a ponta com conectores gravados e, se requerido, vídeo; concluir documentação, diagnóstico e roteiro manual.
-5. **Governança externa:** regras de conexão reais por distribuidora precisam de fonte oficial/revisão de responsável técnico; metodologia econômica precisa de validação financeira; CEC/SAM segue bloqueada até licença inequívoca.
+1. **9G:** gráficos mensal × consumo, dia típico e cascata de perdas; comparação com PVGIS e Calculator na tela; albedo; coeficiente de potência da ficha; casos de ouro do pvlib (`tools/golden/cases/simulation-hourly.json`, 27 casos, 0,5%).
+2. **9H:** financiamento Price/SAC, até três cenários, tornado de sensibilidade e gráfico de caixa; memorial atualizado.
+3. **9I:** comparação de versões (API + tela), entregáveis no editor, relatório técnico simplificado público (`/r/:token`, com validade e revogação).
+4. **9J:** anexo do memorial e do unifilar ao checklist de homologação (manual e automático); e2e da API `engineering-journey` (pedido → aprovação → snapshot → cotação, com série "gravada" no cache); `jornada-engenharia.spec.ts` (Playwright, vídeo e capturas); docs, verificação manual e memória.
+
+**Limites declarados (não são bugs):**
+
+- No Playwright, o **desenho** (strings, cabos, premissas) é gravado pela API; a tela confere cada etapa e conduz envio, revisão, aprovação, link do cliente. A edição campo a campo de todas as etapas está coberta pelos testes de componente do web.
+- **Ficha INMETRO/CEC:** CEC/SAM segue bloqueada até licença inequívoca. Preço de venda continua decisão comercial.
+- A cotação importa a lista de materiais; **frete, instalação e margem** são decisão explícita do vendedor.
+
+**Dependem de pessoas (não há como fechar só com código):**
+
+- Regras reais de conexão por distribuidora com fonte oficial, e os parâmetros normativos de `engine.design`/`engine.cables` (os valores dos testes são de exemplo) revisados pelo responsável técnico (ainda sem nome).
+- Validação financeira do método econômico (compensação, impostos, financiamento).
+- Conferência jurídica dos termos de PVGIS/NASA POWER antes de ligar os conectores; CEC/SAM.
+- Arquivos `.PAN` de silício e PDFs reais de fabricantes; tabelas de preço reais.
 
 ## Cuidados técnicos
 

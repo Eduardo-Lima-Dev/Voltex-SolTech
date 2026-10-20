@@ -28,6 +28,10 @@ Ano 1 sem degradação extra; depois, taxa anual da **garantia da ficha** (CR-11
 
 Com o **Calculator** da oportunidade e com a **geração de referência do PVGIS** (mesma localização e configuração). Diferença em % e aviso acima do limite de regra.
 
-## Validação prevista
+## Saídas adicionais (`simulation-1.1.0`)
 
-`tools/golden/` ganhará: transposição (pvlib `irradiance.get_total_irradiance`), decomposição (`erbs`), potência CC de um módulo de teste (`pvsystem`), tudo com tolerância documentada. Um ano de série horária sintética versionada para o teste de ponta a ponta.
+Além da energia, do clipping e do PR, a simulação devolve **energia CA por mês** (hora local, com a longitude do local), o **perfil do dia típico** (potência CA média por hora) e a **cascata de perdas** em kWh/ano: energia ideal no plano → sombreamento → temperatura das células → perdas do sistema CC → eficiência do inversor → clipping → energia CA. O coeficiente de potência vem da **ficha do módulo**; sem ele, usa −0,4 %/°C com aviso. O **albedo** do solo é informado no projeto; ausente, a componente refletida é ignorada com aviso. Comparação automática com a **referência anual do PVGIS** e com a do **Calculator** (diferença em %; aviso acima do limite informado).
+
+## Validação
+
+`tools/golden/cases/simulation-hourly.json`: 27 casos gerados com o pvlib 0.16.1 (céu claro Ineichen, posição solar SPA e transposição isotrópica com albedo 0,2) em 3 locais × 3 datas × 3 orientações; o motor concorda em **energia CA diária dentro de 0,5%** (teste `simulation.golden.test.ts`). A decomposição DNI = (GHI − DHI)/sen(altura) é a do motor, não do pvlib. **Limite:** modelo isotrópico (conservador sob céu encoberto); Hay-Davies/Perez e decomposição Erbs não estão implementados. A comparação com a série do PVGIS é feita pela pessoa em cada projeto, não nos casos de ouro, por causa da licença.
