@@ -86,6 +86,16 @@ export const envSchema = z
     AUTOMATION_QUEUE_PREFIX: z.string().default('voltex'),
     /** Rotina diária da política de retenção (LGPD). 0 desliga o agendamento. */
     AUTOMATION_RETENTION_INTERVAL_MS: z.coerce.number().int().min(0).default(86_400_000),
+    /**
+     * Fontes externas que a Central de Dados pode consultar na internet, separadas por vírgula (ex.:
+     * `nasa-power,pvgis,aneel-tariffs`). Vazio = nenhuma. É a decisão explícita de ligar uma fonte, depois de
+     * conferir os termos de uso (docs/referencias/fontes-externas.md). O que já está em cache continua disponível.
+     */
+    DATA_HUB_ENABLED_SOURCES: z.string().default(''),
+    /** Intervalo da vigilância de páginas (ms). Padrão: semanal. 0 desliga o agendamento. */
+    DATA_HUB_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(604_800_000),
+    /** Intervalo da busca de tarifas novas na ANEEL (ms). Padrão: mensal. 0 desliga o agendamento. */
+    DATA_HUB_TARIFF_INTERVAL_MS: z.coerce.number().int().min(0).default(2_592_000_000),
   })
   .superRefine((env, ctx) => {
     const previous = env.DATA_ENCRYPTION_KEY_PREVIOUS.split(',')
