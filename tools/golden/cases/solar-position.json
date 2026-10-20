@@ -1,0 +1,346 @@
+{
+  "formula": "ENG-F16",
+  "reference": "pvlib 0.16.1, solarposition.get_solarposition(method='nrel_numpy') (NREL SPA)",
+  "generatedAt": "2026-10-20",
+  "toleranceElevationDegrees": 0.02,
+  "toleranceAzimuthDegrees": 0.05,
+  "toleranceNote": "O motor usa as equações do NOAA (Meeus), não o SPA completo. Diferença máxima medida em 2025: 0,006° na altura e 0,026° no azimute.",
+  "cases": [
+    {
+      "id": "solpos-brasilia-2025-03-20T09:00:00Z",
+      "input": {
+        "at": "2025-03-20T09:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": -4.60104,
+        "azimuthDegrees": 91.30309
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-03-20T15:00:00Z",
+      "input": {
+        "at": "2025-03-20T15:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 73.44007,
+        "azimuthDegrees": 16.92998
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-06-21T13:00:00Z",
+      "input": {
+        "at": "2025-06-21T13:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 38.9717,
+        "azimuthDegrees": 40.51093
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-06-21T17:30:00Z",
+      "input": {
+        "at": "2025-06-21T17:30:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 38.53416,
+        "azimuthDegrees": 318.89188
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-09-22T11:00:00Z",
+      "input": {
+        "at": "2025-09-22T11:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 27.68276,
+        "azimuthDegrees": 81.33239
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-12-21T14:00:00Z",
+      "input": {
+        "at": "2025-12-21T14:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 71.85574,
+        "azimuthDegrees": 117.709
+      }
+    },
+    {
+      "id": "solpos-brasilia-2025-12-21T18:00:00Z",
+      "input": {
+        "at": "2025-12-21T18:00:00Z",
+        "latitudeDegrees": -15.78,
+        "longitudeDegrees": -47.93
+      },
+      "expected": {
+        "elevationDegrees": 49.39162,
+        "azimuthDegrees": 252.21601
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-03-20T09:00:00Z",
+      "input": {
+        "at": "2025-03-20T09:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 4.61849,
+        "azimuthDegrees": 89.69871
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-03-20T15:00:00Z",
+      "input": {
+        "at": "2025-03-20T15:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 83.9797,
+        "azimuthDegrees": 309.38749
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-06-21T13:00:00Z",
+      "input": {
+        "at": "2025-06-21T13:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 54.15386,
+        "azimuthDegrees": 39.56356
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-06-21T17:30:00Z",
+      "input": {
+        "at": "2025-06-21T17:30:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 39.65665,
+        "azimuthDegrees": 304.87454
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-09-22T11:00:00Z",
+      "input": {
+        "at": "2025-09-22T11:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 38.20942,
+        "azimuthDegrees": 86.90651
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-12-21T14:00:00Z",
+      "input": {
+        "at": "2025-12-21T14:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 68.80187,
+        "azimuthDegrees": 159.11487
+      }
+    },
+    {
+      "id": "solpos-fortaleza-2025-12-21T18:00:00Z",
+      "input": {
+        "at": "2025-12-21T18:00:00Z",
+        "latitudeDegrees": -3.73,
+        "longitudeDegrees": -38.52
+      },
+      "expected": {
+        "elevationDegrees": 36.20936,
+        "azimuthDegrees": 243.49377
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-03-20T09:00:00Z",
+      "input": {
+        "at": "2025-03-20T09:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": -6.99102,
+        "azimuthDegrees": 94.06403
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-03-20T15:00:00Z",
+      "input": {
+        "at": "2025-03-20T15:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 58.90805,
+        "azimuthDegrees": 15.75601
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-06-21T13:00:00Z",
+      "input": {
+        "at": "2025-06-21T13:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 25.96444,
+        "azimuthDegrees": 37.57772
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-06-21T17:30:00Z",
+      "input": {
+        "at": "2025-06-21T17:30:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 28.89908,
+        "azimuthDegrees": 327.55263
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-09-22T11:00:00Z",
+      "input": {
+        "at": "2025-09-22T11:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 21.90734,
+        "azimuthDegrees": 76.40449
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-12-21T14:00:00Z",
+      "input": {
+        "at": "2025-12-21T14:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 70.33587,
+        "azimuthDegrees": 75.38452
+      }
+    },
+    {
+      "id": "solpos-porto-alegre-2025-12-21T18:00:00Z",
+      "input": {
+        "at": "2025-12-21T18:00:00Z",
+        "latitudeDegrees": -30.03,
+        "longitudeDegrees": -51.23
+      },
+      "expected": {
+        "elevationDegrees": 54.55469,
+        "azimuthDegrees": 271.13578
+      }
+    },
+    {
+      "id": "solpos-equador-2025-03-20T09:00:00Z",
+      "input": {
+        "at": "2025-03-20T09:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 43.14894,
+        "azimuthDegrees": 90.00084
+      }
+    },
+    {
+      "id": "solpos-equador-2025-03-20T15:00:00Z",
+      "input": {
+        "at": "2025-03-20T15:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 46.82896,
+        "azimuthDegrees": 270.1435
+      }
+    },
+    {
+      "id": "solpos-equador-2025-06-21T13:00:00Z",
+      "input": {
+        "at": "2025-06-21T13:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 62.63866,
+        "azimuthDegrees": 329.93561
+      }
+    },
+    {
+      "id": "solpos-equador-2025-06-21T17:30:00Z",
+      "input": {
+        "at": "2025-06-21T17:30:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 7.31265,
+        "azimuthDegrees": 293.64105
+      }
+    },
+    {
+      "id": "solpos-equador-2025-09-22T11:00:00Z",
+      "input": {
+        "at": "2025-09-22T11:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 76.83603,
+        "azimuthDegrees": 89.47867
+      }
+    },
+    {
+      "id": "solpos-equador-2025-12-21T14:00:00Z",
+      "input": {
+        "at": "2025-12-21T14:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": 52.27695,
+        "azimuthDegrees": 229.44921
+      }
+    },
+    {
+      "id": "solpos-equador-2025-12-21T18:00:00Z",
+      "input": {
+        "at": "2025-12-21T18:00:00Z",
+        "latitudeDegrees": 0.0,
+        "longitudeDegrees": 0.0
+      },
+      "expected": {
+        "elevationDegrees": -0.39041,
+        "azimuthDegrees": 246.56124
+      }
+    }
+  ]
+}
