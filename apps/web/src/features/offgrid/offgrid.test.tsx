@@ -831,3 +831,36 @@ describe('Off-Grid Designer: objetos descritos em texto', () => {
     expect(screen.queryByLabelText('Descreva um objeto e eu desenho')).not.toBeInTheDocument();
   });
 });
+
+describe('Off-Grid Designer: tamanho da área do terreno', () => {
+  it('amplia a área, abre em tela cheia e sai com o botão ou com Esc', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ design: fullDesign() as never })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    const size = await screen.findByRole('group', { name: 'Tamanho da área' });
+    expect(within(size).getByRole('button', { name: 'Normal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(size).getByRole('button', { name: 'Grande' }));
+    expect(within(size).getByRole('button', { name: 'Grande' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(size).getByRole('button', { name: 'Tela cheia' }));
+    const full = await screen.findByRole('dialog', { name: 'Terreno em tela cheia' });
+    expect(within(full).getByRole('group', { name: 'Planta do terreno' })).toBeInTheDocument();
+    await user.click(within(full).getByRole('button', { name: /Sair da tela cheia/ }));
+    expect(screen.queryByRole('dialog', { name: 'Terreno em tela cheia' })).not.toBeInTheDocument();
+    await user.click(within(size).getByRole('button', { name: 'Tela cheia' }));
+    await screen.findByRole('dialog', { name: 'Terreno em tela cheia' });
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Terreno em tela cheia' })).not.toBeInTheDocument();
+  });
+});

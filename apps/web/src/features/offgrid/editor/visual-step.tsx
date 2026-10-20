@@ -2,6 +2,7 @@ import { Plus, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   lazy,
   Suspense,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -108,6 +109,13 @@ export function VisualStep() {
   const layout = design.layout;
   const [mode, setMode] = useState<'2d' | '3d'>('2d');
   const [view, setView] = useState<'iso' | 'top' | 'front'>('iso');
+  const [size, setSize] = useState<'normal' | 'large' | 'full'>('normal');
+  useEffect(() => {
+    if (size !== 'full') return;
+    const onKeyDown = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && setSize('normal');
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [size]);
   const webgl = useMemo(hasWebGL, []);
   const [selected, setSelected] = useState<Selection>(null);
   const [yaw, setYaw] = useState(30);
@@ -323,6 +331,8 @@ export function VisualStep() {
   const gridLinesY = [...Array(Math.floor(D / 5) + 1).keys()].map((i) => i * 5);
   const shadowPolys = polygons.filter((p) => p.kind === 'SHADOW');
   const sunUp = sun.elevationDegrees >= 2;
+  /** Tamanho do texto da planta acompanha o tamanho do terreno, para continuar legível. */
+  const fs = Math.max(0.8, Math.max(layout.lotWidthM, layout.lotDepthM) / 40);
 
   return (
     <div className="space-y-6">
@@ -357,6 +367,26 @@ export function VisualStep() {
             >
               Cena 3D
             </Button>
+            <div className="flex items-center gap-1" role="group" aria-label="Tamanho da área">
+              <span className="text-sm text-muted-foreground">Tamanho:</span>
+              {(
+                [
+                  ['normal', 'Normal'],
+                  ['large', 'Grande'],
+                  ['full', 'Tela cheia'],
+                ] as const
+              ).map(([id, label]) => (
+                <Button
+                  key={id}
+                  size="sm"
+                  variant={size === id ? 'default' : 'outline'}
+                  aria-pressed={size === id}
+                  onClick={() => setSize(id)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
             <span className="mx-2 h-6 w-px bg-border" aria-hidden />
             <div className="grid gap-1">
               <Label htmlFor="vs-date" className="sr-only">
@@ -448,620 +478,668 @@ export function VisualStep() {
             </div>
           ) : null}
 
-          <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
-            {mode === '2d' ? (
-              <svg
-                ref={planRef}
-                role="group"
-                aria-label="Planta do terreno"
-                viewBox={`-3 -3 ${W + 6} ${D + 6}`}
-                className="w-full touch-none rounded border bg-card"
-                onPointerMove={onPlanMove}
-                onPointerUp={onUp}
-                onPointerCancel={onUp}
-                onPointerDown={(e) => {
-                  if (e.target === e.currentTarget) setSelected(null);
-                }}
-              >
-                <rect
-                  x={0}
-                  y={0}
-                  width={W}
-                  height={D}
-                  className="fill-emerald-50 stroke-emerald-700"
-                  strokeWidth={0.15}
-                />
-                {gridLines.map((x) => (
-                  <g key={`gx${x}`}>
-                    <line
-                      x1={x}
-                      x2={x}
-                      y1={0}
-                      y2={D}
-                      className="stroke-emerald-700/15"
-                      strokeWidth={0.05}
+          <div
+            className={
+              size === 'full' ? 'fixed inset-0 z-50 overflow-auto bg-background p-4' : undefined
+            }
+            role={size === 'full' ? 'dialog' : undefined}
+            aria-label={size === 'full' ? 'Terreno em tela cheia' : undefined}
+          >
+            {size === 'full' ? (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Button
+                  variant={mode === '2d' ? 'default' : 'outline'}
+                  aria-pressed={mode === '2d'}
+                  onClick={() => setMode('2d')}
+                >
+                  Planta 2D
+                </Button>
+                <Button
+                  variant={mode === '3d' ? 'default' : 'outline'}
+                  aria-pressed={mode === '3d'}
+                  onClick={() => setMode('3d')}
+                >
+                  Cena 3D
+                </Button>
+                <Button variant="outline" className="ml-auto" onClick={() => setSize('normal')}>
+                  Sair da tela cheia (Esc)
+                </Button>
+              </div>
+            ) : null}
+            <div
+              className={
+                size === 'normal'
+                  ? 'grid gap-4 xl:grid-cols-[1fr_20rem]'
+                  : 'grid gap-4 2xl:grid-cols-[1fr_20rem]'
+              }
+            >
+              {mode === '2d' ? (
+                <svg
+                  ref={planRef}
+                  role="group"
+                  aria-label="Planta do terreno"
+                  viewBox={`${-fs * 3.2} ${-fs * 2} ${W + fs * 4.4} ${D + fs * 4.4}`}
+                  className={`w-full touch-none rounded border bg-card ${size === 'full' ? 'max-h-[calc(100vh-9rem)]' : ''}`}
+                  onPointerMove={onPlanMove}
+                  onPointerUp={onUp}
+                  onPointerCancel={onUp}
+                  onPointerDown={(e) => {
+                    if (e.target === e.currentTarget) setSelected(null);
+                  }}
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    width={W}
+                    height={D}
+                    className="fill-emerald-50 stroke-emerald-700"
+                    strokeWidth={0.15}
+                  />
+                  {gridLines.map((x) => (
+                    <g key={`gx${x}`}>
+                      <line
+                        x1={x}
+                        x2={x}
+                        y1={0}
+                        y2={D}
+                        className="stroke-emerald-700/15"
+                        strokeWidth={0.05}
+                      />
+                      <text
+                        x={x}
+                        y={D + 1.4}
+                        fontSize={fs}
+                        textAnchor="middle"
+                        className="fill-muted-foreground"
+                      >
+                        {x}
+                      </text>
+                    </g>
+                  ))}
+                  {gridLinesY.map((y) => (
+                    <g key={`gy${y}`}>
+                      <line
+                        x1={0}
+                        x2={W}
+                        y1={sy(y)}
+                        y2={sy(y)}
+                        className="stroke-emerald-700/15"
+                        strokeWidth={0.05}
+                      />
+                      <text
+                        x={-0.5}
+                        y={sy(y) + 0.3}
+                        fontSize={fs}
+                        textAnchor="end"
+                        className="fill-muted-foreground"
+                      >
+                        {y}
+                      </text>
+                    </g>
+                  ))}
+                  {shadows
+                    ? shadowPolys.map((p, i) => (
+                        <polygon key={i} points={poly(p.points)} className="fill-black/20" />
+                      ))
+                    : null}
+                  {cableRuns.map(({ run, from, to }) => (
+                    <g key={run.id}>
+                      <line
+                        x1={from.x}
+                        y1={sy(from.y)}
+                        x2={to.x}
+                        y2={sy(to.y)}
+                        className={run.kind === 'DC_PV' ? 'stroke-red-600' : 'stroke-blue-700'}
+                        strokeWidth={0.18}
+                        strokeDasharray={run.kind === 'DC_PV' ? undefined : '0.6 0.4'}
+                      />
+                      <text
+                        x={(from.x + to.x) / 2}
+                        y={sy((from.y + to.y) / 2) - 0.4}
+                        fontSize={fs}
+                        textAnchor="middle"
+                        paintOrder="stroke"
+                        strokeWidth={fs * 0.32}
+                        className="fill-foreground stroke-white"
+                      >
+                        {formatNumber(run.distanceM, 1)} m
+                      </text>
+                    </g>
+                  ))}
+                  {layout.elements.map((e) => {
+                    const isSel = selected?.type === 'element' && selected.id === e.id;
+                    return (
+                      <g
+                        key={e.id}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`${e.name}, ${ELEMENT_LABELS[e.kind]}`}
+                        aria-pressed={isSel}
+                        onPointerDown={(ev) => onItemDown(ev, 'element', e.id)}
+                        onKeyDown={(ev) => onKey(ev, 'element', e.id)}
+                        onFocus={() => setSelected({ type: 'element', id: e.id })}
+                        className="cursor-move outline-none"
+                      >
+                        <g
+                          transform={`translate(${e.positionM.x} ${sy(e.positionM.y)}) rotate(${e.rotationDeg})`}
+                        >
+                          <ElementSymbol
+                            kind={e.kind}
+                            w={e.widthM}
+                            d={e.depthM}
+                            selected={isSel}
+                            color={e.color}
+                          />
+                        </g>
+                        <text
+                          x={e.positionM.x}
+                          y={sy(e.positionM.y) + Math.max(e.widthM, e.depthM) / 2 + 1.1}
+                          fontSize={fs * 1.05}
+                          textAnchor="middle"
+                          paintOrder="stroke"
+                          strokeWidth={fs * 0.32}
+                          className="pointer-events-none fill-foreground stroke-white"
+                        >
+                          {e.name}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  {design.arrays.map((a) => {
+                    const r = layoutResult?.arrays.find((x) => x.id === a.id);
+                    if (!r) return null;
+                    const isSel = selected?.type === 'array' && selected.id === a.id;
+                    const cw = r.widthM / a.modulesInSeries;
+                    const rh = r.depthM / a.parallelStrings;
+                    return (
+                      <g
+                        key={a.id}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Arranjo ${a.name}`}
+                        aria-pressed={isSel}
+                        transform={`translate(${r.centerM.x} ${sy(r.centerM.y)}) rotate(${a.azimuthDegrees})`}
+                        onPointerDown={(ev) => onItemDown(ev, 'array', a.id)}
+                        onKeyDown={(ev) => onKey(ev, 'array', a.id)}
+                        onFocus={() => setSelected({ type: 'array', id: a.id })}
+                        className="cursor-move outline-none"
+                      >
+                        <rect
+                          x={-r.widthM / 2}
+                          y={-r.depthM / 2}
+                          width={r.widthM}
+                          height={r.depthM}
+                          className="fill-sky-800 stroke-sky-950"
+                          strokeWidth={isSel ? 0.3 : 0.1}
+                        />
+                        {[...Array(a.modulesInSeries - 1).keys()].map((i) => (
+                          <line
+                            key={`c${i}`}
+                            x1={-r.widthM / 2 + (i + 1) * cw}
+                            x2={-r.widthM / 2 + (i + 1) * cw}
+                            y1={-r.depthM / 2}
+                            y2={r.depthM / 2}
+                            className="stroke-sky-300/70"
+                            strokeWidth={0.05}
+                          />
+                        ))}
+                        {[...Array(a.parallelStrings - 1).keys()].map((i) => (
+                          <line
+                            key={`r${i}`}
+                            x1={-r.widthM / 2}
+                            x2={r.widthM / 2}
+                            y1={-r.depthM / 2 + (i + 1) * rh}
+                            y2={-r.depthM / 2 + (i + 1) * rh}
+                            className="stroke-sky-300/70"
+                            strokeWidth={0.05}
+                          />
+                        ))}
+                        <path
+                          d={`M0 ${r.depthM / 2 + 0.2} L0 ${r.depthM / 2 + 1.1} M-0.3 ${r.depthM / 2 + 0.8} L0 ${r.depthM / 2 + 1.1} L0.3 ${r.depthM / 2 + 0.8}`}
+                          className="stroke-sky-900"
+                          strokeWidth={0.12}
+                          fill="none"
+                        />
+                      </g>
+                    );
+                  })}
+                  {design.arrays.map((a) => {
+                    const r = layoutResult?.arrays.find((x) => x.id === a.id);
+                    return r ? (
+                      <text
+                        key={`t${a.id}`}
+                        x={r.centerM.x}
+                        y={sy(r.centerM.y) + 0.3}
+                        fontSize={fs}
+                        textAnchor="middle"
+                        paintOrder="stroke"
+                        strokeWidth={fs * 0.32}
+                        className="pointer-events-none fill-foreground stroke-white"
+                      >
+                        {a.name}
+                      </text>
+                    ) : null;
+                  })}
+                  <g aria-label="Norte" transform={`translate(${W - 1.5} 2)`}>
+                    <path
+                      d="M0 1.2 L0 -1.2 M-0.5 -0.5 L0 -1.2 L0.5 -0.5"
+                      className="stroke-foreground"
+                      strokeWidth={0.15}
+                      fill="none"
                     />
                     <text
-                      x={x}
-                      y={D + 1.4}
-                      fontSize={0.9}
-                      textAnchor="middle"
-                      className="fill-muted-foreground"
-                    >
-                      {x}
-                    </text>
-                  </g>
-                ))}
-                {gridLinesY.map((y) => (
-                  <g key={`gy${y}`}>
-                    <line
-                      x1={0}
-                      x2={W}
-                      y1={sy(y)}
-                      y2={sy(y)}
-                      className="stroke-emerald-700/15"
-                      strokeWidth={0.05}
-                    />
-                    <text
-                      x={-0.5}
-                      y={sy(y) + 0.3}
-                      fontSize={0.9}
-                      textAnchor="end"
-                      className="fill-muted-foreground"
-                    >
-                      {y}
-                    </text>
-                  </g>
-                ))}
-                {shadows
-                  ? shadowPolys.map((p, i) => (
-                      <polygon key={i} points={poly(p.points)} className="fill-black/20" />
-                    ))
-                  : null}
-                {cableRuns.map(({ run, from, to }) => (
-                  <g key={run.id}>
-                    <line
-                      x1={from.x}
-                      y1={sy(from.y)}
-                      x2={to.x}
-                      y2={sy(to.y)}
-                      className={run.kind === 'DC_PV' ? 'stroke-red-600' : 'stroke-blue-700'}
-                      strokeWidth={0.18}
-                      strokeDasharray={run.kind === 'DC_PV' ? undefined : '0.6 0.4'}
-                    />
-                    <text
-                      x={(from.x + to.x) / 2}
-                      y={sy((from.y + to.y) / 2) - 0.4}
-                      fontSize={0.9}
+                      x={0}
+                      y={2.4}
+                      fontSize={fs * 1.1}
                       textAnchor="middle"
                       className="fill-foreground"
                     >
-                      {formatNumber(run.distanceM, 1)} m
+                      N
                     </text>
                   </g>
-                ))}
-                {layout.elements.map((e) => {
-                  const isSel = selected?.type === 'element' && selected.id === e.id;
-                  return (
-                    <g
-                      key={e.id}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${e.name}, ${ELEMENT_LABELS[e.kind]}`}
-                      aria-pressed={isSel}
-                      onPointerDown={(ev) => onItemDown(ev, 'element', e.id)}
-                      onKeyDown={(ev) => onKey(ev, 'element', e.id)}
-                      onFocus={() => setSelected({ type: 'element', id: e.id })}
-                      className="cursor-move outline-none"
-                    >
-                      <g
-                        transform={`translate(${e.positionM.x} ${sy(e.positionM.y)}) rotate(${e.rotationDeg})`}
-                      >
-                        <ElementSymbol
-                          kind={e.kind}
-                          w={e.widthM}
-                          d={e.depthM}
-                          selected={isSel}
-                          color={e.color}
-                        />
-                      </g>
-                      <text
-                        x={e.positionM.x}
-                        y={sy(e.positionM.y) + Math.max(e.widthM, e.depthM) / 2 + 1.1}
-                        fontSize={0.95}
-                        textAnchor="middle"
-                        paintOrder="stroke"
-                        strokeWidth={0.35}
-                        className="pointer-events-none fill-foreground stroke-white"
-                      >
-                        {e.name}
-                      </text>
-                    </g>
-                  );
-                })}
-                {design.arrays.map((a) => {
-                  const r = layoutResult?.arrays.find((x) => x.id === a.id);
-                  if (!r) return null;
-                  const isSel = selected?.type === 'array' && selected.id === a.id;
-                  const cw = r.widthM / a.modulesInSeries;
-                  const rh = r.depthM / a.parallelStrings;
-                  return (
-                    <g
-                      key={a.id}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`Arranjo ${a.name}`}
-                      aria-pressed={isSel}
-                      transform={`translate(${r.centerM.x} ${sy(r.centerM.y)}) rotate(${a.azimuthDegrees})`}
-                      onPointerDown={(ev) => onItemDown(ev, 'array', a.id)}
-                      onKeyDown={(ev) => onKey(ev, 'array', a.id)}
-                      onFocus={() => setSelected({ type: 'array', id: a.id })}
-                      className="cursor-move outline-none"
-                    >
-                      <rect
-                        x={-r.widthM / 2}
-                        y={-r.depthM / 2}
-                        width={r.widthM}
-                        height={r.depthM}
-                        className="fill-sky-800 stroke-sky-950"
-                        strokeWidth={isSel ? 0.3 : 0.1}
-                      />
-                      {[...Array(a.modulesInSeries - 1).keys()].map((i) => (
-                        <line
-                          key={`c${i}`}
-                          x1={-r.widthM / 2 + (i + 1) * cw}
-                          x2={-r.widthM / 2 + (i + 1) * cw}
-                          y1={-r.depthM / 2}
-                          y2={r.depthM / 2}
-                          className="stroke-sky-300/70"
-                          strokeWidth={0.05}
-                        />
-                      ))}
-                      {[...Array(a.parallelStrings - 1).keys()].map((i) => (
-                        <line
-                          key={`r${i}`}
-                          x1={-r.widthM / 2}
-                          x2={r.widthM / 2}
-                          y1={-r.depthM / 2 + (i + 1) * rh}
-                          y2={-r.depthM / 2 + (i + 1) * rh}
-                          className="stroke-sky-300/70"
-                          strokeWidth={0.05}
-                        />
-                      ))}
-                      <path
-                        d={`M0 ${r.depthM / 2 + 0.2} L0 ${r.depthM / 2 + 1.1} M-0.3 ${r.depthM / 2 + 0.8} L0 ${r.depthM / 2 + 1.1} L0.3 ${r.depthM / 2 + 0.8}`}
-                        className="stroke-sky-900"
-                        strokeWidth={0.12}
-                        fill="none"
-                      />
-                    </g>
-                  );
-                })}
-                {design.arrays.map((a) => {
-                  const r = layoutResult?.arrays.find((x) => x.id === a.id);
-                  return r ? (
+                  <g aria-label="Escala" transform={`translate(1 ${D - 1})`}>
+                    <line
+                      x1={0}
+                      x2={5}
+                      y1={0}
+                      y2={0}
+                      className="stroke-foreground"
+                      strokeWidth={0.2}
+                    />
                     <text
-                      key={`t${a.id}`}
-                      x={r.centerM.x}
-                      y={sy(r.centerM.y) + 0.3}
-                      fontSize={0.9}
+                      x={2.5}
+                      y={-0.4}
+                      fontSize={fs}
                       textAnchor="middle"
-                      className="pointer-events-none fill-white"
+                      className="fill-foreground"
                     >
-                      {a.name}
+                      5 m
                     </text>
-                  ) : null;
-                })}
-                <g aria-label="Norte" transform={`translate(${W - 1.5} 2)`}>
-                  <path
-                    d="M0 1.2 L0 -1.2 M-0.5 -0.5 L0 -1.2 L0.5 -0.5"
-                    className="stroke-foreground"
-                    strokeWidth={0.15}
-                    fill="none"
-                  />
-                  <text x={0} y={2.4} fontSize={1} textAnchor="middle" className="fill-foreground">
-                    N
-                  </text>
-                </g>
-                <g aria-label="Escala" transform={`translate(1 ${D - 1})`}>
-                  <line
-                    x1={0}
-                    x2={5}
-                    y1={0}
-                    y2={0}
-                    className="stroke-foreground"
-                    strokeWidth={0.2}
-                  />
-                  <text
-                    x={2.5}
-                    y={-0.4}
-                    fontSize={0.9}
-                    textAnchor="middle"
-                    className="fill-foreground"
-                  >
-                    5 m
-                  </text>
-                </g>
-              </svg>
-            ) : webgl ? (
-              <div className="space-y-2">
-                <div className="h-[32rem] w-full overflow-hidden rounded border bg-sky-100">
-                  <Suspense
-                    fallback={
-                      <p className="p-4 text-sm text-muted-foreground">Carregando a cena 3D…</p>
-                    }
-                  >
-                    <TerrainCanvas
-                      lot={{ widthM: layout.lotWidthM, depthM: layout.lotDepthM }}
-                      elements={layout.elements}
-                      arrays={sceneArrays.map((a) => ({
-                        ...a,
-                        name: design.arrays.find((x) => x.id === a.id)?.name ?? '',
-                      }))}
-                      runs={cableRuns.map(({ run, from, to }) => ({
-                        id: run.id,
-                        kind: run.kind,
-                        from,
-                        to,
-                      }))}
-                      sun={sun}
-                      shadows={shadows}
-                      selected={selected}
-                      view={view}
-                      readOnly={readOnly}
-                      onSelect={setSelected}
-                      onMove={moveTo}
-                    />
-                  </Suspense>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-medium">Vista:</span>
-                  {(
-                    [
-                      ['iso', 'Isométrica'],
-                      ['top', 'De cima'],
-                      ['front', 'De frente'],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <Button
-                      key={id}
-                      size="sm"
-                      variant={view === id ? 'default' : 'outline'}
-                      aria-pressed={view === id}
-                      onClick={() => setView(id)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                  <span className="text-xs text-muted-foreground">
-                    Arraste o fundo para girar, a roda aproxima, e arraste um objeto para movê-lo no
-                    chão.
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <svg
-                  role="img"
-                  aria-label="Cena 3D do terreno"
-                  viewBox={zoomedBox}
-                  className="h-[28rem] w-full cursor-grab touch-none rounded border bg-card active:cursor-grabbing"
-                  onPointerDown={onSceneDown}
-                  onPointerMove={onSceneMove}
-                  onPointerUp={onUp}
-                  onPointerCancel={onUp}
-                  onWheel={onWheel}
-                >
-                  {scene.polygons
-                    .filter((p) => shadows || p.kind !== 'SHADOW')
-                    .map((p, i) => (
-                      <polygon
-                        key={i}
-                        points={p.points.map((q) => `${q.x},${q.y}`).join(' ')}
-                        className={
-                          p.elementKind
-                            ? `${FILL[p.elementKind]} ${p.kind === 'SIDE' ? 'opacity-80' : ''}`
-                            : POLY_FILL[p.kind]
-                        }
-                        strokeWidth={0.08}
-                        onPointerDown={(ev) => {
-                          if (p.ref) {
-                            ev.stopPropagation();
-                            setSelected(p.ref);
-                          }
-                        }}
-                      />
-                    ))}
-                  {cableRuns.map(({ run, from, to }) => {
-                    const a = scene.project({ x: from.x, y: from.y, z: 0.1 });
-                    const b = scene.project({ x: to.x, y: to.y, z: 0.1 });
-                    return (
-                      <line
-                        key={run.id}
-                        x1={a.x}
-                        y1={a.y}
-                        x2={b.x}
-                        y2={b.y}
-                        className={run.kind === 'DC_PV' ? 'stroke-red-600' : 'stroke-blue-700'}
-                        strokeWidth={0.2}
-                        strokeDasharray={run.kind === 'DC_PV' ? undefined : '0.6 0.4'}
-                      />
-                    );
-                  })}
-                  {layout.elements.map((e) => {
-                    const p = scene.project({
-                      x: e.positionM.x,
-                      y: e.positionM.y,
-                      z: e.heightM + 0.6,
-                    });
-                    return (
-                      <text
-                        key={e.id}
-                        x={p.x}
-                        y={p.y}
-                        fontSize={1}
-                        textAnchor="middle"
-                        className="pointer-events-none fill-foreground"
-                      >
-                        {e.name}
-                      </text>
-                    );
-                  })}
+                  </g>
                 </svg>
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Label htmlFor="vs-yaw">Giro {yaw}°</Label>
-                  <input
-                    id="vs-yaw"
-                    type="range"
-                    min={-180}
-                    max={180}
-                    value={yaw}
-                    onChange={(e) => setYaw(Number(e.target.value))}
-                  />
-                  <Label htmlFor="vs-pitch">Altura da câmera {pitch}°</Label>
-                  <input
-                    id="vs-pitch"
-                    type="range"
-                    min={5}
-                    max={90}
-                    value={pitch}
-                    onChange={(e) => setPitch(Number(e.target.value))}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    aria-label="Afastar"
-                    onClick={() => setZoom((z) => Math.max(0.5, z / 1.2))}
+              ) : webgl ? (
+                <div className="space-y-2">
+                  <div
+                    className={`w-full overflow-hidden rounded border bg-sky-100 ${size === 'normal' ? 'h-[32rem]' : size === 'large' ? 'h-[46rem]' : 'h-[calc(100vh-9rem)]'}`}
                   >
-                    <ZoomOut />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    aria-label="Aproximar"
-                    onClick={() => setZoom((z) => Math.min(4, z * 1.2))}
-                  >
-                    <ZoomIn />
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    Arraste a cena para girar; a roda aproxima.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <aside
-              className="space-y-3 rounded border p-3 text-sm"
-              aria-label="Detalhes da seleção"
-            >
-              {selectedElement ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{ELEMENT_LABELS[selectedElement.kind]}</h3>
-                    {!readOnly ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Remover ${selectedElement.name}`}
-                        onClick={() => {
-                          setLayout({
-                            elements: layout.elements.filter((e) => e.id !== selectedElement.id),
-                          });
-                          setSelected(null);
-                        }}
-                      >
-                        <Trash2 /> Remover
-                      </Button>
-                    ) : null}
-                  </div>
-                  {selectedElement.description ? (
-                    <p className="text-xs text-muted-foreground">
-                      Descrição: “{selectedElement.description}”
-                    </p>
-                  ) : null}
-                  <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-                    <div className="grid gap-1">
-                      <Label htmlFor="el-kind">Tipo</Label>
-                      <NativeSelect
-                        id="el-kind"
-                        disabled={readOnly}
-                        value={selectedElement.kind}
-                        onChange={(e) =>
-                          patchElement(selectedElement.id, {
-                            kind: e.target.value as LayoutElementKind,
-                          })
-                        }
-                      >
-                        {ELEMENT_KINDS_ORDER.map((k) => (
-                          <option key={k} value={k}>
-                            {ELEMENT_LABELS[k]}
-                          </option>
-                        ))}
-                      </NativeSelect>
-                    </div>
-                    <div className="grid gap-1">
-                      <Label htmlFor="el-color">Cor</Label>
-                      <input
-                        id="el-color"
-                        type="color"
-                        disabled={readOnly}
-                        className="h-9 w-12 cursor-pointer rounded border"
-                        value={selectedElement.color ?? '#9e9e9e'}
-                        onChange={(e) =>
-                          patchElement(selectedElement.id, { color: e.target.value })
-                        }
+                    <Suspense
+                      fallback={
+                        <p className="p-4 text-sm text-muted-foreground">Carregando a cena 3D…</p>
+                      }
+                    >
+                      <TerrainCanvas
+                        lot={{ widthM: layout.lotWidthM, depthM: layout.lotDepthM }}
+                        elements={layout.elements}
+                        arrays={sceneArrays.map((a) => ({
+                          ...a,
+                          name: design.arrays.find((x) => x.id === a.id)?.name ?? '',
+                        }))}
+                        runs={cableRuns.map(({ run, from, to }) => ({
+                          id: run.id,
+                          kind: run.kind,
+                          from,
+                          to,
+                        }))}
+                        sun={sun}
+                        shadows={shadows}
+                        selected={selected}
+                        view={view}
+                        readOnly={readOnly}
+                        onSelect={setSelected}
+                        onMove={moveTo}
                       />
-                    </div>
+                    </Suspense>
                   </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="el-name">Nome</Label>
-                    <Input
-                      id="el-name"
-                      disabled={readOnly}
-                      value={selectedElement.name}
-                      onChange={(e) => patchElement(selectedElement.id, { name: e.target.value })}
-                    />
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-medium">Vista:</span>
+                    {(
+                      [
+                        ['iso', 'Isométrica'],
+                        ['top', 'De cima'],
+                        ['front', 'De frente'],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <Button
+                        key={id}
+                        size="sm"
+                        variant={view === id ? 'default' : 'outline'}
+                        aria-pressed={view === id}
+                        onClick={() => setView(id)}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                    <span className="text-xs text-muted-foreground">
+                      Arraste o fundo para girar, a roda aproxima, e arraste um objeto para movê-lo
+                      no chão.
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <NumberField
-                      id="el-x"
-                      label="Leste (X)"
-                      unit="m"
-                      disabled={readOnly}
-                      value={selectedElement.positionM.x}
-                      onChange={(v) =>
-                        v !== undefined &&
-                        patchElement(selectedElement.id, {
-                          positionM: { ...selectedElement.positionM, x: v },
-                        })
-                      }
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <svg
+                    role="img"
+                    aria-label="Cena 3D do terreno"
+                    viewBox={zoomedBox}
+                    className="h-[28rem] w-full cursor-grab touch-none rounded border bg-card active:cursor-grabbing"
+                    onPointerDown={onSceneDown}
+                    onPointerMove={onSceneMove}
+                    onPointerUp={onUp}
+                    onPointerCancel={onUp}
+                    onWheel={onWheel}
+                  >
+                    {scene.polygons
+                      .filter((p) => shadows || p.kind !== 'SHADOW')
+                      .map((p, i) => (
+                        <polygon
+                          key={i}
+                          points={p.points.map((q) => `${q.x},${q.y}`).join(' ')}
+                          className={
+                            p.elementKind
+                              ? `${FILL[p.elementKind]} ${p.kind === 'SIDE' ? 'opacity-80' : ''}`
+                              : POLY_FILL[p.kind]
+                          }
+                          strokeWidth={0.08}
+                          onPointerDown={(ev) => {
+                            if (p.ref) {
+                              ev.stopPropagation();
+                              setSelected(p.ref);
+                            }
+                          }}
+                        />
+                      ))}
+                    {cableRuns.map(({ run, from, to }) => {
+                      const a = scene.project({ x: from.x, y: from.y, z: 0.1 });
+                      const b = scene.project({ x: to.x, y: to.y, z: 0.1 });
+                      return (
+                        <line
+                          key={run.id}
+                          x1={a.x}
+                          y1={a.y}
+                          x2={b.x}
+                          y2={b.y}
+                          className={run.kind === 'DC_PV' ? 'stroke-red-600' : 'stroke-blue-700'}
+                          strokeWidth={0.2}
+                          strokeDasharray={run.kind === 'DC_PV' ? undefined : '0.6 0.4'}
+                        />
+                      );
+                    })}
+                    {layout.elements.map((e) => {
+                      const p = scene.project({
+                        x: e.positionM.x,
+                        y: e.positionM.y,
+                        z: e.heightM + 0.6,
+                      });
+                      return (
+                        <text
+                          key={e.id}
+                          x={p.x}
+                          y={p.y}
+                          fontSize={1}
+                          textAnchor="middle"
+                          className="pointer-events-none fill-foreground"
+                        >
+                          {e.name}
+                        </text>
+                      );
+                    })}
+                  </svg>
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <Label htmlFor="vs-yaw">Giro {yaw}°</Label>
+                    <input
+                      id="vs-yaw"
+                      type="range"
+                      min={-180}
+                      max={180}
+                      value={yaw}
+                      onChange={(e) => setYaw(Number(e.target.value))}
                     />
-                    <NumberField
-                      id="el-y"
-                      label="Norte (Y)"
-                      unit="m"
-                      disabled={readOnly}
-                      value={selectedElement.positionM.y}
-                      onChange={(v) =>
-                        v !== undefined &&
-                        patchElement(selectedElement.id, {
-                          positionM: { ...selectedElement.positionM, y: v },
-                        })
-                      }
+                    <Label htmlFor="vs-pitch">Altura da câmera {pitch}°</Label>
+                    <input
+                      id="vs-pitch"
+                      type="range"
+                      min={5}
+                      max={90}
+                      value={pitch}
+                      onChange={(e) => setPitch(Number(e.target.value))}
                     />
-                    <NumberField
-                      id="el-w"
-                      label="Largura"
-                      unit="m"
-                      min={0.1}
-                      disabled={readOnly}
-                      value={selectedElement.widthM}
-                      onChange={(v) =>
-                        v !== undefined && patchElement(selectedElement.id, { widthM: v })
-                      }
-                    />
-                    <NumberField
-                      id="el-d"
-                      label="Profundidade"
-                      unit="m"
-                      min={0.1}
-                      disabled={readOnly}
-                      value={selectedElement.depthM}
-                      onChange={(v) =>
-                        v !== undefined && patchElement(selectedElement.id, { depthM: v })
-                      }
-                    />
-                    <NumberField
-                      id="el-h"
-                      label="Altura"
-                      unit="m"
-                      min={0}
-                      disabled={readOnly}
-                      value={selectedElement.heightM}
-                      hint="0 não sombreia"
-                      onChange={(v) =>
-                        v !== undefined && patchElement(selectedElement.id, { heightM: v })
-                      }
-                    />
-                    <NumberField
-                      id="el-r"
-                      label="Giro"
-                      unit="°"
-                      min={0}
-                      max={359.9}
-                      disabled={readOnly}
-                      value={selectedElement.rotationDeg}
-                      onChange={(v) =>
-                        v !== undefined && patchElement(selectedElement.id, { rotationDeg: v })
-                      }
-                    />
-                  </div>
-                </>
-              ) : selectedArray && selectedArrayResult ? (
-                <>
-                  <h3 className="font-medium">Arranjo {selectedArray.name}</h3>
-                  <p className="text-muted-foreground">
-                    {selectedArray.modulesInSeries} em série × {selectedArray.parallelStrings}{' '}
-                    strings · {formatNumber(selectedArrayResult.widthM, 1)} ×{' '}
-                    {formatNumber(selectedArrayResult.depthM, 1)} m · azimute{' '}
-                    {formatNumber(selectedArray.azimuthDegrees, 0)}° · inclinação{' '}
-                    {formatNumber(selectedArray.tiltDegrees, 0)}°
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <NumberField
-                      id="ar-x"
-                      label="Leste (X)"
-                      unit="m"
-                      disabled={readOnly}
-                      value={selectedArrayResult.centerM.x}
-                      onChange={(v) =>
-                        v !== undefined &&
-                        moveTo('array', selectedArray.id, v, selectedArrayResult.centerM.y)
-                      }
-                    />
-                    <NumberField
-                      id="ar-y"
-                      label="Norte (Y)"
-                      unit="m"
-                      disabled={readOnly}
-                      value={selectedArrayResult.centerM.y}
-                      onChange={(v) =>
-                        v !== undefined &&
-                        moveTo('array', selectedArray.id, selectedArrayResult.centerM.x, v)
-                      }
-                    />
-                  </div>
-                  <p>
-                    Sombra das construções:{' '}
-                    <strong>{formatNumber(selectedArrayResult.annualShadingLossPct, 1)}%</strong> da
-                    componente direta ao ano ({selectedArrayResult.shadingObstacles} objeto(s)).
-                  </p>
-                  {!readOnly ? (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =>
-                        update((d) => ({
-                          ...d,
-                          arrays: d.arrays.map((a) =>
-                            a.id === selectedArray.id
-                              ? { ...a, shadingLossPct: selectedArrayResult.annualShadingLossPct }
-                              : a,
-                          ),
-                        }))
-                      }
+                      aria-label="Afastar"
+                      onClick={() => setZoom((z) => Math.max(0.5, z / 1.2))}
                     >
-                      Usar como perda por sombra ({formatNumber(selectedArray.shadingLossPct, 1)}%
-                      hoje)
+                      <ZoomOut />
                     </Button>
-                  ) : null}
-                </>
-              ) : (
-                <p className="text-muted-foreground">
-                  Selecione um objeto na planta para ver e editar os detalhes.
-                </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      aria-label="Aproximar"
+                      onClick={() => setZoom((z) => Math.min(4, z * 1.2))}
+                    >
+                      <ZoomIn />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Arraste a cena para girar; a roda aproxima.
+                    </span>
+                  </div>
+                </div>
               )}
-            </aside>
+
+              <aside
+                className="space-y-3 rounded border p-3 text-sm"
+                aria-label="Detalhes da seleção"
+              >
+                {selectedElement ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">{ELEMENT_LABELS[selectedElement.kind]}</h3>
+                      {!readOnly ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Remover ${selectedElement.name}`}
+                          onClick={() => {
+                            setLayout({
+                              elements: layout.elements.filter((e) => e.id !== selectedElement.id),
+                            });
+                            setSelected(null);
+                          }}
+                        >
+                          <Trash2 /> Remover
+                        </Button>
+                      ) : null}
+                    </div>
+                    {selectedElement.description ? (
+                      <p className="text-xs text-muted-foreground">
+                        Descrição: “{selectedElement.description}”
+                      </p>
+                    ) : null}
+                    <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                      <div className="grid gap-1">
+                        <Label htmlFor="el-kind">Tipo</Label>
+                        <NativeSelect
+                          id="el-kind"
+                          disabled={readOnly}
+                          value={selectedElement.kind}
+                          onChange={(e) =>
+                            patchElement(selectedElement.id, {
+                              kind: e.target.value as LayoutElementKind,
+                            })
+                          }
+                        >
+                          {ELEMENT_KINDS_ORDER.map((k) => (
+                            <option key={k} value={k}>
+                              {ELEMENT_LABELS[k]}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                      </div>
+                      <div className="grid gap-1">
+                        <Label htmlFor="el-color">Cor</Label>
+                        <input
+                          id="el-color"
+                          type="color"
+                          disabled={readOnly}
+                          className="h-9 w-12 cursor-pointer rounded border"
+                          value={selectedElement.color ?? '#9e9e9e'}
+                          onChange={(e) =>
+                            patchElement(selectedElement.id, { color: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="el-name">Nome</Label>
+                      <Input
+                        id="el-name"
+                        disabled={readOnly}
+                        value={selectedElement.name}
+                        onChange={(e) => patchElement(selectedElement.id, { name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <NumberField
+                        id="el-x"
+                        label="Leste (X)"
+                        unit="m"
+                        disabled={readOnly}
+                        value={selectedElement.positionM.x}
+                        onChange={(v) =>
+                          v !== undefined &&
+                          patchElement(selectedElement.id, {
+                            positionM: { ...selectedElement.positionM, x: v },
+                          })
+                        }
+                      />
+                      <NumberField
+                        id="el-y"
+                        label="Norte (Y)"
+                        unit="m"
+                        disabled={readOnly}
+                        value={selectedElement.positionM.y}
+                        onChange={(v) =>
+                          v !== undefined &&
+                          patchElement(selectedElement.id, {
+                            positionM: { ...selectedElement.positionM, y: v },
+                          })
+                        }
+                      />
+                      <NumberField
+                        id="el-w"
+                        label="Largura"
+                        unit="m"
+                        min={0.1}
+                        disabled={readOnly}
+                        value={selectedElement.widthM}
+                        onChange={(v) =>
+                          v !== undefined && patchElement(selectedElement.id, { widthM: v })
+                        }
+                      />
+                      <NumberField
+                        id="el-d"
+                        label="Profundidade"
+                        unit="m"
+                        min={0.1}
+                        disabled={readOnly}
+                        value={selectedElement.depthM}
+                        onChange={(v) =>
+                          v !== undefined && patchElement(selectedElement.id, { depthM: v })
+                        }
+                      />
+                      <NumberField
+                        id="el-h"
+                        label="Altura"
+                        unit="m"
+                        min={0}
+                        disabled={readOnly}
+                        value={selectedElement.heightM}
+                        hint="0 não sombreia"
+                        onChange={(v) =>
+                          v !== undefined && patchElement(selectedElement.id, { heightM: v })
+                        }
+                      />
+                      <NumberField
+                        id="el-r"
+                        label="Giro"
+                        unit="°"
+                        min={0}
+                        max={359.9}
+                        disabled={readOnly}
+                        value={selectedElement.rotationDeg}
+                        onChange={(v) =>
+                          v !== undefined && patchElement(selectedElement.id, { rotationDeg: v })
+                        }
+                      />
+                    </div>
+                  </>
+                ) : selectedArray && selectedArrayResult ? (
+                  <>
+                    <h3 className="font-medium">Arranjo {selectedArray.name}</h3>
+                    <p className="text-muted-foreground">
+                      {selectedArray.modulesInSeries} em série × {selectedArray.parallelStrings}{' '}
+                      strings · {formatNumber(selectedArrayResult.widthM, 1)} ×{' '}
+                      {formatNumber(selectedArrayResult.depthM, 1)} m · azimute{' '}
+                      {formatNumber(selectedArray.azimuthDegrees, 0)}° · inclinação{' '}
+                      {formatNumber(selectedArray.tiltDegrees, 0)}°
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <NumberField
+                        id="ar-x"
+                        label="Leste (X)"
+                        unit="m"
+                        disabled={readOnly}
+                        value={selectedArrayResult.centerM.x}
+                        onChange={(v) =>
+                          v !== undefined &&
+                          moveTo('array', selectedArray.id, v, selectedArrayResult.centerM.y)
+                        }
+                      />
+                      <NumberField
+                        id="ar-y"
+                        label="Norte (Y)"
+                        unit="m"
+                        disabled={readOnly}
+                        value={selectedArrayResult.centerM.y}
+                        onChange={(v) =>
+                          v !== undefined &&
+                          moveTo('array', selectedArray.id, selectedArrayResult.centerM.x, v)
+                        }
+                      />
+                    </div>
+                    <p>
+                      Sombra das construções:{' '}
+                      <strong>{formatNumber(selectedArrayResult.annualShadingLossPct, 1)}%</strong>{' '}
+                      da componente direta ao ano ({selectedArrayResult.shadingObstacles}{' '}
+                      objeto(s)).
+                    </p>
+                    {!readOnly ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          update((d) => ({
+                            ...d,
+                            arrays: d.arrays.map((a) =>
+                              a.id === selectedArray.id
+                                ? { ...a, shadingLossPct: selectedArrayResult.annualShadingLossPct }
+                                : a,
+                            ),
+                          }))
+                        }
+                      >
+                        Usar como perda por sombra ({formatNumber(selectedArray.shadingLossPct, 1)}%
+                        hoje)
+                      </Button>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Selecione um objeto na planta para ver e editar os detalhes.
+                  </p>
+                )}
+              </aside>
+            </div>
           </div>
         </CardContent>
       </Card>
