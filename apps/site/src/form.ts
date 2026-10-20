@@ -71,11 +71,22 @@ export function initForm() {
     }
     button.disabled = true;
     say('Enviando…');
+    // A primeira chamada depois de um tempo parado pode levar até 1 minuto (o servidor acorda): avisa em vez de parecer travado.
+    const slow = window.setTimeout(
+      () =>
+        say(
+          'Ainda enviando… o servidor pode estar acordando (leva até 1 minuto). Não feche a página.',
+        ),
+      5_000,
+    );
+    const controller = new AbortController();
+    const giveUp = window.setTimeout(() => controller.abort(), 90_000);
     try {
       const res = await fetch(config.leadEndpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(buildPayload(values)),
+        signal: controller.signal,
       });
       if (res.status === 429) return say('Muitas tentativas. Aguarde um minuto e tente de novo.');
       if (!res.ok)
@@ -83,8 +94,14 @@ export function initForm() {
       form.reset();
       say('Recebemos seu contato. A gente retorna em breve!', true);
     } catch {
-      say('Sem conexão com o servidor. Tente novamente em instantes.');
+      say(
+        controller.signal.aborted
+          ? 'Demorou mais que o normal. Seu contato pode já ter chegado; se não tiver retorno, envie de novo (não cria duplicado).'
+          : 'Sem conexão com o servidor. Tente novamente em instantes.',
+      );
     } finally {
+      window.clearTimeout(slow);
+      window.clearTimeout(giveUp);
       button.disabled = false;
     }
   });

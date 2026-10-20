@@ -45,4 +45,23 @@ test.describe('Site de apresentação', () => {
     await form.getByRole('button', { name: 'Pedir demonstração' }).click();
     await expect(form.locator('[data-msg]')).toContainText('telefone ou um e-mail');
   });
+
+  test('com o servidor lento, avisa que está acordando em vez de parecer travado', async ({
+    page,
+  }) => {
+    await page.route('**/api/v1/public/leads/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 7_000));
+      await route.fulfill({ status: 202, json: { ok: true } });
+    });
+    await page.goto(`${SITE}/#contato`);
+    const form = page.locator('[data-form]');
+    await form.getByLabel('Seu nome').fill('Maria Souza');
+    await form.getByLabel('Telefone (com DDD)').fill('(85) 98888-7777');
+    await form.getByRole('checkbox').check();
+    await form.getByRole('button', { name: 'Pedir demonstração' }).click();
+    await expect(form.locator('[data-msg]')).toContainText('Ainda enviando');
+    await expect(form.locator('[data-msg]')).toContainText('Recebemos seu contato', {
+      timeout: 15_000,
+    });
+  });
 });
