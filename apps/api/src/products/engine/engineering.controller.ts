@@ -19,8 +19,11 @@ import {
   listEngineeringProjectsQuerySchema,
   listEngineeringRequestsQuerySchema,
   saveDesignSchema,
+  suggestConfigurationsSchema,
 } from '@voltex/shared';
+import { Throttle } from '@nestjs/throttler';
 import { RequirePermissions } from '../../common/decorators';
+import { EngineeringConfiguratorService } from './engineering-configurator.service';
 import { EngineeringProjectsService } from './engineering-projects.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
@@ -30,6 +33,7 @@ class CancelDto extends createZodDto(cancelEngineeringRequestSchema) {}
 class ListProjectsQueryDto extends createZodDto(listEngineeringProjectsQuerySchema) {}
 class CreateProjectDto extends createZodDto(createEngineeringProjectSchema) {}
 class SaveDesignDto extends createZodDto(saveDesignSchema) {}
+class SuggestDto extends createZodDto(suggestConfigurationsSchema) {}
 class FromRequestDto extends createZodDto(
   z.object({
     latitude: z.number().min(-90).max(90).optional(),
@@ -49,6 +53,7 @@ export class EngineeringController {
     private readonly requests: EngineeringRequestsService,
     private readonly projects: EngineeringProjectsService,
     private readonly versions: EngineeringVersionsService,
+    private readonly configurator: EngineeringConfiguratorService,
   ) {}
 
   // ---- Fila de pedidos ----
@@ -119,6 +124,15 @@ export class EngineeringController {
   @RequirePermissions('engine.project.write')
   saveDesign(@Param('id', ParseUUIDPipe) id: string, @Body() body: SaveDesignDto) {
     return this.versions.saveDesign(id, body.design);
+  }
+
+  /** Combinações módulo × inversor × strings que passam nas verificações, do catálogo aprovado (sugestão a confirmar). */
+  @Post('versions/:id/configurations')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.read')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  suggest(@Param('id', ParseUUIDPipe) id: string, @Body() body: SuggestDto) {
+    return this.configurator.suggest(id, body);
   }
 
   @Post('versions/:id/recalculate')

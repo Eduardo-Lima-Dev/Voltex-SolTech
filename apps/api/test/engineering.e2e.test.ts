@@ -508,6 +508,286 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
     });
   });
 
+  describe('inversores, strings e compatibilidade', () => {
+    let inverterId = '';
+    let versionId = '';
+    let publisher: { publishPending: (n: number, tenantId: string) => Promise<unknown> };
+    const inverterSpec = {
+      topology: 'STRING',
+      pAcNomW: 5000,
+      pAcMaxW: 5500,
+      pDcMaxW: 7500,
+      vDcMaxV: 1100,
+      vStartV: 180,
+      mpptMinV: 140,
+      mpptMaxV: 1000,
+      mpptCount: 2,
+      inputsPerMppt: 2,
+      iMaxPerMpptA: 16,
+      iscMaxPerMpptA: 22,
+      vAcV: 220,
+      phases: 1,
+    };
+    const strings = (n: number, parallel = 1) => ({
+      strings: [{ id: `g${n}`, surfaceId: 's1', modulesInSeries: n, parallel }],
+    });
+    const design = (over: Record<string, unknown> = {}, site: Record<string, unknown> = {}) => ({
+      schemaVersion: 1,
+      site: { latitude: -15.78, longitude: -47.93, ...site },
+      defaultModuleId: moduleId,
+      surfaces: [surface({ widthM: 10, depthM: 5 })],
+      inverters: [{ id: 'e1', inverterId, mppts: [strings(4), strings(4)] }],
+      ...over,
+    });
+
+    it('prepara o inversor aprovado, o projeto e o publicador de eventos', async () => {
+      const inv = await post('/catalog/items', engineer, {
+        kind: 'INVERTER',
+        manufacturer: `Inv ${suffix}`,
+        model: 'ENG-5K',
+        spec: inverterSpec,
+        referenceCostCents: 400000,
+      });
+      inverterId = inv.body.id;
+      expect((await post(`/catalog/items/${inverterId}/approve`, lead)).status).toBe(200);
+      const p = await post('/engineering/projects', engineer, {
+        name: 'Strings',
+        site: { latitude: -15.78, longitude: -47.93 },
+      });
+      versionId = p.body.versions[0].id;
+      const { OutboxPublisher } = await import('../src/platform/events/outbox-publisher.service');
+      publisher = t.app.get(OutboxPublisher);
+    });
+
+    it('inversor fora do catálogo aprovado é recusado', async () => {
+      const draft = await post('/catalog/items', engineer, {
+        kind: 'INVERTER',
+        manufacturer: `Inv ${suffix}`,
+        model: 'RASCUNHO',
+        spec: inverterSpec,
+      });
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design({ inverters: [{ id: 'e1', inverterId: draft.body.id, mppts: [] }] }),
+      });
+      expect(res.status).toBe(422);
+      expect(res.body.data.problems[0].message).toMatch(/não está aprovado/);
+      // Um módulo no lugar de inversor também.
+      const wrong = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design({ inverters: [{ id: 'e1', inverterId: moduleId, mppts: [] }] }),
+      });
+      expect(wrong.body.data.problems[0].message).toMatch(/não é um inversor/);
+    });
+
+    it('sem a temperatura de projeto e sem a regra engine.design, a compatibilidade fica INCOMPLETA (sem erro inventado)', async () => {
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design(),
+      });
+      expect(res.status).toBe(200);
+      const c = res.body.results.compatibility;
+      expect(c.status).toBe('INCOMPLETE');
+      expect(c.pending.map((x: { code: string }) => x.code)).toEqual([
+        'TMIN_MISSING',
+        'TMAX_MISSING',
+        'RULE_HOT_CELL_IRRADIANCE',
+        'RULE_DC_AC_RATIO',
+      ]);
+      expect(res.body.rules.engineDesign).toEqual({ ref: null, parameters: {} });
+      expect(res.body.ruleRefs).toEqual([]);
+      const rows = await t.prisma.system.engineeringVersionEquipment.findMany({
+        where: { versionId },
+      });
+      expect(rows.map((r) => [r.kind, r.quantity]).sort()).toEqual([
+        ['INVERTER', 1],
+        ['MODULE', 8],
+      ]);
+    });
+
+    it('com a regra ativada pelo responsável técnico e a temperatura informada, calcula e registra a referência da regra', async () => {
+      const rule = await post('/rules', lead, {
+        key: 'engine.design',
+        // Valores de TESTE (não são regra de nenhuma norma).
+        definition: {
+          parameters: { hotCellIrradianceWm2: 1000, dcAcRatioMin: 0.95, dcAcRatioMax: 1.35 },
+        },
+        sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste' }],
+      });
+      expect(rule.status).toBe(201);
+      expect(
+        (await post(`/rules/${rule.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+      ).toBe(200);
+
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design(
+          {},
+          { designTminC: 5, designTmaxAmbientC: 35, designTemperatureSource: 'Teste' },
+        ),
+      });
+      const c = res.body.results.compatibility;
+      expect(c.pending).toEqual([]);
+      expect(res.body.ruleRefs).toEqual([`${rule.body.id}@${rule.body.version}`]);
+      expect(res.body.rules.engineDesign.parameters.dcAcRatioMax).toBe(1.35);
+      // 8 módulos em 2 strings de 4 (4,4 kWp) num inversor de 5 kW: tensão baixa (partida), mas válido.
+      expect(c.inverters[0].metrics).toMatchObject({
+        modulesConnected: 8,
+        dcPowerKwp: 4.4,
+        dcAcRatio: 0.88,
+        mpptUsed: 2,
+      });
+      expect(c.thermal[0]).toMatchObject({ vocColdV: 52.384, cellHotC: expect.any(Number) });
+      expect(
+        c.inverters[0].checks.find((x: { code: string }) => x.code === 'DC_AC_RATIO_OUT_OF_POLICY'),
+      ).toMatchObject({ outcome: 'FAIL', severity: 'WARNING' });
+      expect(c.status).toBe('VALID_WITH_WARNINGS');
+      expect(res.body.results.algorithmVersions.compatibility).toBe('compat-1.0.0');
+    });
+
+    it('erro físico não impede salvar, mas deixa a versão INVÁLIDA e explicada', async () => {
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design(
+          {
+            surfaces: [surface({ widthM: 40, depthM: 10 })],
+            inverters: [{ id: 'e1', inverterId, mppts: [strings(21)] }],
+          },
+          { designTminC: 5, designTmaxAmbientC: 35 },
+        ),
+      });
+      expect(res.status).toBe(200);
+      const c = res.body.results.compatibility;
+      expect(c.status).toBe('INVALID');
+      const voc = c.inverters[0].checks.find(
+        (x: { code: string }) => x.code === 'VOC_COLD_EXCEEDS_MAX',
+      );
+      expect(voc).toMatchObject({
+        outcome: 'FAIL',
+        severity: 'ERROR',
+        limit: 1100,
+        formula: expect.stringContaining('Voc(Tmín)'),
+      });
+      expect(voc.value).toBeGreaterThan(1100);
+    });
+
+    it('gera configurações do catálogo aprovado: sugestão válida, determinística e com custo', async () => {
+      const body = {
+        surfaceId: 's1',
+        targetKwp: 6.6,
+        design: design(
+          { surfaces: [surface({ widthM: 20, depthM: 10 })], inverters: [] },
+          { designTminC: 5, designTmaxAmbientC: 35 },
+        ),
+      };
+      const res = await post(`/engineering/versions/${versionId}/configurations`, engineer, body);
+      expect(res.status).toBe(200);
+      expect(res.body.pending).toEqual([]);
+      const best = res.body.configurations[0];
+      expect(best).toMatchObject({
+        moduleId,
+        inverterId,
+        moduleCount: 12,
+        modulesInSeries: 6,
+        totalStrings: 2,
+        status: 'VALID',
+      });
+      expect(best.costCents).toBeNull(); // o módulo de teste não tem custo de referência
+      expect(best.unpriced.length).toBeGreaterThan(0);
+      expect(best.entries[0].inverterId).toBe(inverterId);
+      const again = await post(`/engineering/versions/${versionId}/configurations`, engineer, body);
+      expect(again.body).toEqual(res.body);
+
+      // Usar a sugestão: a configuração entra no desenho e passa na compatibilidade.
+      // A superfície passa a usar só os módulos da configuração (o resto da área fica livre).
+      const used = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: {
+          ...body.design,
+          surfaces: [{ ...body.design.surfaces[0], moduleCount: best.moduleCount }],
+          inverters: best.entries,
+        },
+      });
+      expect(used.body.results.compatibility.status).toBe('VALID');
+    });
+
+    it('sem a temperatura de projeto, a geração explica o que falta em vez de chutar', async () => {
+      const res = await post(`/engineering/versions/${versionId}/configurations`, engineer, {
+        surfaceId: 's1',
+        targetKwp: 6.6,
+        design: design({ inverters: [] }),
+      });
+      expect(res.body.configurations).toEqual([]);
+      expect(res.body.pending.map((p: { code: string }) => p.code)).toEqual([
+        'TMIN_MISSING',
+        'TMAX_MISSING',
+      ]);
+      expect(
+        (
+          await post(`/engineering/versions/${versionId}/configurations`, seller, {
+            surfaceId: 's1',
+            targetKwp: 1,
+          })
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await post(`/engineering/versions/${versionId}/configurations`, engineer, {
+            surfaceId: 's1',
+            targetKwp: -1,
+          })
+        ).status,
+      ).toBe(422);
+    });
+
+    it('aposentar o módulo marca como desatualizadas as versões que o usam (a aprovada segue intacta)', async () => {
+      const m = await post('/catalog/items', engineer, {
+        kind: 'MODULE',
+        manufacturer: `Fab ${suffix}`,
+        model: 'ENG-IMPACTO',
+        spec: moduleSpec,
+      });
+      await post(`/catalog/items/${m.body.id}/approve`, lead);
+      const p = await post('/engineering/projects', engineer, {
+        name: 'Impacto',
+        site: { latitude: -15, longitude: -47 },
+      });
+      const v = p.body.versions[0].id;
+      await put(`/engineering/versions/${v}/design`, engineer, {
+        design: {
+          schemaVersion: 1,
+          site: { latitude: -15, longitude: -47 },
+          defaultModuleId: m.body.id,
+          surfaces: [surface()],
+          inverters: [],
+        },
+      });
+      expect((await get(`/engineering/versions/${v}`, engineer)).body.stale).toBe(false);
+      expect((await post(`/catalog/items/${m.body.id}/retire`, lead)).status).toBe(200);
+      await publisher.publishPending(500, a.id);
+      const after = (await get(`/engineering/versions/${v}`, engineer)).body;
+      expect(after.stale).toBe(true);
+      expect(after.staleReasons[0]).toMatch(/foi aposentado/);
+      // Recalcular o rascunho com o módulo aposentado é recusado: troque o módulo.
+      expect((await post(`/engineering/versions/${v}/recalculate`, engineer)).status).toBe(422);
+    });
+
+    it('ativar nova versão da regra marca as versões que usavam a anterior', async () => {
+      const saved = (await get(`/engineering/versions/${versionId}`, engineer)).body;
+      expect(saved.stale).toBe(false);
+      const next = await post('/rules', lead, {
+        key: 'engine.design',
+        definition: {
+          parameters: { hotCellIrradianceWm2: 1000, dcAcRatioMin: 0.8, dcAcRatioMax: 1.4 },
+        },
+        sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste v2' }],
+      });
+      await post(`/rules/${next.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' });
+      await publisher.publishPending(500, a.id);
+      const after = (await get(`/engineering/versions/${versionId}`, engineer)).body;
+      expect(after.stale).toBe(true);
+      expect(after.staleReasons.join(' ')).toMatch(/engine\.design foi atualizada/);
+      // Recalcular usa a regra nova e limpa a marca.
+      const recalculated = await post(`/engineering/versions/${versionId}/recalculate`, engineer);
+      expect(recalculated.body.stale).toBe(false);
+      expect(recalculated.body.rules.engineDesign.ref).toBe(`${next.body.id}@${next.body.version}`);
+    });
+  });
+
   it('o administrador também enxerga a fila (tem todas as permissões)', async () => {
     expect((await get('/engineering/requests', admin)).status).toBe(200);
   });

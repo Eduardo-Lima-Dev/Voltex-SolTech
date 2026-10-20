@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@voltex/database';
 import {
+  DomainEvent,
   SPEC_SCHEMAS,
   type CreateEquipmentData,
   type EquipmentDetailDto,
@@ -23,6 +24,7 @@ import { ZodError } from 'zod';
 import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../audit/audit.service';
+import { EventBus } from '../events/event-bus.service';
 import { PrismaService, type ScopedPrismaClient } from '../prisma/prisma.service';
 import { UpdateProposalsService } from '../data-hub/update-proposals.service';
 import { toEquipmentDto, type EquipmentRow } from './equipment.mapper';
@@ -53,6 +55,7 @@ export class CatalogService {
     private readonly context: RequestContext,
     private readonly audit: AuditService,
     private readonly proposals: UpdateProposalsService,
+    private readonly events: EventBus,
   ) {}
 
   async list(query: ListEquipmentQuery): Promise<Paginated<EquipmentDto>> {
@@ -278,6 +281,20 @@ export class CatalogService {
         },
         tx,
       );
+      if (previous)
+        await this.events.publish(
+          {
+            type: DomainEvent.EQUIPMENT_REVISION_APPROVED,
+            payload: {
+              equipmentId: id,
+              retiredEquipmentId: previous.id,
+              kind: row.kind,
+              label: `${row.manufacturer} ${row.model}`,
+              revision: row.revision,
+            },
+          },
+          tx,
+        );
     });
     return this.get(id);
   }
@@ -293,6 +310,13 @@ export class CatalogService {
       });
       await this.audit.record(
         { action: 'equipment.retired', entity: 'EquipmentItem', entityId: id },
+        tx,
+      );
+      await this.events.publish(
+        {
+          type: DomainEvent.EQUIPMENT_RETIRED,
+          payload: { equipmentId: id, kind: row.kind, label: `${row.manufacturer} ${row.model}` },
+        },
         tx,
       );
       return result;
