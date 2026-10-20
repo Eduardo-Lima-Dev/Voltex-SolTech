@@ -7,16 +7,25 @@ import {
 import {
   CALCULATOR_RULESET_KEY,
   DEFAULT_CALCULATOR_RULES,
+  DomainEvent,
+  RULESET_DEFINITIONS,
   calculatorRulesDefinitionSchema,
+  ruleScopeKey,
+  ruleScopeMatches,
+  ruleScopeSpecificity,
+  ruleScopeSchema,
   thresholdsSchema,
   type ActivateRuleSetInput,
   type AvailabilityCost,
   type CreateRuleSetData,
+  type RuleScope,
+  type RuleSetKey,
   type RuleSource,
   type Thresholds,
 } from '@voltex/shared';
 import { RequestContext } from '../../common/context/request-context';
 import { AuditService } from '../audit/audit.service';
+import { EventBus } from '../events/event-bus.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface EffectiveRules {
@@ -28,6 +37,17 @@ export interface EffectiveRules {
   sources: RuleSource[];
 }
 
+/** Regra de uma chave do Engine em vigor para um escopo. Sem regra ativa NÃO há padrão: o consumidor trava. */
+export interface ResolvedRuleSet {
+  /** `<id>@<versão>`: gravado nos resultados e snapshots. */
+  ref: string;
+  key: string;
+  scope: RuleScope | null;
+  definition: unknown;
+  sources: RuleSource[];
+  reviewedBy: string | null;
+}
+
 /** Rules Engine (base): regras versionadas, com fonte, vigência e responsável pela revisão. */
 @Injectable()
 export class RulesService {
@@ -35,7 +55,46 @@ export class RulesService {
     private readonly prisma: PrismaService,
     private readonly context: RequestContext,
     private readonly audit: AuditService,
+    private readonly events: EventBus,
   ) {}
+
+  /**
+   * Regra ativa de uma chave para um contexto (ADR-0016): entre as ativas e vigentes em `at` cujo escopo casa com
+   * `context`, vence a de escopo mais específico (e, empatando, a de versão maior). Devolve `null` quando não há
+   * nenhuma: chaves do Engine **não têm padrão embutido**, pois fator normativo sem revisão não pode ser presumido.
+   */
+  async resolve(
+    key: RuleSetKey,
+    context: RuleScope = {},
+    at: Date = new Date(),
+  ): Promise<ResolvedRuleSet | null> {
+    const rows = await this.prisma.db.ruleSet.findMany({
+      where: {
+        key,
+        status: 'ACTIVE',
+        validFrom: { lte: at },
+        OR: [{ validTo: null }, { validTo: { gt: at } }],
+      },
+    });
+    const candidates = rows
+      .map((row) => ({ row, scope: row.scope ? ruleScopeSchema.parse(row.scope) : null }))
+      .filter(({ scope }) => ruleScopeMatches(scope, context))
+      .sort(
+        (a, b) =>
+          ruleScopeSpecificity(b.scope) - ruleScopeSpecificity(a.scope) ||
+          b.row.version - a.row.version,
+      );
+    const best = candidates[0];
+    if (!best) return null;
+    return {
+      ref: `${best.row.id}@${best.row.version}`,
+      key,
+      scope: best.scope,
+      definition: RULESET_DEFINITIONS[key].schema.parse(best.row.definition),
+      sources: best.row.sources as unknown as RuleSource[],
+      reviewedBy: best.row.reviewedBy,
+    };
+  }
 
   /** Regra em vigor em `at` (ativa e dentro da vigência) ou o padrão do produto. */
   async effective(
@@ -86,7 +145,8 @@ export class RulesService {
 
   async create(input: CreateRuleSetData) {
     const key = input.key;
-    const definition = calculatorRulesDefinitionSchema.parse(input.definition);
+    const definition = RULESET_DEFINITIONS[key].schema.parse(input.definition ?? {});
+    const scope = input.scope && ruleScopeSpecificity(input.scope) > 0 ? input.scope : null;
     return this.prisma.db.$transaction(async (tx) => {
       const last = await tx.ruleSet.findFirst({
         where: { key },
@@ -99,6 +159,8 @@ export class RulesService {
           key,
           version: (last?.version ?? 0) + 1,
           status: 'DRAFT',
+          scope: scope as unknown as object | undefined,
+          scopeKey: ruleScopeKey(scope),
           definition: definition as unknown as object,
           sources: input.sources as unknown as object,
           validFrom: input.validFrom ?? null,
@@ -111,7 +173,7 @@ export class RulesService {
           action: 'rule.created',
           entity: 'RuleSet',
           entityId: created.id,
-          after: { key, version: created.version, definition },
+          after: { key, scope, version: created.version, definition },
         },
         tx,
       );
@@ -133,7 +195,9 @@ export class RulesService {
       );
     }
     return this.prisma.db.$transaction(async (tx) => {
-      const current = await tx.ruleSet.findFirst({ where: { key: draft.key, status: 'ACTIVE' } });
+      const current = await tx.ruleSet.findFirst({
+        where: { key: draft.key, scopeKey: draft.scopeKey, status: 'ACTIVE' },
+      });
       if (current)
         await tx.ruleSet.update({
           where: { id: current.id },
@@ -154,7 +218,27 @@ export class RulesService {
           entity: 'RuleSet',
           entityId: id,
           before: current ? { activeVersion: current.version } : null,
-          after: { key: draft.key, version: activated.version, reviewedBy: input.reviewedBy },
+          after: {
+            key: draft.key,
+            scope: draft.scope,
+            version: activated.version,
+            reviewedBy: input.reviewedBy,
+          },
+        },
+        tx,
+      );
+      await this.events.publish(
+        {
+          type: DomainEvent.RULE_SET_ACTIVATED,
+          payload: {
+            ruleSetId: activated.id,
+            key: draft.key,
+            version: activated.version,
+            scope: draft.scope,
+            ref: `${activated.id}@${activated.version}`,
+            previousRef: current ? `${current.id}@${current.version}` : null,
+            reviewedBy: input.reviewedBy,
+          },
         },
         tx,
       );

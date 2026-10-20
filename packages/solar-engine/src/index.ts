@@ -4,3 +4,6 @@ export * from './pricing/margin.js';
 export * from './guard/evaluate.js';
 export * from './pricing/request.js';
 export * from './pricing/reprice.js';
+export * from './engine/index.js';
+export * from './solar-position/index.js';
+export * from './rules/index.js';

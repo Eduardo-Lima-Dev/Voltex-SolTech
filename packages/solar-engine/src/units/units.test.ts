@@ -7,6 +7,8 @@ import {
   roundTo,
   sum,
   wpToKwp,
+  degToRad,
+  radToDeg,
   DAYS_IN_MONTH,
   DAYS_IN_YEAR,
 } from './index.js';
@@ -28,5 +30,10 @@ describe('unidades', () => {
 
   it('os dias do ano batem com os meses', () => {
     expect(sum(DAYS_IN_MONTH)).toBe(DAYS_IN_YEAR);
+  });
+
+  it('converte graus e radianos', () => {
+    expect(degToRad(180)).toBeCloseTo(Math.PI, 12);
+    expect(radToDeg(Math.PI / 2)).toBeCloseTo(90, 12);
   });
 });

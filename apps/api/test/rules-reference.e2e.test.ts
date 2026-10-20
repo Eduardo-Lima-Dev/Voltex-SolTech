@@ -211,6 +211,134 @@ describe('Rules Engine e dados de referência (e2e)', () => {
     });
   });
 
+  describe('regras do Engine por chave e escopo', () => {
+    const connectionRule = {
+      id: 'sem-limite-de-exportacao',
+      when: { field: 'plant.exportLimited', op: '=', value: false },
+      then: {
+        severity: 'WARNING',
+        code: 'CONN_NO_EXPORT_LIMIT',
+        message: 'A distribuidora exige limitação de exportação',
+        source: 'Norma de teste, item 4.2',
+      },
+    };
+    const definition = { parameters: { demoFactor: 1.25 }, rules: [connectionRule] };
+    const effective = (token: string, query: string) =>
+      t.http.get(`${API}/rules/effective?${query}`).set(bearer(token));
+
+    it('valida a definição pela chave e o escopo permitido', async () => {
+      const ok = await post('/rules', admin, {
+        key: 'engine.connection',
+        scope: { state: 'mg' },
+        definition,
+        sources: source,
+      });
+      expect(ok.status).toBe(201);
+      expect(ok.body).toMatchObject({ key: 'engine.connection', scopeKey: 'state=MG' });
+
+      const badRule = await post('/rules', admin, {
+        key: 'engine.connection',
+        definition: {
+          rules: [{ ...connectionRule, when: { field: 'x', op: 'between', value: ['a', 'b'] } }],
+        },
+        sources: source,
+      });
+      expect(badRule.status).toBe(422);
+
+      const noSource = await post('/rules', admin, {
+        key: 'engine.design',
+        definition: {
+          rules: [{ ...connectionRule, then: { ...connectionRule.then, source: '' } }],
+        },
+        sources: source,
+      });
+      expect(noSource.status).toBe(422);
+
+      const scoped = await post('/rules', admin, {
+        key: 'engine.transposition',
+        scope: { state: 'MG' },
+        definition: {},
+        sources: source,
+      });
+      expect(scoped.status).toBe(422);
+    });
+
+    it('sem regra ativa o Engine não tem padrão (a aprovação trava)', async () => {
+      const res = await effective(admin, 'key=engine.economics');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ref: null, key: 'engine.economics', definition: null });
+      expect((await effective(admin, 'key=engine.inexistente')).status).toBe(400);
+    });
+
+    it('a regra mais específica vence e cada escopo tem a sua ativa; ativar publica o evento', async () => {
+      const general = await post('/rules', admin, {
+        key: 'engine.design',
+        definition,
+        sources: source,
+      });
+      const mg = await post('/rules', admin, {
+        key: 'engine.design',
+        scope: { state: 'MG' },
+        definition: { parameters: { demoFactor: 1.5 } },
+        sources: source,
+      });
+      await post(`/rules/${general.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
+      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+      });
+      expect(mgActive.status).toBe(200);
+
+      // Ativar a regra de MG não aposentou a geral.
+      const inMg = await effective(admin, 'key=engine.design&state=MG');
+      expect(inMg.body.ref).toBe(`${mg.body.id}@${mg.body.version}`);
+      expect(inMg.body.definition.parameters.demoFactor).toBe(1.5);
+      const inSp = await effective(admin, 'key=engine.design&state=SP');
+      expect(inSp.body.ref).toBe(`${general.body.id}@${general.body.version}`);
+      expect(inSp.body.reviewedBy).toBe('Eng. Teste');
+
+      // Nova versão geral aposenta só a geral anterior.
+      const general2 = await post('/rules', admin, {
+        key: 'engine.design',
+        definition: {},
+        sources: source,
+      });
+      await post(`/rules/${general2.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
+      const status = async (id: string) =>
+        (await t.prisma.system.ruleSet.findUniqueOrThrow({ where: { id } })).status;
+      expect(await status(general.body.id)).toBe('RETIRED');
+      expect(await status(mg.body.id)).toBe('ACTIVE');
+      expect(await status(general2.body.id)).toBe('ACTIVE');
+
+      const event = await t.prisma.system.outboxEvent.findFirstOrThrow({
+        where: { tenantId: tenant.id, type: 'RuleSetActivated' },
+        orderBy: { occurredAt: 'desc' },
+      });
+      expect(event.payload).toMatchObject({
+        key: 'engine.design',
+        ref: `${general2.body.id}@${general2.body.version}`,
+        previousRef: `${general.body.id}@${general.body.version}`,
+        reviewedBy: 'Eng. Teste',
+      });
+    });
+
+    it('o escopo também é imutável depois de ativada a versão (banco)', async () => {
+      const active = await t.prisma.system.ruleSet.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          key: 'engine.design',
+          status: 'ACTIVE',
+          scopeKey: 'state=MG',
+        },
+      });
+      await expect(
+        t.prisma.system.ruleSet.update({
+          where: { id: active.id },
+          data: { scopeKey: 'state=SP', scope: { state: 'SP' } },
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
   describe('concessionárias e tarifas', () => {
     it('CRUD de concessionária, nome único por empresa e bloqueio de exclusão com tarifas', async () => {
       const dist = await post('/distributors', admin, { name: 'Enel Ceará', state: 'ce' });
