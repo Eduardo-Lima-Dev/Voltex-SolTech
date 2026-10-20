@@ -82,3 +82,16 @@ Pré-requisitos: um módulo e um inversor **aprovados** no catálogo (Engine →
 2. **Projeto** — abra o projeto: preencha a **Ficha** (potência-alvo muda a classe; informe a ART) e veja o pacote em **Documentos** mudar entre micro e mini.
 3. **Levantamento** — preencha em **Levantamento**; **Concluir** só é aceito com os dados mínimos; ao concluir, o pedido volta a "Em andamento". Entre como instalador: ele acessa só o levantamento.
 4. **Carga** e **Histórico** — conferir consumo, cargas e a linha do tempo do pedido e do projeto. **Painel** (coordenador): totais e carga por engenheiro.
+
+## Fase 10 — Off-Grid Designer
+
+Pré-requisitos: bateria, controlador, inversor off-grid e módulo **aprovados** no catálogo (Off-Grid → Catálogo; use o botão de modelo de planilha de cada tipo) e a regra `offgrid.design` **ativada pelo responsável técnico** (sem ela o projeto fica "Incompleto" e não pode ser enviado).
+
+1. **Pedido** — `Off-Grid → Pedidos → Novo pedido` (tipo isolado ou híbrido). Mude para **Em andamento**, comente, defina a prioridade; **Criar projeto** informa latitude e longitude.
+2. **Local e cargas** — busque o clima do local; cadastre as cargas (use os botões de cargas comuns) e confira pico, partida e a curva de carga. Marque uma carga como crítica e veja a energia crítica.
+3. **Premissas** — veja o mês de projeto, a potência FV, o banco e o inversor mínimos; **Sugerir configurações do catálogo** e **Usar esta**.
+4. **Equipamentos** — em Arranjo, Baterias e Controlador/Inversor, as verificações mostram o valor × limite (Voc a frio, corrente, tensão do banco, autonomia, pico e partida). Troque a quantidade de baterias em série e veja o erro de tensão.
+5. **Gerador e rede** — ative o gerador; em sistema **híbrido**, escolha reserva ou autoconsumo e uma queda diária. A rede nunca injeta.
+6. **Simulação** — perda de carga, SOC mínimo, ciclos e vida do banco, gráficos; rode o **estresse** com mais dias nublados e veja o banco esgotar.
+7. **Cenários e custo** — crie até três cenários (banco maior, mais FV, com gerador) e compare perda de carga, CAPEX e custo nivelado. Item sem preço aparece como "sem preço".
+8. **Revisão** — salve, **Enviar para revisão**; como responsável técnico comente, resolva e **Aprove**; a versão congela e o pedido vira Concluído. Baixe o **Memorial (PDF)**.
