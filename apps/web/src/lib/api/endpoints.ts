@@ -98,6 +98,14 @@ import {
   type RuleSource,
   type Thresholds,
   type CreateDistributorInput,
+  type CreateSourceWatchInput,
+  type DataSourceDto,
+  type DecideProposalInput,
+  type ListProposalsQuery,
+  type SourceWatchDto,
+  type UpdateProposalDto,
+  type UpdateSourceWatchInput,
+  type TariffScanResultDto,
   type CreateRuleSetInput,
   type CreateSolarResourceInput,
   type CreateTariffInput,
@@ -239,6 +247,31 @@ export function createEndpoints(client: ApiClient) {
       activate: (id: string, input: ActivateRuleSetInput) =>
         client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
+    },
+    dataHub: {
+      sources: () => client.get<DataSourceDto[]>(`${ROUTES.dataHub}/sources`),
+      watches: {
+        list: () => client.get<SourceWatchDto[]>(`${ROUTES.dataHub}/watches`),
+        create: (input: CreateSourceWatchInput) =>
+          client.post<SourceWatchDto>(`${ROUTES.dataHub}/watches`, input),
+        update: (id: string, input: UpdateSourceWatchInput) =>
+          client.patch<SourceWatchDto>(`${ROUTES.dataHub}/watches/${id}`, input),
+        remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.dataHub}/watches/${id}`),
+        check: (id: string) =>
+          client.post<{
+            status: 'BASELINE' | 'UNCHANGED' | 'CHANGED' | 'ERROR';
+            watch: SourceWatchDto;
+          }>(`${ROUTES.dataHub}/watches/${id}/check`),
+      },
+      updates: {
+        list: (query: ListProposalsQuery = {}) =>
+          client.get<UpdateProposalDto[]>(`${ROUTES.dataHub}/updates`, {
+            query: query as QueryParams,
+          }),
+        decide: (id: string, input: DecideProposalInput) =>
+          client.post<UpdateProposalDto>(`${ROUTES.dataHub}/updates/${id}/decide`, input),
+      },
+      scanTariffs: () => client.post<TariffScanResultDto>(`${ROUTES.dataHub}/tariffs/scan`),
     },
     leads: {
       list: (query: Partial<ListLeadsQuery>) =>

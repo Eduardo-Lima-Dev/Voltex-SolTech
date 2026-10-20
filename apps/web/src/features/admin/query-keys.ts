@@ -59,6 +59,12 @@ export const queryKeys = {
     filters === undefined ? (['tasks'] as const) : (['tasks', filters] as const),
   energyBill: (id: string) => ['energy-bill', id] as const,
   effectiveRules: ['rules', 'effective'] as const,
+  dataSources: ['data-hub', 'sources'] as const,
+  sourceWatches: ['data-hub', 'watches'] as const,
+  updateProposals: (filters?: unknown) =>
+    filters === undefined
+      ? (['data-hub', 'updates'] as const)
+      : (['data-hub', 'updates', filters] as const),
   audit: (filters?: unknown) =>
     filters === undefined ? (['audit'] as const) : (['audit', filters] as const),
 };
