@@ -9,7 +9,7 @@ enum RuleSetStatus {
 }
 
 /// Uma versão de um conjunto de regras (ex.: `calculator.rules`). Depois de ativada a definição é imutável
-/// (trigger no banco): mudar uma regra cria uma NOVA versão. No máximo uma versão ativa por tenant e chave.
+/// (trigger no banco): mudar uma regra cria uma NOVA versão. No máximo uma versão ativa por tenant, chave e escopo.
 model RuleSet {
   id          String        @id @default(uuid(7)) @db.Uuid
   tenantId    String        @map("tenant_id") @db.Uuid
@@ -18,6 +18,10 @@ model RuleSet {
   status      RuleSetStatus @default(DRAFT)
   validFrom   DateTime?     @map("valid_from")
   validTo     DateTime?     @map("valid_to")
+  /// Escopo da regra (distribuidora, estado, tipo de projeto, grupo); nulo = regra geral. A mais específica vence.
+  scope       Json?
+  /// Forma canônica do escopo (vazia = geral): garante uma ativa por chave E escopo.
+  scopeKey    String        @default("") @map("scope_key")
   definition  Json
   /// Lista de fontes: `[{ type, reference, url?, notes? }]`.
   sources     Json

@@ -6,6 +6,8 @@ export const DomainEvent = {
   USER_INVITED: 'UserInvited',
   USER_ACTIVATED: 'UserActivated',
   DOCUMENT_UPLOADED: 'DocumentUploaded',
+  /** Uma versão de regra (qualquer chave) passou a valer: projetos que a usam podem precisar de revalidação. */
+  RULE_SET_ACTIVATED: 'RuleSetActivated',
   // Comercial
   LEAD_CREATED: 'LeadCreated',
   LEAD_QUALIFIED: 'LeadQualified',
