@@ -62,6 +62,7 @@ model DataSource {
   collections     DataCollection[]
   weatherSeries   WeatherSeries[]
   horizonProfiles HorizonProfile[]
+  externalRecords ExternalRecord[]
 
   @@map("data_sources")
 }

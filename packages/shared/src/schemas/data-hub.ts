@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /** Central de Dados Externos (Fase 9B, ADR-0018): contratos de entrada da API. */
 
-export const DATA_SOURCE_KEYS = ['pvgis', 'nasa-power', 'aneel-tariffs'] as const;
+export const DATA_SOURCE_KEYS = ['pvgis', 'nasa-power', 'aneel-tariffs', 'cec-library'] as const;
 export type DataSourceKey = (typeof DATA_SOURCE_KEYS)[number];
 
 /** Fontes de clima que a Central sabe consultar. */
@@ -86,3 +86,14 @@ export const decideProposalSchema = z
     message: 'Informe o motivo do descarte',
   });
 export type DecideProposalInput = z.infer<typeof decideProposalSchema>;
+
+/** Pede uma proposta de recurso solar (HSP e temperaturas) para um local, a partir da NASA POWER. */
+export const proposeSolarResourceSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  state: z.string().trim().length(2).toUpperCase().optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  /** Busca de novo na fonte, ignorando o cache. */
+  refresh: z.boolean().optional(),
+});
+export type ProposeSolarResourceInput = z.infer<typeof proposeSolarResourceSchema>;

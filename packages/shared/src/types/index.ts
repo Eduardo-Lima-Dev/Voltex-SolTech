@@ -148,6 +148,14 @@ export interface SolarResourceDto {
   hspMonthly: number[];
   source: string;
   plane: string;
+  /** Temperaturas mensais vindas da Central de Dados (não são a temperatura de projeto). */
+  temperatures: {
+    meanC: (number | null)[];
+    minC: (number | null)[];
+    maxC: (number | null)[];
+    source: string;
+    note: string;
+  } | null;
   createdAt: string;
 }
 
@@ -188,3 +196,4 @@ export * from './commercial.js';
 export * from './delivery.js';
 export * from './privacy.js';
 export * from './data-hub.js';
+export * from './equipment.js';

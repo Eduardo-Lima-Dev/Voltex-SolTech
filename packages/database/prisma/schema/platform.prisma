@@ -51,6 +51,8 @@ model Tenant {
   documents              Document[]
   ruleSets               RuleSet[]
   sourceWatches          SourceWatch[]
+  equipmentItems         EquipmentItem[]
+  priceListItems         PriceListItem[]
   updateProposals        UpdateProposal[]
   distributors           Distributor[]
   tariffs                Tariff[]
