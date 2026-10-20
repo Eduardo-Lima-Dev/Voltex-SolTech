@@ -33,6 +33,7 @@ import { EditorContext, type EditorContextValue } from './editor-context';
 import { SiteStep } from './site-step';
 import { StringsStep } from './strings-step';
 import { SurfacesStep } from './surfaces-step';
+import { VisualizationStep } from './visualization-step';
 import { ComparePanel, DeliverablesPanel, ShareLinksPanel } from './version-extras';
 import { ProtectionsCablesStep } from './protections-cables-step';
 import { SimulationStep } from './simulation-step';
@@ -43,6 +44,7 @@ import { EconomicsStep } from './economics-step';
 export const EDITOR_STEPS = [
   { id: 'local', label: 'Local e clima', component: SiteStep },
   { id: 'superficies', label: 'Superfícies, layout e sombra', component: SurfacesStep },
+  { id: 'visao', label: 'Visualização 2D/3D', component: VisualizationStep },
   { id: 'strings', label: 'Equipamentos e strings', component: StringsStep },
   { id: 'protecoes', label: 'Proteções, cabos e materiais', component: ProtectionsCablesStep },
   { id: 'simulacao', label: 'Simulação horária', component: SimulationStep },

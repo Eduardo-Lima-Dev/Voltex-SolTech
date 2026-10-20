@@ -58,6 +58,8 @@ model Tenant {
   engineeringReviewComments   EngineeringReviewComment[]
   engineeringSnapshots        EngineeringSnapshot[]
   engineeringShareLinks       EngineeringShareLink[]
+  catalogSourceLinks          CatalogSourceLink[]
+  catalogSourceDocuments      CatalogSourceDocument[]
   priceListItems              PriceListItem[]
   updateProposals             UpdateProposal[]
   distributors                Distributor[]

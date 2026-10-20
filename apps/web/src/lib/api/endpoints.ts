@@ -105,6 +105,12 @@ import {
   type EngineeringProjectDetailDto,
   type EngineeringProjectDto,
   type EngineeringRequestListItemDto,
+  type CatalogLinkDocumentDto,
+  type EquipmentKind,
+  type CatalogSearchResultDto,
+  type CatalogSourceLinkDto,
+  type CreateCatalogSourceLinkInput,
+  type ListLinkDocumentsQuery,
   type CatalogSourceDocumentDto,
   type CatalogSourceDto,
   type ListSourceDocumentsQuery,
@@ -394,6 +400,25 @@ export function createEndpoints(client: ApiClient) {
         client.post<{ created: EquipmentDto[] }>('/catalog/import/commit', input),
       attachDatasheet: (id: string, documentId: string) =>
         client.post<EquipmentDto>(`/catalog/items/${id}/datasheet`, { documentId }),
+      search: (q: string, kind?: EquipmentKind, limit = 15) =>
+        client.get<CatalogSearchResultDto[]>('/catalog/search', {
+          query: { q, ...(kind ? { kind } : {}), limit },
+        }),
+      sourceLinks: () => client.get<CatalogSourceLinkDto[]>('/catalog/source-links'),
+      addSourceLink: (input: CreateCatalogSourceLinkInput) =>
+        client.post<CatalogSourceLinkDto>('/catalog/source-links', input),
+      analyzeSourceLink: (id: string) =>
+        client.post<CatalogSourceLinkDto>(`/catalog/source-links/${id}/analyze`),
+      removeSourceLink: (id: string) =>
+        client.delete<{ id: string }>(`/catalog/source-links/${id}`),
+      linkDocuments: (id: string, query: Partial<ListLinkDocumentsQuery> = {}) =>
+        client.get<Paginated<CatalogLinkDocumentDto>>(`/catalog/source-links/${id}/documents`, {
+          query: query as QueryParams,
+        }),
+      previewLinkDocument: (id: string, kind?: EquipmentKind) =>
+        client.post<ImportPreviewDto>(
+          `/catalog/source-links/documents/${id}/preview${kind ? `?kind=${kind}` : ''}`,
+        ),
       sources: () => client.get<CatalogSourceDto[]>('/catalog/sources'),
       refreshSource: (key: string) =>
         client.post<{ pages: number; found: number; created: number }>(

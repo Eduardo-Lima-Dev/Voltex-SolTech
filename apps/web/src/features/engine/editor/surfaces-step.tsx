@@ -17,6 +17,7 @@ import {
 import { formatNumber } from '@/lib/format';
 import { LayoutPreview, MonthlyLossBars, SunChart } from './charts';
 import { moduleLabel, useEditor } from './editor-context';
+import { EquipmentSearch } from './equipment-search';
 import { NumberField } from './number-field';
 
 let counter = 0;
@@ -175,6 +176,12 @@ export function SurfacesStep() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid max-w-md gap-1">
+          <EquipmentSearch
+            kind="MODULE"
+            label="Buscar módulo (catálogo e fontes)"
+            disabled={readOnly}
+            onPick={(id) => update((d) => ({ ...d, defaultModuleId: id }))}
+          />
           <Label htmlFor="default-module">Módulo padrão</Label>
           <NativeSelect
             id="default-module"
@@ -411,6 +418,12 @@ export function SurfacesStep() {
                     />
                   ) : null}
                   <div className="grid gap-1">
+                    <EquipmentSearch
+                      kind="MODULE"
+                      label="Buscar outro módulo para esta superfície"
+                      disabled={readOnly}
+                      onPick={(id) => patchSurface(selected.id, (s) => ({ ...s, moduleId: id }))}
+                    />
                     <Label htmlFor="sf-module">Módulo desta superfície</Label>
                     <NativeSelect
                       id="sf-module"

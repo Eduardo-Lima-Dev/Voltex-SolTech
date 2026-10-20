@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileUp } from 'lucide-react';
 import { useState } from 'react';
 import type {
+  EquipmentDto,
   EquipmentKind,
   ImportCandidateDto,
   ImportFormat,
@@ -24,6 +25,7 @@ import {
   Spinner,
   toast,
 } from '@voltex/ui';
+import { useAuth } from '@/features/auth/auth-provider';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, fieldErrors } from '@/lib/api/errors';
 import { queryKeys } from '../query-keys';
@@ -73,12 +75,15 @@ export function ImportDialog({
   onOpenChange,
   defaultKind,
   initialPreview = null,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultKind: EquipmentKind;
   /** Prévia já lida (ex.: ficha baixada de uma fonte na internet): abre direto na conferência. */
   initialPreview?: ImportPreviewDto | null;
+  /** Chamado com os itens criados (e já aprovados, se a pessoa marcou). */
+  onCreated?: (created: EquipmentDto[]) => void;
 }) {
   const queryClient = useQueryClient();
   const [format, setFormat] = useState<ImportFormat>('csv');
@@ -89,6 +94,8 @@ export function ImportDialog({
     initialPreview ? initialPreview.candidates.map((c) => ({ ...c, selected: false })) : [],
   );
   const [editing, setEditing] = useState<number | null>(null);
+  const [approveNow, setApproveNow] = useState(false);
+  const { can } = useAuth();
 
   const read = useMutation({
     mutationFn: () =>
@@ -118,8 +125,16 @@ export function ImportDialog({
       return endpoints.catalog.commit({ items: items as never });
     },
     onSuccess: async ({ created }) => {
-      toast.success(`${created.length} rascunho(s) criado(s). Revise e aprove no catálogo.`);
+      let result = created as EquipmentDto[];
+      if (approveNow) {
+        // Quem pode aprovar já deixa o item pronto para uso no projeto.
+        result = (await Promise.all(
+          created.map((item) => endpoints.catalog.approve(item.id)),
+        )) as unknown as EquipmentDto[];
+        toast.success(`${created.length} item(ns) criado(s) e aprovado(s).`);
+      } else toast.success(`${created.length} rascunho(s) criado(s). Revise e aprove no catálogo.`);
       await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+      onCreated?.(result);
       reset();
       onOpenChange(false);
     },
@@ -333,6 +348,16 @@ export function ImportDialog({
                 ))}
               </ul>
             )}
+            {can('engine.project.approve') ? (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={approveNow}
+                  onChange={(e) => setApproveNow(e.target.checked)}
+                />
+                Aprovar já ao importar (fica pronto para usar em projetos)
+              </label>
+            ) : null}
             <DialogFooter>
               <Button variant="outline" onClick={reset}>
                 Escolher outro arquivo
@@ -342,7 +367,9 @@ export function ImportDialog({
                 onClick={() => save.mutate()}
               >
                 {save.isPending ? <Spinner /> : null}
-                Gravar {chosen.length} rascunho(s)
+                {approveNow
+                  ? `Gravar e aprovar ${chosen.length}`
+                  : `Gravar ${chosen.length} rascunho(s)`}
               </Button>
             </DialogFooter>
             {selectable.length < rows.length ? (

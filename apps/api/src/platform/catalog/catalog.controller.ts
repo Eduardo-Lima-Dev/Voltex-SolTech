@@ -30,6 +30,9 @@ import {
   listEquipmentQuerySchema,
   listReferencesQuerySchema,
   listSourceDocumentsQuerySchema,
+  catalogSearchQuerySchema,
+  createCatalogSourceLinkSchema,
+  listLinkDocumentsQuerySchema,
   priceImportQuerySchema,
   updateEquipmentSchema,
 } from '@voltex/shared';
@@ -38,6 +41,8 @@ import type { UploadedFile as UploadedFileType } from '../documents/documents.se
 import { CatalogImportService } from './catalog-import.service';
 import { CatalogService } from './catalog.service';
 import { PRICE_TEMPLATE, PriceListService } from './price-list.service';
+import { CatalogSearchService } from './catalog-search.service';
+import { CatalogSourceLinksService } from './catalog-source-links.service';
 import { CatalogSourcesService } from './catalog-sources.service';
 import { ReferencesService } from './references.service';
 
@@ -48,6 +53,12 @@ class DatasheetDto extends createZodDto(attachDatasheetSchema) {}
 class ImportPreviewQueryDto extends createZodDto(importPreviewQuerySchema) {}
 class ImportCommitDto extends createZodDto(importCommitSchema) {}
 class ListReferencesQueryDto extends createZodDto(listReferencesQuerySchema) {}
+class CatalogSearchQueryDto extends createZodDto(catalogSearchQuerySchema) {}
+class CreateSourceLinkDto extends createZodDto(createCatalogSourceLinkSchema) {}
+class ListLinkDocumentsQueryDto extends createZodDto(listLinkDocumentsQuerySchema) {}
+class LinkPreviewQueryDto extends createZodDto(
+  z.object({ kind: z.enum(EQUIPMENT_KINDS).optional() }),
+) {}
 class ListSourceDocumentsQueryDto extends createZodDto(listSourceDocumentsQuerySchema) {}
 class PriceImportQueryDto extends createZodDto(priceImportQuerySchema) {}
 class KindQueryDto extends createZodDto(z.object({ kind: z.enum(EQUIPMENT_KINDS) })) {}
@@ -75,6 +86,8 @@ export class CatalogController {
     private readonly prices: PriceListService,
     private readonly references: ReferencesService,
     private readonly catalogSources: CatalogSourcesService,
+    private readonly sourceLinks: CatalogSourceLinksService,
+    private readonly search: CatalogSearchService,
   ) {}
 
   @Get('items')
@@ -175,6 +188,58 @@ export class CatalogController {
   @RequirePermissions('platform.catalog.manage')
   commit(@Body() body: ImportCommitDto) {
     return this.imports.commit(body);
+  }
+
+  // ---- Busca unificada (digitar e escolher) ----
+
+  @Get('search')
+  @RequirePermissions('platform.catalog.read')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  searchAll(@Query() query: CatalogSearchQueryDto) {
+    return this.search.search(query);
+  }
+
+  // ---- Fontes por link (cadastradas pela empresa) ----
+
+  @Get('source-links')
+  @RequirePermissions('platform.catalog.read')
+  listSourceLinks() {
+    return this.sourceLinks.list();
+  }
+
+  @Post('source-links')
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 6, ttl: 60_000 } })
+  addSourceLink(@Body() body: CreateSourceLinkDto) {
+    return this.sourceLinks.add(body);
+  }
+
+  @Post('source-links/:id/analyze')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 6, ttl: 60_000 } })
+  analyzeSourceLink(@Param('id', ParseUUIDPipe) id: string) {
+    return this.sourceLinks.analyze(id);
+  }
+
+  @Delete('source-links/:id')
+  @RequirePermissions('platform.catalog.manage')
+  removeSourceLink(@Param('id', ParseUUIDPipe) id: string) {
+    return this.sourceLinks.remove(id);
+  }
+
+  @Get('source-links/:id/documents')
+  @RequirePermissions('platform.catalog.read')
+  linkDocuments(@Param('id', ParseUUIDPipe) id: string, @Query() query: ListLinkDocumentsQueryDto) {
+    return this.sourceLinks.documents(id, query);
+  }
+
+  @Post('source-links/documents/:id/preview')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  previewLinkDocument(@Param('id', ParseUUIDPipe) id: string, @Query() query: LinkPreviewQueryDto) {
+    return this.sourceLinks.preview(id, query.kind);
   }
 
   // ---- Fontes de catálogo na internet ----

@@ -223,3 +223,24 @@ export const listSourceDocumentsQuerySchema = paginationQuerySchema.extend({
   equipment: z.enum(['MODULE', 'INVERTER', 'OTHER']).optional(),
 });
 export type ListSourceDocumentsQuery = z.infer<typeof listSourceDocumentsQuerySchema>;
+
+export const createCatalogSourceLinkSchema = z.object({
+  /** Página com links de downloads ou o endereço direto de um arquivo (PDF, CSV, PAN, OND). */
+  url: z.url().max(2000),
+  label: z.string().trim().max(120).optional(),
+});
+export type CreateCatalogSourceLinkInput = z.input<typeof createCatalogSourceLinkSchema>;
+
+export const catalogSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(100),
+  kind: z.enum(EQUIPMENT_KINDS).optional(),
+  limit: z.coerce.number().int().min(1).max(40).default(15),
+});
+export type CatalogSearchQuery = z.infer<typeof catalogSearchQuerySchema>;
+
+export const listLinkDocumentsQuerySchema = paginationQuerySchema.extend({
+  search: z.string().trim().optional(),
+  equipment: z.enum(['MODULE', 'INVERTER', 'PROTECTION', 'CABLE', 'OTHER']).optional(),
+  fileType: z.enum(['pdf', 'csv', 'pan', 'ond']).optional(),
+});
+export type ListLinkDocumentsQuery = z.infer<typeof listLinkDocumentsQuerySchema>;

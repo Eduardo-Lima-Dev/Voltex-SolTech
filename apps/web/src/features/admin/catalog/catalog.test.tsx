@@ -73,6 +73,7 @@ describe('Administração → Catálogo técnico', () => {
   const base = (...overrides: Parameters<typeof server.use>) =>
     server.use(
       ...overrides,
+      http.get(`${API}/catalog/source-links`, () => HttpResponse.json([])),
       http.get(`${API}/catalog/items`, ({ request }) => {
         const kind = new URL(request.url).searchParams.get('kind');
         return HttpResponse.json(
@@ -326,7 +327,7 @@ describe('Administração → Catálogo técnico', () => {
       expect(within(dialog).getByText(/Fabricante e modelo não são lidos/)).toBeInTheDocument();
       const save = within(dialog).getByRole('button', { name: /Gravar 0 rascunho/ });
       expect(save).toBeDisabled();
-      expect(within(dialog).getByRole('checkbox')).toBeDisabled();
+      expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeDisabled();
 
       await user.click(within(dialog).getByRole('button', { name: 'Conferir e completar' }));
       const form = (await screen.findAllByRole('dialog')).at(-1) as HTMLElement;
@@ -344,7 +345,9 @@ describe('Administração → Catálogo técnico', () => {
       await user.type(within(form).getByLabelText(/Largura/), '1134');
       await user.click(within(form).getByRole('button', { name: 'Usar estes valores' }));
 
-      await waitFor(() => expect(within(dialog).getByRole('checkbox')).toBeChecked());
+      await waitFor(() =>
+        expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeChecked(),
+      );
       await user.click(within(dialog).getByRole('button', { name: /Gravar 1 rascunho/ }));
       await waitFor(() => expect(committed).toBeDefined());
       expect(committed?.items[0]).toMatchObject({
@@ -551,13 +554,97 @@ describe('Administração → Catálogo técnico', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/Fonte: Inversor CSI/)).toBeInTheDocument();
     expect(committed).toBeUndefined();
-    await user.click(within(dialog).getByRole('checkbox'));
+    await user.click(within(dialog).getAllByRole('checkbox')[0] as HTMLElement);
     await user.click(within(dialog).getByRole('button', { name: /Importar|Criar|Gravar/ }));
     await waitFor(() =>
       expect(committed).toMatchObject({
         items: [{ kind: 'INVERTER', model: 'CSI-15K', origin: 'DATASHEET_PDF' }],
       }),
     );
+  });
+
+  it('suas fontes por link: cola o endereço, o sistema analisa e mostra o que achou e por quê; a prévia abre para importar', async () => {
+    const link = {
+      id: 'l-1',
+      url: 'https://loja.example.com/downloads',
+      label: 'Loja Exemplo',
+      status: 'ACTIVE',
+      lastAnalyzedAt: now,
+      lastError: null,
+      pagesRead: 2,
+      documentCount: 2,
+      byEquipment: { MODULE: 1, CABLE: 1 },
+      createdAt: now,
+    };
+    let created = false;
+    let added: unknown;
+    const doc = {
+      id: 'd-1',
+      linkId: 'l-1',
+      url: 'https://loja.example.com/a.pdf',
+      fileType: 'pdf',
+      title: 'Ficha técnica Módulo Jinko 550 W',
+      brand: 'Jinko',
+      docType: 'DATASHEET',
+      equipmentHint: 'MODULE',
+      productUrl: null,
+      confidence: 'HIGH',
+      reasons: ['Palavras de ficha técnica/datasheet', 'Marca "Jinko" reconhecida'],
+      collectedAt: now,
+    };
+    base(
+      http.get(`${API}/catalog/sources`, () => HttpResponse.json([])),
+      http.get(`${API}/catalog/source-links`, () => HttpResponse.json(created ? [link] : [])),
+      http.post(`${API}/catalog/source-links`, async ({ request }) => {
+        added = await request.json();
+        created = true;
+        return HttpResponse.json(link, { status: 201 });
+      }),
+      http.get(`${API}/catalog/source-links/l-1/documents`, () =>
+        HttpResponse.json({ data: [doc], meta: { page: 1, pageSize: 25, total: 1 } }),
+      ),
+      http.post(`${API}/catalog/source-links/documents/d-1/preview`, () =>
+        HttpResponse.json({
+          format: 'datasheet-pdf',
+          candidates: [
+            {
+              kind: 'MODULE',
+              manufacturer: 'Jinko',
+              model: 'JKM550M',
+              spec: { pmaxWp: 550 },
+              origin: 'DATASHEET_PDF',
+              fieldConfidence: {},
+              issues: [],
+              exists: false,
+              missing: ['technology'],
+            },
+          ],
+          errors: [],
+          notes: ['Fonte: Loja Exemplo — https://loja.example.com/a.pdf'],
+        }),
+      ),
+    );
+    renderApp('/engine/catalogo');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Referências externas' }));
+    expect(await screen.findByText('Nenhuma fonte cadastrada ainda.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Endereço (link)'), 'https://loja.example.com/downloads');
+    await user.type(screen.getByLabelText('Nome (opcional)'), 'Loja Exemplo');
+    await user.click(screen.getByRole('button', { name: 'Adicionar e analisar' }));
+    await waitFor(() =>
+      expect(added).toEqual({ url: 'https://loja.example.com/downloads', label: 'Loja Exemplo' }),
+    );
+    expect(await screen.findByText('Loja Exemplo')).toBeInTheDocument();
+    expect(await screen.findByText(/2 arquivo\(s\) · 1 módulo · 1 cabo/)).toBeInTheDocument();
+    // A fonte recém-analisada já abre a lista, com a classificação e o motivo.
+    expect(await screen.findByText('Ficha técnica Módulo Jinko 550 W')).toBeInTheDocument();
+    expect(screen.getByText('Alta').closest('[title]')).toHaveAttribute(
+      'title',
+      expect.stringContaining('Marca "Jinko" reconhecida'),
+    );
+    await user.click(screen.getByRole('button', { name: 'Ver prévia e importar' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Fonte: Loja Exemplo/)).toBeInTheDocument();
   });
 
   it('quem não tem permissão de ler o catálogo não acessa a tela', async () => {

@@ -30,6 +30,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCents, formatNumber } from '@/lib/format';
 import { useEditor } from './editor-context';
+import { EquipmentSearch } from './equipment-search';
 import { NumberField } from './number-field';
 
 let counter = 0;
@@ -575,9 +576,11 @@ export function StringsStep() {
   const [choice, setChoice] = useState('');
   const hasRule = Object.keys(designParameters).length > 0;
 
-  const addInverter = () => {
-    const item = inverters.find((i) => i.id === choice);
-    if (!item) return;
+  const addInverter = () => void addInverterById(choice);
+
+  /** Adiciona pelo id; um inversor recém-importado ainda pode não estar na lista da tela, então busca a ficha. */
+  const addInverterById = async (id: string) => {
+    const item = inverters.find((i) => i.id === id) ?? (await endpoints.catalog.get(id));
     const spec = item.spec as unknown as InverterSpec;
     const entry: InverterEntry = {
       id: newId('inv'),
@@ -677,6 +680,13 @@ export function StringsStep() {
             <CardDescription>Só inversores aprovados do catálogo.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-3">
+            <div className="min-w-72">
+              <EquipmentSearch
+                kind="INVERTER"
+                label="Buscar inversor (catálogo e fontes)"
+                onPick={(id) => void addInverterById(id)}
+              />
+            </div>
             <div className="grid gap-1">
               <Label htmlFor="add-inverter">Inversor</Label>
               <NativeSelect

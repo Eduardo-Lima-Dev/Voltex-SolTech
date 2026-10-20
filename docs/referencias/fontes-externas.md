@@ -33,6 +33,10 @@ Registro da conferência feita em **2026-10-20** (Fase 9A), revisado na mesma da
 - **Como o sistema usa:** pedido educado (um por vez, pausa de 0,6 s), só a lista de links é guardada, o PDF é baixado sob demanda para a prévia e **não é armazenado**; nada entra no catálogo sem a conferência humana. Atribuição exibida na prévia.
 - **Situação:** `PENDING_REVIEW`, ligada pela configuração do servidor (`DATA_HUB_ENABLED_SOURCES`).
 
+## Catálogo de fontes oficiais sugeridas
+
+Em **Administração → Fontes de dados** há o catálogo das fontes do plano de inteligência regulatória (ANEEL legislação, PRODIST, PRORET, Lei 14.300, Enel CE, tarifas e MMGD/consultas da ANEEL, NASA POWER, PVGIS, INLABS, INMETRO, INPE), com tipo (integrada, pode ser vigiada, só consulta manual, bloqueada), periodicidade proposta e o cuidado de uso. As páginas de norma podem ser **vigiadas com um clique**; a mudança vira proposta para revisão humana e **nunca** altera regra sozinha. INPE fica bloqueada até a licença ser validada; INMETRO e INLABS ficam manuais (sem API pública confirmada / exige cadastro).
+
 ## Como isso vira regra do sistema
 
 1. Um conector só é ligado em produção quando a linha dele aqui estiver **"Liberado"** (hoje: PVGIS e NASA POWER; CEC/SAM permanece bloqueada).

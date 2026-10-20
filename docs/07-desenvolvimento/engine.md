@@ -54,6 +54,14 @@ O memorial técnico é exportável em PDF e reúne premissas, compatibilidade, g
 
 Ativar nova versão de regra `engine.*` ou aposentar/revisar um equipamento publica evento e marca como **desatualizadas** (com o motivo) as versões que os usam, inclusive a aprovada (que não muda, só ganha a marca). A tela mostra o aviso; recalcular o rascunho limpa a marca.
 
+## Visualização 2D/3D
+
+A etapa **3. Visualização 2D/3D** do editor mostra: (2D) a planta de cada superfície com o layout dos módulos e (3D) uma cena girável com telhado/laje inclinados, módulos, obstáculos (caixas) e a **sombra dos obstáculos no chão** para a data e a hora escolhidas (posição do sol do próprio motor). É projeção ortográfica em SVG, sem biblioteca 3D: serve para conferir geometria, não é um editor 3D (arrastar módulos, importar modelos, sombra sobre o telhado) nem substitui o CAD.
+
+## Busca de equipamentos no editor
+
+Módulo (padrão e por superfície), inversor, proteção e cabo têm busca ao digitar no catálogo e nas fontes, mostrando a origem. Ver [catálogo técnico](catalogo-tecnico.md).
+
 ## Entregáveis, comparação e relatório do cliente (9I/9J)
 
 - **Entregáveis** no editor: memorial (PDF), unifilar (PDF, SVG e DXF); até a aprovação saem marcados como rascunho.

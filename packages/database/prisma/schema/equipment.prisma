@@ -118,3 +118,50 @@ model ExternalRecord {
   @@index([kind, manufacturer])
   @@map("external_records")
 }
+
+/// Fonte de equipamentos cadastrada pela empresa por link (página de downloads ou arquivo). O sistema analisa a página e
+/// cataloga os arquivos que sabe ler (PDF, CSV, PAN, OND); a pessoa decide o que importar.
+model CatalogSourceLink {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  url            String
+  label          String
+  /// `ACTIVE` ou `ERROR` (última análise falhou; veja `lastError`).
+  status         String    @default("ACTIVE")
+  lastAnalyzedAt DateTime? @map("last_analyzed_at")
+  lastError      String?   @map("last_error")
+  pagesRead      Int       @default(0) @map("pages_read")
+  createdById    String?   @map("created_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  tenant    Tenant                  @relation(fields: [tenantId], references: [id])
+  documents CatalogSourceDocument[]
+
+  @@unique([tenantId, url])
+  @@map("catalog_source_links")
+}
+
+/// Arquivo encontrado numa fonte por link, com a classificação do analisador e os motivos.
+model CatalogSourceDocument {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  linkId        String   @map("link_id") @db.Uuid
+  url           String
+  fileType      String   @map("file_type")
+  title         String
+  brand         String   @default("")
+  docType       String   @map("doc_type")
+  equipmentHint String   @map("equipment_hint")
+  productUrl    String?  @map("product_url")
+  pageUrl       String   @map("page_url")
+  confidence    String
+  reasons       Json     @default("[]")
+  collectedAt   DateTime @default(now()) @map("collected_at")
+
+  tenant Tenant            @relation(fields: [tenantId], references: [id])
+  link   CatalogSourceLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@unique([linkId, url])
+  @@index([tenantId, equipmentHint])
+  @@map("catalog_source_documents")
+}

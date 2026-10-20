@@ -80,6 +80,29 @@ export class PriceListService {
       : null;
   }
 
+  /** Preço vigente de vários equipamentos numa consulta só (evita uma consulta por item). */
+  async currentPrices(
+    equipmentIds: string[],
+    at: Date = new Date(),
+  ): Promise<Map<string, { priceCents: number }>> {
+    if (equipmentIds.length === 0) return new Map();
+    const rows = await this.prisma.db.priceListItem.findMany({
+      where: {
+        equipmentId: { in: equipmentIds },
+        validFrom: { lte: at },
+        OR: [{ validTo: null }, { validTo: { gte: at } }],
+      },
+      orderBy: { validFrom: 'desc' },
+      select: { equipmentId: true, priceCents: true },
+    });
+    const result = new Map<string, { priceCents: number }>();
+    for (const row of rows) {
+      if (row.equipmentId === null) continue;
+      if (!result.has(row.equipmentId)) result.set(row.equipmentId, { priceCents: row.priceCents });
+    }
+    return result;
+  }
+
   async import(buffer: Buffer, filename: string, dryRun: boolean): Promise<PriceImportResultDto> {
     const rows = parseDelimited(buffer.toString('utf8'));
     const headerRow = rows[0];

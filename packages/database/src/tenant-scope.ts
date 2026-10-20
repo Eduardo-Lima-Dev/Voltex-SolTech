@@ -54,6 +54,8 @@ export const TENANT_SCOPED_MODELS = [
   'EngineeringReviewComment',
   'EngineeringSnapshot',
   'EngineeringShareLink',
+  'CatalogSourceLink',
+  'CatalogSourceDocument',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

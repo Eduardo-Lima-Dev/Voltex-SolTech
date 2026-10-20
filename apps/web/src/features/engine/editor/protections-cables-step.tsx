@@ -13,6 +13,7 @@ import {
 } from '@voltex/ui';
 import { formatCents, formatNumber } from '@/lib/format';
 import { useEditor } from './editor-context';
+import { EquipmentSearch } from './equipment-search';
 import { NumberField } from './number-field';
 
 let sequence = 0;
@@ -83,6 +84,12 @@ function ProtectionRow({ item }: { item: ProtectionItem }) {
         <p className="mt-1 text-xs text-muted-foreground">{item.justification}</p>
       </div>
       <div className="grid gap-1">
+        <EquipmentSearch
+          kind="PROTECTION"
+          label="Buscar proteção (catálogo e fontes)"
+          disabled={readOnly}
+          onPick={(id) => setOverride(id)}
+        />
         <Label htmlFor={`protection-${item.id}`}>Item do catálogo</Label>
         <NativeSelect
           id={`protection-${item.id}`}
@@ -223,6 +230,14 @@ function CableEditor() {
                     </option>
                   ))}
                 </NativeSelect>
+              </div>
+              <div className="md:col-span-2 xl:col-span-3">
+                <EquipmentSearch
+                  kind="CABLE"
+                  label={`Buscar cabo para ${run.label} (catálogo e fontes)`}
+                  disabled={readOnly}
+                  onPick={(id) => change(run.id, { cableId: id })}
+                />
               </div>
               <p className="text-sm md:col-span-2 xl:col-span-3">
                 {calculated

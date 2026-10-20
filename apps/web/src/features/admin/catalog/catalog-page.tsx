@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type {
   EquipmentKind,
   EquipmentStatus,
+  CatalogLinkDocumentDto,
   ExternalReferenceDto,
   ImportPreviewDto,
 } from '@voltex/shared';
@@ -421,6 +422,277 @@ function SourceDocuments({ source }: { source: string }) {
   );
 }
 
+const EQUIPMENT_LABEL: Record<string, string> = {
+  MODULE: 'Módulo',
+  INVERTER: 'Inversor',
+  PROTECTION: 'Proteção',
+  CABLE: 'Cabo',
+  OTHER: 'Outro',
+};
+const CONFIDENCE_BADGE = { HIGH: 'green', MEDIUM: 'yellow', LOW: 'secondary' } as const;
+const CONFIDENCE_LABEL = { HIGH: 'Alta', MEDIUM: 'Média', LOW: 'Baixa' } as const;
+
+/** Fontes da empresa: o endereço colado é analisado e os arquivos (PDF, CSV, PAN, OND) são catalogados. */
+function LinkSources({
+  selected,
+  onSelect,
+}: {
+  selected: string | null;
+  onSelect: (key: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [url, setUrl] = useState('');
+  const [label, setLabel] = useState('');
+  const links = useQuery({
+    queryKey: queryKeys.catalogSourceLinks,
+    queryFn: () => endpoints.catalog.sourceLinks(),
+  });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.catalogSourceLinks });
+  const add = useMutation({
+    mutationFn: () => endpoints.catalog.addSourceLink({ url, ...(label ? { label } : {}) }),
+    onSuccess: async (link) => {
+      toast.success(
+        link.status === 'ERROR'
+          ? 'Fonte cadastrada, mas não achei arquivos.'
+          : `Fonte analisada: ${link.documentCount} arquivo(s) em ${link.pagesRead || 1} página(s).`,
+      );
+      setUrl('');
+      setLabel('');
+      await refresh();
+      onSelect(`link:${link.id}`);
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível cadastrar a fonte.')),
+  });
+  const analyze = useMutation({
+    mutationFn: (id: string) => endpoints.catalog.analyzeSourceLink(id),
+    onSuccess: async () => {
+      toast.success('Fonte analisada de novo.');
+      await queryClient.invalidateQueries({ queryKey: ['catalog', 'source-links'] });
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível analisar.')),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => endpoints.catalog.removeSourceLink(id),
+    onSuccess: refresh,
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível remover.')),
+  });
+
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <div>
+        <h3 className="font-medium">Suas fontes (por link)</h3>
+        <p className="text-sm text-muted-foreground">
+          Cole o endereço de uma página de downloads de um fabricante ou distribuidor, ou de um
+          arquivo (PDF, CSV, PAN, OND). O sistema lê a página, encontra os arquivos, entende o que
+          cada um parece ser (ficha técnica, manual, certificado; módulo, inversor, cabo, proteção)
+          e mostra o porquê. <strong>Você escolhe</strong> o que importar.
+        </p>
+      </div>
+      <Can permission="platform.catalog.manage">
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (url.trim()) add.mutate();
+          }}
+        >
+          <div className="grid min-w-72 flex-1 gap-1">
+            <Label htmlFor="link-url">Endereço (link)</Label>
+            <Input
+              id="link-url"
+              type="url"
+              placeholder="https://…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="link-label">Nome (opcional)</Label>
+            <Input id="link-label" value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <Button type="submit" disabled={add.isPending || !url.trim()}>
+            {add.isPending ? <Spinner /> : null} Adicionar e analisar
+          </Button>
+        </form>
+      </Can>
+      {links.isPending ? (
+        <Skeleton className="h-12 w-full" />
+      ) : links.data && links.data.length > 0 ? (
+        <ul className="grid gap-3 sm:grid-cols-2" aria-label="Fontes cadastradas por link">
+          {links.data.map((link) => (
+            <li
+              key={link.id}
+              className={`space-y-2 rounded-lg border p-3 ${selected === `link:${link.id}` ? 'border-primary' : ''}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="font-medium">{link.label}</h4>
+                <Badge variant={link.status === 'ERROR' ? 'red' : 'green'}>
+                  {link.status === 'ERROR' ? 'Sem arquivos' : 'Analisada'}
+                </Badge>
+              </div>
+              <p className="text-xs break-all text-muted-foreground">{link.url}</p>
+              <p className="text-xs text-muted-foreground">
+                {link.documentCount} arquivo(s)
+                {Object.entries(link.byEquipment)
+                  .map(([k, n]) => ` · ${n} ${EQUIPMENT_LABEL[k]?.toLowerCase() ?? k}`)
+                  .join('')}
+                {link.lastAnalyzedAt ? ` · analisada em ${formatDate(link.lastAnalyzedAt)}` : ''}
+              </p>
+              {link.lastError ? <p className="text-xs text-destructive">{link.lastError}</p> : null}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => onSelect(`link:${link.id}`)}>
+                  Buscar nesta fonte
+                </Button>
+                <Can permission="platform.catalog.manage">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={analyze.isPending}
+                    onClick={() => analyze.mutate(link.id)}
+                  >
+                    Analisar de novo
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Remover ${link.label}`}
+                    onClick={() => remove.mutate(link.id)}
+                  >
+                    Remover
+                  </Button>
+                </Can>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">Nenhuma fonte cadastrada ainda.</p>
+      )}
+    </div>
+  );
+}
+
+function LinkDocuments({ linkId }: { linkId: string }) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [equipment, setEquipment] = useState('');
+  const [preview, setPreview] = useState<{ preview: ImportPreviewDto; kind: EquipmentKind } | null>(
+    null,
+  );
+  const filters = {
+    search: search || undefined,
+    equipment: (equipment || undefined) as never,
+    page: 1,
+    pageSize: 25,
+  };
+  const list = useQuery({
+    queryKey: queryKeys.catalogLinkDocuments(linkId, filters),
+    queryFn: () => endpoints.catalog.linkDocuments(linkId, filters),
+  });
+  const read = useMutation({
+    mutationFn: async (doc: CatalogLinkDocumentDto) => {
+      const kind = (doc.equipmentHint === 'OTHER' ? 'MODULE' : doc.equipmentHint) as EquipmentKind;
+      return { preview: await endpoints.catalog.previewLinkDocument(doc.id, kind), kind };
+    },
+    onSuccess: (result) => setPreview(result),
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível ler o arquivo.')),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="grid min-w-56 gap-1">
+          <Label htmlFor="ld-search">Buscar nos arquivos da fonte</Label>
+          <Input
+            id="ld-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Marca ou modelo"
+          />
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="ld-equipment">Tipo</Label>
+          <NativeSelect
+            id="ld-equipment"
+            value={equipment}
+            onChange={(e) => setEquipment(e.target.value)}
+          >
+            <option value="">Todos</option>
+            {Object.entries(EQUIPMENT_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      </div>
+      {list.isPending ? (
+        <Skeleton className="h-24 w-full" />
+      ) : list.isError ? (
+        <p className="text-sm text-destructive">Não foi possível carregar os arquivos.</p>
+      ) : list.data.data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhum arquivo encontrado.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Arquivo</TableHead>
+              <TableHead>O que parece ser</TableHead>
+              <TableHead>Confiança</TableHead>
+              <Can permission="platform.catalog.manage">
+                <TableHead className="text-right">Ações</TableHead>
+              </Can>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.data.data.map((doc) => (
+              <TableRow key={doc.id}>
+                <TableCell className="font-medium">
+                  {doc.title}
+                  <div className="text-xs font-normal text-muted-foreground">
+                    {doc.brand || 'marca não identificada'} · .{doc.fileType.toUpperCase()}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {EQUIPMENT_LABEL[doc.equipmentHint]} · {doc.docType.toLowerCase()}
+                </TableCell>
+                <TableCell>
+                  <span title={doc.reasons.join('; ')}>
+                    <Badge variant={CONFIDENCE_BADGE[doc.confidence]}>
+                      {CONFIDENCE_LABEL[doc.confidence]}
+                    </Badge>
+                  </span>
+                </TableCell>
+                <Can permission="platform.catalog.manage">
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={read.isPending}
+                      onClick={() => read.mutate(doc)}
+                    >
+                      Ver prévia e importar
+                    </Button>
+                  </TableCell>
+                </Can>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {preview ? (
+        <ImportDialog
+          open
+          onOpenChange={(open) => !open && setPreview(null)}
+          defaultKind={preview.kind}
+          initialPreview={preview.preview}
+          onCreated={() => void queryClient.invalidateQueries({ queryKey: queryKeys.catalog() })}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function References() {
   const [source, setSource] = useState<string | null>(null);
   return (
@@ -437,7 +709,12 @@ function References() {
         </CardHeader>
         <CardContent className="space-y-4">
           <SourceCards selected={source} onSelect={setSource} />
-          {source && source !== 'cec-library' ? <SourceDocuments source={source} /> : null}
+          <LinkSources selected={source} onSelect={setSource} />
+          {source?.startsWith('link:') ? (
+            <LinkDocuments linkId={source.slice(5)} />
+          ) : source && source !== 'cec-library' ? (
+            <SourceDocuments source={source} />
+          ) : null}
         </CardContent>
       </Card>
       {source === 'cec-library' || source === null ? <CecReferences /> : null}

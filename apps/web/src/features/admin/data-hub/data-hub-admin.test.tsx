@@ -93,6 +93,41 @@ describe('Administração → Fontes de dados', () => {
     expect(within(aneel).getByText(/Concluída em/)).toBeInTheDocument();
   });
 
+  it('catálogo de fontes oficiais: mostra o tipo, o cuidado e deixa a empresa escolher vigiar; INPE aparece bloqueada', async () => {
+    let created: unknown;
+    base(
+      http.post(`${API}/data-hub/watches`, async ({ request }) => {
+        created = await request.json();
+        return HttpResponse.json(watch({ id: 'w-9' }), { status: 201 });
+      }),
+      http.post(`${API}/data-hub/watches/w-9/check`, () =>
+        HttpResponse.json({ status: 'BASELINE' }),
+      ),
+    );
+    renderApp('/admin/fontes');
+    const list = await screen.findByRole('list', { name: 'Fontes oficiais sugeridas' });
+    expect(within(list).getAllByRole('listitem').length).toBeGreaterThanOrEqual(10);
+    const prodist = within(list)
+      .getByText(/PRODIST \(ANEEL\)/)
+      .closest('li') as HTMLElement;
+    expect(within(prodist).getByText('Normas')).toBeInTheDocument();
+    expect(within(prodist).getByText('Pode ser vigiada')).toBeInTheDocument();
+    const inpe = within(list)
+      .getByText(/INPE LABREN/)
+      .closest('li') as HTMLElement;
+    expect(within(inpe).getByText('Bloqueada')).toBeInTheDocument();
+    expect(within(inpe).getByText(/não é autorização de copiar/)).toBeInTheDocument();
+    expect(within(inpe).queryByRole('button')).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(within(prodist).getByRole('button', { name: 'Vigiar esta fonte' }));
+    await waitFor(() =>
+      expect(created).toMatchObject({
+        url: 'https://www.gov.br/aneel/pt-br/centrais-de-conteudos/procedimentos-regulatorios/prodist',
+        kind: 'NORM',
+      }),
+    );
+  });
+
   it('lista as páginas vigiadas e verifica uma agora', async () => {
     let checked = 0;
     base(

@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   createSourceWatchSchema,
+  SUGGESTED_SOURCES,
+  type SuggestedSource,
   type CreateSourceWatchInput,
   type DataSourceDto,
   type SourceWatchDto,
@@ -407,10 +409,108 @@ function Watches() {
   );
 }
 
+const MODE_BADGE = {
+  INTEGRATED: 'green',
+  WATCH: 'secondary',
+  MANUAL: 'yellow',
+  BLOCKED: 'red',
+} as const;
+const MODE_LABEL = {
+  INTEGRATED: 'Integrada',
+  WATCH: 'Pode ser vigiada',
+  MANUAL: 'Só consulta manual',
+  BLOCKED: 'Bloqueada',
+} as const;
+const DOMAIN_LABEL = {
+  REGULATION: 'Normas',
+  TARIFF: 'Tarifas',
+  EQUIPMENT: 'Equipamentos',
+  SOLAR_RESOURCE: 'Recurso solar',
+} as const;
+
+/** Catálogo das fontes oficiais do plano: o que cada uma é, como entra e o cuidado de uso. A escolha é da empresa. */
+function SuggestedSources() {
+  const queryClient = useQueryClient();
+  const watches = useQuery({
+    queryKey: queryKeys.sourceWatches,
+    queryFn: endpoints.dataHub.watches.list,
+  });
+  const watched = new Set((watches.data ?? []).map((w) => w.url));
+  const add = useMutation({
+    mutationFn: async (source: SuggestedSource) => {
+      const watch = await endpoints.dataHub.watches.create({
+        label: source.label.slice(0, 160),
+        url: source.url,
+        kind: source.watchKind ?? 'OTHER',
+      });
+      await endpoints.dataHub.watches.check(watch.id).catch(() => undefined);
+    },
+    onSuccess: async () => {
+      toast.success(
+        'Fonte adicionada à vigilância. O texto atual é a referência para detectar mudanças.',
+      );
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sourceWatches });
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível adicionar a fonte.')),
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Fontes oficiais sugeridas</CardTitle>
+        <CardDescription>
+          Catálogo das fontes públicas e gratuitas mapeadas para o sistema, com o cuidado de uso de
+          cada uma. <strong>Você decide</strong> quais acompanhar: as páginas de normas podem ser
+          vigiadas (a mudança vira proposta para revisão, nunca altera regra sozinha).
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="grid gap-3 lg:grid-cols-2" aria-label="Fontes oficiais sugeridas">
+          {SUGGESTED_SOURCES.map((source) => (
+            <li key={source.id} className="space-y-2 rounded-lg border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-medium">{source.label}</h3>
+                <div className="flex gap-1">
+                  <Badge variant="outline">{DOMAIN_LABEL[source.domain]}</Badge>
+                  <Badge variant={MODE_BADGE[source.mode]}>{MODE_LABEL[source.mode]}</Badge>
+                </div>
+              </div>
+              <p className="text-xs break-all text-muted-foreground">
+                <a href={source.url} target="_blank" rel="noreferrer" className="underline">
+                  {source.url}
+                </a>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Verificação: {source.cadence}. {source.caution}
+              </p>
+              {source.mode === 'WATCH' ? (
+                <Can permission="platform.rule.manage">
+                  {watched.has(source.url) ? (
+                    <Badge variant="green">Já vigiada</Badge>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={add.isPending}
+                      onClick={() => add.mutate(source)}
+                    >
+                      Vigiar esta fonte
+                    </Button>
+                  )}
+                </Can>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SourcesPage() {
   return (
     <div className="space-y-6">
       <Sources />
+      <SuggestedSources />
       <Watches />
     </div>
   );

@@ -207,43 +207,42 @@ export class EngineeringVersionsService {
     });
     const labels: Record<string, string> = {};
     const prices: Record<string, { cents: number; source: 'PRICE_LIST' | 'REFERENCE' }> = {};
-    const price = async (item: {
+    // Itens usados e escolhidos à mão que não estão entre os aprovados (aposentados ainda aparecem na conferência).
+    const approvedIds = new Set(approved.map((a) => a.id));
+    const manual = manualCatalogIdsOf(design);
+    const extraIds = [
+      ...new Set(
+        [...usedItems.map((i) => i.id), ...manual.protections, ...manual.cables].filter(
+          (id) => !approvedIds.has(id),
+        ),
+      ),
+    ];
+    const extra = extraIds.length
+      ? await this.prisma.db.equipmentItem.findMany({ where: { id: { in: extraIds } } })
+      : [];
+    // Uma consulta de preços para todos (antes era uma por item aprovado).
+    const lists = await this.prices.currentPrices([...approved, ...extra].map((i) => i.id));
+    const price = (item: {
       id: string;
       manufacturer: string;
       model: string;
       referenceCostCents: number | null;
-    }) => {
+    }): number | null => {
       labels[item.id] = `${item.manufacturer} ${item.model}`;
-      const current = await this.prices.currentPrice(item.id);
+      const current = lists.get(item.id);
       if (current) prices[item.id] = { cents: current.priceCents, source: 'PRICE_LIST' };
       else if (item.referenceCostCents !== null)
         prices[item.id] = { cents: item.referenceCostCents, source: 'REFERENCE' };
       return prices[item.id]?.cents ?? null;
     };
-    const candidates = [];
-    for (const item of approved)
-      candidates.push({
-        id: item.id,
-        kind: item.kind as 'PROTECTION' | 'CABLE',
-        label: `${item.manufacturer} ${item.model}`,
-        costCents: await price(item),
-        spec: item.spec as Record<string, unknown>,
-      });
-    const ids = new Set(approved.map((a) => a.id));
-    const missing = usedItems.map((i) => i.id).filter((id) => !ids.has(id));
-    const rest = missing.length
-      ? await this.prisma.db.equipmentItem.findMany({ where: { id: { in: missing } } })
-      : [];
-    for (const item of rest) await price(item);
-    // Proteções e cabos já escolhidos no desenho que foram aposentados continuam disponíveis para conferência.
-    const manual = manualCatalogIdsOf(design);
-    const extra = [...manual.protections, ...manual.cables].filter(
-      (id) => !ids.has(id) && !missing.includes(id),
-    );
-    if (extra.length) {
-      const found = await this.prisma.db.equipmentItem.findMany({ where: { id: { in: extra } } });
-      for (const item of found) await price(item);
-    }
+    const candidates = approved.map((item) => ({
+      id: item.id,
+      kind: item.kind as 'PROTECTION' | 'CABLE',
+      label: `${item.manufacturer} ${item.model}`,
+      costCents: price(item),
+      spec: item.spec as Record<string, unknown>,
+    }));
+    for (const item of extra) price(item);
     return { candidates, labels, prices };
   }
 

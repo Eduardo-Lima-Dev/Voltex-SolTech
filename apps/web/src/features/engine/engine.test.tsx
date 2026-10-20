@@ -465,6 +465,72 @@ describe('Engine: editor da versão', () => {
     expect(await screen.findByText('Versão salva e recalculada.')).toBeInTheDocument();
   });
 
+  it('busca o módulo ao digitar: mostra de onde vem; aprovado entra direto, de fonte abre a prévia para importar', async () => {
+    const searchCalls: string[] = [];
+    mount(version({ design: design({ defaultModuleId: MODULE_ID }) }), [
+      http.get(`${API}/catalog/search`, ({ request: req }) => {
+        const q = new URL(req.url).searchParams;
+        searchCalls.push(`${q.get('q')}|${q.get('kind')}`);
+        return HttpResponse.json([
+          {
+            origin: 'CATALOG',
+            id: MODULE_ID,
+            kind: 'MODULE',
+            manufacturer: 'Fab',
+            model: 'FT-550',
+            sourceLabel: 'Seu catálogo',
+            detail: 'Módulo · aprovado',
+            status: 'APPROVED',
+          },
+          {
+            origin: 'LINK',
+            id: 'doc-1',
+            kind: 'MODULE',
+            manufacturer: 'Jinko',
+            model: 'Ficha JKM550M',
+            sourceLabel: 'Distribuidor Exemplo',
+            detail: 'Módulo · .PDF',
+            fileType: 'pdf',
+          },
+        ]);
+      }),
+      http.post(`${API}/catalog/source-links/documents/doc-1/preview`, () =>
+        HttpResponse.json({
+          format: 'datasheet-pdf',
+          candidates: [
+            {
+              kind: 'MODULE',
+              manufacturer: 'Jinko',
+              model: 'JKM550M',
+              spec: { pmaxWp: 550 },
+              origin: 'DATASHEET_PDF',
+              fieldConfidence: {},
+              issues: [],
+              exists: false,
+              missing: ['technology'],
+            },
+          ],
+          errors: [],
+          notes: ['Fonte: Distribuidor Exemplo — https://x.com/a.pdf'],
+        }),
+      ),
+    ]);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /2\. Superfícies/ }));
+    const box = await screen.findByLabelText('Buscar módulo (catálogo e fontes)');
+    await user.type(box, 'jin');
+    // Cada resultado diz de onde vem e o que é.
+    expect(await screen.findByText('Seu catálogo')).toBeInTheDocument();
+    expect(screen.getByText('Distribuidor Exemplo')).toBeInTheDocument();
+    expect(screen.getByText(/Módulo · aprovado/)).toBeInTheDocument();
+    expect(searchCalls.at(-1)).toBe('jin|MODULE');
+    // Resultado de fonte: abre a prévia (nada é gravado antes da confirmação).
+    await user.click(screen.getByRole('option', { name: /Ficha JKM550M/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Fonte: Distribuidor Exemplo/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/JKM550M/)).toBeInTheDocument();
+  });
+
   it('obstáculo ao norte aumenta a perda por sombra, e valor informado à mão exige a fonte', async () => {
     const surface = {
       id: 's1',
@@ -718,7 +784,7 @@ describe('Engine: equipamentos e strings', () => {
 
   const openStep = async () => {
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /3\. Equipamentos e strings/ }));
+    await user.click(await screen.findByRole('button', { name: /4\. Equipamentos e strings/ }));
     return user;
   };
 
@@ -882,5 +948,66 @@ describe('Engine: equipamentos e strings', () => {
     expect(screen.queryByRole('button', { name: 'Gerar configurações' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Remover inversor/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Adicionar string/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Engine: visualização 2D/3D', () => {
+  it('mostra a planta de cada superfície e a cena 3D girável com o sol; sem superfície, leva à etapa certa', async () => {
+    const surface = {
+      id: 's1',
+      name: 'Água norte',
+      kind: 'PITCHED' as const,
+      azimuthDegrees: 0,
+      tiltDegrees: 20,
+      widthM: 10,
+      depthM: 5,
+      setbackM: { left: 0.3, right: 0.3, top: 0.3, bottom: 0.3 },
+      moduleOrientation: 'PORTRAIT' as const,
+      moduleGapM: 0.02,
+      obstacles: [
+        {
+          id: 'o1',
+          name: 'Caixa d água',
+          azimuthDegrees: 90,
+          distanceM: 4,
+          heightM: 3,
+          widthM: 1.5,
+        },
+      ],
+    };
+    server.use(
+      http.get(`${API}/engineering/versions/v-1`, () =>
+        HttpResponse.json(
+          version({ design: design({ defaultModuleId: MODULE_ID, surfaces: [surface] }) }),
+        ),
+      ),
+      modulesList(),
+    );
+    renderApp('/engine/projetos/pj-1/versoes/v-1', { session: makeSession('ENGINEERING') });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /3\. Visualização 2D\/3D/ }));
+    const scene = await screen.findByRole('img', { name: /Cena 3D com 1 superfície/ });
+    expect(scene.querySelectorAll('polygon').length).toBeGreaterThan(10); // chão, telhado, módulos, caixa e sombra
+    expect(screen.getByText(/Sol: altura/)).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Data do sol'), '06-21');
+    await user.click(screen.getByRole('button', { name: 'De cima' }));
+    expect(screen.getByLabelText('Inclinar a câmera')).toHaveValue('90');
+    await user.click(screen.getByRole('button', { name: '2D (planta)' }));
+    expect(
+      await screen.findByRole('img', { name: /Prévia do layout de Água norte/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('sem superfícies explica e oferece ir para Superfícies', async () => {
+    server.use(
+      http.get(`${API}/engineering/versions/v-1`, () => HttpResponse.json(version())),
+      modulesList(),
+    );
+    renderApp('/engine/projetos/pj-1/versoes/v-1', { session: makeSession('ENGINEERING') });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /3\. Visualização 2D\/3D/ }));
+    expect(await screen.findByText(/Ainda não há superfícies/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ir para Superfícies' }));
+    expect(await screen.findByText(/Adicione uma superfície/)).toBeInTheDocument();
   });
 });

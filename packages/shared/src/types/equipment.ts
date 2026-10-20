@@ -133,3 +133,49 @@ export interface CatalogSourceDocumentDto {
   equipmentHint: 'MODULE' | 'INVERTER' | 'OTHER';
   collectedAt: string;
 }
+
+/** Fonte cadastrada pela empresa por link. */
+export interface CatalogSourceLinkDto {
+  id: string;
+  url: string;
+  label: string;
+  status: 'ACTIVE' | 'ERROR';
+  lastAnalyzedAt: string | null;
+  lastError: string | null;
+  pagesRead: number;
+  documentCount: number;
+  /** Quantos arquivos o analisador achou, por tipo de equipamento. */
+  byEquipment: Record<string, number>;
+  createdAt: string;
+}
+
+export interface CatalogLinkDocumentDto {
+  id: string;
+  linkId: string;
+  url: string;
+  fileType: 'pdf' | 'csv' | 'pan' | 'ond';
+  title: string;
+  brand: string;
+  docType: string;
+  equipmentHint: 'MODULE' | 'INVERTER' | 'PROTECTION' | 'CABLE' | 'OTHER';
+  productUrl: string | null;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** Por que o analisador classificou assim. */
+  reasons: string[];
+  collectedAt: string;
+}
+
+/** Resultado da busca unificada: catálogo da empresa, bibliotecas de referência e documentos das fontes. */
+export interface CatalogSearchResultDto {
+  /** `CATALOG`: já no catálogo; `REFERENCE`: biblioteca CEC; `SOURCE`: documento de fonte pública; `LINK`: fonte da empresa. */
+  origin: 'CATALOG' | 'REFERENCE' | 'SOURCE' | 'LINK';
+  id: string;
+  kind: 'MODULE' | 'INVERTER' | 'PROTECTION' | 'CABLE' | 'OTHER';
+  manufacturer: string;
+  model: string;
+  /** De onde vem (nome da fonte) e o que é (situação no catálogo ou tipo do documento). */
+  sourceLabel: string;
+  detail: string;
+  status?: 'DRAFT' | 'APPROVED' | 'RETIRED';
+  fileType?: 'pdf' | 'csv' | 'pan' | 'ond';
+}

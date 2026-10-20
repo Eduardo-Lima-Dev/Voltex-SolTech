@@ -42,6 +42,13 @@ A aba lista **todas as fontes** (ligada/desligada, termos a conferir, quantos re
 - **CEC/SAM:** continua bloqueada até a licença ser conferida.
 - Módulos, proteções, cabos e preços **não têm fonte aberta confiável**: use CSV/.PAN/PDF/planilha de preços.
 
+## Suas fontes por link e busca ao digitar
+
+- **Fontes por link:** na aba Referências externas, cole o endereço de uma página de downloads (ou de um arquivo PDF/CSV/PAN/OND). O **analisador** (`io/source-analyzer.ts`, função pura) lê a página e as seguintes da mesma listagem (até 12 páginas, uma por vez, com pausa), acha os arquivos e classifica cada um: tipo de documento (ficha técnica, manual, certificado, planilha), tipo de equipamento (módulo, inversor, cabo, proteção), marca (coluna "Marca" da tabela ou lista de marcas conhecidas) e a **confiança com os motivos** (mostrados ao passar o mouse). Só endereços públicos (bloqueio de rede interna), arquivo baixado só quando você pede a prévia (até 20 MB) e descartado. Tabelas `catalog_source_links` e `catalog_source_documents` (por empresa).
+- **Importar de um link:** PDF passa pelo leitor de ficha (inversor por colunas ou módulo), `.PAN`/`.OND` pelo leitor PVsyst, CSV pelo modelo do tipo. A prévia mostra o que faltou para você completar; quem pode aprovar marca **Aprovar já ao importar**.
+- **Busca ao digitar** (`GET /catalog/search`): no editor do projeto, os campos de módulo, inversor, proteção e cabo têm uma busca que procura no seu catálogo **e** nas fontes (públicas, CEC e as suas). Cada resultado mostra a origem e o que é. Aprovado entra direto; de fonte abre a prévia para importar e usar.
+- **Limites:** a classificação é heurística (pode errar; a confiança "baixa" avisa); páginas montadas por script (sem links no HTML) ou atrás de login não são lidas.
+
 ## INMETRO (verificação assistida)
 
 Não há base aberta nem API confirmada, e o sistema **não raspa** o site. O campo guarda o resultado da consulta feita por uma pessoa (registro, situação, data, quem). Módulo ou inversor **aprovado** com a conferência vencida (mais de 183 dias) ou nunca feita gera uma proposta na caixa de atualizações (`CATALOG_ITEM`, `INMETRO_DUE`), uma por vencimento. O job `inmetro-due` roda junto da vigilância semanal.

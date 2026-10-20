@@ -1,4 +1,6 @@
 import { Global, Module } from '@nestjs/common';
+import { CatalogSearchService } from './catalog-search.service';
+import { CatalogSourceLinksService } from './catalog-source-links.service';
 import { CatalogSourcesService } from './catalog-sources.service';
 import { CatalogImportService } from './catalog-import.service';
 import { CatalogController } from './catalog.controller';
@@ -14,6 +16,8 @@ import { ReferencesService } from './references.service';
     CatalogService,
     CatalogImportService,
     CatalogSourcesService,
+    CatalogSourceLinksService,
+    CatalogSearchService,
     PriceListService,
     ReferencesService,
   ],

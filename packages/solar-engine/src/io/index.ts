@@ -9,3 +9,4 @@ export * from './cec-csv.js';
 export * from './layout.js';
 export * from './datasheet-inverter.js';
 export * from './catalog-site.js';
+export * from './source-analyzer.js';
