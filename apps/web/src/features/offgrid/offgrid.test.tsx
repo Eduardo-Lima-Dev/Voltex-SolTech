@@ -739,8 +739,7 @@ describe('Off-Grid Designer: trilha de etapas', () => {
     expect(await screen.findByText('Etapa 10 de 11 · opcional')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Etapa anterior/ }));
     // A pendência leva direto à etapa que a resolve.
-    await user.click(screen.getByText(/pendência\(s\) para concluir/));
-    await user.click(screen.getAllByRole('button', { name: /Ir para Cargas/ })[0] as HTMLElement);
+    await user.click(screen.getAllByRole('button', { name: /Abrir etapa/ })[0] as HTMLElement);
     expect(await screen.findByText('Perfil de consumo')).toBeInTheDocument();
   });
 });

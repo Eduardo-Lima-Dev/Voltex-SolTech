@@ -1,5 +1,6 @@
 import { Check, AlertTriangle } from 'lucide-react';
 import type { OffgridDesign, OffgridResults } from '@voltex/shared';
+import { Badge, Button } from '@voltex/ui';
 
 export type StepId =
   | 'local'
@@ -120,82 +121,154 @@ export function StepNav({
 }) {
   return (
     <nav aria-label="Etapas do projeto" className="space-y-2">
-      <ol className="flex flex-wrap gap-y-4">
-        {STEP_META.map((step, index) => {
-          const state = states[step.id];
-          const active = step.id === current;
-          const circle =
-            state === 'done'
-              ? 'border-emerald-600 bg-emerald-600 text-white'
-              : state === 'problem'
-                ? 'border-red-600 bg-red-600 text-white'
-                : state === 'todo'
-                  ? 'border-amber-500 bg-amber-100 text-amber-900'
-                  : 'border-border bg-background text-muted-foreground border-dashed';
-          return (
-            <li
-              key={step.id}
-              className="relative flex min-w-[6.5rem] flex-1 basis-[6.5rem] flex-col items-center px-1 text-center"
-            >
-              {index < STEP_META.length - 1 ? (
-                <span
-                  aria-hidden
-                  className="absolute top-4 left-1/2 hidden h-0.5 w-full bg-border sm:block"
-                />
-              ) : null}
-              <button
-                type="button"
-                aria-current={active ? 'step' : undefined}
-                aria-label={`${index + 1}. ${step.label} (${CAPTION[state]}${step.required ? ', obrigatória' : ''})`}
-                title={step.required ? 'Etapa obrigatória' : 'Etapa opcional: você pode pular'}
-                onClick={() => onSelect(step.id)}
-                className="group relative z-10 flex flex-col items-center gap-1 rounded-md p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span
-                  className={`flex size-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${circle} ${
-                    active ? 'ring-2 ring-primary ring-offset-2' : ''
-                  }`}
+      <div className="overflow-x-auto pb-1">
+        <ol className="grid min-w-[64rem] grid-flow-col auto-cols-fr">
+          {STEP_META.map((step, index) => {
+            const state = states[step.id];
+            const active = step.id === current;
+            const circle =
+              state === 'done'
+                ? 'border-emerald-600 bg-emerald-600 text-white'
+                : state === 'problem'
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : state === 'todo'
+                    ? 'border-amber-500 bg-amber-100 text-amber-900'
+                    : 'border-border bg-background text-muted-foreground border-dashed';
+            return (
+              <li key={step.id} className="relative flex flex-col items-center px-1 text-center">
+                {index < STEP_META.length - 1 ? (
+                  <span
+                    aria-hidden
+                    className="absolute top-4 left-1/2 hidden h-0.5 w-full bg-border sm:block"
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  aria-current={active ? 'step' : undefined}
+                  aria-label={`${index + 1}. ${step.label} (${CAPTION[state]}${step.required ? ', obrigatória' : ''})`}
+                  title={step.required ? 'Etapa obrigatória' : 'Etapa opcional: você pode pular'}
+                  onClick={() => onSelect(step.id)}
+                  className="group relative z-10 flex flex-col items-center gap-1 rounded-md p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {state === 'done' ? (
-                    <Check className="size-4" />
-                  ) : state === 'problem' ? (
-                    <AlertTriangle className="size-4" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <span
-                  className={`text-xs leading-tight ${active ? 'font-semibold text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}
-                >
-                  {step.label}
-                </span>
-                <span
-                  className={`text-[0.65rem] leading-none ${
-                    state === 'todo'
-                      ? 'font-medium text-amber-700'
-                      : state === 'problem'
-                        ? 'font-medium text-red-700'
-                        : 'text-muted-foreground'
-                  }`}
-                >
-                  {state === 'done'
-                    ? 'feita'
-                    : state === 'optional'
-                      ? 'opcional'
-                      : state === 'problem'
-                        ? 'com erro'
-                        : 'obrigatória'}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+                  <span
+                    className={`flex size-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${circle} ${
+                      active ? 'ring-2 ring-primary ring-offset-2' : ''
+                    }`}
+                  >
+                    {state === 'done' ? (
+                      <Check className="size-4" />
+                    ) : state === 'problem' ? (
+                      <AlertTriangle className="size-4" />
+                    ) : (
+                      index + 1
+                    )}
+                  </span>
+                  <span
+                    className={`text-xs leading-tight ${active ? 'font-semibold text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}
+                  >
+                    {step.label}
+                  </span>
+                  <span
+                    className={`text-[0.65rem] leading-none ${
+                      state === 'todo'
+                        ? 'font-medium text-amber-700'
+                        : state === 'problem'
+                          ? 'font-medium text-red-700'
+                          : 'text-muted-foreground'
+                    }`}
+                  >
+                    {state === 'done'
+                      ? 'feita'
+                      : state === 'optional'
+                        ? 'opcional'
+                        : state === 'problem'
+                          ? 'com erro'
+                          : 'obrigatória'}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
       <p className="text-xs text-muted-foreground">
         Pode abrir qualquer etapa, em qualquer ordem. <strong>Obrigatórias</strong>: local, cargas,
         arranjo, baterias e controlador/inversor. As <strong>opcionais</strong> (tracejadas) têm
         valores padrão ou servem só para conferir.
       </p>
     </nav>
+  );
+}
+
+const RULE_CODE = 'RULE_PARAMETERS_MISSING';
+
+/**
+ * Pendências em duas partes: o que **falta preencher** (cada linha leva à etapa) e o aviso da **regra de projeto**, que
+ * não é tarefa de quem desenha (só trava o envio até o responsável técnico ativá-la).
+ */
+export function PendingPanel({
+  results,
+  onGo,
+}: {
+  results: OffgridResults;
+  onGo: (id: StepId) => void;
+}) {
+  const rule = results.pending.find((p) => p.code === RULE_CODE);
+  const todo = results.pending.filter((p) => p.code !== RULE_CODE);
+  if (!rule && todo.length === 0) return null;
+  const missing = rule?.message.match(/não traz: (.+?)\. Foram/)?.[1]?.split(', ') ?? [];
+  return (
+    <div className="grid gap-3 lg:grid-cols-[1fr_20rem]">
+      {todo.length > 0 ? (
+        <section
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/30"
+          aria-label="O que falta preencher"
+        >
+          <h3 className="mb-2 text-sm font-semibold">O que falta preencher ({todo.length})</h3>
+          <ul className="divide-y divide-amber-200/70 text-sm" aria-label="Pendências do projeto">
+            {todo.map((p) => {
+              const target = stepForPending(p.code);
+              const meta = STEP_META.find((m) => m.id === target);
+              return (
+                <li key={p.code} className="flex items-center justify-between gap-3 py-1.5">
+                  <span className="flex min-w-0 items-center gap-2">
+                    {meta ? <Badge variant="yellow">{meta.label}</Badge> : null}
+                    <span>{p.message}</span>
+                  </span>
+                  {target ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => onGo(target)}
+                    >
+                      Abrir etapa
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+      {rule ? (
+        <section
+          className="rounded-lg border bg-muted/50 p-3 text-sm"
+          aria-label="Regra de projeto"
+        >
+          <h3 className="mb-1 font-semibold">Regra de projeto não ativada</h3>
+          <p className="text-muted-foreground">
+            Os cálculos usam valores provisórios. Só impede <strong>enviar para revisão</strong>: o
+            responsável técnico ativa a regra <em>offgrid.design</em> em Administração → Regras.
+          </p>
+          {missing.length > 0 ? (
+            <details className="mt-2 text-xs text-muted-foreground">
+              <summary className="cursor-pointer">Ver os {missing.length} parâmetros</summary>
+              <p className="mt-1">{missing.join(', ')}</p>
+            </details>
+          ) : null}
+        </section>
+      ) : null}
+    </div>
   );
 }

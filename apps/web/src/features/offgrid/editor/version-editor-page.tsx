@@ -36,7 +36,7 @@ import { OffgridEditorContext, useOffgrid, type OffgridEditorValue } from './off
 import { PremisesStep } from './premises-step';
 import { ScenariosStep } from './scenarios-step';
 import { SimulationStep } from './simulation-step';
-import { STEP_META, StepNav, stepForPending, stepStates, type StepId } from './step-nav';
+import { PendingPanel, STEP_META, StepNav, stepStates, type StepId } from './step-nav';
 
 function LocalStep() {
   const { design, update, readOnly } = useOffgrid();
@@ -347,38 +347,9 @@ export function OffgridVersionEditorPage() {
             editada. Para mudar algo, crie uma nova versão.
           </p>
         ) : null}
-        {results.pending.length > 0 ? (
-          <details
-            className="rounded border border-warning/50 bg-warning/10 p-3 text-sm"
-            open={stepId === 'local'}
-          >
-            <summary className="cursor-pointer font-medium">
-              {results.pending.length} pendência(s) para concluir o projeto
-            </summary>
-            <ul className="mt-2 space-y-1" aria-label="Pendências do projeto">
-              {results.pending.map((p) => {
-                const target = stepForPending(p.code);
-                return (
-                  <li key={p.code} className="flex flex-wrap items-baseline gap-2">
-                    <span>{p.message}</span>
-                    {target ? (
-                      <Button
-                        size="sm"
-                        variant="link"
-                        className="h-auto p-0"
-                        onClick={() => setStepId(target)}
-                      >
-                        Ir para {STEP_META.find((m) => m.id === target)?.label}
-                      </Button>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </details>
-        ) : null}
-
         <StepNav current={stepId} states={states} onSelect={(id) => setStepId(id)} />
+
+        <PendingPanel results={results} onGo={(id) => setStepId(id)} />
 
         <Step />
 
