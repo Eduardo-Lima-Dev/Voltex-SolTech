@@ -1,5 +1,28 @@
 # Diagnóstico: MVP1 × desenvolvimento existente
 
+> **Este documento é uma fotografia do começo do projeto, tirada ANTES da Fase 6.** Por isso quase tudo aparece como "Ausente". **Hoje o MVP1 inteiro foi entregue**: veja [Situação atual](#situação-atual) logo abaixo e o [roadmap](roadmap.md) (Fases 0 a 8 concluídas). A tabela e o texto originais ficam abaixo, para registro.
+
+## Situação atual
+
+| Item do MVP1                                                                     | Estado hoje      | Fase         | O que ainda falta (fora do escopo entregue)                                                                   |
+| -------------------------------------------------------------------------------- | ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| CRM essencial: cliente, lead, oportunidade, pipeline, tarefas, Project ID global | **Implementado** | 7A           | Funil personalizado por empresa (renomear, esconder, colunas próprias) também entregue                        |
+| Upload de fatura                                                                 | **Implementado** | 4 e 7A       | —                                                                                                             |
+| Leitura da fatura, score de confiança, confirmação manual                        | **Implementado** | 7A           | Só testada com faturas sintéticas: faltam amostras reais                                                      |
+| Solar Calculator (consumo, potência, geração, economia, payback, semáforo)       | **Implementado** | 6            | Fórmulas sem fonte no EnergIF seguem como premissa declarada, a validar com especialista                      |
+| Rules Engine mínimo versionado                                                   | **Implementado** | 6            | Base: ainda sem avaliador de regras por condição                                                              |
+| Project Guard básico                                                             | **Implementado** | 7B           | Só verificações não regulatórias; regras por distribuidora aguardam fonte oficial e o responsável técnico     |
+| Margin Guard                                                                     | **Implementado** | 7B           | —                                                                                                             |
+| Proposta com snapshot imutável e rastreabilidade                                 | **Implementado** | 7B           | —                                                                                                             |
+| Contrato, projeto e homologação básica                                           | **Implementado** | 7C           | Contrato-base sem revisão jurídica; a assinatura é um registro do arquivo assinado, não assinatura eletrônica |
+| Isolamento por empresa, RBAC, auditoria, LGPD                                    | **Implementado** | 4, 8 e pós-8 | Sem MFA; o histórico de auditoria não é anonimizado na eliminação de dados                                    |
+| Revisão humana obrigatória (leitura da fatura, exceções, decisões críticas)      | **Implementado** | 7A e 7B      | —                                                                                                             |
+| Invalidação ao mudar fatura, equipamento, custo ou premissa                      | **Implementado** | 7B           | —                                                                                                             |
+
+Também entregues depois: automações e painel comercial (7C), testes de navegador e jornada completa com vídeo, imagens de produção enxutas, servidor de teste em notebook e demonstração na nuvem com publicação automática pela `main`.
+
+## Fotografia inicial (antes da Fase 6)
+
 Fase 0 do [adendo de reestruturação](../00-visao-geral/adendo-reestruturacao-priorizacao.md): inspecionar o repositório e classificar cada item do MVP1 como **implementado**, **parcial**, **ausente** ou **precisa refatoração**, antes de planejar o resto. Data: 18/10/2026, após as Fases 0 a 5 e a base [EnergIF](../referencias/energif-2023/README.md). Evidências são caminhos reais do repositório.
 
 ## Resumo
@@ -30,11 +53,11 @@ Fase 0 do [adendo de reestruturação](../00-visao-geral/adendo-reestruturacao-p
 
 ```mermaid
 flowchart LR
-    P[Plataforma ✅] --> C6[Fase 6: Calculator + Rules base]
-    C6 --> A7[7A: CRM + OCR + vínculo com Calculator]
-    A7 --> B7[7B: Project Guard → Margin Guard → Proposta]
-    B7 --> C7[7C: Contrato, projeto e homologação]
-    C7 --> Q8[Fase 8: qualidade, CI/CD, produção]
+    P[Plataforma ✅] --> C6[Fase 6: Calculator + Rules base ✅]
+    C6 --> A7[7A: CRM + OCR + vínculo com Calculator ✅]
+    A7 --> B7[7B: Project Guard → Margin Guard → Proposta ✅]
+    B7 --> C7[7C: Contrato, projeto e homologação ✅]
+    C7 --> Q8[Fase 8: qualidade, CI/CD, produção ✅]
 ```
 
 - **Fase 6 antes da 7:** o Calculator é vendável sozinho e o Rules Engine é pré-requisito do Guard.
