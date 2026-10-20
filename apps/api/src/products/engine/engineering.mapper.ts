@@ -69,6 +69,13 @@ export const toRequestDto = (
   status: row.status,
   assigneeId: row.assigneeId,
   assigneeName,
+  priority: row.priority as EngineeringRequestListItemDto['priority'],
+  dueAt: row.dueAt?.toISOString() ?? null,
+  overdue:
+    row.dueAt !== null &&
+    row.dueAt.getTime() < Date.now() &&
+    row.status !== 'DONE' &&
+    row.status !== 'CANCELLED',
   projectId: row.projectId,
   resolution: row.resolution,
   resolvedAt: row.resolvedAt?.toISOString() ?? null,

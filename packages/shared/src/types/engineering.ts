@@ -1,4 +1,5 @@
 import type { CompatibilityStatus } from '../enums/index.js';
+import type { EngineeringRequestStatus } from '../schemas/engineering-management.js';
 import type { EngineeringDesign, InverterEntry } from '../schemas/engineering.js';
 import type { SpecIssue } from './equipment.js';
 
@@ -16,9 +17,13 @@ export interface EngineeringRequestListItemDto {
   customerName: string | null;
   calculationSessionId: string | null;
   reason: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+  status: EngineeringRequestStatus;
   assigneeId: string | null;
   assigneeName: string | null;
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  dueAt: string | null;
+  /** Prazo vencido e pedido ainda aberto. */
+  overdue: boolean;
   projectId: string | null;
   resolution: string | null;
   resolvedAt: string | null;
@@ -354,7 +359,21 @@ export interface EngineeringVersionDto {
   updatedAt: string;
 }
 
+/** Ficha do projeto (9K). */
+export interface EngineeringProjectProfileDto {
+  siteId: string | null;
+  consumerUnitId: string | null;
+  distributorId: string | null;
+  targetKwp: number | null;
+  generationClass: 'MICRO' | 'MINI' | 'PLANT' | null;
+  artType: 'ART' | 'TRT' | 'RRT' | null;
+  artNumber: string | null;
+  councilRegistration: string | null;
+  notes: string | null;
+}
+
 export interface EngineeringProjectDetailDto extends EngineeringProjectDto {
+  profile: EngineeringProjectProfileDto;
   versions: Pick<
     EngineeringVersionDto,
     'id' | 'number' | 'status' | 'stale' | 'createdAt' | 'decidedAt'

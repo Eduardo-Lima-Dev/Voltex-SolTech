@@ -59,12 +59,19 @@ function NewProjectDialog({
   const [state, setState] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [kwp, setKwp] = useState('');
+  const [distributorId, setDistributorId] = useState('');
+  const distributors = useQuery({
+    queryKey: ['distributors'],
+    queryFn: () => endpoints.distributors.list(),
+    enabled: open,
+  });
   const [error, setError] = useState<string | null>(null);
   const num = (raw: string) => Number(raw.trim().replace(',', '.'));
 
   const create = useMutation({
-    mutationFn: () =>
-      endpoints.engineering.createProject({
+    mutationFn: async () => {
+      const created = await endpoints.engineering.createProject({
         name: name.trim(),
         site: {
           latitude: num(lat),
@@ -72,7 +79,18 @@ function NewProjectDialog({
           ...(city.trim() ? { city: city.trim() } : {}),
           ...(state ? { state } : {}),
         },
-      }),
+      });
+      // Potência-alvo e distribuidora (opcionais) entram na ficha do projeto.
+      const target = kwp.trim() ? num(kwp) : undefined;
+      if ((target !== undefined && Number.isFinite(target) && target > 0) || distributorId)
+        await endpoints.engineering.updateProfile(created.id, {
+          ...(target !== undefined && Number.isFinite(target) && target > 0
+            ? { targetKwp: target }
+            : {}),
+          ...(distributorId ? { distributorId } : {}),
+        });
+      return created;
+    },
     onSuccess: async (project) => {
       toast.success(`Projeto ${project.code} criado.`);
       onOpenChange(false);
@@ -149,6 +167,32 @@ function NewProjectDialog({
                 onChange={(e) => setLng(e.target.value)}
                 placeholder="-47,93"
               />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="np-kwp">Potência-alvo (kWp, opcional)</Label>
+              <Input
+                id="np-kwp"
+                inputMode="decimal"
+                value={kwp}
+                onChange={(e) => setKwp(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="np-dist">Distribuidora (opcional)</Label>
+              <NativeSelect
+                id="np-dist"
+                value={distributorId}
+                onChange={(e) => setDistributorId(e.target.value)}
+              >
+                <option value="">Não informada</option>
+                {(distributors.data ?? []).map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </NativeSelect>
             </div>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}

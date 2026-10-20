@@ -290,6 +290,34 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'pedidos/:id',
+                lazy: async () => {
+                  const { RequestPage } = await import('@/features/engine/request-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.project.read">
+                        <RequestPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pedido de engenharia' },
+                  };
+                },
+              },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { DashboardPage } = await import('@/features/engine/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="engine.request.manage">
+                        <DashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel da engenharia' },
+                  };
+                },
+              },
+              {
                 path: 'projetos',
                 lazy: async () => {
                   const { ProjectsPage } = await import('@/features/engine/projects-page');

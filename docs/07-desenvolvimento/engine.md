@@ -54,6 +54,16 @@ O memorial técnico é exportável em PDF e reúne premissas, compatibilidade, g
 
 Ativar nova versão de regra `engine.*` ou aposentar/revisar um equipamento publica evento e marca como **desatualizadas** (com o motivo) as versões que os usam, inclusive a aprovada (que não muda, só ganha a marca). A tela mostra o aviso; recalcular o rascunho limpa a marca.
 
+## Gestão do pedido e do projeto (Fase 9K)
+
+Base: EnergIF 2023 (EF-R01 etapas, R04 documentos, R05/R06 passos e prazos, R09 visita, R10 responsável técnico) e a prática descrita por Sebrae e CREA-GO (visita técnica, projeto executivo com ART, requerimento de acesso, vistoria).
+
+- **Pedido** (`/engine/pedidos/:id`): estados `Pendente → Em andamento → Aguardando visita / Aguardando informação / Em revisão → Concluído` (ou Cancelado), com transições validadas (`REQUEST_TRANSITIONS`) e motivo obrigatório ao aguardar, cancelar ou concluir à mão. Mostra o **contexto do CRM** (cliente, vendedor, imóvel e levantamento do vendedor, UC e distribuidora, cálculo preliminar com alertas, consumo da fatura), **linha do tempo** (estados, comentários, perguntas, prioridade), **prioridade e prazo** (quem coordena) e **Pedir informação ao vendedor** (vira tarefa no CRM e o pedido fica aguardando). Enviar uma versão para revisão põe o pedido em revisão; a aprovação o conclui.
+- **Projeto** (`/engine/projetos/:id`, abas): **Ficha** (distribuidora, potência-alvo com a classe micro/mini pelos limites do livro EF-M06, ART/TRT/RRT e registro no conselho), **Levantamento** (visita técnica: padrão de entrada, tensões medidas, disjuntor, aterramento, telhado, obstáculos, cargas, adequações; rascunho → concluído; concluir libera o pedido que aguardava a visita), **Carga** (consumo da fatura, cargas levantadas e potência sugerida pelo rendimento do cálculo preliminar), **Documentos** (pacote da solicitação de acesso pelo checklist da distribuidora ou padrão da empresa; micro não pede cronograma, mini pede; dispensar exige observação), **Versões** e **Histórico**.
+- **Painel** (`/engine/painel`, `engine.request.manage`): pedidos por estado, atrasados, sem responsável, urgentes, tempo médio de atendimento, carga por engenheiro e próximos prazos.
+- **Permissões novas:** `engine.survey.read/write` (engenharia e **instalador**: o campo preenche e conclui o levantamento sem ver o resto do projeto) e `engine.request.manage` (coordenação: prioridade, prazo, reatribuição, painel).
+- **Limites:** a reatribuição existe na API (`POST requests/:id/reassign`) mas ainda não na tela; fotos do levantamento são documentos da plataforma (a tela do levantamento ainda não tem o envio); o instalador não tem lista de projetos (acessa pelo link/tarefa).
+
 ## Visualização 2D/3D
 
 A etapa **3. Visualização 2D/3D** do editor mostra: (2D) a planta de cada superfície com o layout dos módulos e (3D) uma cena girável com telhado/laje inclinados, módulos, obstáculos (caixas) e a **sombra dos obstáculos no chão** para a data e a hora escolhidas (posição do sol do próprio motor). É projeção ortográfica em SVG, sem biblioteca 3D: serve para conferir geometria, não é um editor 3D (arrastar módulos, importar modelos, sombra sobre o telhado) nem substitui o CAD.

@@ -38,6 +38,7 @@ import { PrismaService, type ScopedPrismaClient } from '../../platform/prisma/pr
 import { RulesService } from '../../platform/rules/rules.service';
 import { ClimateService } from '../../platform/data-hub/climate.service';
 import { EventBus } from '../../platform/events/event-bus.service';
+import { EngineeringEventsService } from './engineering-events.service';
 import { toProjectDto, toVersionDto } from './engineering.mapper';
 import { buildEngineeringReportPdf, buildSingleLinePdf } from './engineering-report-pdf';
 
@@ -116,6 +117,7 @@ export class EngineeringVersionsService {
     private readonly prices: PriceListService,
     private readonly climate: ClimateService,
     private readonly events: EventBus,
+    private readonly timeline: EngineeringEventsService,
   ) {}
 
   async require(id: string) {
@@ -462,6 +464,20 @@ export class EngineeringVersionsService {
           submittedById: this.context.userId ?? null,
         },
       });
+      // Enviar para revisão põe o pedido em revisão e registra na linha do tempo do projeto.
+      await tx.engineeringRequest.updateMany({
+        where: { projectId: version.projectId, status: 'IN_PROGRESS' },
+        data: { status: 'IN_REVIEW' },
+      });
+      await this.timeline.record(
+        {
+          type: 'STATUS',
+          projectId: version.projectId,
+          text: `Versão ${version.number} enviada para revisão`,
+          data: { versionId: id },
+        },
+        tx,
+      );
       await this.audit.record(
         { action: 'engineering.version_submitted', entity: 'EngineeringVersion', entityId: id },
         tx,

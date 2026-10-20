@@ -121,6 +121,17 @@ export class EngineeringProjectsService {
     } | null;
     return {
       ...(dto as EngineeringProjectDto),
+      profile: {
+        siteId: row.siteId,
+        consumerUnitId: row.consumerUnitId,
+        distributorId: row.distributorId,
+        targetKwp: row.targetKwp,
+        generationClass: row.generationClass as 'MICRO' | 'MINI' | 'PLANT' | null,
+        artType: row.artType as 'ART' | 'TRT' | 'RRT' | null,
+        artNumber: row.artNumber,
+        councilRegistration: row.councilRegistration,
+        notes: row.notes,
+      },
       versions: versions.map((v) => ({
         id: v.id,
         number: v.number,
@@ -325,7 +336,10 @@ export class EngineeringProjectsService {
     await this.prisma.db.$transaction(async (tx) => {
       await tx.engineeringProject.update({ where: { id }, data: { status: 'CANCELLED' } });
       await tx.engineeringRequest.updateMany({
-        where: { projectId: id, status: { in: ['PENDING', 'IN_PROGRESS'] } },
+        where: {
+          projectId: id,
+          status: { in: ['PENDING', 'IN_PROGRESS', 'WAITING_VISIT', 'WAITING_INFO', 'IN_REVIEW'] },
+        },
         data: { status: 'CANCELLED', resolution: reason, resolvedAt: new Date() },
       });
       await this.audit.record(

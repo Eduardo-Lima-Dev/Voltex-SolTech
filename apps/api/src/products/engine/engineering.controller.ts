@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Put,
@@ -17,6 +18,14 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import {
   cancelEngineeringRequestSchema,
+  changeRequestStatusSchema,
+  reassignRequestSchema,
+  requestCommentSchema,
+  requestInfoSchema,
+  saveSurveySchema,
+  updateDocumentItemSchema,
+  updateProjectProfileSchema,
+  updateRequestPlanSchema,
   createEngineeringShareLinkSchema,
   engineeringDecisionSchema,
   engineeringReviewCommentSchema,
@@ -32,6 +41,7 @@ import { Public, RequirePermissions } from '../../common/decorators';
 import { EngineeringConfiguratorService } from './engineering-configurator.service';
 import { EngineeringProjectsService } from './engineering-projects.service';
 import { EngineeringHomologationService } from './engineering-homologation.service';
+import { EngineeringManagementService } from './engineering-management.service';
 import { EngineeringShareService } from './engineering-share.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
@@ -43,6 +53,14 @@ class CreateProjectDto extends createZodDto(createEngineeringProjectSchema) {}
 class SaveDesignDto extends createZodDto(saveDesignSchema) {}
 class SuggestDto extends createZodDto(suggestConfigurationsSchema) {}
 class ReviewCommentDto extends createZodDto(engineeringReviewCommentSchema) {}
+class ChangeStatusDto extends createZodDto(changeRequestStatusSchema) {}
+class CommentDto extends createZodDto(requestCommentSchema) {}
+class InfoDto extends createZodDto(requestInfoSchema) {}
+class PlanDto extends createZodDto(updateRequestPlanSchema) {}
+class ReassignDto extends createZodDto(reassignRequestSchema) {}
+class ProfileDto extends createZodDto(updateProjectProfileSchema) {}
+class SurveyDto extends createZodDto(saveSurveySchema) {}
+class DocumentItemDto extends createZodDto(updateDocumentItemSchema) {}
 class ShareLinkDto extends createZodDto(createEngineeringShareLinkSchema) {}
 class DecisionDto extends createZodDto(engineeringDecisionSchema) {}
 class FromRequestDto extends createZodDto(
@@ -67,6 +85,7 @@ export class EngineeringController {
     private readonly configurator: EngineeringConfiguratorService,
     private readonly shares: EngineeringShareService,
     private readonly homologation: EngineeringHomologationService,
+    private readonly management: EngineeringManagementService,
   ) {}
 
   // ---- Fila de pedidos ----
@@ -75,6 +94,50 @@ export class EngineeringController {
   @RequirePermissions('engine.project.read')
   listRequests(@Query() query: ListRequestsQueryDto) {
     return this.requests.list(query);
+  }
+
+  @Get('dashboard')
+  @RequirePermissions('engine.request.manage')
+  dashboard() {
+    return this.requests.dashboard();
+  }
+
+  @Get('requests/:id')
+  @RequirePermissions('engine.project.read')
+  requestDetail(@Param('id', ParseUUIDPipe) id: string) {
+    return this.requests.detail(id);
+  }
+
+  @Post('requests/:id/status')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  changeRequestStatus(@Param('id', ParseUUIDPipe) id: string, @Body() body: ChangeStatusDto) {
+    return this.requests.changeStatus(id, body);
+  }
+
+  @Post('requests/:id/comments')
+  @RequirePermissions('engine.project.write')
+  commentRequest(@Param('id', ParseUUIDPipe) id: string, @Body() body: CommentDto) {
+    return this.requests.comment(id, body.text);
+  }
+
+  @Post('requests/:id/info-requests')
+  @RequirePermissions('engine.project.write')
+  requestInfo(@Param('id', ParseUUIDPipe) id: string, @Body() body: InfoDto) {
+    return this.requests.requestInfo(id, body.question);
+  }
+
+  @Patch('requests/:id/plan')
+  @RequirePermissions('engine.request.manage')
+  updateRequestPlan(@Param('id', ParseUUIDPipe) id: string, @Body() body: PlanDto) {
+    return this.requests.updatePlan(id, body);
+  }
+
+  @Post('requests/:id/reassign')
+  @HttpCode(200)
+  @RequirePermissions('engine.request.manage')
+  reassignRequest(@Param('id', ParseUUIDPipe) id: string, @Body() body: ReassignDto) {
+    return this.requests.reassign(id, body.userId);
   }
 
   @Post('requests/:id/assign')
@@ -123,6 +186,67 @@ export class EngineeringController {
   @RequirePermissions('engine.project.write')
   cancelProject(@Param('id', ParseUUIDPipe) id: string, @Body() body: CancelDto) {
     return this.projects.cancel(id, body.reason);
+  }
+
+  @Patch('projects/:id')
+  @RequirePermissions('engine.project.write')
+  async updateProfile(@Param('id', ParseUUIDPipe) id: string, @Body() body: ProfileDto) {
+    await this.management.updateProfile(id, body);
+    return this.projects.get(id);
+  }
+
+  @Get('projects/:id/timeline')
+  @RequirePermissions('engine.project.read')
+  timeline(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.timeline(id);
+  }
+
+  @Get('projects/:id/survey')
+  @RequirePermissions('engine.survey.read')
+  survey(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.getSurvey(id);
+  }
+
+  @Put('projects/:id/survey')
+  @RequirePermissions('engine.survey.write')
+  saveSurvey(@Param('id', ParseUUIDPipe) id: string, @Body() body: SurveyDto) {
+    return this.management.saveSurvey(id, body.data);
+  }
+
+  @Post('projects/:id/survey/complete')
+  @HttpCode(200)
+  @RequirePermissions('engine.survey.write')
+  completeSurvey(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.completeSurvey(id);
+  }
+
+  @Post('projects/:id/survey/reopen')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  reopenSurvey(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.reopenSurvey(id);
+  }
+
+  @Get('projects/:id/load-analysis')
+  @RequirePermissions('engine.project.read')
+  loadAnalysis(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.loadAnalysis(id);
+  }
+
+  @Get('projects/:id/documents')
+  @RequirePermissions('engine.project.read')
+  documentItems(@Param('id', ParseUUIDPipe) id: string) {
+    return this.management.documentItems(id);
+  }
+
+  @Patch('projects/:id/documents/:code')
+  @RequirePermissions('engine.project.write')
+  updateDocumentItem(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('code') code: string,
+    @Body() body: DocumentItemDto,
+  ) {
+    return this.management.updateDocumentItem(id, code, body);
   }
 
   @Get('projects/:id/snapshot')

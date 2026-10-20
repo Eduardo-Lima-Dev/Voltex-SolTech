@@ -114,6 +114,17 @@ import {
   type CatalogSourceDocumentDto,
   type CatalogSourceDto,
   type ListSourceDocumentsQuery,
+  type ChangeRequestStatusInput,
+  type EngineeringDashboardDto,
+  type EngineeringEventDto,
+  type EngineeringRequestDetailDto,
+  type EngineeringSurveyDto,
+  type LoadAnalysisDto,
+  type ProjectDocumentItemDto,
+  type SurveyInput,
+  type UpdateDocumentItemInput,
+  type UpdateProjectProfileInput,
+  type UpdateRequestPlanInput,
   type EngineeringVersionComparisonDto,
   type EngineeringShareLinkDto,
   type PublicEngineeringReportDto,
@@ -294,6 +305,40 @@ export function createEndpoints(client: ApiClient) {
         client.get<EngineeringRequestListItemDto[]>('/engineering/requests', {
           query: query as QueryParams,
         }),
+      requestDetail: (id: string) =>
+        client.get<EngineeringRequestDetailDto>(`/engineering/requests/${id}`),
+      changeRequestStatus: (id: string, input: ChangeRequestStatusInput) =>
+        client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/status`, input),
+      commentRequest: (id: string, text: string) =>
+        client.post<EngineeringRequestDetailDto>(`/engineering/requests/${id}/comments`, { text }),
+      requestInfo: (id: string, question: string) =>
+        client.post<EngineeringRequestDetailDto>(`/engineering/requests/${id}/info-requests`, {
+          question,
+        }),
+      updateRequestPlan: (id: string, input: UpdateRequestPlanInput) =>
+        client.patch<EngineeringRequestListItemDto>(`/engineering/requests/${id}/plan`, input),
+      dashboard: () => client.get<EngineeringDashboardDto>('/engineering/dashboard'),
+      updateProfile: (id: string, input: UpdateProjectProfileInput) =>
+        client.patch<EngineeringProjectDetailDto>(`/engineering/projects/${id}`, input),
+      projectTimeline: (id: string) =>
+        client.get<EngineeringEventDto[]>(`/engineering/projects/${id}/timeline`),
+      survey: (id: string) =>
+        client.get<EngineeringSurveyDto>(`/engineering/projects/${id}/survey`),
+      saveSurvey: (id: string, data: SurveyInput) =>
+        client.put<EngineeringSurveyDto>(`/engineering/projects/${id}/survey`, { data }),
+      completeSurvey: (id: string) =>
+        client.post<EngineeringSurveyDto>(`/engineering/projects/${id}/survey/complete`),
+      reopenSurvey: (id: string) =>
+        client.post<EngineeringSurveyDto>(`/engineering/projects/${id}/survey/reopen`),
+      loadAnalysis: (id: string) =>
+        client.get<LoadAnalysisDto>(`/engineering/projects/${id}/load-analysis`),
+      documentItems: (id: string) =>
+        client.get<ProjectDocumentItemDto[]>(`/engineering/projects/${id}/documents`),
+      updateDocumentItem: (id: string, code: string, input: UpdateDocumentItemInput) =>
+        client.patch<ProjectDocumentItemDto[]>(
+          `/engineering/projects/${id}/documents/${code}`,
+          input,
+        ),
       assign: (id: string) =>
         client.post<EngineeringRequestListItemDto>(`/engineering/requests/${id}/assign`),
       cancelRequest: (id: string, reason: string) =>

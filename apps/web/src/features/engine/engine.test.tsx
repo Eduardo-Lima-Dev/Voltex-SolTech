@@ -31,6 +31,9 @@ const request = (
   status: 'PENDING',
   assigneeId: null,
   assigneeName: null,
+  priority: 'NORMAL',
+  dueAt: null,
+  overdue: false,
   projectId: null,
   resolution: null,
   resolvedAt: null,
@@ -135,11 +138,23 @@ beforeEach(() => {
     http.get(`${API}/engineering/versions/:id/comments`, () => HttpResponse.json([])),
     http.get(`${API}/engineering/versions/:id`, () => HttpResponse.json(version())),
     http.get(`${API}/engineering/projects/pj-1`, () => HttpResponse.json(detail())),
+    http.get(`${API}/distributors`, () => HttpResponse.json([])),
   );
 });
 
 const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjectDetailDto => ({
   ...project(),
+  profile: {
+    siteId: null,
+    consumerUnitId: null,
+    distributorId: null,
+    targetKwp: null,
+    generationClass: null,
+    artType: null,
+    artNumber: null,
+    councilRegistration: null,
+    notes: null,
+  },
   versions: [
     { id: 'v-1', number: 1, status: 'DRAFT', stale: false, createdAt: now, decidedAt: null },
   ],
@@ -349,9 +364,11 @@ describe('Engine: projetos', () => {
     renderApp('/engine/projetos/pj-1', { session: makeSession('ENGINEERING') });
     expect(await screen.findByText(/Pré-cálculo do CRM/)).toBeInTheDocument();
     expect(screen.getByText(/4,4 kWp · 8\.200 kWh\/ano/)).toBeInTheDocument();
-    expect(screen.getByText('Enviada para revisão')).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'Versões' }));
+    expect(await screen.findByText('Enviada para revisão')).toBeInTheDocument();
     expect(screen.getByText('desatualizada')).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Nova versão' }));
+    await user.click(screen.getByRole('button', { name: 'Nova versão' }));
     await waitFor(() => expect(newFrom).toBe('v-1'));
     expect(await screen.findByRole('heading', { name: /Versão 2/ })).toBeInTheDocument();
   });
@@ -1009,5 +1026,431 @@ describe('Engine: visualização 2D/3D', () => {
     expect(await screen.findByText(/Ainda não há superfícies/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ir para Superfícies' }));
     expect(await screen.findByText(/Adicione uma superfície/)).toBeInTheDocument();
+  });
+});
+
+const fullRequest = (o: Record<string, unknown> = {}) => ({
+  ...request({ status: 'IN_PROGRESS', assigneeName: 'Ana', assigneeId: 'u-1' }),
+  context: {
+    account: { id: 'a-1', name: 'Maria Souza' },
+    site: {
+      id: 's-1',
+      name: 'Residência',
+      city: 'Brasília',
+      state: 'DF',
+      latitude: -15.78,
+      longitude: -47.93,
+      intake: {
+        roofType: 'CERAMIC',
+        roofAzimuthDegrees: 0,
+        tiltDegrees: 20,
+        shading: 'LOW',
+        availableAreaM2: 40,
+        entryBreakerAmps: 50,
+        groundingAdequate: false,
+      },
+    },
+    consumerUnit: {
+      id: 'u-1',
+      number: 'UC123',
+      customerGroup: 'B',
+      phaseSystem: 'TWO_PHASE',
+      distributorName: 'Neoenergia',
+    },
+    calculation: {
+      id: 'c-1',
+      createdAt: now,
+      systemKwp: 4.4,
+      generationKwhYear: 7000,
+      alerts: [{ severity: 'WARNING', message: 'Sombreamento relevante' }],
+    },
+    consumptionHistory: [
+      { month: '2026-01', kwh: 400 },
+      { month: '2026-02', kwh: 520 },
+    ],
+    seller: { id: 'v-1', name: 'Vera Vendas' },
+  },
+  events: [
+    {
+      id: 'e-1',
+      type: 'COMMENT',
+      text: 'Cliente tem árvore ao norte.',
+      data: {},
+      actorId: 'u-1',
+      actorName: 'Ana',
+      createdAt: now,
+    },
+  ],
+  allowedTransitions: ['WAITING_VISIT', 'WAITING_INFO', 'IN_REVIEW', 'CANCELLED'],
+  ...o,
+});
+
+describe('Engine: pedido de engenharia (9K)', () => {
+  it('mostra o contexto do CRM, o andamento e age: muda o estado com motivo, pergunta ao vendedor e comenta', async () => {
+    const bodies: Record<string, unknown> = {};
+    server.use(
+      http.get(`${API}/engineering/requests/rq-1`, () => HttpResponse.json(fullRequest())),
+      http.post(`${API}/engineering/requests/rq-1/status`, async ({ request: req }) => {
+        bodies.status = await req.json();
+        return HttpResponse.json(request({ status: 'WAITING_VISIT' }));
+      }),
+      http.post(`${API}/engineering/requests/rq-1/info-requests`, async ({ request: req }) => {
+        bodies.info = await req.json();
+        return HttpResponse.json(fullRequest({ status: 'WAITING_INFO' }), { status: 201 });
+      }),
+      http.post(`${API}/engineering/requests/rq-1/comments`, async ({ request: req }) => {
+        bodies.comment = await req.json();
+        return HttpResponse.json(fullRequest(), { status: 201 });
+      }),
+    );
+    renderApp('/engine/pedidos/rq-1', { session: makeSession('ENGINEERING') });
+    const user = userEvent.setup();
+    expect(await screen.findByRole('heading', { name: /Maria Souza/ })).toBeInTheDocument();
+    // Contexto do CRM sem sair do pedido.
+    expect(screen.getByText('Vera Vendas')).toBeInTheDocument();
+    expect(screen.getByText('Neoenergia')).toBeInTheDocument();
+    expect(screen.getByText('UC123')).toBeInTheDocument();
+    expect(screen.getByText('50 A')).toBeInTheDocument();
+    expect(screen.getByText('não')).toBeInTheDocument(); // aterramento
+    expect(screen.getByText(/4,4 kWp · 7\.000 kWh\/ano/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Consumo dos últimos 2 meses/ })).toBeInTheDocument();
+    expect(screen.getByText('Cliente tem árvore ao norte.')).toBeInTheDocument();
+
+    // Aguardar visita exige o motivo.
+    await user.click(screen.getByRole('button', { name: /aguardando visita/i }));
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: 'Confirmar' });
+    expect(confirm).toBeDisabled();
+    await user.type(within(dialog).getByLabelText('Observação'), 'Visita na sexta');
+    await user.click(confirm);
+    await waitFor(() =>
+      expect(bodies.status).toEqual({ status: 'WAITING_VISIT', note: 'Visita na sexta' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Pedir informação ao vendedor' }));
+    const ask = await screen.findByRole('dialog');
+    await user.type(within(ask).getByLabelText('Pergunta'), 'Qual a altura da árvore?');
+    await user.click(within(ask).getByRole('button', { name: 'Enviar pergunta' }));
+    await waitFor(() => expect(bodies.info).toEqual({ question: 'Qual a altura da árvore?' }));
+
+    await user.type(screen.getByLabelText('Comentário'), 'Conferido');
+    await user.click(screen.getByRole('button', { name: 'Comentar' }));
+    await waitFor(() => expect(bodies.comment).toEqual({ text: 'Conferido' }));
+  });
+
+  it('prioridade e prazo só aparecem para quem coordena', async () => {
+    server.use(
+      http.get(`${API}/engineering/requests/rq-1`, () => HttpResponse.json(fullRequest())),
+    );
+    renderApp('/engine/pedidos/rq-1', { session: makeSession('ENGINEERING') });
+    await screen.findByRole('heading', { name: /Maria Souza/ });
+    expect(screen.queryByRole('button', { name: 'Prioridade e prazo' })).not.toBeInTheDocument();
+  });
+
+  it('o coordenador define prioridade e prazo e vê o painel da engenharia', async () => {
+    let plan: unknown;
+    server.use(
+      http.get(`${API}/engineering/requests/rq-1`, () =>
+        HttpResponse.json(fullRequest({ overdue: true, dueAt: '2026-10-01T12:00:00.000Z' })),
+      ),
+      http.patch(`${API}/engineering/requests/rq-1/plan`, async ({ request: req }) => {
+        plan = await req.json();
+        return HttpResponse.json(request({ status: 'IN_PROGRESS', priority: 'URGENT' }));
+      }),
+      http.get(`${API}/engineering/dashboard`, () =>
+        HttpResponse.json({
+          byStatus: { PENDING: 2, IN_PROGRESS: 3 },
+          open: 5,
+          overdue: 1,
+          unassigned: 2,
+          urgent: 1,
+          avgResolutionDays: 4.5,
+          byAssignee: [{ id: 'u-1', name: 'Ana', open: 3 }],
+          projects: { inProgress: 4, approved: 2, cancelled: 0 },
+          upcoming: [
+            {
+              id: 'rq-1',
+              projectCode: 'VLT-2026-0001',
+              customerName: 'Maria Souza',
+              dueAt: now,
+              priority: 'URGENT',
+            },
+          ],
+        }),
+      ),
+    );
+    renderApp('/engine/pedidos/rq-1', { session: makeSession('TECHNICAL_LEAD') });
+    const user = userEvent.setup();
+    expect(await screen.findByText(/Atrasado:/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Prioridade e prazo' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.selectOptions(within(dialog).getByLabelText('Prioridade'), 'URGENT');
+    await user.clear(within(dialog).getByLabelText('Prazo'));
+    await user.type(within(dialog).getByLabelText('Prazo'), '2026-11-05');
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(plan).toMatchObject({ priority: 'URGENT' }));
+    expect((plan as { dueAt: string }).dueAt).toMatch(/^2026-11-0[56]T/);
+  });
+
+  it('painel da engenharia: totais, estados, carga por engenheiro e próximos prazos', async () => {
+    server.use(
+      http.get(`${API}/engineering/dashboard`, () =>
+        HttpResponse.json({
+          byStatus: { PENDING: 2, IN_PROGRESS: 3 },
+          open: 5,
+          overdue: 1,
+          unassigned: 2,
+          urgent: 1,
+          avgResolutionDays: 4.5,
+          byAssignee: [{ id: 'u-1', name: 'Ana', open: 3 }],
+          projects: { inProgress: 4, approved: 2, cancelled: 0 },
+          upcoming: [
+            {
+              id: 'rq-1',
+              projectCode: 'VLT-2026-0001',
+              customerName: 'Maria Souza',
+              dueAt: now,
+              priority: 'URGENT',
+            },
+          ],
+        }),
+      ),
+    );
+    renderApp('/engine/painel', { session: makeSession('TECHNICAL_LEAD') });
+    expect(await screen.findByText('Pedidos abertos')).toBeInTheDocument();
+    expect(screen.getByText('4,5 d')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Pedidos por estado' })).getByText('Pendente'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Carga por engenheiro' })).getByText('3 em aberto'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Próximos prazos' })).getByText('Maria Souza'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Urgentes')).toBeInTheDocument();
+  });
+
+  it('a lista de pedidos mostra prioridade e prazo vencido e leva ao pedido', async () => {
+    server.use(
+      http.get(`${API}/engineering/requests`, () =>
+        HttpResponse.json([
+          request({
+            status: 'WAITING_INFO',
+            priority: 'URGENT',
+            dueAt: '2026-10-01T12:00:00.000Z',
+            overdue: true,
+          }),
+        ]),
+      ),
+    );
+    renderApp('/engine/pedidos', { session: makeSession('ENGINEERING') });
+    expect(await screen.findByText('Urgente')).toBeInTheDocument();
+    expect(screen.getByText(/Atrasado/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver pedido' })).toHaveAttribute(
+      'href',
+      '/engine/pedidos/rq-1',
+    );
+  });
+});
+
+describe('Engine: projeto completo (9K)', () => {
+  const survey = (over: Record<string, unknown> = {}) => ({
+    status: 'DRAFT',
+    data: {
+      supply: {},
+      grounding: {},
+      roof: {},
+      obstacles: [],
+      loads: [],
+      adequacies: [],
+      photoDocumentIds: [],
+    },
+    missing: ['Data da visita', 'Disjuntor geral (A)'],
+    completedAt: null,
+    updatedAt: null,
+    ...over,
+  });
+  const open = (extra: Parameters<typeof server.use>[0][] = []) => {
+    server.use(
+      http.get(`${API}/engineering/projects/pj-1`, () => HttpResponse.json(detail())),
+      ...extra,
+    );
+    renderApp('/engine/projetos/pj-1', { session: makeSession('ENGINEERING') });
+  };
+
+  it('ficha: informa potência-alvo (classe), distribuidora e ART e salva', async () => {
+    let patched: unknown;
+    open([
+      http.get(`${API}/distributors`, () =>
+        HttpResponse.json([{ id: 'd-1', name: 'Neoenergia', state: 'DF' }]),
+      ),
+      http.patch(`${API}/engineering/projects/pj-1`, async ({ request: req }) => {
+        patched = await req.json();
+        return HttpResponse.json(detail());
+      }),
+    ]);
+    const user = userEvent.setup();
+    expect(await screen.findByLabelText('Nome do projeto')).toBeInTheDocument();
+    await user.selectOptions(await screen.findByLabelText('Distribuidora'), 'd-1');
+    await user.type(screen.getByLabelText(/Potência-alvo/), '150');
+    expect(await screen.findByText(/Minigeração/)).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Responsabilidade técnica'), 'ART');
+    await user.type(screen.getByLabelText(/Número da ART/), 'CE2026123');
+    await user.click(screen.getByRole('button', { name: 'Salvar ficha' }));
+    await waitFor(() =>
+      expect(patched).toMatchObject({
+        distributorId: 'd-1',
+        targetKwp: 150,
+        artType: 'ART',
+        artNumber: 'CE2026123',
+      }),
+    );
+  });
+
+  it('levantamento: mostra o que falta, salva o rascunho e só conclui quando completo', async () => {
+    let saved: { data: { supply?: { breakerA?: number } } } | undefined;
+    let completed = 0;
+    open([
+      http.get(`${API}/engineering/projects/pj-1/survey`, () => HttpResponse.json(survey())),
+      http.put(`${API}/engineering/projects/pj-1/survey`, async ({ request: req }) => {
+        saved = (await req.json()) as typeof saved;
+        return HttpResponse.json(survey());
+      }),
+      http.post(`${API}/engineering/projects/pj-1/survey/complete`, () => {
+        completed += 1;
+        return HttpResponse.json(survey({ status: 'COMPLETED', missing: [], completedAt: now }));
+      }),
+    ]);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Levantamento' }));
+    expect(
+      await screen.findByText(/Falta para concluir: Data da visita; Disjuntor geral \(A\)/),
+    ).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/^Disjuntor geral/), '50');
+    await user.click(screen.getByRole('button', { name: 'Adicionar carga' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
+    await waitFor(() => expect(saved?.data.supply?.breakerA).toBe(50));
+    await user.click(screen.getByRole('button', { name: 'Concluir levantamento' }));
+    await waitFor(() => expect(completed).toBe(1));
+  });
+
+  it('carga: mostra consumo, cargas da visita e a potência sugerida', async () => {
+    open([
+      http.get(`${API}/engineering/projects/pj-1/load-analysis`, () =>
+        HttpResponse.json({
+          monthly: [
+            { month: '2026-01', kwh: 400 },
+            { month: '2026-02', kwh: 520 },
+          ],
+          averageKwh: 460,
+          maxKwh: 520,
+          loads: [{ id: 'l1', name: 'Ar-condicionado', monthlyKwh: 432 }],
+          loadsMonthlyKwh: 432,
+          annualYieldKwhPerKwp: 1590,
+          suggestedKwp: 3.47,
+          notes: [
+            'Sem cálculo preliminar com geração: não há rendimento por kWp para sugerir a potência.',
+          ],
+        }),
+      ),
+    ]);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Carga' }));
+    expect(await screen.findByText('460 kWh/mês')).toBeInTheDocument();
+    expect(screen.getByText('3,47 kWp')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Cargas levantadas' })).getByText('432 kWh/mês'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Sem cálculo preliminar/)).toBeInTheDocument();
+  });
+
+  it('documentos: mostra o pacote com a fonte, marca pronto e exige motivo para "não se aplica"', async () => {
+    let body: unknown;
+    const items = [
+      {
+        id: 'i1',
+        code: 'FORM',
+        title: 'Formulário de solicitação de acesso',
+        description: null,
+        required: true,
+        position: 0,
+        status: 'PENDING',
+        documentId: null,
+        note: null,
+        source: 'energif-2023@1: EnergIF 2023, EF-R04 a',
+        suggestion: null,
+      },
+      {
+        id: 'i2',
+        code: 'ART_TRT',
+        title: 'ART ou TRT do projeto de execução',
+        description: null,
+        required: true,
+        position: 1,
+        status: 'PENDING',
+        documentId: null,
+        note: null,
+        source: 'energif-2023@1: EF-R04 b',
+        suggestion: 'Informe o número na ficha do projeto.',
+      },
+    ];
+    open([
+      http.get(`${API}/engineering/projects/pj-1/documents`, () => HttpResponse.json(items)),
+      http.patch(`${API}/engineering/projects/pj-1/documents/FORM`, async ({ request: req }) => {
+        body = await req.json();
+        return HttpResponse.json(
+          items.map((i) => (i.code === 'FORM' ? { ...i, status: 'READY' } : i)),
+        );
+      }),
+    ]);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Documentos' }));
+    expect(await screen.findByText(/0 de 2 obrigatórios prontos/)).toBeInTheDocument();
+    expect(screen.getByText(/Fonte: energif-2023@1: EnergIF 2023, EF-R04 a/)).toBeInTheDocument();
+    expect(screen.getByText('Informe o número na ficha do projeto.')).toBeInTheDocument();
+    const row = screen
+      .getByText('Formulário de solicitação de acesso')
+      .closest('li') as HTMLElement;
+    await user.click(within(row).getByRole('button', { name: 'Não se aplica' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+    await user.click(within(dialog).getByRole('button', { name: 'Voltar' }));
+    await user.click(within(row).getByRole('button', { name: 'Marcar pronto' }));
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Confirmar' }),
+    );
+    await waitFor(() => expect(body).toMatchObject({ status: 'READY' }));
+  });
+
+  it('histórico do projeto junta o que aconteceu no pedido e no projeto', async () => {
+    open([
+      http.get(`${API}/engineering/projects/pj-1/timeline`, () =>
+        HttpResponse.json([
+          {
+            id: 'e-2',
+            type: 'SURVEY',
+            text: 'Levantamento do local concluído',
+            data: {},
+            actorId: null,
+            actorName: 'Carlos',
+            createdAt: now,
+          },
+          {
+            id: 'e-1',
+            type: 'INFO_REQUEST',
+            text: 'Qual a altura da árvore?',
+            data: {},
+            actorId: null,
+            actorName: 'Ana',
+            createdAt: now,
+          },
+        ]),
+      ),
+    ]);
+    await userEvent.setup().click(await screen.findByRole('tab', { name: 'Histórico' }));
+    const list = await screen.findByRole('list', { name: 'Linha do tempo' });
+    expect(within(list).getByText('Levantamento do local concluído')).toBeInTheDocument();
+    expect(within(list).getByText('Pedido de informação')).toBeInTheDocument();
   });
 });

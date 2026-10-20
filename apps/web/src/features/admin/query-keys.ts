@@ -78,6 +78,8 @@ export const queryKeys = {
     filters === undefined
       ? (['engineering', 'projects'] as const)
       : (['engineering', 'projects', filters] as const),
+  engineeringRequest: (id: string) => ['engineering', 'request', id] as const,
+  engineeringDashboard: ['engineering', 'dashboard'] as const,
   engineeringProject: (id: string) => ['engineering', 'project', id] as const,
   engineeringVersion: (id: string) => ['engineering', 'version', id] as const,
   catalogPrices: ['catalog', 'prices'] as const,

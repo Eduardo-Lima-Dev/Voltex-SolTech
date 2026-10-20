@@ -35,13 +35,11 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { formatDateTime } from '@/lib/format';
 import { queryKeys } from '../admin/query-keys';
-
-const STATUS_BADGE = {
-  PENDING: 'yellow',
-  IN_PROGRESS: 'secondary',
-  DONE: 'green',
-  CANCELLED: 'outline',
-} as const;
+import {
+  PRIORITY_BADGE,
+  PRIORITY_LABELS,
+  REQUEST_STATUS_BADGE as STATUS_BADGE,
+} from './request-ui';
 
 /** Pede as coordenadas quando a oportunidade não tem o local cadastrado. */
 function CoordinatesDialog({
@@ -119,9 +117,7 @@ function CoordinatesDialog({
 export function RequestsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED' | ''>(
-    'PENDING',
-  );
+  const [status, setStatus] = useState<EngineeringRequestListItemDto['status'] | ''>('PENDING');
   const [mine, setMine] = useState(false);
   const [needsCoordinates, setNeedsCoordinates] = useState<EngineeringRequestListItemDto | null>(
     null,
@@ -202,6 +198,9 @@ export function RequestsPage() {
           >
             <option value="PENDING">Aguardando</option>
             <option value="IN_PROGRESS">Em andamento</option>
+            <option value="WAITING_VISIT">Aguardando visita</option>
+            <option value="WAITING_INFO">Aguardando informação</option>
+            <option value="IN_REVIEW">Em revisão</option>
             <option value="DONE">Concluídos</option>
             <option value="CANCELLED">Cancelados</option>
             <option value="">Todos</option>
@@ -226,6 +225,7 @@ export function RequestsPage() {
                 <TableHead>Oportunidade</TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead>Situação</TableHead>
+                <TableHead>Prioridade e prazo</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -249,10 +249,26 @@ export function RequestsPage() {
                       {ENGINEERING_STATUS_LABELS[request.status]}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-sm">
+                    <Badge variant={PRIORITY_BADGE[request.priority]}>
+                      {PRIORITY_LABELS[request.priority]}
+                    </Badge>
+                    {request.dueAt ? (
+                      <div
+                        className={request.overdue ? 'text-destructive' : 'text-muted-foreground'}
+                      >
+                        {request.overdue ? 'Atrasado · ' : 'até '}
+                        {formatDateTime(request.dueAt)}
+                      </div>
+                    ) : null}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {request.assigneeName ?? '—'}
                   </TableCell>
                   <TableCell className="space-x-1 text-right">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/engine/pedidos/${request.id}`}>Ver pedido</Link>
+                    </Button>
                     {request.projectId ? (
                       <Button asChild size="sm" variant="outline">
                         <Link to={`/engine/projetos/${request.projectId}`}>Abrir projeto</Link>
@@ -269,8 +285,9 @@ export function RequestsPage() {
                           Pegar pedido
                         </Button>
                       ) : null}
-                      {(request.status === 'PENDING' || request.status === 'IN_PROGRESS') &&
-                      !request.projectId ? (
+                      {['PENDING', 'IN_PROGRESS', 'WAITING_VISIT', 'WAITING_INFO'].includes(
+                        request.status,
+                      ) && !request.projectId ? (
                         <Button
                           size="sm"
                           disabled={open.isPending}
@@ -279,7 +296,7 @@ export function RequestsPage() {
                           Abrir projeto
                         </Button>
                       ) : null}
-                      {request.status === 'PENDING' || request.status === 'IN_PROGRESS' ? (
+                      {!['DONE', 'CANCELLED'].includes(request.status) ? (
                         <Button size="sm" variant="ghost" onClick={() => setCancelling(request)}>
                           Cancelar
                         </Button>

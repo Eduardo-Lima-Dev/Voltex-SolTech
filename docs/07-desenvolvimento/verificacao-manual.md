@@ -75,3 +75,10 @@ Pré-requisitos: um módulo e um inversor **aprovados** no catálogo (Engine →
 5. **Entregáveis** — baixe memorial e unifilar (PDF/SVG/DXF). **Comparar com outra versão** mostra o que mudou.
 6. **Cliente** — **Gerar link** e abra em janela anônima: nenhum custo ou margem aparece. **Revogar** derruba o link.
 7. **CRM** — a linha do tempo da oportunidade registra a aprovação, o pedido vai para "Concluído" e a cotação pode **importar a lista de materiais** do snapshot. **Anexar à homologação** coloca memorial e unifilar no checklist do projeto (depois do contrato).
+
+### Fase 9K — gestão do pedido e do projeto
+
+1. **Pedido** — `Engine → Pedidos → Ver pedido`: confira o contexto do CRM; mude para **Aguardando visita** (pede motivo); use **Pedir informação ao vendedor** (o vendedor recebe uma tarefa no CRM); como coordenador, defina **Prioridade e prazo** e veja o atraso na lista.
+2. **Projeto** — abra o projeto: preencha a **Ficha** (potência-alvo muda a classe; informe a ART) e veja o pacote em **Documentos** mudar entre micro e mini.
+3. **Levantamento** — preencha em **Levantamento**; **Concluir** só é aceito com os dados mínimos; ao concluir, o pedido volta a "Em andamento". Entre como instalador: ele acessa só o levantamento.
+4. **Carga** e **Histórico** — conferir consumo, cargas e a linha do tempo do pedido e do projeto. **Painel** (coordenador): totais e carga por engenheiro.

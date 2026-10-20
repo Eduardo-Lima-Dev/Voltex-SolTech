@@ -54,6 +54,11 @@ export const PERMISSIONS = [
   'engine.project.read',
   'engine.project.write',
   'engine.project.approve',
+  /** Levantamento do local (visita técnica): engenharia e campo. */
+  'engine.survey.read',
+  'engine.survey.write',
+  /** Prioridade, prazo, reatribuição e painel da engenharia. */
+  'engine.request.manage',
   // Off-Grid Designer
   'offgrid.project.read',
   'offgrid.project.write',
@@ -129,7 +134,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.ENGINEERING]: [
-    ...startsWith('engine.project.read', 'engine.project.write', 'offgrid.project'),
+    ...startsWith(
+      'engine.project.read',
+      'engine.project.write',
+      'engine.survey',
+      'offgrid.project',
+    ),
     'crm.opportunity.read',
     'crm.guard.read',
     'crm.project.read',
@@ -167,6 +177,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.INSTALLER]: [
+    'engine.survey.read',
+    'engine.survey.write',
     'crm.project.read',
     'crm.task.read',
     'crm.task.write',

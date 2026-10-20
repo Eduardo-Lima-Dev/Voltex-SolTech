@@ -106,6 +106,9 @@ enum EnergyBillStatus {
 enum EngineeringRequestStatus {
   PENDING
   IN_PROGRESS
+  WAITING_VISIT
+  WAITING_INFO
+  IN_REVIEW
   DONE
   CANCELLED
 
@@ -446,12 +449,17 @@ model EngineeringRequest {
   /// Motivo do cancelamento ou resumo do atendimento.
   resolution           String?
   resolvedAt           DateTime?                @map("resolved_at")
+  /// `LOW`, `NORMAL`, `HIGH` ou `URGENT`.
+  priority             String                   @default("NORMAL")
+  /// Prazo do atendimento (definido por quem coordena a engenharia).
+  dueAt                DateTime?                @map("due_at")
   createdAt            DateTime                 @default(now()) @map("created_at")
   updatedAt            DateTime                 @updatedAt @map("updated_at")
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
   opportunity Opportunity         @relation(fields: [opportunityId], references: [id])
   project     EngineeringProject? @relation(fields: [projectId], references: [id])
+  events      EngineeringEvent[]
 
   @@index([tenantId, status])
   @@index([tenantId, opportunityId])

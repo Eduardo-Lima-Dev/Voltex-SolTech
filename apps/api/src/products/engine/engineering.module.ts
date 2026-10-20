@@ -8,6 +8,8 @@ import { EngineeringConfiguratorService } from './engineering-configurator.servi
 import { EngineeringImpactService } from './engineering-impact.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
+import { EngineeringEventsService } from './engineering-events.service';
+import { EngineeringManagementService } from './engineering-management.service';
 import { EngineeringShareService } from './engineering-share.service';
 import { EngineeringCrmIntegrationService } from './engineering-crm-integration.service';
 
@@ -25,6 +27,8 @@ import { EngineeringCrmIntegrationService } from './engineering-crm-integration.
     EngineeringCrmIntegrationService,
     EngineeringShareService,
     EngineeringHomologationService,
+    EngineeringEventsService,
+    EngineeringManagementService,
   ],
   exports: [EngineeringRequestsService, EngineeringProjectsService, EngineeringVersionsService],
 })

@@ -18,6 +18,10 @@ import {
   Input,
   Label,
   Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
@@ -25,6 +29,11 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format';
 import { queryKeys } from '../admin/query-keys';
+import { DocumentsPanel } from './project/documents-panel';
+import { LoadPanel } from './project/load-panel';
+import { ProfilePanel } from './project/profile-panel';
+import { SurveyPanel } from './project/survey-panel';
+import { Timeline } from './request-page';
 import {
   PROJECT_STATUS_BADGE,
   PROJECT_STATUS_LABELS,
@@ -118,52 +127,81 @@ export function ProjectPage() {
         ) : null}
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <CardTitle>Versões</CardTitle>
-            <CardDescription>
-              Versão enviada ou decidida é congelada. Para mudar, crie uma nova versão: ela copia o
-              desenho da anterior.
-            </CardDescription>
-          </div>
-          <Can permission="engine.project.write">
-            {p.status === 'IN_PROGRESS' && latest && !hasDraft ? (
-              <Button
-                size="sm"
-                disabled={newVersion.isPending}
-                onClick={() => newVersion.mutate(latest.id)}
-              >
-                Nova versão
-              </Button>
-            ) : null}
-          </Can>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y">
-            {p.versions.map((v) => (
-              <li
-                key={v.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">Versão {v.number}</span>
-                  <Badge variant={VERSION_STATUS_BADGE[v.status]}>
-                    {VERSION_STATUS_LABELS[v.status]}
-                  </Badge>
-                  {v.stale ? <Badge variant="yellow">desatualizada</Badge> : null}
-                  <span className="text-muted-foreground">criada em {formatDate(v.createdAt)}</span>
-                </div>
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/engine/projetos/${p.id}/versoes/${v.id}`}>
-                    {v.status === 'DRAFT' ? 'Editar' : 'Ver'}
-                  </Link>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="ficha">
+        <TabsList>
+          <TabsTrigger value="ficha">Ficha</TabsTrigger>
+          <TabsTrigger value="levantamento">Levantamento</TabsTrigger>
+          <TabsTrigger value="carga">Carga</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="versoes">Versões</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+        <TabsContent value="ficha">
+          <ProfilePanel project={p} />
+        </TabsContent>
+        <TabsContent value="levantamento">
+          <SurveyPanel projectId={p.id} canEdit={p.status === 'IN_PROGRESS'} />
+        </TabsContent>
+        <TabsContent value="carga">
+          <LoadPanel projectId={p.id} />
+        </TabsContent>
+        <TabsContent value="documentos">
+          <DocumentsPanel projectId={p.id} canEdit={p.status !== 'CANCELLED'} />
+        </TabsContent>
+        <TabsContent value="versoes">
+          <Card>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle>Versões</CardTitle>
+                <CardDescription>
+                  Versão enviada ou decidida é congelada. Para mudar, crie uma nova versão: ela
+                  copia o desenho da anterior.
+                </CardDescription>
+              </div>
+              <Can permission="engine.project.write">
+                {p.status === 'IN_PROGRESS' && latest && !hasDraft ? (
+                  <Button
+                    size="sm"
+                    disabled={newVersion.isPending}
+                    onClick={() => newVersion.mutate(latest.id)}
+                  >
+                    Nova versão
+                  </Button>
+                ) : null}
+              </Can>
+            </CardHeader>
+            <CardContent>
+              <ul className="divide-y">
+                {p.versions.map((v) => (
+                  <li
+                    key={v.id}
+                    className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">Versão {v.number}</span>
+                      <Badge variant={VERSION_STATUS_BADGE[v.status]}>
+                        {VERSION_STATUS_LABELS[v.status]}
+                      </Badge>
+                      {v.stale ? <Badge variant="yellow">desatualizada</Badge> : null}
+                      <span className="text-muted-foreground">
+                        criada em {formatDate(v.createdAt)}
+                      </span>
+                    </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/engine/projetos/${p.id}/versoes/${v.id}`}>
+                        {v.status === 'DRAFT' ? 'Editar' : 'Ver'}
+                      </Link>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="historico">
+          <HistoryPanel projectId={p.id} />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={cancelling} onOpenChange={setCancelling}>
         <DialogContent>
@@ -192,5 +230,27 @@ export function ProjectPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function HistoryPanel({ projectId }: { projectId: string }) {
+  const timeline = useQuery({
+    queryKey: ['engineering', 'timeline', projectId],
+    queryFn: () => endpoints.engineering.projectTimeline(projectId),
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Histórico do projeto</CardTitle>
+        <CardDescription>Inclui o que aconteceu no pedido que originou o projeto.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {timeline.isPending ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <Timeline events={timeline.data ?? []} />
+        )}
+      </CardContent>
+    </Card>
   );
 }

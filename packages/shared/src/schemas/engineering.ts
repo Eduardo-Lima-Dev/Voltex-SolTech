@@ -298,6 +298,9 @@ export const newDesign = (
 export const ENGINEERING_REQUEST_STATUSES = [
   'PENDING',
   'IN_PROGRESS',
+  'WAITING_VISIT',
+  'WAITING_INFO',
+  'IN_REVIEW',
   'DONE',
   'CANCELLED',
 ] as const;
