@@ -1,4 +1,5 @@
-import type { EngineeringDesign } from '../schemas/engineering.js';
+import type { CompatibilityStatus } from '../enums/index.js';
+import type { EngineeringDesign, InverterEntry } from '../schemas/engineering.js';
 import type { SpecIssue } from './equipment.js';
 
 /** Contratos JSON do Solar Engine Studio (datas em ISO 8601). */
@@ -88,11 +89,66 @@ export interface SurfaceShadingResult {
   warnings: string[];
 }
 
+export interface CompatibilityCheck {
+  /** Código estável (ex.: `VOC_COLD_EXCEEDS_MAX`). */
+  code: string;
+  severity: 'ERROR' | 'WARNING' | 'INFO';
+  /** `PASS` passou; `FAIL` falhou; `PENDING` não pôde ser verificada (falta dado ou regra). */
+  outcome: 'PASS' | 'FAIL' | 'PENDING';
+  message: string;
+  /** Fórmula e fonte, para a explicação na tela. */
+  formula: string;
+  source: string;
+  value: number | null;
+  limit: number | null;
+  unit: string;
+  /** Onde se aplica (id do MPPT ou da string). */
+  scope: string;
+}
+
+export interface InverterCompatibility {
+  entryId: string;
+  inverterId: string;
+  status: CompatibilityStatus;
+  checks: CompatibilityCheck[];
+  /** Grandezas derivadas para mostrar na tela. */
+  metrics: {
+    dcPowerKwp: number;
+    acPowerKw: number;
+    dcAcRatio: number | null;
+    modulesConnected: number;
+    mpptUsed: number;
+    mpptAvailable: number;
+  };
+}
+
+export interface CompatibilityResult {
+  status: CompatibilityStatus;
+  inverters: InverterCompatibility[];
+  /** Módulos ligados × módulos do layout, por superfície. */
+  allocation: CompatibilityCheck[];
+  /** O que impede concluir: dado do projeto ou regra `engine.design` que falta. */
+  pending: { code: string; kind: 'DATA' | 'RULE'; message: string }[];
+  /** Grandezas por módulo usado: Voc frio, Vmpp quente/frio. */
+  thermal: {
+    moduleId: string;
+    vocColdV: number | null;
+    vmppColdV: number | null;
+    vmppHotV: number | null;
+    cellHotC: number | null;
+    betaVmppSource: 'BETA_VMPP' | 'BETA_VOC_ASSUMED';
+    noctSource: 'DATASHEET' | 'KT_DEFAULT';
+  }[];
+  algorithmVersion: string;
+}
+
 export interface EngineeringResults {
   /** Versões dos algoritmos que produziram estes resultados. */
   algorithmVersions: Record<string, string>;
   layout: SurfaceLayoutResult[];
   shading: SurfaceShadingResult[];
+  /** Compatibilidade módulo × inversor × strings (9E). */
+  compatibility: CompatibilityResult;
   totals: { moduleCount: number; powerKwp: number | null; moduleAreaM2: number | null };
   /** Pendências que impedem concluir (módulo não escolhido, local sem coordenadas...). */
   pending: { code: string; message: string }[];
@@ -139,7 +195,11 @@ export interface EngineeringProjectDetailDto extends EngineeringProjectDto {
 
 export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
   project: EngineeringProjectDto;
-  /** Módulos do catálogo usados no desenho (ficha para o cálculo no navegador). */
+  /** Regras em vigor que o cálculo usa (o navegador recalcula com os mesmos parâmetros). */
+  rules: {
+    engineDesign: { ref: string | null; parameters: Record<string, number> };
+  };
+  /** Equipamentos do catálogo usados no desenho (ficha para o cálculo no navegador). */
   equipment: {
     id: string;
     kind: string;
@@ -149,4 +209,31 @@ export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
     spec: Record<string, unknown>;
     issues: SpecIssue[];
   }[];
+}
+
+export interface SuggestedConfiguration {
+  moduleId: string;
+  inverterId: string;
+  inverterCount: number;
+  modulesInSeries: number;
+  totalStrings: number;
+  moduleCount: number;
+  powerKwp: number;
+  dcAcRatio: number | null;
+  /** Folga entre o Voc frio e a tensão máxima do inversor (%). */
+  vocMarginPct: number;
+  /** Custo estimado em centavos (módulos + inversores), ou nulo se algum item não tem preço. */
+  costCents: number | null;
+  unpriced: string[];
+  /** Entradas prontas para o desenho. */
+  entries: InverterEntry[];
+  status: CompatibilityStatus;
+  warnings: string[];
+}
+
+export interface SuggestConfigurationsResult {
+  configurations: SuggestedConfiguration[];
+  /** Por que combinações foram descartadas (para a explicação quando não há nenhuma). */
+  discarded: { moduleId: string; inverterId: string; reason: string }[];
+  pending: CompatibilityResult['pending'];
 }

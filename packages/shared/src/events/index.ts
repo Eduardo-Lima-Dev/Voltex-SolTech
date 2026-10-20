@@ -9,6 +9,10 @@ export const DomainEvent = {
   /** Uma versão de regra (qualquer chave) passou a valer: projetos que a usam podem precisar de revalidação. */
   RULE_SET_ACTIVATED: 'RuleSetActivated',
   /** Uma fonte vigiada mudou (norma, resolução, lei): o responsável técnico precisa revisar. */
+  /** Uma revisão de equipamento foi aprovada (e a anterior aposentada): projetos que usam a antiga ficam desatualizados. */
+  EQUIPMENT_REVISION_APPROVED: 'EquipmentRevisionApproved',
+  /** Um equipamento foi aposentado. */
+  EQUIPMENT_RETIRED: 'EquipmentRetired',
   EXTERNAL_SOURCE_CHANGED: 'ExternalSourceChanged',
   /** Uma proposta da caixa de atualizações foi aprovada ou descartada. */
   UPDATE_PROPOSAL_DECIDED: 'UpdateProposalDecided',

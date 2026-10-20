@@ -125,6 +125,8 @@ export const CompatibilityStatus = {
   VALID: 'VALID',
   VALID_WITH_WARNINGS: 'VALID_WITH_WARNINGS',
   INVALID: 'INVALID',
+  /** Falta dado do projeto ou regra para concluir a verificação (impede a aprovação). */
+  INCOMPLETE: 'INCOMPLETE',
 } as const;
 export type CompatibilityStatus = (typeof CompatibilityStatus)[keyof typeof CompatibilityStatus];
 
