@@ -158,6 +158,9 @@ export interface RuleSetDto {
   status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
   validFrom: string | null;
   validTo: string | null;
+  /** Escopo da regra (distribuidora, estado, tipo de projeto, grupo); nulo = geral. */
+  scope: Record<string, string> | null;
+  scopeKey: string;
   definition: Record<string, unknown>;
   sources: { type: string; reference: string; url?: string; notes?: string }[];
   reviewedBy: string | null;
@@ -184,3 +187,4 @@ export * from './crm.js';
 export * from './commercial.js';
 export * from './delivery.js';
 export * from './privacy.js';
+export * from './data-hub.js';

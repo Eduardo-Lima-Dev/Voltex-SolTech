@@ -8,6 +8,10 @@ export const DomainEvent = {
   DOCUMENT_UPLOADED: 'DocumentUploaded',
   /** Uma versão de regra (qualquer chave) passou a valer: projetos que a usam podem precisar de revalidação. */
   RULE_SET_ACTIVATED: 'RuleSetActivated',
+  /** Uma fonte vigiada mudou (norma, resolução, lei): o responsável técnico precisa revisar. */
+  EXTERNAL_SOURCE_CHANGED: 'ExternalSourceChanged',
+  /** Uma proposta da caixa de atualizações foi aprovada ou descartada. */
+  UPDATE_PROPOSAL_DECIDED: 'UpdateProposalDecided',
   // Comercial
   LEAD_CREATED: 'LeadCreated',
   LEAD_QUALIFIED: 'LeadQualified',

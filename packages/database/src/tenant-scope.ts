@@ -44,6 +44,8 @@ export const TENANT_SCOPED_MODELS = [
   'Project',
   'ProjectChecklistItem',
   'PrivacyRequest',
+  'SourceWatch',
+  'UpdateProposal',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
