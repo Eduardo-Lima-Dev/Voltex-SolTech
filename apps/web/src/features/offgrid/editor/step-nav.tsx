@@ -1,5 +1,6 @@
 import { Check, AlertTriangle } from 'lucide-react';
-import type { OffgridDesign, OffgridResults } from '@voltex/shared';
+import { OFFGRID_DESIGN_PARAMETERS, type OffgridDesign, type OffgridResults } from '@voltex/shared';
+import { OFFGRID_PROVISIONAL_PARAMETERS } from '@voltex/solar-engine';
 import { Badge, Button } from '@voltex/ui';
 
 export type StepId =
@@ -262,9 +263,34 @@ export function PendingPanel({
             responsável técnico ativa a regra <em>offgrid.design</em> em Administração → Regras.
           </p>
           {missing.length > 0 ? (
-            <details className="mt-2 text-xs text-muted-foreground">
-              <summary className="cursor-pointer">Ver os {missing.length} parâmetros</summary>
-              <p className="mt-1">{missing.join(', ')}</p>
+            <details className="mt-3 text-xs">
+              <summary className="cursor-pointer text-muted-foreground">
+                Ver os {missing.length} parâmetros e os valores provisórios
+              </summary>
+              <ul
+                className="mt-2 max-h-72 divide-y overflow-y-auto rounded border bg-background"
+                aria-label="Parâmetros da regra"
+              >
+                {missing.map((key) => (
+                  <li key={key} className="flex items-start justify-between gap-3 px-2 py-1.5">
+                    <span className="min-w-0">
+                      <span className="block font-medium text-foreground">
+                        {OFFGRID_DESIGN_PARAMETERS[key as keyof typeof OFFGRID_DESIGN_PARAMETERS] ??
+                          key}
+                      </span>
+                      <code className="text-[0.65rem] text-muted-foreground">{key}</code>
+                    </span>
+                    <span
+                      className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-foreground"
+                      title="Valor provisório em uso"
+                    >
+                      {OFFGRID_PROVISIONAL_PARAMETERS[
+                        key as keyof typeof OFFGRID_PROVISIONAL_PARAMETERS
+                      ] ?? '—'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </details>
           ) : null}
         </section>

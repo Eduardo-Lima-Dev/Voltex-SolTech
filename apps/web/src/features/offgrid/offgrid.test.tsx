@@ -743,3 +743,25 @@ describe('Off-Grid Designer: trilha de etapas', () => {
     expect(await screen.findByText('Perfil de consumo')).toBeInTheDocument();
   });
 });
+
+describe('Off-Grid Designer: parâmetros da regra', () => {
+  it('lista cada parâmetro com nome, código e valor provisório', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(
+          version({
+            design: newOffgridDesign({ latitude: -15.8, longitude: -47.9 }) as never,
+            catalog: { ruleRef: null, parameters: {}, items: [] },
+          }),
+        ),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    const user = userEvent.setup();
+    await user.click(await screen.findByText(/Ver os 17 parâmetros/));
+    const list = screen.getByRole('list', { name: 'Parâmetros da regra' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(17);
+    expect(within(list).getByText('Autonomia mínima (dias)')).toBeInTheDocument();
+    expect(within(list).getByText('autonomyMinDays')).toBeInTheDocument();
+  });
+});
