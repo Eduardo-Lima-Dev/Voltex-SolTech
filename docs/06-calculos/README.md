@@ -34,6 +34,7 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
   - [Verificação do que foi escolhido](offgrid-compatibilidade.md)
   - [Despacho horário, gerador, rede e estresse](offgrid-despacho.md)
   - [Custo](offgrid-economia.md)
+  - [Projeto visual do terreno e cabos](offgrid-layout.md)
 
 ## Fontes
 

@@ -57,8 +57,56 @@ export const offgridArraySchema = z.object({
   shadingLossPct: z.number().min(0).max(100).default(0),
   /** Cabo/estrutura: distância do arranjo ao controlador (m), para a queda CC. */
   cableLengthM: z.number().min(0).max(500).optional(),
+  /** Centro do arranjo na planta do terreno (m; x = leste, y = norte, origem no canto sudoeste). */
+  positionM: z
+    .object({ x: z.number().min(-1000).max(2000), y: z.number().min(-1000).max(2000) })
+    .optional(),
 });
 export type OffgridArray = z.output<typeof offgridArraySchema>;
+
+export const LAYOUT_ELEMENT_KINDS = [
+  'HOUSE',
+  'POWER_ROOM',
+  'GENERATOR',
+  'GRID_POLE',
+  'TANK',
+  'TREE',
+  'OTHER',
+] as const;
+export type LayoutElementKind = (typeof LAYOUT_ELEMENT_KINDS)[number];
+
+/** Construção ou objeto do terreno: casa (cargas), casa de máquinas (banco, controlador, inversor), gerador, poste da rede… */
+export const offgridLayoutElementSchema = z.object({
+  id: idSchema,
+  kind: z.enum(LAYOUT_ELEMENT_KINDS),
+  name: z.string().trim().min(1).max(80),
+  positionM: z.object({ x: z.number().min(-1000).max(2000), y: z.number().min(-1000).max(2000) }),
+  widthM: z.number().min(0.1).max(200).default(4),
+  depthM: z.number().min(0.1).max(200).default(4),
+  /** Altura: sombreia os arranjos (0 não sombreia). */
+  heightM: z.number().min(0).max(60).default(3),
+  /** Giro da construção em graus, horário visto de cima. */
+  rotationDeg: z.number().min(0).lt(360).default(0),
+});
+export type OffgridLayoutElement = z.output<typeof offgridLayoutElementSchema>;
+
+/**
+ * Projeto visual: terreno, construções, e as premissas de cabo da estimativa. As queda máximas são **escolhas do
+ * projetista** (não norma): a capacidade de condução e a aprovação do cabo seguem a regra de cabos.
+ */
+export const offgridLayoutSchema = z.object({
+  lotWidthM: z.number().min(5).max(1000).default(30),
+  lotDepthM: z.number().min(5).max(1000).default(20),
+  elements: z.array(offgridLayoutElementSchema).max(30).default([]),
+  /** Folga do percurso do cabo sobre a linha reta (%). */
+  cableSlackPct: z.number().min(0).max(100).default(10),
+  maxDropPctDc: z.number().min(0.1).max(20).default(3),
+  maxDropPctBank: z.number().min(0.1).max(20).default(1),
+  maxDropPctAc: z.number().min(0.1).max(20).default(3),
+  /** Distância entre o banco e o inversor, dentro da casa de máquinas (m). */
+  bankToInverterM: z.number().min(0.1).max(50).default(1.5),
+});
+export type OffgridLayout = z.output<typeof offgridLayoutSchema>;
 
 export const offgridBankSchema = z.object({
   batteryId: z.uuid().optional(),
@@ -185,6 +233,17 @@ export const offgridDesignSchema = z.object({
     avoidedCostCentsPerKwh: 0,
   }),
   scenarios: z.array(offgridScenarioSchema).max(3).default([]),
+  /** Projeto visual do terreno (planta 2D e cena 3D). */
+  layout: offgridLayoutSchema.default({
+    lotWidthM: 30,
+    lotDepthM: 20,
+    elements: [],
+    cableSlackPct: 10,
+    maxDropPctDc: 3,
+    maxDropPctBank: 1,
+    maxDropPctAc: 3,
+    bankToInverterM: 1.5,
+  }),
   stress: offgridStressSchema.default({
     enabled: true,
     cloudyDays: 3,

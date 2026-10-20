@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -553,5 +553,159 @@ describe('Off-Grid Designer: editor', () => {
     renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('ENGINEERING') });
     await screen.findByRole('navigation', { name: 'Etapas do projeto' });
     expect(screen.queryByRole('button', { name: 'Aprovar' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Off-Grid Designer: diagrama e terreno 2D/3D', () => {
+  const layoutDesign = () => {
+    const d = fullDesign();
+    return {
+      ...d,
+      systemType: 'HYBRID' as const,
+      arrays: [{ ...d.arrays[0], positionM: { x: 20, y: 16 } }],
+      layout: {
+        ...d.layout,
+        lotWidthM: 40,
+        lotDepthM: 30,
+        elements: [
+          {
+            id: 'room',
+            kind: 'POWER_ROOM' as const,
+            name: 'Casa de máquinas',
+            positionM: { x: 20, y: 8 },
+            widthM: 3,
+            depthM: 3,
+            heightM: 2.5,
+            rotationDeg: 0,
+          },
+          {
+            id: 'house',
+            kind: 'HOUSE' as const,
+            name: 'Casa',
+            positionM: { x: 8, y: 8 },
+            widthM: 8,
+            depthM: 6,
+            heightM: 3.5,
+            rotationDeg: 0,
+          },
+          {
+            id: 'pole',
+            kind: 'GRID_POLE' as const,
+            name: 'Poste',
+            positionM: { x: 36, y: 3 },
+            widthM: 0.3,
+            depthM: 0.3,
+            heightM: 7,
+            rotationDeg: 0,
+          },
+        ],
+      },
+    };
+  };
+  const open = async (design = layoutDesign()) => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ design: design as never })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    return userEvent.setup();
+  };
+
+  it('o diagrama mostra os blocos com os valores e abre a etapa do bloco', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: /Diagrama do sistema/ }));
+    const diagram = await screen.findByRole('group', { name: 'Diagrama do sistema off-grid' });
+    expect(within(diagram).getByText(/Sistema híbrido/)).toBeInTheDocument();
+    expect(
+      within(diagram).getByRole('button', { name: /Banco de baterias: .*Abrir a etapa/ }),
+    ).toBeInTheDocument();
+    expect(within(diagram).getByText('Rede elétrica')).toBeInTheDocument();
+    await user.click(within(diagram).getByRole('button', { name: /Banco de baterias/ }));
+    expect(
+      await screen.findByText(
+        'Capacidade = consumo × autonomia ÷ profundidade de descarga. Em série fecha a tensão do sistema (48 V); em paralelo fecha a capacidade (poucas colunas em paralelo mantêm o banco equilibrado).',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('a planta mostra construções, arranjo, trajetos de cabo e a tabela de seções', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    const plan = await screen.findByRole('group', { name: 'Planta do terreno' });
+    expect(
+      within(plan).getByRole('button', { name: /Casa de máquinas, Casa de máquinas/ }),
+    ).toBeInTheDocument();
+    expect(within(plan).getByRole('button', { name: 'Arranjo Telhado' })).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Trajetos de cabo' });
+    expect(within(table).getAllByRole('row').length).toBeGreaterThan(3);
+    expect(within(table).getByText(/Poste → Casa de máquinas/)).toBeInTheDocument();
+    expect(screen.getByText(/Cabo total estimado/)).toBeInTheDocument();
+  });
+
+  it('as setas movem o objeto e o painel mostra a sombra para aplicar ao arranjo', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    const plan = await screen.findByRole('group', { name: 'Planta do terreno' });
+    const house = within(plan).getByRole('button', { name: /^Casa, Casa/ });
+    house.focus();
+    fireEvent.keyDown(house, { key: 'ArrowRight', shiftKey: true });
+    const details = screen.getByRole('complementary', { name: 'Detalhes da seleção' });
+    expect(await within(details).findByLabelText('Leste (X) (m)')).toHaveValue('9');
+    await user.click(within(plan).getByRole('button', { name: 'Arranjo Telhado' }));
+    expect(await within(details).findByText(/Sombra das construções/)).toBeInTheDocument();
+    await user.click(within(details).getByRole('button', { name: /Usar como perda por sombra/ }));
+    expect(await screen.findByText('alterações não salvas')).toBeInTheDocument();
+  });
+
+  it('adiciona e remove objetos pela planta', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    await user.click(await screen.findByRole('button', { name: /Gerador$/ }));
+    const plan = screen.getByRole('group', { name: 'Planta do terreno' });
+    expect(within(plan).getByRole('button', { name: /Gerador, Gerador/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remover Gerador' }));
+    expect(
+      within(plan).queryByRole('button', { name: /Gerador, Gerador/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('a cena 3D gira, aproxima e mostra as sombras', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    await user.click(await screen.findByRole('button', { name: 'Cena 3D' }));
+    const scene = await screen.findByRole('img', { name: 'Cena 3D do terreno' });
+    const before = scene.getAttribute('viewBox');
+    fireEvent.change(screen.getByLabelText(/Giro/), { target: { value: '120' } });
+    expect(scene.getAttribute('viewBox')).not.toBe(before);
+    const zoomed = scene.getAttribute('viewBox');
+    await user.click(screen.getByRole('button', { name: 'Aproximar' }));
+    expect(scene.getAttribute('viewBox')).not.toBe(zoomed);
+    expect(scene.querySelectorAll('polygon').length).toBeGreaterThan(20);
+    await user.click(screen.getByLabelText('Mostrar sombras'));
+  });
+
+  it('versão congelada: só visualização, sem botões de adicionar', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ status: 'SUBMITTED', design: layoutDesign() as never })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    expect(await screen.findByText(/Esta versão está congelada/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerador$/ })).not.toBeInTheDocument();
+  });
+
+  it('versão antiga sem o terreno abre com o terreno padrão', async () => {
+    const old = fullDesign() as unknown as Record<string, unknown>;
+    delete old.layout;
+    const user = await open(old as never);
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    expect(await screen.findByRole('group', { name: 'Planta do terreno' })).toBeInTheDocument();
+    expect(screen.getByText(/Adicione a casa de máquinas/)).toBeInTheDocument();
   });
 });

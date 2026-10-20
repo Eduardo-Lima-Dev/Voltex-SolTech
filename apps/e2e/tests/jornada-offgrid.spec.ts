@@ -240,6 +240,30 @@ test('do pedido off-grid ao projeto aprovado pelo responsável técnico', async 
           controllerId: ids.controller,
           inverterId: ids.inverter,
           stress: { enabled: false },
+          layout: {
+            lotWidthM: 40,
+            lotDepthM: 30,
+            elements: [
+              {
+                id: 'room',
+                kind: 'POWER_ROOM',
+                name: 'Casa de máquinas',
+                positionM: { x: 20, y: 8 },
+                widthM: 3,
+                depthM: 3,
+                heightM: 2.5,
+              },
+              {
+                id: 'house',
+                kind: 'HOUSE',
+                name: 'Casa',
+                positionM: { x: 8, y: 8 },
+                widthM: 8,
+                depthM: 6,
+                heightM: 3.5,
+              },
+            ],
+          },
         },
       },
     });
@@ -253,6 +277,16 @@ test('do pedido off-grid ao projeto aprovado pelo responsável técnico', async 
     await snap(page, info, '4-dimensionamento');
     await page.getByRole('button', { name: /Arranjo FV/ }).click();
     await expect(page.getByRole('list', { name: 'Verificações do arranjo' })).toBeVisible();
+    await page.getByRole('button', { name: /Diagrama do sistema/ }).click();
+    await expect(page.getByRole('group', { name: 'Diagrama do sistema off-grid' })).toBeVisible();
+    await snap(page, info, '4b-diagrama');
+    await page.getByRole('button', { name: /Terreno 2D/ }).click();
+    await expect(page.getByRole('group', { name: 'Planta do terreno' })).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Trajetos de cabo' })).toBeVisible();
+    await snap(page, info, '4c-planta-2d');
+    await page.getByRole('button', { name: 'Cena 3D' }).click();
+    await expect(page.getByRole('img', { name: 'Cena 3D do terreno' })).toBeVisible();
+    await snap(page, info, '4d-cena-3d');
     await page.getByRole('button', { name: /Simulação/ }).click();
     await expect(page.getByText('Perda de carga', { exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /Dia típico/ })).toBeVisible();

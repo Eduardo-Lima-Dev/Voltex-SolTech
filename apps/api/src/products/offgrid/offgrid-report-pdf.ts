@@ -215,6 +215,23 @@ export function buildOffgridReportPdf(input: OffgridReportInput): Promise<Buffer
           `${item.description}: ${item.quantity} × ${money(item.unitCostCents)} = ${money(item.totalCents)}`,
         );
     }
+    if (r.layout && (r.layout.runs.length > 0 || r.layout.arrays.length > 0)) {
+      heading('Terreno e cabos');
+      line('Terreno', `${n(design.layout.lotWidthM, 1)} × ${n(design.layout.lotDepthM, 1)} m`);
+      for (const a of r.layout.arrays)
+        bullet(
+          `${a.name}: ${n(a.widthM, 1)} × ${n(a.depthM, 1)} m em (${n(a.centerM.x, 1)}; ${n(a.centerM.y, 1)}), sombra das construções ${n(a.annualShadingLossPct, 1)}% da componente direta`,
+        );
+      for (const run of r.layout.runs)
+        bullet(
+          `${run.from} → ${run.to}: ${n(run.distanceM, 1)} m, ${n(run.currentA, 1)} A a ${n(run.voltageV, 0)} V, seção mínima ${n(run.minSectionMm2, 1)} mm², comercial ${run.suggestedSectionMm2 ?? 'acima de 240'} mm² (queda máxima ${n(run.dropLimitPct, 1)}%)`,
+        );
+      bullet(
+        'Estimativa pela queda de tensão (CRESESB 6.33); a capacidade de condução segue a regra de cabos.',
+        '#555',
+      );
+      for (const w of r.layout.warnings) bullet(w, '#8a5a00');
+    }
     if (r.scenarios.length > 0) {
       heading('8. Cenários');
       for (const s of r.scenarios)

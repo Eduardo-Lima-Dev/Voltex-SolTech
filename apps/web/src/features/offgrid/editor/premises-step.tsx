@@ -50,6 +50,7 @@ export function PremisesStep() {
           azimuthDegrees: d.arrays[0]?.azimuthDegrees ?? resource.azimuthDegrees ?? 0,
           tiltDegrees: d.arrays[0]?.tiltDegrees ?? resource.tiltDegrees ?? 15,
           shadingLossPct: d.arrays[0]?.shadingLossPct ?? 0,
+          ...(d.arrays[0]?.positionM ? { positionM: d.arrays[0].positionM } : {}),
         },
         ...d.arrays.slice(1),
       ],

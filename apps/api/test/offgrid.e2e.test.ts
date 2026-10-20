@@ -418,4 +418,56 @@ describe('Off-Grid Designer (e2e)', () => {
     expect(rejected.body).toMatchObject({ status: 'REJECTED', decisionNote: 'Refazer o banco' });
     expect((await post(`/offgrid/versions/${versionId}/new-version`, engineer)).status).toBe(201);
   });
+
+  it('terreno: trajetos de cabo e sombra entram nos resultados; versão antiga sem terreno é lida com o padrão', async () => {
+    const project = await post('/offgrid/projects', engineer, {
+      name: 'Terreno',
+      site: { latitude: -15.8, longitude: -47.9, state: 'DF' },
+    });
+    const versionId = project.body.versions[0].id;
+    const layout = {
+      lotWidthM: 40,
+      lotDepthM: 30,
+      elements: [
+        {
+          id: 'room',
+          kind: 'POWER_ROOM',
+          name: 'Casa de máquinas',
+          positionM: { x: 20, y: 8 },
+          widthM: 3,
+          depthM: 3,
+          heightM: 2.5,
+        },
+        {
+          id: 'house',
+          kind: 'HOUSE',
+          name: 'Casa',
+          positionM: { x: 8, y: 8 },
+          widthM: 8,
+          depthM: 6,
+          heightM: 3.5,
+        },
+      ],
+    };
+    const base = design();
+    base.arrays[0] = { ...base.arrays[0], positionM: { x: 20, y: 18 } } as never;
+    const saved = await put(`/offgrid/versions/${versionId}/design`, engineer, {
+      design: { ...base, layout },
+    });
+    expect(saved.status).toBe(200);
+    const runs = saved.body.results.layout.runs as { kind: string; distanceM: number }[];
+    expect(runs.map((r) => r.kind)).toEqual(
+      expect.arrayContaining(['DC_PV', 'AC_LOAD', 'DC_BANK']),
+    );
+    expect(runs.find((r) => r.kind === 'DC_PV')?.distanceM).toBeCloseTo(11, 0);
+    expect(saved.body.results.layout.arrays[0].shadingObstacles).toBeGreaterThanOrEqual(1);
+    expect((await get(`/offgrid/versions/${versionId}/report.pdf`, engineer)).status).toBe(200);
+    // Versão gravada antes do terreno existir: lê com o padrão e recalcula.
+    await t.prisma.system.$executeRawUnsafe(
+      `UPDATE offgrid_versions SET design = design - 'layout' WHERE id = '${versionId}'`,
+    );
+    const old = await get(`/offgrid/versions/${versionId}`, engineer);
+    expect(old.body.design.layout).toMatchObject({ lotWidthM: 30, elements: [] });
+    expect((await post(`/offgrid/versions/${versionId}/recalculate`, engineer)).status).toBe(201);
+  });
 });

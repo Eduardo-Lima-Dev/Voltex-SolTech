@@ -9,6 +9,7 @@ import {
   DomainEvent,
   engineRulesDefinitionSchema,
   newOffgridDesign,
+  offgridDesignSchema,
   type BatterySpec,
   type ChargeControllerSpec,
   type CreateOffgridProjectInput,
@@ -98,7 +99,8 @@ const toVersionDto = (row: VersionRow): OffgridVersionDto => ({
   projectId: row.projectId,
   number: row.number,
   status: row.status,
-  design: row.design as unknown as OffgridDesign,
+  // Versões gravadas antes de um campo novo ganham o valor padrão ao ler.
+  design: offgridDesignSchema.parse(row.design),
   results: row.results as unknown as OffgridResults | null,
   fingerprint: row.fingerprint,
   stale: row.stale,
@@ -331,7 +333,7 @@ export class OffgridProjectsService {
       this.prisma.db.offgridProject.findFirstOrThrow({ where: { id: row.projectId } }),
       this.prisma.db.offgridReviewComment.count({ where: { versionId: id, status: 'OPEN' } }),
     ]);
-    const design = row.design as unknown as OffgridDesign;
+    const design = offgridDesignSchema.parse(row.design);
     const ids = Object.values(offgridEquipmentIds(design)).flat();
     const [items, rules] = await Promise.all([
       ids.length
@@ -496,7 +498,7 @@ export class OffgridProjectsService {
 
   async recalculate(id: string): Promise<OffgridVersionDetailDto> {
     const version = await this.requireVersion(id);
-    return this.saveDesign(id, version.design as unknown as OffgridDesign);
+    return this.saveDesign(id, offgridDesignSchema.parse(version.design));
   }
 
   /** Sugere combinações do catálogo aprovado (módulo × bateria × controlador × inversor). */
@@ -506,7 +508,7 @@ export class OffgridProjectsService {
     limit: number,
   ): Promise<OffgridSuggestion[]> {
     const version = await this.requireVersion(id);
-    const current = design ?? (version.design as unknown as OffgridDesign);
+    const current = design ?? offgridDesignSchema.parse(version.design);
     const approved = await this.prisma.db.equipmentItem.findMany({
       where: {
         status: 'APPROVED',

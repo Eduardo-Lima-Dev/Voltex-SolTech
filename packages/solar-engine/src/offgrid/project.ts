@@ -23,6 +23,7 @@ import {
   type DispatchConfig,
   type DispatchTimeline,
 } from './dispatch.js';
+import { OFFGRID_LAYOUT_VERSION, computeLayout } from './layout.js';
 import { OFFGRID_LOAD_VERSION, loadsAt, profileLoads } from './load.js';
 import { resolveParameters, type OffgridParams } from './parameters.js';
 import {
@@ -581,6 +582,7 @@ export function computeOffgridResults(design: OffgridDesign, ctx: OffgridContext
       dispatch: OFFGRID_DISPATCH_VERSION,
       stress: OFFGRID_STRESS_VERSION,
       economics: OFFGRID_ECONOMICS_VERSION,
+      layout: OFFGRID_LAYOUT_VERSION,
     },
     systemType: design.systemType,
     load,
@@ -592,6 +594,16 @@ export function computeOffgridResults(design: OffgridDesign, ctx: OffgridContext
     stress,
     economics: main.economics,
     scenarios,
+    layout:
+      design.layout.elements.length > 0 || design.arrays.length > 0
+        ? computeLayout({
+            design,
+            modules: ctx.modules,
+            inverter,
+            peakW: load.peakW,
+            generatorW: main.selection.selected?.generatorW || undefined,
+          })
+        : null,
     pending,
     warnings,
     status: finalStatus,

@@ -2,7 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { ArrowLeft, FileDown, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { EquipmentDto, OffgridDesign } from '@voltex/shared';
+import { offgridDesignSchema, type EquipmentDto, type OffgridDesign } from '@voltex/shared';
 import { computeOffgridResults, type OffgridContext } from '@voltex/solar-engine';
 import {
   Badge,
@@ -28,6 +28,8 @@ import { RESULT_STATUS_BADGE, RESULT_STATUS_LABELS } from '../labels';
 import { ArraysStep } from './arrays-step';
 import { BankStep } from './bank-step';
 import { ConversionStep } from './conversion-step';
+import { DiagramStep } from './diagram-step';
+import { VisualStep } from './visual-step';
 import { GeneratorGridStep } from './generator-grid-step';
 import { LoadsStep } from './loads-step';
 import { OffgridEditorContext, useOffgrid, type OffgridEditorValue } from './offgrid-context';
@@ -54,6 +56,8 @@ export const OFFGRID_STEPS = [
   { id: 'banco', label: 'Baterias', component: BankStep },
   { id: 'conversao', label: 'Controlador e inversor', component: ConversionStep },
   { id: 'gerador', label: 'Gerador e rede', component: GeneratorGridStep },
+  { id: 'diagrama', label: 'Diagrama do sistema', component: DiagramStep },
+  { id: 'visual', label: 'Terreno 2D/3D', component: VisualStep },
   { id: 'simulacao', label: 'Simulação e estresse', component: SimulationStep },
   { id: 'cenarios', label: 'Cenários e custo', component: ScenariosStep },
 ] as const;
@@ -101,7 +105,8 @@ export function OffgridVersionEditorPage() {
 
   useEffect(() => {
     if (version.data && (!design || !dirty)) {
-      setDesign(version.data.design);
+      // Versões antigas ganham o valor padrão dos campos novos (ex.: o terreno).
+      setDesign(offgridDesignSchema.parse(version.data.design));
       setDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,7 +255,12 @@ export function OffgridVersionEditorPage() {
     return <p className="text-sm text-destructive">Não foi possível carregar a versão.</p>;
   if (version.isPending || !design || !preview) return <Skeleton className="h-64 w-full" />;
   const v = version.data;
-  const results = dirty ? preview : (v.results ?? preview);
+  // Versões gravadas antes do projeto visual não têm `layout`: usam a prévia calculada agora.
+  const results = dirty
+    ? preview
+    : v.results && v.results.layout !== undefined
+      ? v.results
+      : preview;
   const ctx: OffgridEditorValue = {
     version: v,
     design,

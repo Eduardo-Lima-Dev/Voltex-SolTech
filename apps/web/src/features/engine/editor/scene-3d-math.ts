@@ -47,7 +47,7 @@ export interface SunDirection {
 }
 
 /** Sombra de uma caixa no chão: envoltória convexa da base e do topo projetado pela direção do sol. */
-function shadowOf(base: Vec3[], height: number, sun: SunDirection): Vec3[] | null {
+export function shadowOf(base: Vec3[], height: number, sun: SunDirection): Vec3[] | null {
   if (sun.elevationDegrees < 2 || height <= 0) return null;
   const a = rad(sun.azimuthDegrees);
   const e = rad(sun.elevationDegrees);
@@ -59,7 +59,7 @@ function shadowOf(base: Vec3[], height: number, sun: SunDirection): Vec3[] | nul
   return hull.map((p) => ({ x: p.x, y: p.y, z: 0.01 }));
 }
 
-function convexHull(points: { x: number; y: number }[]): { x: number; y: number }[] {
+export function convexHull(points: { x: number; y: number }[]): { x: number; y: number }[] {
   const pts = [...points].sort((p, q) => p.x - q.x || p.y - q.y);
   const cross = (
     o: { x: number; y: number },

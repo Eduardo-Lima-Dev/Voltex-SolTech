@@ -40,7 +40,14 @@ Local (reaproveita `siteDesignSchema`: clima, horizonte, Tmin/Tmax de projeto), 
 
 ## Web
 
-Menu **Off-Grid Designer**: `/offgrid/painel`, `/offgrid/pedidos` (e `:id`), `/offgrid/projetos` (e `:id`, `:id/versoes/:versionId`) e `/offgrid/catalogo` (a mesma página do catálogo, com os novos tipos). Editor em 9 etapas: Local e clima · Cargas · Premissas e dimensionamento (com **sugestão do catálogo**) · Arranjo FV · Baterias · Controlador e inversor · Gerador e rede · Simulação e estresse · Cenários e custo. Gráficos: curva de carga, dia típico, geração × consumo mensal, SOC do ano.
+Menu **Off-Grid Designer**: `/offgrid/painel`, `/offgrid/pedidos` (e `:id`), `/offgrid/projetos` (e `:id`, `:id/versoes/:versionId`) e `/offgrid/catalogo` (a mesma página do catálogo, com os novos tipos). Editor em 11 etapas: Local e clima · Cargas · Premissas e dimensionamento (com **sugestão do catálogo**) · Arranjo FV · Baterias · Controlador e inversor · Gerador e rede · **Diagrama do sistema** · **Terreno 2D/3D** · Simulação e estresse · Cenários e custo. Gráficos: curva de carga, dia típico, geração × consumo mensal, SOC do ano.
+
+### Projeto visual (2D/3D)
+
+- **Diagrama do sistema:** fluxo FV → controlador → banco → inversor → cargas (com gerador e rede no híbrido), com os valores do cálculo e a cor do resultado das verificações em cada bloco; clicar abre a etapa.
+- **Terreno 2D:** planta com norte para cima, grade de 5 m e escala; casa, casa de máquinas, gerador, poste da rede, caixa d'água, árvore e outros objetos, e os arranjos, **arrastáveis** (setas do teclado movem 0,1 m, Shift 1 m). Mostra os trajetos de cabo com a distância e a sombra do sol na data e hora escolhidas.
+- **Cena 3D:** terreno, construções em caixa, mesas de módulos inclinadas na orientação real, cabos e sombras; gira (arrastar ou controle), aproxima (roda ou botões) e muda a data/hora do sol.
+- **Resultado:** pegada dos arranjos, sombra das construções, distância, corrente e **seção mínima por queda de tensão** de cada trajeto (ver [memorial](../06-calculos/offgrid-layout.md)); tudo entra no memorial em PDF. Limites: arranjo tratado como mesa única (sem sombra entre fileiras), terreno plano, sem importação de modelo 3D ou de imagem de satélite, sem polígonos livres.
 
 ## Limites desta entrega
 

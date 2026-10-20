@@ -165,6 +165,40 @@ export interface OffgridScenarioResult {
   batteryLifeYears: number | null;
 }
 
+export interface OffgridLayoutRun {
+  id: string;
+  kind: 'DC_PV' | 'DC_BANK' | 'AC_LOAD' | 'AC_GENERATOR' | 'AC_GRID';
+  from: string;
+  to: string;
+  distanceM: number;
+  currentA: number;
+  voltageV: number;
+  dropLimitPct: number;
+  /** Seção mínima pela queda de tensão (CRESESB 6.33), mm². */
+  minSectionMm2: number;
+  suggestedSectionMm2: number | null;
+  dropPctAtSuggested: number | null;
+}
+
+export interface OffgridLayoutArrayResult {
+  id: string;
+  name: string;
+  centerM: { x: number; y: number };
+  widthM: number;
+  depthM: number;
+  topHeightM: number;
+  /** Perda estimada da componente direta pela sombra das construções (varredura anual). */
+  annualShadingLossPct: number;
+  shadingObstacles: number;
+}
+
+export interface OffgridLayoutResult {
+  arrays: OffgridLayoutArrayResult[];
+  runs: OffgridLayoutRun[];
+  totalCableM: number;
+  warnings: string[];
+}
+
 export interface OffgridResults {
   algorithmVersions: Record<string, string>;
   systemType: OffgridSystemType;
@@ -177,6 +211,7 @@ export interface OffgridResults {
   stress: OffgridStressResult | null;
   economics: OffgridEconomicsResult | null;
   scenarios: OffgridScenarioResult[];
+  layout: OffgridLayoutResult | null;
   /** Pendências que impedem concluir/aprovar (equipamento não escolhido, regra sem parâmetro...). */
   pending: { code: string; message: string }[];
   warnings: string[];
