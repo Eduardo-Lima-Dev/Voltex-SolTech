@@ -1,5 +1,6 @@
 import type {
   CableSpec,
+  ConditionalRule,
   EngineeringDesign,
   ProtectionSpec,
   InverterSpec,
@@ -59,7 +60,7 @@ export interface ComputeContext {
   labels?: Record<string, string | undefined>;
   prices?: Record<string, UnitPrice | undefined>;
   /** Regras de conexão já resolvidas para o escopo do projeto. */
-  connectionRules?: import('@voltex/shared').ConditionalRule[];
+  connectionRules?: ConditionalRule[];
   /** Série normalizada da Central e premissas selecionadas no desenho (9G). */
   simulation?: {
     series: HourlySeries;

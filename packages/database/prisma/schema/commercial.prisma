@@ -134,7 +134,7 @@ model Quote {
 
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   opportunity         Opportunity          @relation(fields: [opportunityId], references: [id])
-  engineeringSnapshot EngineeringSnapshot? @relation(fields: [engineeringSnapshotId], references: [id])
+  engineeringSnapshot EngineeringSnapshot? @relation(fields: [engineeringSnapshotId], references: [id], onDelete: Restrict)
   approvals           ApprovalRequest[]
 
   @@unique([opportunityId, version])
