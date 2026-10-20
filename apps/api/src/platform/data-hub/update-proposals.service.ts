@@ -99,11 +99,16 @@ export class UpdateProposalsService {
     if (!row) throw new NotFoundException('Proposta não encontrada');
     if (row.status !== 'PENDING') throw new ConflictException('Esta proposta já foi decidida');
     const approve = input.decision === 'APPROVE';
-    if (approve && row.type !== 'TARIFF' && row.type !== 'WATCH_CHANGE')
+    const reviewOnly =
+      row.type === 'WATCH_CHANGE' ||
+      (row.type === 'CATALOG_ITEM' &&
+        (row.proposed as { reason?: string } | null)?.reason === 'INMETRO_DUE');
+    if (approve && row.type !== 'TARIFF' && row.type !== 'SOLAR_RESOURCE' && !reviewOnly)
       throw new ConflictException('Este tipo de proposta ainda não tem aplicação automática');
 
     const decided = await this.prisma.db.$transaction(async (tx) => {
       if (approve && row.type === 'TARIFF') await this.applyTariff(tx, row);
+      if (approve && row.type === 'SOLAR_RESOURCE') await this.applySolarResource(tx, row);
       const updated = await tx.updateProposal.update({
         where: { id },
         data: {
@@ -138,6 +143,39 @@ export class UpdateProposalsService {
       return updated;
     });
     return toProposalDto(decided);
+  }
+
+  /** Aprovar o recurso solar cria ou atualiza o local (mesmo nome e UF), com a fonte e as temperaturas informativas. */
+  private async applySolarResource(
+    tx: Pick<ScopedPrismaClient, 'solarResource'>,
+    row: ProposalRow,
+  ): Promise<void> {
+    const p = row.proposed as {
+      name: string;
+      state: string | null;
+      latitude: number;
+      longitude: number;
+      hspMonthly: number[];
+      plane: string;
+      source: string;
+      temperatures: Prisma.InputJsonValue;
+    };
+    const data = {
+      latitude: p.latitude,
+      longitude: p.longitude,
+      hspMonthly: p.hspMonthly,
+      plane: p.plane,
+      source: p.source,
+      temperatures: p.temperatures,
+    };
+    const existing = await tx.solarResource.findFirst({
+      where: { name: p.name, state: p.state, deletedAt: null },
+    });
+    if (existing) await tx.solarResource.update({ where: { id: existing.id }, data });
+    else
+      await tx.solarResource.create({
+        data: { tenantId: this.context.requireTenantId(), name: p.name, state: p.state, ...data },
+      });
   }
 
   /** Aprovar uma tarifa proposta cria ou atualiza a tarifa da distribuidora, com a fonte da proposta. */

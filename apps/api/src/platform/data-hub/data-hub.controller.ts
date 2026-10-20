@@ -18,12 +18,14 @@ import {
   decideProposalSchema,
   horizonQuerySchema,
   listProposalsQuerySchema,
+  proposeSolarResourceSchema,
   updateSourceWatchSchema,
   weatherQuerySchema,
 } from '@voltex/shared';
 import { RequirePermissions } from '../../common/decorators';
 import { ClimateService } from './climate.service';
 import { DataSourcesService } from './data-sources.service';
+import { SolarResourceProposalService } from './solar-resource-proposal.service';
 import { SourceWatchService } from './source-watch.service';
 import { TariffScanService } from './tariff-scan.service';
 import { UpdateProposalsService } from './update-proposals.service';
@@ -33,6 +35,7 @@ class HorizonQueryDto extends createZodDto(horizonQuerySchema) {}
 class CreateSourceWatchDto extends createZodDto(createSourceWatchSchema) {}
 class UpdateSourceWatchDto extends createZodDto(updateSourceWatchSchema) {}
 class ListProposalsQueryDto extends createZodDto(listProposalsQuerySchema) {}
+class ProposeSolarResourceDto extends createZodDto(proposeSolarResourceSchema) {}
 class DecideProposalDto extends createZodDto(decideProposalSchema) {}
 
 /**
@@ -49,6 +52,7 @@ export class DataHubController {
     private readonly watches: SourceWatchService,
     private readonly proposals: UpdateProposalsService,
     private readonly tariffs: TariffScanService,
+    private readonly solarResources: SolarResourceProposalService,
   ) {}
 
   @Get('sources')
@@ -110,6 +114,13 @@ export class DataHubController {
   @Throttle({ default: { limit: 3, ttl: 600_000 } })
   scanTariffs() {
     return this.tariffs.scanCurrentTenant();
+  }
+
+  @Post('solar-resources/propose')
+  @RequirePermissions('platform.rule.manage')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  proposeSolarResource(@Body() body: ProposeSolarResourceDto) {
+    return this.solarResources.propose(body);
   }
 
   @Get('updates')

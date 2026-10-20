@@ -99,7 +99,15 @@ describe('Central de Dados Externos (e2e)', () => {
       const byKey: Record<string, Row> = Object.fromEntries(
         (res.body as Row[]).map((s) => [s.key, s]),
       );
-      expect(Object.keys(byKey).sort()).toEqual(['aneel-tariffs', 'nasa-power', 'pvgis']);
+      expect(Object.keys(byKey).sort()).toEqual([
+        'aneel-tariffs',
+        'cec-library',
+        'nasa-power',
+        'pvgis',
+      ]);
+      // A biblioteca CEC/SAM fica com a licença por conferir e só liga por configuração.
+      expect(byKey['cec-library']?.licenseStatus).toBe('PENDING_REVIEW');
+      expect(byKey['cec-library']?.enabled).toBe(false);
       expect(byKey['aneel-tariffs']?.licenseStatus).toBe('CLEARED');
       // Termos ainda não conferidos: a tela mostra a pendência (nada de "liberado" por omissão).
       expect(byKey['nasa-power']?.licenseStatus).toBe('PENDING_REVIEW');
@@ -455,6 +463,53 @@ describe('Central de Dados Externos (e2e)', () => {
       expect(res.body.status).toBe('DISCARDED');
       const tariff = await t.prisma.system.tariff.findFirstOrThrow({ where: { distributorId } });
       expect(tariff.energyCentsPerKwh).toBe(80);
+    });
+  });
+
+  describe('recurso solar da NASA vira proposta', () => {
+    it('propõe HSP e temperaturas, não grava nada até aprovar, e aprovar cria o local com a fonte', async () => {
+      respond = () => fixture('nasa-clim.json');
+      const body = { name: `Local ${run}`, state: 'df', latitude: lat, longitude: lng };
+      const res = await post('/data-hub/solar-resources/propose', admin, body);
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ type: 'SOLAR_RESOURCE', status: 'PENDING' });
+      expect(res.body.title).toMatch(/HSP médio 5,?\.?\d+|HSP médio \d\.\d{2}/);
+      expect(res.body.proposed.hspMonthly[0]).toBe(5.8658);
+      expect(res.body.proposed.state).toBe('DF');
+      expect(res.body.proposed.temperatures.note).toMatch(/não é a temperatura de projeto/);
+      expect(res.body.origin).toMatchObject({ source: 'nasa-power' });
+      expect(res.body.origin.attribution).toContain('NASA POWER');
+      expect(
+        await t.prisma.system.solarResource.count({ where: { tenantId: a.id, name: body.name } }),
+      ).toBe(0);
+
+      expect((await post('/data-hub/solar-resources/propose', admin, body)).status).toBe(409);
+      expect((await post('/data-hub/solar-resources/propose', seller, body)).status).toBe(403);
+      expect(
+        (await post('/data-hub/solar-resources/propose', admin, { ...body, latitude: 200 })).status,
+      ).toBe(422);
+
+      const approved = await post(`/data-hub/updates/${res.body.id}/decide`, admin, {
+        decision: 'APPROVE',
+      });
+      expect(approved.status).toBe(200);
+      const resource = await t.prisma.system.solarResource.findFirstOrThrow({
+        where: { tenantId: a.id, name: body.name },
+      });
+      expect(resource.state).toBe('DF');
+      expect((resource.hspMonthly as number[])[0]).toBe(5.8658);
+      expect(resource.source).toContain('NASA POWER');
+      expect((resource.temperatures as { source: string }).source).toBe('NASA POWER');
+
+      // O mesmo local volta com valores novos: a aprovação atualiza em vez de duplicar.
+      const changed = JSON.parse(JSON.stringify(fixture('nasa-clim.json')));
+      changed.properties.parameter.ALLSKY_SFC_SW_DWN.JAN = 6.1;
+      respond = () => changed;
+      const second = await post('/data-hub/solar-resources/propose', admin, {
+        ...body,
+        refresh: true,
+      });
+      expect(second.status).toBe(201);
     });
   });
 

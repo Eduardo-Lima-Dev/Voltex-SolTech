@@ -38,6 +38,18 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     notes: 'Uso comercial dos serviços web bloqueado até a conferência dos termos.',
   },
   {
+    key: 'cec-library',
+    label: 'Biblioteca CEC/SAM (NREL): módulos e inversores de referência',
+    baseUrl: 'https://github.com/NREL/SAM',
+    license:
+      'Dados da California Energy Commission reunidos pelo NREL no SAM. Licença dos arquivos de biblioteca NÃO confirmada.',
+    attribution:
+      'Biblioteca de equipamentos CEC/SAM (NREL, dados da California Energy Commission).',
+    licenseStatus: 'PENDING_REVIEW',
+    notes:
+      'Bloqueada até a leitura da licença. Equipamentos do mercado norte-americano: confira registro e venda no Brasil.',
+  },
+  {
     key: 'aneel-tariffs',
     label: 'ANEEL: tarifas das distribuidoras (Dados Abertos)',
     baseUrl: 'https://dadosabertos.aneel.gov.br',

@@ -6,6 +6,7 @@ import { RequestContext } from '../../common/context/request-context';
 import type { Env } from '../../config/env';
 import { PrismaService } from '../prisma/prisma.service';
 import { DataSourcesService } from './data-sources.service';
+import { CatalogService } from '../catalog/catalog.service';
 import { SourceWatchService } from './source-watch.service';
 import { TariffScanService } from './tariff-scan.service';
 
@@ -29,6 +30,7 @@ export class DataHubQueue implements OnModuleInit, OnModuleDestroy {
     private readonly watches: SourceWatchService,
     private readonly tariffs: TariffScanService,
     private readonly sources: DataSourcesService,
+    private readonly catalog: CatalogService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -58,6 +60,10 @@ export class DataHubQueue implements OnModuleInit, OnModuleDestroy {
         .catch((e: unknown) =>
           this.logger.error({ err: e }, 'Não foi possível agendar a vigilância'),
         );
+    if (watchEvery > 0)
+      await this.queue
+        .upsertJobScheduler('inmetro-due', { every: watchEvery }, { name: 'inmetro-due' })
+        .catch((e: unknown) => this.logger.error({ err: e }, 'Não foi possível agendar o INMETRO'));
     if (tariffEvery > 0)
       await this.queue
         .upsertJobScheduler('tariff-scan', { every: tariffEvery }, { name: 'tariff-scan' })
@@ -75,11 +81,25 @@ export class DataHubQueue implements OnModuleInit, OnModuleDestroy {
   /** Executa um trabalho (também usado pelos testes, sem passar pelo Redis). */
   async process(job: Pick<Job, 'name'>): Promise<unknown> {
     if (job.name === 'watch-all') return this.watchAllTenants();
+    if (job.name === 'inmetro-due') return this.flagInmetroAllTenants();
     if (job.name === 'tariff-scan') {
       if (!this.sources.isEnabled('aneel-tariffs')) return { skipped: 'fonte desligada' };
       return this.tariffs.scanAllTenants();
     }
     return undefined;
+  }
+
+  /** Abre a proposta de conferência do INMETRO para as empresas que têm módulos ou inversores aprovados. */
+  async flagInmetroAllTenants(): Promise<{ tenants: number; proposed: number }> {
+    const tenants = await this.prisma.system.equipmentItem.findMany({
+      where: { status: 'APPROVED', kind: { in: ['MODULE', 'INVERTER'] } },
+      distinct: ['tenantId'],
+      select: { tenantId: true },
+    });
+    let proposed = 0;
+    for (const { tenantId } of tenants)
+      proposed += await this.context.run({ tenantId }, () => this.catalog.flagInmetroDue());
+    return { tenants: tenants.length, proposed };
   }
 
   async watchAllTenants(): Promise<{ tenants: number; changed: number; errors: number }> {
