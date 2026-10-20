@@ -205,6 +205,71 @@ describe('ficha de inversor em PDF (colunas por modelo)', () => {
     expect(list.every((i) => i.missing.length === 0)).toBe(true);
   });
 
+  it('APsystems DS3-H (microinversor, um modelo, "Máxima…" por extenso, "20A x 2", VA como potência)', () => {
+    const [m, ...rest] = read('inverter-apsystems-ds3h.json');
+    expect(rest).toEqual([]);
+    expect(m?.manufacturer).toBe('APsystems');
+    expect(m?.model).toBe('DS3-H');
+    expect(m?.spec).toMatchObject({
+      topology: 'MICRO',
+      mpptMinV: 28,
+      mpptMaxV: 45,
+      vDcMaxV: 60,
+      iMaxPerMpptA: 20,
+      iscMaxPerMpptA: 20,
+      mpptCount: 2,
+      pAcNomW: 1050,
+      pAcMaxW: 1050,
+      vAcV: 220,
+      phases: 1,
+      iAcMaxA: 4.8,
+      efficiencyMaxPct: 96.5,
+      efficiencyEuroPct: 95,
+    });
+    expect(m?.missing).toEqual([]);
+    // O que foi deduzido vem com confiança menor e aviso.
+    expect(m?.fieldConfidence.pAcNomW).toBe('MEDIUM');
+    expect(m?.fieldConfidence.phases).toBe('LOW');
+    expect(m?.fieldConfidence.iAcMaxA).toBe('LOW');
+    expect(m?.notes.join(' ')).toMatch(/potência contínua máxima.*nominal/);
+  });
+
+  it('Elgin string (faixa MPPT com "de operação" no meio, 16A/16A por MPPT, "1F/N/PE")', () => {
+    const [m] = read('inverter-elgin-string.json');
+    expect(m?.manufacturer).toBe('Elgin');
+    expect(m?.spec).toMatchObject({
+      vDcMaxV: 550,
+      vStartV: 80,
+      mpptMinV: 80,
+      mpptMaxV: 520,
+      iMaxPerMpptA: 16,
+      iscMaxPerMpptA: 20,
+      mpptCount: 2,
+      pAcNomW: 3600,
+      vAcV: 220,
+      phases: 1,
+    });
+    expect(m?.missing).toEqual([]);
+  });
+
+  it('Elgin híbrido (faixa entre parênteses, "Nº de MPPT/N° de Strings", potência só no nome)', () => {
+    const [m] = read('inverter-elgin-hybrid.json');
+    expect(m?.spec).toMatchObject({
+      topology: 'HYBRID',
+      pDcMaxW: 7000,
+      vDcMaxV: 500,
+      mpptMinV: 150,
+      mpptMaxV: 425,
+      mpptCount: 2,
+      inputsPerMppt: 1,
+      iMaxPerMpptA: 13,
+      pAcMaxW: 5500,
+      pAcNomW: 5000,
+    });
+    expect(m?.spec.vAcV).toBeGreaterThanOrEqual(100); // tensão da bateria (60 V) não vale como tensão de rede
+    expect(m?.missing).toEqual([]);
+  });
+
   it('sem linha de modelos não há o que ler; sem coluna o valor único vale para todos', () => {
     expect(extractInverterDatasheet([{ cells: [{ text: 'Texto solto', x0: 0, x1: 50 }] }])).toEqual(
       [],

@@ -120,6 +120,7 @@ export class CatalogSourceLinksService {
     const found = new Map<string, AnalyzedDocument>();
     let pagesRead = 0;
     let error: string | null = null;
+    let scriptDriven = false;
     try {
       const direct = fileTypeOf(link.url);
       if (direct) {
@@ -157,7 +158,11 @@ export class CatalogSourceLinksService {
             continue;
           }
           pagesRead += 1;
-          const page = analyzeSourcePage(body.toString('utf8'), next);
+          const html = body.toString('utf8');
+          // Página montada por JavaScript (os links nascem no navegador): o HTML recebido não traz os arquivos.
+          if (/<div id="(root|app|__next)"|<script[^>]+type="module"/i.test(html))
+            scriptDriven = true;
+          const page = analyzeSourcePage(html, next);
           for (const doc of page.documents) if (!found.has(doc.url)) found.set(doc.url, doc);
           for (const p of page.nextPages)
             if (new URL(p).hostname === host && !visited.has(p)) queue.push(p);
@@ -165,8 +170,9 @@ export class CatalogSourceLinksService {
         }
       }
       if (found.size === 0)
-        error =
-          'Não achei arquivos PDF, CSV, PAN ou OND nesta página (pode precisar de login ou ser montada por script).';
+        error = scriptDriven
+          ? 'Esta página é montada por JavaScript: os links dos arquivos só aparecem no navegador e o sistema não os enxerga. Cole o endereço direto do PDF (ou envie o arquivo) ou use uma página de downloads que liste os arquivos.'
+          : 'Não achei arquivos PDF, CSV, PAN ou OND nesta página (pode precisar de login ou ser montada por script).';
     } catch (e) {
       error = e instanceof Error ? e.message : 'Não foi possível ler o endereço';
     }

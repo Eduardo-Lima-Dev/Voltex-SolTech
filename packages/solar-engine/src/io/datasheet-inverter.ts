@@ -51,10 +51,15 @@ function range(text: string): [number, number] | undefined {
 }
 
 /** Corrente por MPPT: `40A`, `2×32 A`, `40A+20A` (MPPTs diferentes: vale o menor, conservador). */
-function perMpptCurrent(text: string): { value: number; note?: string } | undefined {
+function perMpptCurrent(
+  text: string,
+): { value: number; note?: string; channels?: number } | undefined {
   const t = strip(text).replace(/,/g, '.');
   const times = /(\d+)\s*[x×]\s*(\d+(?:\.\d+)?)/.exec(t);
-  if (times) return { value: Number(times[2]) };
+  if (times && !/\d\s*a\s*[x×]/.test(t)) return { value: Number(times[2]) };
+  // `20A x 2`: valor por canal × quantidade de canais.
+  const perChannel = /(\d+(?:\.\d+)?)\s*a\s*[x×]\s*(\d+)/.exec(t);
+  if (perChannel) return { value: Number(perChannel[1]), channels: Number(perChannel[2]) };
   const plus = [...t.matchAll(/(\d+(?:\.\d+)?)\s*a\b/g)].map((m) => Number(m[1]));
   if (plus.length > 1 && (t.includes('+') || t.includes('/')))
     return {
@@ -108,40 +113,62 @@ const currentRule =
       spec[field] = c.value;
       conf[field] = c.note ? 'MEDIUM' : 'HIGH';
       if (c.note) notes.push(c.note);
+      if (c.channels && field === 'iMaxPerMpptA') spec.__channels = c.channels;
     }
   };
 
 const fieldRules: FieldRule[] = [
   {
+    // Microinversores trazem só a potência contínua máxima (em VA): vale como nominal e máxima, com aviso.
+    label: /^max(?:\.|ima|imo)?\s*potencia continua de saida|continuous output power/,
+    set: (spec, conf, notes, text) => {
+      const w = watts(text);
+      if (w === undefined) return;
+      spec.pAcMaxW = w;
+      conf.pAcMaxW = 'HIGH';
+      if (spec.pAcNomW === undefined) {
+        spec.pAcNomW = w;
+        conf.pAcNomW = 'MEDIUM';
+        notes.push(
+          'A ficha traz só a potência contínua máxima de saída: usada como potência nominal. Confira.',
+        );
+      }
+    },
+  },
+  {
+    label: /^corrente nominal de saida|rated output current/,
+    set: (spec, _c, _n, text) => void (spec.__iacNominal = first(text)),
+  },
+  {
     label:
       /potencia (ca )?nominal( de saida)?|potencia de saida nominal|nominal ac output power|rated output power|rated ac (input\/output )?(active )?(output )?power|rated (output )?power/,
-    not: /reativ|reactive|cc|dc|pv/,
+    not: /reativ|reactive|cc|dc|pv|load|backup/,
     set: put('pAcNomW', watts),
   },
   {
     label:
-      /^max\.?\s*potencia (de saida )?ca( \(aparente\))?$|max\.?\s*(potencia|poder) aparente|max\.?\s*ac (input\/output )?(apparent )?power|max\.?\s*potencia de saida ca/,
+      /^max(?:\.|ima|imo)?\s*potencia (continua )?(de saida )?(ca|continua)?( \(aparente\))?$|max(?:\.|ima|imo)?\s*(potencia|poder) aparente|max(?:\.|ima|imo)?\s*ac (input\/output )?(apparent )?power|max(?:\.|ima|imo)?\s*potencia de saida ca/,
     set: put('pAcMaxW', watts),
   },
   {
     label:
-      /max\.?\s*potencia (de entrada )?cc|max\.?\s*pv access power|potencia fotovoltaica maxima|recommended max\.? pv input power/,
+      /max(?:\.|ima|imo)?\s*potencia (de entrada )?cc|potencia de entrada cc max|max(?:\.|ima|imo)?\s*pv access power|potencia fotovoltaica maxima|recommended max\.? pv input power/,
     set: put('pDcMaxW', watts),
   },
   {
     label:
-      /max\.?\s*(pv input voltage|input voltage|tensao (de entrada )?cc|tensao de entrada)|tensao (maxima de entrada|de entrada maxima)/,
+      /max(?:\.|ima|imo)?\s*(pv input voltage|input voltage|tensao (de entrada )?cc|tensao de entrada)|tensao (maxima de entrada|de entrada maxima)|tensao de entrada fotovoltaica/,
     not: /faixa|range/,
-    set: put('vDcMaxV', first),
+    // `(125~500)`: numa faixa vale o limite superior.
+    set: put('vDcMaxV', (text) => range(text)?.[1] ?? first(text)),
   },
   {
     label: /tensao (cc |de entrada cc )?de partida|start-?up voltage|starting voltage/,
     set: put('vStartV', first),
   },
   {
-    label:
-      /(faixa|intervalo) de (operacao de )?tensao (operacional )?(do |no )?mppt|mppt (operating )?voltage range|mppt voltage range/,
-    not: /carga total|full[- ]load|\(carga/,
+    label: /(faixa|intervalo|range)[^()]*mppt|mppt[^()]*(voltage )?range/,
+    not: /carga total|full[- ]load|\(carga|nominal|rated|plena/,
     set: (spec, conf, _notes, text) => {
       const r = range(text);
       if (r) {
@@ -154,18 +181,18 @@ const fieldRules: FieldRule[] = [
   },
   {
     label:
-      /max\.?\s*(operating pv input current|corrente de entrada( cc)?( por mppt)?|input (mppt )?current)|corrente maxima de entrada/,
+      /max(?:\.|ima|imo)?\s*(operating pv input current|corrente de entrada( cc)?( por mppt)?|input (mppt )?current)|corrente maxima de entrada/,
     not: /curto|short/,
     set: currentRule('iMaxPerMpptA'),
   },
   {
-    label: /curto[- ]?circuito|short[- ]circuit current/,
+    label: /curto[- ]?circuito|short[- ]circuit current|^isc( pv| cc)?$/,
     not: /saida|output|ca\b/,
     set: currentRule('iscMaxPerMpptA'),
   },
   {
     label:
-      /^(numero|n°|no\.?|quantidade)\s*de (mppts?|rastreadores mpp)|^mppts? \/ numero de entradas|number of mppt|no\. of mpp trackers/,
+      /^(numero|n°|nº|no\.?|quantidade)\s*de (mppts?|rastreadores mpp)|^mppts? \/ numero de entradas|number of mppt|no\. of mpp trackers/,
     set: (spec, conf, _notes, text) => {
       const v = first(text);
       if (v !== undefined && Number.isInteger(v)) {
@@ -183,7 +210,7 @@ const fieldRules: FieldRule[] = [
   },
   {
     label:
-      /^strings? (por|per) mppt|max\.?\s*entradas por (rastreador mpp|mppt)|quantidade de entradas por mppt/,
+      /^strings? (por|per) mppt|max(?:\.|ima|imo)?\s*entradas por (rastreador mpp|mppt)|quantidade de entradas por mppt/,
     set: (spec, conf, _notes, text) => {
       const n = numbers(text);
       if (n.length) {
@@ -197,17 +224,17 @@ const fieldRules: FieldRule[] = [
     set: (spec, _c, _n, text) => void (spec.__inputs = first(text)),
   },
   {
-    label: /max\.?\s*numero de entradas de string/,
+    label: /max(?:\.|ima|imo)?\s*numero de entradas de string/,
     set: (spec, _c, _n, text) => void (spec.__inputs = first(text)),
   },
   {
     label:
-      /max\.?\s*(ac\s*(input\/output\s*)?current|output current|corrente (ca|de saida)|corrente de saida)/,
+      /max(?:\.|ima|imo)?\s*(ac\s*(input\/output\s*)?current|output current|corrente (ca|de saida)|corrente de saida)/,
     not: /nominal|rated|passthrough|continuous/,
     set: put('iAcMaxA', last),
   },
   {
-    label: /eficiencia (max|maxima)|max\.?\s*(eficiencia|efficiency)/,
+    label: /eficiencia (max|maxima)|max(?:\.|ima|imo)?\s*(eficiencia|efficiency)/,
     not: /mppt/,
     set: put('efficiencyMaxPct', first),
   },
@@ -225,11 +252,11 @@ const fieldRules: FieldRule[] = [
   {
     label:
       /tensao (nominal )?(de (saida|rede)|ca)|tensao nominal de rede|tensao ca nominal|(rated|nominal) (input\/output )?(grid |ac |output )*voltage/,
-    not: /faixa|dc|cc|pv/,
+    not: /^faixa|\bdc\b|\bcc\b|\bpv\b/,
     set: (spec, conf, notes, text) => {
       const volts = [...text.matchAll(/(\d+(?:[.,]\d+)?)\s*v?/gi)].flatMap((m) => {
         const v = toNumber(m[1]);
-        return v !== undefined && v >= 50 && v <= 1500 ? [v] : [];
+        return v !== undefined && v >= 100 && v <= 1500 ? [v] : [];
       });
       // `0.85Un-1.1Un` e faixas viram números pequenos: só valem tensões plausíveis.
       const unique = [...new Set(volts)];
@@ -295,7 +322,9 @@ function rowsOf(lines: LayoutLine[]): { models: Cell[] | undefined; rows: Row[] 
     const [labelCell, ...rest] = line.cells;
     if (!labelCell) continue;
     if (!hasLabel(line)) continue; // linha só de valores: já foi consumida por um rótulo quebrado
-    const label = dedupeLabel(strip(labelCell.text).trim().replace(/:$/, '')).replace(/\s+\d$/, '');
+    const label = dedupeLabel(strip(labelCell.text).trim().replace(/:$/, ''))
+      .replace(/\s*\(\d\)/g, '')
+      .replace(/\s+\d$/, '');
     let cells = toCells(rest);
     // `Model` sozinho numa linha: o início do nome vem na linha de cima e o fim na de baixo, sem rótulo.
     if (NAME_ROW.test(label) && cells.length === 0 && !models) {
@@ -372,7 +401,7 @@ function valueFor(
 }
 
 const BRANDS =
-  /\b(csi solar|growatt|sungrow|huawei|fronius|solis|ginlong|deye|goodwe|canadian solar|intelbras|weg|sma|hoymiles|sofar|solax|livoltek|renovigi|byd|refusol|abb|fimer|kstar|saj|chint)\b/i;
+  /\b(csi solar|growatt|sungrow|huawei|fronius|solis|ginlong|deye|goodwe|canadian solar|intelbras|weg|sma|hoymiles|sofar|solax|livoltek|renovigi|byd|refusol|abb|fimer|kstar|saj|chint|apsystems|elgin|solplanet|enphase|tsun|nep|fox ?ess)\b/i;
 
 /**
  * @param lines linhas da página da tabela de especificações (uma tabela por chamada)
@@ -393,16 +422,22 @@ export function extractInverterDatasheet(
   };
   if (unnamed && table.rows.length < 8) return [];
   const brandRaw = BRANDS.exec(documentText)?.[1];
+  const SPECIAL: Record<string, string> = {
+    apsystems: 'APsystems',
+    'fox ess': 'Fox ESS',
+    foxess: 'Fox ESS',
+  };
   const brand = brandRaw
-    ? brandRaw
+    ? (SPECIAL[brandRaw.toLowerCase()] ??
+      brandRaw
         .toLowerCase()
         .split(' ')
         .map((w) =>
-          ['csi', 'weg', 'sma', 'abb', 'byd', 'saj'].includes(w)
+          ['csi', 'weg', 'sma', 'abb', 'byd', 'saj', 'nep'].includes(w)
             ? w.toUpperCase()
             : w[0]!.toUpperCase() + w.slice(1),
         )
-        .join(' ')
+        .join(' '))
     : undefined;
   const titleThree = /trif[aá]sic|three[- ]phase/i.test(documentText);
   const titleMono = /monof[aá]sic|single[- ]phase/i.test(documentText);
@@ -437,6 +472,18 @@ export function extractInverterDatasheet(
           }
     }
 
+    if (typeof spec.__channels === 'number' && spec.mpptCount === undefined) {
+      spec.mpptCount = spec.__channels;
+      confidence.mpptCount = 'MEDIUM';
+      notes.push(
+        `${spec.__channels} canais de entrada (corrente "valor × canais"): contados como MPPTs.`,
+      );
+    }
+    if (typeof spec.__iacNominal === 'number' && spec.iAcMaxA === undefined) {
+      spec.iAcMaxA = spec.__iacNominal;
+      confidence.iAcMaxA = 'LOW';
+      notes.push('A ficha não traz a corrente máxima de saída: usada a corrente nominal. Confira.');
+    }
     const inputs = typeof spec.__inputs === 'number' ? spec.__inputs : undefined;
     if (inputs && typeof spec.mpptCount === 'number' && spec.inputsPerMppt === undefined) {
       spec.inputsPerMppt = Math.max(1, Math.round(inputs / spec.mpptCount));
@@ -458,13 +505,19 @@ export function extractInverterDatasheet(
     }
     // Potência nominal ausente: a ficha só traz a aparente; o nome do modelo costuma trazer `350K`.
     if (spec.pAcNomW === undefined) {
-      const fromName = /(\d+(?:[.,]\d+)?)\s*k\b/i.exec(model.text);
+      const fromName = /(\d+(?:[.,]\d+)?)\s*k(?:w)?(?![a-z])/i.exec(model.text);
       const kw = toNumber(fromName?.[1]);
       if (kw !== undefined) {
         spec.pAcNomW = kw * 1000;
         confidence.pAcNomW = 'LOW';
         notes.push(`A ficha não traz a potência nominal: ${kw} kW vem do nome do modelo. Confira.`);
       }
+    }
+    // Sem indicação de fases e com tensão de rede residencial (até 277 V): monofásico, com confiança baixa.
+    if (spec.phases === undefined && typeof spec.vAcV === 'number' && spec.vAcV <= 277) {
+      spec.phases = 1;
+      confidence.phases = 'LOW';
+      notes.push(`Fases não informadas na ficha: assumido monofásico (${spec.vAcV} V). Confira.`);
     }
     if (
       typeof spec.pAcMaxW === 'number' &&
@@ -484,6 +537,8 @@ export function extractInverterDatasheet(
         'A tabela não tem o cabeçalho dos modelos: foi lido um modelo só (nome da listagem) e as linhas com um valor por coluna foram ignoradas. Confira no PDF.',
       );
     if (spec.exportLimitation === undefined) spec.exportLimitation = false;
+    delete spec.__channels;
+    delete spec.__iacNominal;
     delete spec.__inputs;
     delete spec.__acVolts;
     delete spec.__acThree;

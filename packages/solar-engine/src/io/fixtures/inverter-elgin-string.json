@@ -1,0 +1,786 @@
+{
+  "documentText": "Datasheet Inversor string monofásico Elgin",
+  "lines": [
+    {
+      "cells": [
+        {
+          "text": "Elgin-3,6K-SLG1",
+          "x0": 50,
+          "x1": 263
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados de Entrada (CC)",
+          "x0": 250,
+          "x1": 345
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "SKU",
+          "x0": 54,
+          "x1": 67
+        },
+        {
+          "text": "3503K6000ANS",
+          "x0": 300,
+          "x1": 356
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Modelo",
+          "x0": 54,
+          "x1": 79
+        },
+        {
+          "text": "ELGIN-3,6K-SLG1",
+          "x0": 300,
+          "x1": 352
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão de entrada máxima CC (V)",
+          "x0": 54,
+          "x1": 163
+        },
+        {
+          "text": "550",
+          "x0": 300,
+          "x1": 313
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão de entrada CC de partida (V)",
+          "x0": 54,
+          "x1": 171
+        },
+        {
+          "text": "80",
+          "x0": 300,
+          "x1": 309
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de tensão de operação MPPT (V)",
+          "x0": 54,
+          "x1": 177
+        },
+        {
+          "text": "80~520",
+          "x0": 300,
+          "x1": 325
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente máxima de entrada (A)",
+          "x0": 54,
+          "x1": 157
+        },
+        {
+          "text": "16A/16A",
+          "x0": 300,
+          "x1": 324
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente de curto circuito (A)",
+          "x0": 54,
+          "x1": 146
+        },
+        {
+          "text": "20A/20A",
+          "x0": 300,
+          "x1": 331
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Número de MPPT",
+          "x0": 54,
+          "x1": 109
+        },
+        {
+          "text": "2",
+          "x0": 300,
+          "x1": 303
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Número de entradas",
+          "x0": 54,
+          "x1": 120
+        },
+        {
+          "text": "1+1",
+          "x0": 300,
+          "x1": 307
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados Gerais",
+          "x0": 269,
+          "x1": 326
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dimensões (L x A x P) mm",
+          "x0": 54,
+          "x1": 134
+        },
+        {
+          "text": "339 x 394 x 152",
+          "x0": 299,
+          "x1": 346
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Peso (KG)",
+          "x0": 54,
+          "x1": 84
+        },
+        {
+          "text": "10.8Kg",
+          "x0": 299,
+          "x1": 321
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Topologia",
+          "x0": 54,
+          "x1": 86
+        },
+        {
+          "text": "Sem Trafo",
+          "x0": 299,
+          "x1": 332
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Consumo Interno",
+          "x0": 54,
+          "x1": 109
+        },
+        {
+          "text": "< 1W(noite)",
+          "x0": 299,
+          "x1": 333
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Temperatura de Operação",
+          "x0": 54,
+          "x1": 142
+        },
+        {
+          "text": "-30 ~ 60°C",
+          "x0": 299,
+          "x1": 335
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Grau de proteção",
+          "x0": 54,
+          "x1": 113
+        },
+        {
+          "text": "IP66",
+          "x0": 299,
+          "x1": 312
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo Conector CA",
+          "x0": 54,
+          "x1": 112
+        },
+        {
+          "text": "Plug de conexão rápida",
+          "x0": 299,
+          "x1": 377
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Conceito de resfriamento",
+          "x0": 54,
+          "x1": 136
+        },
+        {
+          "text": "Resfriamento Natural",
+          "x0": 299,
+          "x1": 367
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Altitude máxima de operação sem redução da potência (m)",
+          "x0": 54,
+          "x1": 247
+        },
+        {
+          "text": "4000",
+          "x0": 299,
+          "x1": 320
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados de Saída (CA)",
+          "x0": 255,
+          "x1": 341
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Potência nominal de saída / 40°C (kW)",
+          "x0": 54,
+          "x1": 177
+        },
+        {
+          "text": "3.6",
+          "x0": 299,
+          "x1": 308
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Potência máxima ativa / 40°C (kW)",
+          "x0": 54,
+          "x1": 167
+        },
+        {
+          "text": "3.96",
+          "x0": 299,
+          "x1": 312
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão nominal CA (V)",
+          "x0": 54,
+          "x1": 125
+        },
+        {
+          "text": "220V, 1F/N/PE",
+          "x0": 299,
+          "x1": 344
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão CA (V)",
+          "x0": 54,
+          "x1": 126
+        },
+        {
+          "text": "176~242",
+          "x0": 299,
+          "x1": 322
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Frequência Nominal da Rede (Hz)",
+          "x0": 54,
+          "x1": 159
+        },
+        {
+          "text": "60",
+          "x0": 299,
+          "x1": 309
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de rede",
+          "x0": 54,
+          "x1": 94
+        },
+        {
+          "text": "Monofásico",
+          "x0": 299,
+          "x1": 337
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente Nominal de Saída da Rede CA (A)",
+          "x0": 54,
+          "x1": 190
+        },
+        {
+          "text": "16.4",
+          "x0": 299,
+          "x1": 310
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente de Saída Máxima CA (A)",
+          "x0": 54,
+          "x1": 161
+        },
+        {
+          "text": "18",
+          "x0": 299,
+          "x1": 305
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Fator de Potência de Saída",
+          "x0": 54,
+          "x1": 140
+        },
+        {
+          "text": "0,8 atraso - 0,8 adiantado",
+          "x0": 299,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "THD",
+          "x0": 54,
+          "x1": 67
+        },
+        {
+          "text": "< 3%",
+          "x0": 299,
+          "x1": 313
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência",
+          "x0": 152,
+          "x1": 192
+        },
+        {
+          "text": "Características",
+          "x0": 388,
+          "x1": 453
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máxima Eficiência (%)",
+          "x0": 54,
+          "x1": 122
+        },
+        {
+          "text": "97.5",
+          "x0": 204,
+          "x1": 216
+        },
+        {
+          "text": "Conexão CC",
+          "x0": 300,
+          "x1": 341
+        },
+        {
+          "text": "Tipo MC-4",
+          "x0": 450,
+          "x1": 483
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Euro Eficiência (%)",
+          "x0": 54,
+          "x1": 110
+        },
+        {
+          "text": "97",
+          "x0": 204,
+          "x1": 211
+        },
+        {
+          "text": "Proteção AFCI",
+          "x0": 300,
+          "x1": 344
+        },
+        {
+          "text": "Sim",
+          "x0": 450,
+          "x1": 461
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência MPPT (%)",
+          "x0": 54,
+          "x1": 113
+        },
+        {
+          "text": "99,8",
+          "x0": 204,
+          "x1": 217
+        },
+        {
+          "text": "Display",
+          "x0": 300,
+          "x1": 323
+        },
+        {
+          "text": "LED+Bluetooth+APP",
+          "x0": 450,
+          "x1": 509
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra polaridade reversa CC",
+          "x0": 54,
+          "x1": 180
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        },
+        {
+          "text": "Registro INMETRO",
+          "x0": 300,
+          "x1": 356
+        },
+        {
+          "text": "012709/2024",
+          "x0": 450,
+          "x1": 494
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra curto-circuito CA",
+          "x0": 54,
+          "x1": 162
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        },
+        {
+          "text": "Monitoramento",
+          "x0": 300,
+          "x1": 349
+        },
+        {
+          "text": "Elgin Solar",
+          "x0": 450,
+          "x1": 482
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra sobrecorrente de saída",
+          "x0": 54,
+          "x1": 182
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        },
+        {
+          "text": "Interface",
+          "x0": 300,
+          "x1": 328
+        },
+        {
+          "text": "RS485; Opcionais:WIFI,4G",
+          "x0": 450,
+          "x1": 527
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra sobretensão de saída",
+          "x0": 54,
+          "x1": 177
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        },
+        {
+          "text": "ANBT NBR 16149",
+          "x0": 450,
+          "x1": 497
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Padrão de Conexão de Rede",
+          "x0": 300,
+          "x1": 392
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "ANBT NBR 16150",
+          "x0": 450,
+          "x1": 499
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Detecção Impedância isolação",
+          "x0": 54,
+          "x1": 154
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra ilhamentos",
+          "x0": 54,
+          "x1": 142
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        },
+        {
+          "text": "IEC/EN 62109-1",
+          "x0": 450,
+          "x1": 492
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Padrões de Segurança",
+          "x0": 300,
+          "x1": 373
+        },
+        {
+          "text": "IEC/EN 62109-2",
+          "x0": 450,
+          "x1": 494
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção de temperatura",
+          "x0": 54,
+          "x1": 136
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "IEC/EN 61000-6-1/2/3/4",
+          "x0": 450,
+          "x1": 521
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento de falha de aterramento",
+          "x0": 54,
+          "x1": 184
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Chave seccionadora CC integrada",
+          "x0": 54,
+          "x1": 166
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Atualização remota de software",
+          "x0": 54,
+          "x1": 158
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Atualização remota de parâmetro",
+          "x0": 54,
+          "x1": 164
+        },
+        {
+          "text": "SIM",
+          "x0": 204,
+          "x1": 215
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra surtos",
+          "x0": 54,
+          "x1": 127
+        },
+        {
+          "text": "CC tipo II / CA tipo II",
+          "x0": 204,
+          "x1": 263
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "A Elgin reserva o direito de atualizar ou corrigir possíveis erros de seus informativos técnicos sem aviso prévio.",
+          "x0": 77,
+          "x1": 519
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Os direitos autorais deste informativo permanecem com o fabricante.",
+          "x0": 156,
+          "x1": 439
+        }
+      ]
+    }
+  ]
+}

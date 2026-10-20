@@ -55,6 +55,13 @@ describe('Catálogo: fontes por link e busca unificada (e2e, respostas gravadas)
         return { body: Buffer.from(PAGE2), contentType: 'text/html' };
       if (url === 'https://203.0.113.50/files/jkm550.pdf')
         return { body: pdf, contentType: 'application/pdf' };
+      if (url === 'https://203.0.113.52/produtos')
+        return {
+          body: Buffer.from(
+            '<html><body><div id="root"></div><script type="module" src="/assets/app.js"></script></body></html>',
+          ),
+          contentType: 'text/html',
+        };
       if (url === 'https://203.0.113.51/ficha.pdf')
         return { body: pdf, contentType: 'application/pdf' };
       throw new Error(`sem resposta gravada: ${url}`);
@@ -117,6 +124,15 @@ describe('Catálogo: fontes por link e busca unificada (e2e, respostas gravadas)
     });
     expect(res.status).toBe(201);
     expect(res.body.documentCount).toBe(1);
+  });
+
+  it('página montada por JavaScript: explica que os links não aparecem e o que fazer', async () => {
+    const res = await post('/catalog/source-links', engineer, {
+      url: 'https://203.0.113.52/produtos',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ status: 'ERROR', documentCount: 0 });
+    expect(res.body.lastError).toMatch(/montada por JavaScript/);
   });
 
   it('endereço interno é recusado (SSRF) e página sem arquivos vira erro explicado', async () => {

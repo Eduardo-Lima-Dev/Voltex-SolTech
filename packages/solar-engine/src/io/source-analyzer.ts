@@ -32,9 +32,47 @@ export interface AnalyzedPage {
   nextPages: string[];
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  aacute: 'á',
+  eacute: 'é',
+  iacute: 'í',
+  oacute: 'ó',
+  uacute: 'ú',
+  Aacute: 'Á',
+  Eacute: 'É',
+  Iacute: 'Í',
+  Oacute: 'Ó',
+  Uacute: 'Ú',
+  atilde: 'ã',
+  otilde: 'õ',
+  Atilde: 'Ã',
+  Otilde: 'Õ',
+  acirc: 'â',
+  ecirc: 'ê',
+  ocirc: 'ô',
+  Acirc: 'Â',
+  Ecirc: 'Ê',
+  Ocirc: 'Ô',
+  agrave: 'à',
+  ccedil: 'ç',
+  Ccedil: 'Ç',
+  uuml: 'ü',
+  ordm: 'º',
+  ordf: 'ª',
+  deg: '°',
+  ndash: '–',
+  mdash: '—',
+  bull: '•',
+  copy: '©',
+  reg: '®',
+};
+
 const decode = (text: string): string =>
   text
     .replace(/<[^>]*>/g, ' ')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&([a-zA-Z]+);/g, (m, name: string) => NAMED_ENTITIES[name] ?? m)
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
