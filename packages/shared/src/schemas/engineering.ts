@@ -149,6 +149,54 @@ export const inverterEntrySchema = z.object({
 });
 export type InverterEntry = z.infer<typeof inverterEntrySchema>;
 
+// ---------------------------------------------------------------------------------------------------------
+// Proteções, cabos e lista de materiais (Fase 9F)
+// ---------------------------------------------------------------------------------------------------------
+
+export const CABLE_RUN_KINDS = ['DC_STRING', 'DC_MAIN', 'AC'] as const;
+
+/**
+ * Trecho de cabo. `DC_STRING`: cabo de uma string até a string box; `DC_MAIN`: da string box ao inversor (corrente de
+ * todas as strings do MPPT); `AC`: do inversor ao quadro. `count` = trechos idênticos.
+ */
+export const cableRunSchema = z.object({
+  id: idSchema,
+  label: z.string().trim().min(1).max(80),
+  kind: z.enum(CABLE_RUN_KINDS),
+  inverterEntryId: idSchema,
+  /** MPPT (a partir de 0) a que o trecho CC pertence. */
+  mpptIndex: z.number().int().min(0).max(23).optional(),
+  /** Comprimento de ida (m); o cálculo considera ida e volta. */
+  lengthM: z.number().positive().max(1000),
+  /** `true` enquanto o comprimento é só uma estimativa: fica pendente e impede a aprovação até ser confirmado. */
+  lengthEstimated: z.boolean().default(false),
+  count: z.number().int().min(1).max(500).default(1),
+  /** Método de instalação, para a tabela de capacidade de condução da regra `engine.cables`. */
+  installMethod: z.string().trim().max(40).optional(),
+  /** Cabo escolhido no catálogo. Vazio = o sistema sugere o menor que atende. */
+  cableId: z.uuid().optional(),
+});
+export type CableRun = z.infer<typeof cableRunSchema>;
+
+export const PROTECTION_ROLES = [
+  'STRING_FUSE',
+  'DC_DISCONNECTOR',
+  'DC_SURGE',
+  'AC_BREAKER',
+  'RCD',
+] as const;
+export type ProtectionRole = (typeof PROTECTION_ROLES)[number];
+
+/** Escolha manual de uma proteção (em vez da sugestão automática): é conferida contra a exigência. */
+export const protectionOverrideSchema = z.object({
+  id: idSchema,
+  role: z.enum(PROTECTION_ROLES),
+  inverterEntryId: idSchema,
+  mpptIndex: z.number().int().min(0).max(23).optional(),
+  equipmentId: z.uuid(),
+});
+export type ProtectionOverride = z.infer<typeof protectionOverrideSchema>;
+
 export const engineeringDesignSchema = z.object({
   schemaVersion: z
     .literal(ENGINEERING_DESIGN_SCHEMA_VERSION)
@@ -159,6 +207,10 @@ export const engineeringDesignSchema = z.object({
   surfaces: z.array(surfaceSchema).max(20).default([]),
   /** Inversores, strings e MPPT. */
   inverters: z.array(inverterEntrySchema).max(30).default([]),
+  /** Trechos de cabo (CC e CA). */
+  cables: z.array(cableRunSchema).max(200).default([]),
+  /** Proteções escolhidas à mão (o resto é sugerido pelo sistema). */
+  protectionOverrides: z.array(protectionOverrideSchema).max(200).default([]),
 });
 export type EngineeringDesign = z.output<typeof engineeringDesignSchema>;
 export type EngineeringDesignInput = z.input<typeof engineeringDesignSchema>;
@@ -227,6 +279,16 @@ export const ENGINE_DESIGN_PARAMETERS = {
   dcAcRatioMax: 'Relação CC/CA máxima',
   /** Irradiância (W/m²) para a temperatura máxima da célula (`Tcel = Tamb + (NOCT − 20)/800 × G`). */
   hotCellIrradianceWm2: 'Irradiância para a temperatura máxima da célula (W/m²)',
+  /** Até quantas strings em paralelo dispensam fusível em cada string (EnergIF p. 169, exigência do fabricante do módulo). */
+  maxParallelStringsWithoutFuse: 'Strings em paralelo sem fusível',
+  /** Corrente mínima do fusível de string = fator × Isc do módulo (e no máximo o fusível máximo da ficha). */
+  fuseMinFactor: 'Fator mínimo do fusível sobre a Isc',
+  /** Corrente mínima da seccionadora CC = fator × Isc × strings em paralelo do MPPT. */
+  dcSwitchCurrentFactor: 'Fator da seccionadora CC sobre a Isc',
+  /** Corrente mínima do disjuntor CA = fator × corrente CA do inversor. */
+  acBreakerFactor: 'Fator do disjuntor CA sobre a corrente do inversor',
+  /** Sensibilidade máxima do DR (mA). */
+  rcdSensitivityMa: 'Sensibilidade máxima do DR (mA)',
 } as const;
 export type EngineDesignParameter = keyof typeof ENGINE_DESIGN_PARAMETERS;
 
@@ -242,3 +304,21 @@ export const suggestConfigurationsSchema = z.object({
   limit: z.number().int().min(1).max(30).default(10),
 });
 export type SuggestConfigurationsInput = z.input<typeof suggestConfigurationsSchema>;
+
+/** Parâmetros da regra `engine.cables` que o Engine lê (sem valor padrão: ausente = pendente de regra). */
+export const ENGINE_CABLES_PARAMETERS = {
+  maxVoltageDropDcPct: 'Queda de tensão máxima no lado CC (%)',
+  maxVoltageDropAcPct: 'Queda de tensão máxima no lado CA (%)',
+  /** Temperatura do condutor para a resistividade (°C). */
+  conductorTempC: 'Temperatura do condutor (°C)',
+  /** Fator sobre a corrente de projeto do cabo CC (aplicado à Isc). */
+  cableCurrentFactorDc: 'Fator de corrente do cabo CC',
+  /** Fator sobre a corrente de projeto do cabo CA. */
+  cableCurrentFactorAc: 'Fator de corrente do cabo CA',
+  /** Sobra de cabo na lista de materiais (%). Opcional: ausente = sem sobra. */
+  cableSurplusPct: 'Sobra de cabo na lista de materiais (%)',
+} as const;
+export type EngineCablesParameter = keyof typeof ENGINE_CABLES_PARAMETERS;
+
+/** Tabela de capacidade de condução da regra `engine.cables`: `tables.ampacity` com estas colunas. */
+export const AMPACITY_TABLE = 'ampacity';

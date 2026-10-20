@@ -5,3 +5,6 @@ export * from './shading.js';
 export * from './project.js';
 export * from './compatibility.js';
 export * from './configurator.js';
+export * from './protection.js';
+export * from './cables.js';
+export * from './bom.js';

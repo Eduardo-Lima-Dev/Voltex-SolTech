@@ -1,5 +1,7 @@
 import type {
+  CableSpec,
   EngineeringDesign,
+  ProtectionSpec,
   InverterSpec,
   ModuleSpec,
   EngineeringResults,
@@ -7,6 +9,10 @@ import type {
   SurfaceShadingResult,
 } from '@voltex/shared';
 import { roundTo } from '../units/index.js';
+import { BOM_ALGORITHM_VERSION, buildBom, type UnitPrice } from './bom.js';
+import { CABLES_ALGORITHM_VERSION, evaluateCables, type AmpacityRow } from './cables.js';
+import type { Candidate } from './configurator.js';
+import { PROTECTION_ALGORITHM_VERSION, evaluateProtections } from './protection.js';
 import {
   COMPATIBILITY_ALGORITHM_VERSION,
   evaluateCompatibility,
@@ -30,6 +36,30 @@ export interface ComputeContext {
   status?: Record<string, EquipmentStatusLite | undefined>;
   /** Parâmetros da regra `engine.design` em vigor (vazio = sem regra). */
   parameters?: Record<string, number>;
+  /** Proteções e cabos **aprovados** do catálogo (candidatos à seleção automática). */
+  protections?: Candidate<ProtectionSpec>[];
+  cableCatalog?: Candidate<CableSpec>[];
+  /** Regra `engine.cables` em vigor: parâmetros e tabelas (ex.: `ampacity`). */
+  cableRules?: {
+    parameters: Record<string, number>;
+    tables: Record<string, Record<string, number | string | null>[]>;
+  };
+  /** Nomes e preços unitários dos equipamentos, para a lista de materiais. */
+  labels?: Record<string, string | undefined>;
+  prices?: Record<string, UnitPrice | undefined>;
+}
+
+/** Linhas válidas da tabela `ampacity` (ignora linhas incompletas). */
+export function ampacityRows(
+  table: Record<string, number | string | null>[] | undefined,
+): AmpacityRow[] {
+  return (table ?? []).flatMap((row) =>
+    typeof row.crossSectionMm2 === 'number' &&
+    typeof row.method === 'string' &&
+    typeof row.ampacityA === 'number'
+      ? [{ crossSectionMm2: row.crossSectionMm2, method: row.method, ampacityA: row.ampacityA }]
+      : [],
+  );
 }
 
 export function computeEngineeringResults(
@@ -123,6 +153,35 @@ export function computeEngineeringResults(
     parameters: context.parameters ?? {},
   });
 
+  const designParameters = context.parameters ?? {};
+  const protection = evaluateProtections({
+    design,
+    modules: context.modules as Record<string, ModuleSpec | undefined>,
+    inverters: context.inverters ?? {},
+    catalog: context.protections ?? [],
+    parameters: designParameters,
+  });
+  const cableRules = context.cableRules ?? { parameters: {}, tables: {} };
+  const cables = evaluateCables({
+    design,
+    modules: context.modules as Record<string, ModuleSpec | undefined>,
+    inverters: context.inverters ?? {},
+    catalog: context.cableCatalog ?? [],
+    parameters: cableRules.parameters,
+    designParameters,
+    ampacity: ampacityRows(cableRules.tables.ampacity),
+  });
+  const bom = buildBom({
+    design,
+    layout,
+    protection,
+    cables,
+    inverters: context.inverters ?? {},
+    labels: context.labels ?? {},
+    prices: context.prices ?? {},
+    cableParameters: cableRules.parameters,
+  });
+
   const modulesUsed = layout.reduce((sum, l) => sum + l.moduleCount, 0);
   const havePower = layout.length > 0 && layout.every((l) => l.powerKwp !== null);
   return {
@@ -131,10 +190,16 @@ export function computeEngineeringResults(
       layout: LAYOUT_ALGORITHM_VERSION,
       shading: SHADING_ALGORITHM_VERSION,
       compatibility: COMPATIBILITY_ALGORITHM_VERSION,
+      protection: PROTECTION_ALGORITHM_VERSION,
+      cables: CABLES_ALGORITHM_VERSION,
+      bom: BOM_ALGORITHM_VERSION,
     },
     layout,
     shading,
     compatibility,
+    protection,
+    cables,
+    bom,
     totals: {
       moduleCount: modulesUsed,
       powerKwp: havePower
