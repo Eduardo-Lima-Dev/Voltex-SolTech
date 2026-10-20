@@ -10,7 +10,6 @@ import {
   type WheelEvent,
 } from 'react';
 import {
-  LAYOUT_ELEMENT_KINDS,
   type LayoutElementKind,
   type OffgridLayoutElement,
   type OffgridLayoutRun,
@@ -40,6 +39,12 @@ import { snapTo } from '../../engine/editor/scene-3d-math';
 import { useOffgrid } from './offgrid-context';
 import { ElementSymbol } from './plan-symbols';
 import {
+  describeElement,
+  ELEMENT_KINDS_ORDER,
+  ELEMENT_TYPES,
+  type DescribedElement,
+} from './element-catalog';
+import {
   buildOffgridScene,
   projectOffgridScene,
   type OffgridPolygonKind,
@@ -59,35 +64,23 @@ const hasWebGL = (): boolean => {
   }
 };
 
-export const ELEMENT_LABELS: Record<LayoutElementKind, string> = {
-  HOUSE: 'Casa (cargas)',
-  POWER_ROOM: 'Casa de máquinas',
-  GENERATOR: 'Gerador',
-  GRID_POLE: 'Poste da rede',
-  TANK: 'Caixa d’água',
-  TREE: 'Árvore',
-  OTHER: 'Outro objeto',
-};
+export const ELEMENT_LABELS = Object.fromEntries(
+  ELEMENT_KINDS_ORDER.map((k) => [k, ELEMENT_TYPES[k].label]),
+) as Record<LayoutElementKind, string>;
 
-const PRESETS: Record<LayoutElementKind, { widthM: number; depthM: number; heightM: number }> = {
-  HOUSE: { widthM: 8, depthM: 6, heightM: 3.5 },
-  POWER_ROOM: { widthM: 3, depthM: 3, heightM: 2.5 },
-  GENERATOR: { widthM: 1.5, depthM: 1, heightM: 1.2 },
-  GRID_POLE: { widthM: 0.3, depthM: 0.3, heightM: 7 },
-  TANK: { widthM: 2, depthM: 2, heightM: 3 },
-  TREE: { widthM: 3, depthM: 3, heightM: 6 },
-  OTHER: { widthM: 2, depthM: 2, heightM: 2 },
-};
+const FILL = Object.fromEntries(
+  ELEMENT_KINDS_ORDER.map((k) => [k, ELEMENT_TYPES[k].fill]),
+) as Record<LayoutElementKind, string>;
 
-const FILL: Record<LayoutElementKind, string> = {
-  HOUSE: 'fill-amber-200 stroke-amber-700',
-  POWER_ROOM: 'fill-blue-300 stroke-blue-800',
-  GENERATOR: 'fill-orange-300 stroke-orange-800',
-  GRID_POLE: 'fill-zinc-400 stroke-zinc-700',
-  TANK: 'fill-cyan-200 stroke-cyan-700',
-  TREE: 'fill-green-300 stroke-green-800',
-  OTHER: 'fill-stone-300 stroke-stone-700',
-};
+/** Os objetos mais usados ganham botão; os demais ficam na lista "Outros tipos". */
+const MAIN_KINDS: LayoutElementKind[] = [
+  'HOUSE',
+  'POWER_ROOM',
+  'GENERATOR',
+  'GRID_POLE',
+  'TANK',
+  'TREE',
+];
 
 const POLY_FILL: Record<OffgridPolygonKind, string> = {
   GROUND: 'fill-emerald-100/60 stroke-emerald-700/40',
@@ -256,22 +249,38 @@ export function VisualStep() {
   const onWheel = (event: WheelEvent<SVGSVGElement>) =>
     setZoom((z) => Math.min(4, Math.max(0.5, z * (event.deltaY < 0 ? 1.1 : 0.9))));
 
-  const addElement = (kind: LayoutElementKind) => {
-    const preset = PRESETS[kind];
+  const addElement = (
+    kind: LayoutElementKind,
+    over: Partial<DescribedElement> & { description?: string } = {},
+  ) => {
+    const preset = ELEMENT_TYPES[kind];
     const count = layout.elements.filter((e) => e.kind === kind).length;
     const el: OffgridLayoutElement = {
       id: newId(),
       kind,
-      name: count === 0 ? ELEMENT_LABELS[kind] : `${ELEMENT_LABELS[kind]} ${count + 1}`,
+      name: over.name ?? (count === 0 ? preset.label : `${preset.label} ${count + 1}`),
       positionM: {
         x: snapTo(layout.lotWidthM / 2 + count * 2, 0.1),
         y: snapTo(layout.lotDepthM / 2, 0.1),
       },
       rotationDeg: 0,
-      ...preset,
+      widthM: over.widthM ?? preset.widthM,
+      depthM: over.depthM ?? preset.depthM,
+      heightM: over.heightM ?? preset.heightM,
+      ...(over.color ? { color: over.color } : {}),
+      ...(over.description ? { description: over.description } : {}),
     };
     setLayout({ elements: [...layout.elements, el] });
     setSelected({ type: 'element', id: el.id });
+  };
+  const [describeText, setDescribeText] = useState('');
+  const [understood, setUnderstood] = useState<DescribedElement | null>(null);
+  const createFromDescription = () => {
+    if (describeText.trim().length < 2) return;
+    const d = describeElement(describeText);
+    setUnderstood(d);
+    addElement(d.kind, { ...d, description: describeText.trim() });
+    setDescribeText('');
   };
 
   const selectedElement =
@@ -387,12 +396,55 @@ export function VisualStep() {
           </div>
 
           {!readOnly ? (
-            <div className="flex flex-wrap gap-2" aria-label="Adicionar à planta">
-              {LAYOUT_ELEMENT_KINDS.map((kind) => (
-                <Button key={kind} size="sm" variant="outline" onClick={() => addElement(kind)}>
-                  <Plus /> {ELEMENT_LABELS[kind]}
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-center gap-2" aria-label="Adicionar à planta">
+                {MAIN_KINDS.map((kind) => (
+                  <Button key={kind} size="sm" variant="outline" onClick={() => addElement(kind)}>
+                    <Plus /> {ELEMENT_LABELS[kind]}
+                  </Button>
+                ))}
+                <NativeSelect
+                  aria-label="Outros tipos de objeto"
+                  className="w-48"
+                  value=""
+                  onChange={(e) =>
+                    e.target.value && addElement(e.target.value as LayoutElementKind)
+                  }
+                >
+                  <option value="">Outros tipos…</option>
+                  {ELEMENT_KINDS_ORDER.filter((k) => !MAIN_KINDS.includes(k)).map((k) => (
+                    <option key={k} value={k}>
+                      {ELEMENT_LABELS[k]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <form
+                className="flex flex-wrap items-end gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createFromDescription();
+                }}
+              >
+                <div className="grid min-w-64 flex-1 gap-1">
+                  <Label htmlFor="describe-el">Descreva um objeto e eu desenho</Label>
+                  <Input
+                    id="describe-el"
+                    value={describeText}
+                    onChange={(e) => setDescribeText(e.target.value)}
+                    placeholder="Ex.: contêiner azul de 6 x 2,5 x 2,6 m · poço · galpão grande verde · torre de antena com 20 m de altura"
+                  />
+                </div>
+                <Button type="submit" disabled={describeText.trim().length < 2}>
+                  Criar pela descrição
                 </Button>
-              ))}
+              </form>
+              {understood ? (
+                <p className="text-xs text-muted-foreground" role="status">
+                  <strong>Entendi:</strong> {understood.notes.join(' ')} Ajuste tipo, medidas e cor
+                  ao selecionar o objeto.
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -505,7 +557,13 @@ export function VisualStep() {
                       <g
                         transform={`translate(${e.positionM.x} ${sy(e.positionM.y)}) rotate(${e.rotationDeg})`}
                       >
-                        <ElementSymbol kind={e.kind} w={e.widthM} d={e.depthM} selected={isSel} />
+                        <ElementSymbol
+                          kind={e.kind}
+                          w={e.widthM}
+                          d={e.depthM}
+                          selected={isSel}
+                          color={e.color}
+                        />
                       </g>
                       <text
                         x={e.positionM.x}
@@ -815,6 +873,45 @@ export function VisualStep() {
                         <Trash2 /> Remover
                       </Button>
                     ) : null}
+                  </div>
+                  {selectedElement.description ? (
+                    <p className="text-xs text-muted-foreground">
+                      Descrição: “{selectedElement.description}”
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="el-kind">Tipo</Label>
+                      <NativeSelect
+                        id="el-kind"
+                        disabled={readOnly}
+                        value={selectedElement.kind}
+                        onChange={(e) =>
+                          patchElement(selectedElement.id, {
+                            kind: e.target.value as LayoutElementKind,
+                          })
+                        }
+                      >
+                        {ELEMENT_KINDS_ORDER.map((k) => (
+                          <option key={k} value={k}>
+                            {ELEMENT_LABELS[k]}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="el-color">Cor</Label>
+                      <input
+                        id="el-color"
+                        type="color"
+                        disabled={readOnly}
+                        className="h-9 w-12 cursor-pointer rounded border"
+                        value={selectedElement.color ?? '#9e9e9e'}
+                        onChange={(e) =>
+                          patchElement(selectedElement.id, { color: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
                   <div className="grid gap-1">
                     <Label htmlFor="el-name">Nome</Label>

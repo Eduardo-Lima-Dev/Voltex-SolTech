@@ -765,3 +765,69 @@ describe('Off-Grid Designer: parâmetros da regra', () => {
     expect(within(list).getByText('autonomyMinDays')).toBeInTheDocument();
   });
 });
+
+describe('Off-Grid Designer: objetos descritos em texto', () => {
+  const open = async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ design: fullDesign() as never })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    return user;
+  };
+
+  it('cria o objeto pela descrição, mostra o que entendeu e permite trocar tipo e cor', async () => {
+    const user = await open();
+    await user.type(
+      await screen.findByLabelText('Descreva um objeto e eu desenho'),
+      'contêiner azul de 6 x 2,5 x 2,6 m',
+    );
+    await user.click(screen.getByRole('button', { name: 'Criar pela descrição' }));
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('Reconheci: contêiner');
+    expect(status).toHaveTextContent('Medidas: 6 × 2.5 × 2.6 m');
+    const plan = screen.getByRole('group', { name: 'Planta do terreno' });
+    expect(
+      within(plan).getByRole('button', { name: /Contêiner azul de 6 x 2,5 x 2,6 m, Contêiner/i }),
+    ).toBeInTheDocument();
+    const details = screen.getByRole('complementary', { name: 'Detalhes da seleção' });
+    expect(within(details).getByText(/Descrição: “contêiner azul/)).toBeInTheDocument();
+    expect(within(details).getByLabelText('Largura (m)')).toHaveValue('6');
+    // troca o tipo e a cor
+    await user.selectOptions(within(details).getByLabelText('Tipo'), 'SHED');
+    expect(await within(plan).findByRole('button', { name: /, Galpão/ })).toBeInTheDocument();
+    fireEvent.change(within(details).getByLabelText('Cor'), { target: { value: '#ff0000' } });
+    expect(within(details).getByLabelText('Cor')).toHaveValue('#ff0000');
+  });
+
+  it('o que não reconhece vira bloco genérico com aviso, e os outros tipos têm lista própria', async () => {
+    const user = await open();
+    await user.type(
+      await screen.findByLabelText('Descreva um objeto e eu desenho'),
+      'coisa estranha',
+    );
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('status')).toHaveTextContent('Não reconheci o tipo');
+    await user.selectOptions(screen.getByLabelText('Outros tipos de objeto'), 'WIND_TURBINE');
+    const plan = screen.getByRole('group', { name: 'Planta do terreno' });
+    expect(
+      within(plan).getByRole('button', { name: /Aerogerador, Aerogerador/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('versão congelada não mostra a criação por descrição', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ status: 'SUBMITTED', design: fullDesign() as never })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    await userEvent.setup().click(screen.getByRole('button', { name: /Terreno 2D\/3D/ }));
+    expect(screen.queryByLabelText('Descreva um objeto e eu desenho')).not.toBeInTheDocument();
+  });
+});

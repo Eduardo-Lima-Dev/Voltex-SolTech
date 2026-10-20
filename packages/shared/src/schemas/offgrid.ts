@@ -71,6 +71,16 @@ export const LAYOUT_ELEMENT_KINDS = [
   'GRID_POLE',
   'TANK',
   'TREE',
+  'CONTAINER',
+  'SHED',
+  'GREENHOUSE',
+  'SILO',
+  'WIND_TURBINE',
+  'TOWER',
+  'WELL',
+  'POOL',
+  'VEHICLE',
+  'WALL',
   'OTHER',
 ] as const;
 export type LayoutElementKind = (typeof LAYOUT_ELEMENT_KINDS)[number];
@@ -87,6 +97,13 @@ export const offgridLayoutElementSchema = z.object({
   heightM: z.number().min(0).max(60).default(3),
   /** Giro da construção em graus, horário visto de cima. */
   rotationDeg: z.number().min(0).lt(360).default(0),
+  /** Cor do objeto (#rrggbb); vazio = a cor padrão do tipo. */
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+  /** O que a pessoa descreveu ao criar o objeto (para consulta). */
+  description: z.string().trim().max(200).optional(),
 });
 export type OffgridLayoutElement = z.output<typeof offgridLayoutElementSchema>;
 
