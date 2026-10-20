@@ -4,6 +4,7 @@ import { DataHubController } from './data-hub.controller';
 import { DataHubHttp, FetchDataHubHttp } from './data-hub-http';
 import { DataHubQueue } from './data-hub.queue';
 import { DataSourcesService } from './data-sources.service';
+import { SolarResourceProposalService } from './solar-resource-proposal.service';
 import { SourceWatchService } from './source-watch.service';
 import { TariffScanService } from './tariff-scan.service';
 import { UpdateProposalsService } from './update-proposals.service';
@@ -19,6 +20,7 @@ import { UpdateProposalsService } from './update-proposals.service';
     SourceWatchService,
     UpdateProposalsService,
     TariffScanService,
+    SolarResourceProposalService,
     DataHubQueue,
   ],
   exports: [DataSourcesService, ClimateService, UpdateProposalsService, DataHubQueue],

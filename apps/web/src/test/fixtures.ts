@@ -183,6 +183,7 @@ export const solarResource = (overrides: Partial<SolarResourceDto> = {}): SolarR
   hspMonthly: Array<number>(12).fill(5.5),
   source: 'CRESESB SunData',
   plane: 'Plano horizontal',
+  temperatures: null,
   createdAt: now,
   ...overrides,
 });

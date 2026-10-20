@@ -1,0 +1,129 @@
+﻿PVObject_=pvGInverter
+  Comment=Fabricante Teste	FT-350K-12	Fabricante 2024
+  Version=8.0.1
+  ParObj1=2024
+  Flags=$001815C2
+
+  PVObject_Commercial=pvCommercial
+    Comment=www.exemplo.test
+    Flags=$0041
+    Manufacturer=Fabricante Teste
+    Model=FT-350K-12
+    DataSource=Fabricante 2024
+    YearBeg=2024
+    Width=1.340
+    Height=0.415
+    Depth=0.946
+    Weight=135.000
+    NPieces=100
+    PriceDate=16/08/19 00:00
+    Currency=EUR
+    Remarks, Count=1
+      Str_1
+    End of Remarks
+  End of PVObject pvCommercial
+  Transfo=Without
+
+  Converter=TConverter
+    PNomConv=350.000
+    PMaxOUT=350.000
+    VOutConv=800.0
+    VMppMin=480
+    VMPPMax=1500
+    VmppNom=1080.0
+    Vmpp_PMax=746.2
+    VAbsMax=1500
+    PSeuil=1275.00
+    EfficMax=99.00
+    EfficEuro=98.80
+    FResNorm=3.00
+    ModeOper=MPPT
+    CompPMax=Lim
+    CompVMax=Lim
+    MonoTri=Tri
+    ModeAffEnum=Efficf_POut
+    UnitAffEnum=kW
+    IDCMax=0.000
+    IMaxDC=480.000
+    INomAC=252.600
+    IMaxAC=252.600
+    TPNom=40.0
+    TPMax=40.0
+    TPLim1=50.0
+    TPLimAbs=60.0
+    PLim1=300.000
+    PLimAbs=250.000
+    PInEffMax =153000.000
+    PThreshEff=4237.80
+    HasdefaultPThresh=False
+
+    ProfilPIO=TCubicProfile
+      NPtsMax=11
+      NPtsEff=8
+      LastCompile=$8085
+      Mode=1
+      Point_1=1275,0
+      Point_2=7650,3517
+      Point_3=12750,8769
+      Point_4=25500,21846
+      Point_5=51000,47771
+      Point_6=76500,73390
+      Point_7=153000,148410
+      Point_8=255000,244153
+      Point_9=0,0
+      Point_10=0,0
+      Point_11=0,0
+    End of TCubicProfile
+    VNomEff=860.0,1180.0,1300.0,
+    EfficMaxV=97.770,98.910,98.790,
+    EfficEuroV=97.370,98.692,98.626,
+
+
+    ProfilPIOV2=TCubicProfile
+      NPtsMax=11
+      NPtsEff=7
+      LastCompile=$8089
+      Mode=1
+      Point_1=1275.0,0.0
+      Point_2=35182.4,34074.2
+      Point_3=70164.9,68817.8
+      Point_4=106165.4,104891.4
+      Point_5=176839.2,175106.1
+      Point_6=265019.2,261600.5
+      Point_7=354440.8,349372.3
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+
+    ProfilPIOV3=TCubicProfile
+      NPtsMax=11
+      NPtsEff=7
+      LastCompile=$8089
+      Mode=1
+      Point_1=1275.0,0.0
+      Point_2=35460.6,34230.1
+      Point_3=70657.6,69187.9
+      Point_4=106258.3,104802.6
+      Point_5=176839.2,174575.6
+      Point_6=265484.1,261528.4
+      Point_7=356344.3,350892.2
+      Point_8=0.0,0.0
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+  End of TConverter
+  NbInputs=24
+  NbMPPT=12
+  TanPhiMin=-0.750
+  TanPhiMax=0.750
+  NbMSInterne=2
+  MasterSlave=No_M_S
+  IsolSurvey =Yes
+  DC_Switch=Yes
+  MS_Thresh=0.8
+  Aux_Loss=10.00
+  Night_Loss=2.00
+End of PVObject pvGInverter

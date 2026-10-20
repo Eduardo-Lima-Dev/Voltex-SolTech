@@ -398,6 +398,20 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'catalogo',
+                lazy: async () => {
+                  const { CatalogPage } = await import('@/features/admin/catalog/catalog-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('catalogo').anyOf}>
+                        <CatalogPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Catálogo técnico' },
+                  };
+                },
+              },
+              {
                 path: 'fontes',
                 lazy: async () => {
                   const { SourcesPage } = await import('@/features/admin/data-hub/sources-page');

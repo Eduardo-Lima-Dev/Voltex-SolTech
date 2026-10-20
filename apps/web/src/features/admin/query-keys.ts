@@ -60,6 +60,11 @@ export const queryKeys = {
   energyBill: (id: string) => ['energy-bill', id] as const,
   effectiveRules: ['rules', 'effective'] as const,
   dataSources: ['data-hub', 'sources'] as const,
+  catalog: (filters?: unknown) =>
+    filters === undefined ? (['catalog'] as const) : (['catalog', filters] as const),
+  catalogItem: (id: string) => ['catalog', 'item', id] as const,
+  catalogReferences: (filters?: unknown) => ['catalog', 'references', filters ?? {}] as const,
+  catalogPrices: ['catalog', 'prices'] as const,
   sourceWatches: ['data-hub', 'watches'] as const,
   updateProposals: (filters?: unknown) =>
     filters === undefined

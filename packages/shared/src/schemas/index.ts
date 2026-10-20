@@ -8,3 +8,4 @@ export * from './commercial.js';
 export * from './delivery.js';
 export * from './privacy.js';
 export * from './data-hub.js';
+export * from './equipment.js';

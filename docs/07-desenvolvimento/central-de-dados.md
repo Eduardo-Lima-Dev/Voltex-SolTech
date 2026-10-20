@@ -58,6 +58,10 @@ Limites: diferença por linhas ignora a ordem (suficiente para avisar); PDF esca
 
 `POST /data-hub/tariffs/scan` (e o agendamento mensal, para todas as empresas) lê o arquivo de Dados Abertos **uma vez** e compara com as concessionárias de cada empresa. Para cada tarifa residencial B1 nova ou alterada cria uma proposta `TARIFF` com valor, vigência, resolução e o valor atual na diferença. **Aprovar** cria ou atualiza a tarifa da concessionária com a fonte; **descartar** não toca em nada. Empresa sem aquela concessionária não recebe proposta.
 
+## Recurso solar e INMETRO
+
+Veja o [catálogo técnico](catalogo-tecnico.md): `POST /data-hub/solar-resources/propose` cria proposta de irradiação a partir da NASA POWER, e o job `inmetro-due` abre propostas de reconferência do INMETRO.
+
 ## Testes
 
 Sem internet: `DataHubHttp` e `AneelSource` são trocados por **respostas gravadas** (fixtures reais em `packages/solar-engine/src/io/fixtures/`). Cobrem cache e arredondamento, falhas da fonte (500, 429, formato novo), fonte desligada, SSRF, vigilância (referência, igual, mudou, erro), decisão, isolamento entre empresas, tarifas (propor, aprovar, repropor, descartar) e a fila.
