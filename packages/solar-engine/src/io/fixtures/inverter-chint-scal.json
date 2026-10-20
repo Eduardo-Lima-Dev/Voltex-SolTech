@@ -1,0 +1,892 @@
+{
+  "documentText": "Inversor String Monofásico CPS SCA7.5~10KTL-PSM/EU Chint Power",
+  "lines": [
+    {
+      "cells": [
+        {
+          "text": "Inversor",
+          "x0": 524,
+          "x1": 553
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Modelo",
+          "x0": 45,
+          "x1": 70
+        },
+        {
+          "text": "CPS SCA7.5KTL-PSM/EU",
+          "x0": 218,
+          "x1": 302
+        },
+        {
+          "text": "CPS SCA8KTL-PSM/EU",
+          "x0": 338,
+          "x1": 416
+        },
+        {
+          "text": "CPS SCA10KTL-PSM/EU",
+          "x0": 453,
+          "x1": 535
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Entrada CC",
+          "x0": 45,
+          "x1": 83
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Potência CC",
+          "x0": 45,
+          "x1": 102
+        },
+        {
+          "text": "12.75 kW",
+          "x0": 245,
+          "x1": 275
+        },
+        {
+          "text": "13,6 kW",
+          "x0": 364,
+          "x1": 390
+        },
+        {
+          "text": "17 kW",
+          "x0": 484,
+          "x1": 504
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Tensão CC",
+          "x0": 45,
+          "x1": 97
+        },
+        {
+          "text": "550 Vcc",
+          "x0": 364,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão MPPT",
+          "x0": 45,
+          "x1": 118
+        },
+        {
+          "text": "60 - 540 Vcc",
+          "x0": 357,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão MPPT (Carga Total)",
+          "x0": 45,
+          "x1": 160
+        },
+        {
+          "text": "180 - 480 Vcc",
+          "x0": 238,
+          "x1": 281
+        },
+        {
+          "text": "180 - 480 Vcc",
+          "x0": 355,
+          "x1": 398
+        },
+        {
+          "text": "230 - 480 Vcc",
+          "x0": 473,
+          "x1": 516
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão de Partida",
+          "x0": 45,
+          "x1": 102
+        },
+        {
+          "text": "90 Vcc",
+          "x0": 366,
+          "x1": 388
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão CC Nominal",
+          "x0": 45,
+          "x1": 108
+        },
+        {
+          "text": "360 Vcc",
+          "x0": 364,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Número de MPPT",
+          "x0": 45,
+          "x1": 101
+        },
+        {
+          "text": "2",
+          "x0": 375,
+          "x1": 379
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "String por MPPT",
+          "x0": 45,
+          "x1": 97
+        },
+        {
+          "text": "2 / 1",
+          "x0": 370,
+          "x1": 384
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Corrente de Entrada por MPPT",
+          "x0": 45,
+          "x1": 159
+        },
+        {
+          "text": "30 A / 20 A",
+          "x0": 361,
+          "x1": 394
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente de Curto Circuito por MPPT",
+          "x0": 45,
+          "x1": 160
+        },
+        {
+          "text": "40A / 26 A",
+          "x0": 361,
+          "x1": 393
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Fusível String",
+          "x0": 45,
+          "x1": 88
+        },
+        {
+          "text": "/",
+          "x0": 376,
+          "x1": 378
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Desconexão CC",
+          "x0": 45,
+          "x1": 96
+        },
+        {
+          "text": "Chave CC Integrada",
+          "x0": 345,
+          "x1": 409
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Saída CA",
+          "x0": 45,
+          "x1": 76
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Potência CA Nominal",
+          "x0": 45,
+          "x1": 111
+        },
+        {
+          "text": "7.5 kW",
+          "x0": 249,
+          "x1": 271
+        },
+        {
+          "text": "8 kW",
+          "x0": 369,
+          "x1": 385
+        },
+        {
+          "text": "10 kW",
+          "x0": 484,
+          "x1": 504
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Potência CA",
+          "x0": 45,
+          "x1": 101
+        },
+        {
+          "text": "8.25 kVA",
+          "x0": 246,
+          "x1": 274
+        },
+        {
+          "text": "8,8 kVA",
+          "x0": 365,
+          "x1": 389
+        },
+        {
+          "text": "10 kVA",
+          "x0": 483,
+          "x1": 505
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão Nominal CA",
+          "x0": 45,
+          "x1": 107
+        },
+        {
+          "text": "220/230 Vca",
+          "x0": 357,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "1",
+          "x0": 137,
+          "x1": 140
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão CA Nominal",
+          "x0": 45,
+          "x1": 135
+        },
+        {
+          "text": "160 - 300 Vca",
+          "x0": 355,
+          "x1": 399
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de Conexão de Rede",
+          "x0": 45,
+          "x1": 127
+        },
+        {
+          "text": "L / N / PE",
+          "x0": 362,
+          "x1": 392
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Corrente CA",
+          "x0": 45,
+          "x1": 101
+        },
+        {
+          "text": "37.5 A",
+          "x0": 250,
+          "x1": 270
+        },
+        {
+          "text": "40 A",
+          "x0": 370,
+          "x1": 384
+        },
+        {
+          "text": "45,5 A",
+          "x0": 484,
+          "x1": 504
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Frequência de Rede",
+          "x0": 45,
+          "x1": 109
+        },
+        {
+          "text": "50 / 60 Hz",
+          "x0": 361,
+          "x1": 393
+        },
+        {
+          "text": "Inversor",
+          "x0": 585,
+          "x1": 621
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "1",
+          "x0": 140,
+          "x1": 142
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Frequência de Rede",
+          "x0": 45,
+          "x1": 138
+        },
+        {
+          "text": "45-55 / 55-65 Hz",
+          "x0": 351,
+          "x1": 403
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Fator de Potência (cosφ)",
+          "x0": 45,
+          "x1": 123
+        },
+        {
+          "text": ">0,99(±0,8 ajustável)",
+          "x0": 344,
+          "x1": 410
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "THD da Corrente",
+          "x0": 45,
+          "x1": 99
+        },
+        {
+          "text": "< 3%",
+          "x0": 369,
+          "x1": 385
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Desconexão CA",
+          "x0": 45,
+          "x1": 96
+        },
+        {
+          "text": "/",
+          "x0": 376,
+          "x1": 378
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados",
+          "x0": 45,
+          "x1": 67
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Topologia",
+          "x0": 45,
+          "x1": 75
+        },
+        {
+          "text": "Sem transformador",
+          "x0": 347,
+          "x1": 407
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Eficiência",
+          "x0": 45,
+          "x1": 92
+        },
+        {
+          "text": "97,7%",
+          "x0": 250,
+          "x1": 270
+        },
+        {
+          "text": "97,7%",
+          "x0": 367,
+          "x1": 387
+        },
+        {
+          "text": "97,7%",
+          "x0": 484,
+          "x1": 504
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência Euro",
+          "x0": 45,
+          "x1": 92
+        },
+        {
+          "text": "97,3%",
+          "x0": 250,
+          "x1": 270
+        },
+        {
+          "text": "97,3%",
+          "x0": 367,
+          "x1": 387
+        },
+        {
+          "text": "97,3%",
+          "x0": 484,
+          "x1": 504
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Autoconsumo Noturno",
+          "x0": 45,
+          "x1": 115
+        },
+        {
+          "text": "<1 W",
+          "x0": 369,
+          "x1": 385
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteções",
+          "x0": 45,
+          "x1": 79
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção de Polaridade Reversa CC",
+          "x0": 45,
+          "x1": 159
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção de Curto Circuito CA",
+          "x0": 45,
+          "x1": 139
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção de Corrente de Fuga",
+          "x0": 45,
+          "x1": 140
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento de Rede",
+          "x0": 45,
+          "x1": 120
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento de Falha de Aterramento",
+          "x0": 45,
+          "x1": 171
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção Contra Surtos (DPS)",
+          "x0": 45,
+          "x1": 139
+        },
+        {
+          "text": "Tipo II CC / Tipo II CA",
+          "x0": 343,
+          "x1": 411
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "AFCI",
+          "x0": 45,
+          "x1": 61
+        },
+        {
+          "text": "Sim",
+          "x0": 371,
+          "x1": 383
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados gerais",
+          "x0": 45,
+          "x1": 89
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Classe de Proteção",
+          "x0": 45,
+          "x1": 106
+        },
+        {
+          "text": "IP65",
+          "x0": 370,
+          "x1": 384
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Resfriamento",
+          "x0": 45,
+          "x1": 87
+        },
+        {
+          "text": "Resfriamento natural",
+          "x0": 345,
+          "x1": 410
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Temperatura de Operação",
+          "x0": 45,
+          "x1": 127
+        },
+        {
+          "text": "-25 °C a 60 °C",
+          "x0": 354,
+          "x1": 400
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Umidade Relativa",
+          "x0": 45,
+          "x1": 101
+        },
+        {
+          "text": "0 - 100%",
+          "x0": 363,
+          "x1": 391
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Altitude",
+          "x0": 45,
+          "x1": 69
+        },
+        {
+          "text": "4 000 m",
+          "x0": 364,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Interface e Comunicação",
+          "x0": 45,
+          "x1": 128
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Display",
+          "x0": 45,
+          "x1": 68
+        },
+        {
+          "text": "Interface em LED + APP Chint Connect",
+          "x0": 316,
+          "x1": 438
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Comunicação",
+          "x0": 45,
+          "x1": 88
+        },
+        {
+          "text": "RS485; Bluetooth/ Wi-fi/ 4G (opcional) via módulo de comunicação",
+          "x0": 273,
+          "x1": 481
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dados físicos",
+          "x0": 45,
+          "x1": 91
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dimensões (L*A*P)",
+          "x0": 45,
+          "x1": 106
+        },
+        {
+          "text": "400 mm * 450 mm * 170 mm",
+          "x0": 333,
+          "x1": 422
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Peso",
+          "x0": 45,
+          "x1": 61
+        },
+        {
+          "text": "16 kg",
+          "x0": 368,
+          "x1": 386
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de Conexão CC",
+          "x0": 45,
+          "x1": 110
+        },
+        {
+          "text": "MC4 (Máx. 6 mm²)",
+          "x0": 348,
+          "x1": 406
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de Conexão CA",
+          "x0": 45,
+          "x1": 110
+        },
+        {
+          "text": "Conector Plug and Play",
+          "x0": 340,
+          "x1": 414
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Segurança",
+          "x0": 45,
+          "x1": 81
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "2",
+          "x0": 86,
+          "x1": 88
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Certificações",
+          "x0": 45,
+          "x1": 86
+        },
+        {
+          "text": "IEC 61000-6, IEC 62109-1/2, IEC 61727, IEC 62116, INMETRO PORTARIA Nº140&515",
+          "x0": 241,
+          "x1": 513
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "*1 \"Faixa de Tensão CA Nominal\" e \"Faixa de Frequência de Rede\" podem variar de acordo com cada código de rede.",
+          "x0": 45,
+          "x1": 255
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "*2 Os certificados são apenas para consulta. Contate o representante de vendas local para obter a certificação detalhada.",
+          "x0": 46,
+          "x1": 263
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "*3 A potência CA difere de acordo com a tensão CA nominal.",
+          "x0": 46,
+          "x1": 154
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "*4 Compatibilidade do Transformador: este modelo aceita apenas conexões com sistemas IT, não é compatível com sistemas TN/TT.",
+          "x0": 46,
+          "x1": 282
+        }
+      ]
+    }
+  ]
+}

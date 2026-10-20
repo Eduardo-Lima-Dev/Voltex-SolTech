@@ -29,6 +29,7 @@ import {
   inmetroCheckSchema,
   listEquipmentQuerySchema,
   listReferencesQuerySchema,
+  listSourceDocumentsQuerySchema,
   priceImportQuerySchema,
   updateEquipmentSchema,
 } from '@voltex/shared';
@@ -37,6 +38,7 @@ import type { UploadedFile as UploadedFileType } from '../documents/documents.se
 import { CatalogImportService } from './catalog-import.service';
 import { CatalogService } from './catalog.service';
 import { PRICE_TEMPLATE, PriceListService } from './price-list.service';
+import { CatalogSourcesService } from './catalog-sources.service';
 import { ReferencesService } from './references.service';
 
 class UpdateEquipmentDto extends createZodDto(updateEquipmentSchema) {}
@@ -46,6 +48,7 @@ class DatasheetDto extends createZodDto(attachDatasheetSchema) {}
 class ImportPreviewQueryDto extends createZodDto(importPreviewQuerySchema) {}
 class ImportCommitDto extends createZodDto(importCommitSchema) {}
 class ListReferencesQueryDto extends createZodDto(listReferencesQuerySchema) {}
+class ListSourceDocumentsQueryDto extends createZodDto(listSourceDocumentsQuerySchema) {}
 class PriceImportQueryDto extends createZodDto(priceImportQuerySchema) {}
 class KindQueryDto extends createZodDto(z.object({ kind: z.enum(EQUIPMENT_KINDS) })) {}
 class ReferenceKindDto extends createZodDto(z.object({ kind: z.enum(['MODULE', 'INVERTER']) })) {}
@@ -71,6 +74,7 @@ export class CatalogController {
     private readonly imports: CatalogImportService,
     private readonly prices: PriceListService,
     private readonly references: ReferencesService,
+    private readonly catalogSources: CatalogSourcesService,
   ) {}
 
   @Get('items')
@@ -171,6 +175,36 @@ export class CatalogController {
   @RequirePermissions('platform.catalog.manage')
   commit(@Body() body: ImportCommitDto) {
     return this.imports.commit(body);
+  }
+
+  // ---- Fontes de catálogo na internet ----
+
+  @Get('sources')
+  @RequirePermissions('platform.catalog.read')
+  listSources() {
+    return this.catalogSources.list();
+  }
+
+  @Post('sources/:key/refresh')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  refreshSource(@Param('key') key: string) {
+    return this.catalogSources.refresh(key);
+  }
+
+  @Get('sources/:key/documents')
+  @RequirePermissions('platform.catalog.read')
+  sourceDocuments(@Param('key') key: string, @Query() query: ListSourceDocumentsQueryDto) {
+    return this.catalogSources.documents(key, query);
+  }
+
+  @Post('sources/documents/:id/preview')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  previewSourceDocument(@Param('id', ParseUUIDPipe) id: string) {
+    return this.catalogSources.preview(id);
   }
 
   // ---- Referências externas ----

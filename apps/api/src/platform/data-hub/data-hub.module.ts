@@ -23,6 +23,6 @@ import { UpdateProposalsService } from './update-proposals.service';
     SolarResourceProposalService,
     DataHubQueue,
   ],
-  exports: [DataSourcesService, ClimateService, UpdateProposalsService, DataHubQueue],
+  exports: [DataSourcesService, ClimateService, UpdateProposalsService, DataHubQueue, DataHubHttp],
 })
 export class DataHubModule {}

@@ -105,3 +105,31 @@ export interface PriceImportResultDto {
   errors: { row: number; message: string }[];
   dryRun: boolean;
 }
+
+/** Fonte de catálogo na internet: o que é, se está ligada e quantos documentos já foram listados. */
+export interface CatalogSourceDto {
+  key: string;
+  label: string;
+  baseUrl: string;
+  license: string;
+  attribution: string;
+  licenseStatus: 'PENDING_REVIEW' | 'CLEARED' | 'BLOCKED';
+  enabled: boolean;
+  notes: string | null;
+  documentCount: number;
+  indexedAt: string | null;
+  /** `documents`: lista de fichas técnicas para ver a prévia e importar; `library`: biblioteca de equipamentos para adotar. */
+  mode: 'documents' | 'library';
+}
+
+export interface CatalogSourceDocumentDto {
+  id: string;
+  sourceKey: string;
+  docType: string;
+  title: string;
+  brand: string;
+  pdfUrl: string;
+  productUrl: string | null;
+  equipmentHint: 'MODULE' | 'INVERTER' | 'OTHER';
+  collectedAt: string;
+}

@@ -51,6 +51,17 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
       'Bloqueada até a leitura da licença. Equipamentos do mercado norte-americano: confira registro e venda no Brasil.',
   },
   {
+    key: 'techlux',
+    label: 'Techlux (distribuidora): fichas técnicas e manuais',
+    baseUrl: 'https://techlux.com.br',
+    license:
+      'Listagem pública de downloads de datasheets e manuais dos fabricantes. O robots.txt do site permite o acesso. Os documentos pertencem aos fabricantes; termos de uso do site NÃO revistos por jurídico.',
+    attribution: 'Documentos técnicos publicados por Techlux Distribuidora (techlux.com.br).',
+    licenseStatus: 'PENDING_REVIEW',
+    notes:
+      'Só a lista de links é guardada. O PDF é baixado sob demanda, lido para a prévia e descartado; nada entra no catálogo sem a sua conferência.',
+  },
+  {
     key: 'aneel-tariffs',
     label: 'ANEEL: tarifas das distribuidoras (Dados Abertos)',
     baseUrl: 'https://dadosabertos.aneel.gov.br',

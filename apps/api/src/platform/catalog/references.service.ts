@@ -38,7 +38,7 @@ export class ReferencesService {
 
   async list(query: ListReferencesQuery): Promise<Paginated<ExternalReferenceDto>> {
     const where = {
-      ...(query.kind ? { kind: `CEC_${query.kind}` } : {}),
+      kind: query.kind ? `CEC_${query.kind}` : { startsWith: 'CEC_' },
       ...(query.search
         ? {
             OR: [

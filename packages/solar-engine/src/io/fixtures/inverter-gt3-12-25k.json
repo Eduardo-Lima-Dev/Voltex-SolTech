@@ -1,0 +1,866 @@
+{
+  "documentText": "Inversor de string",
+  "lines": [
+    {
+      "cells": [
+        {
+          "text": "Especificações",
+          "x0": 43,
+          "x1": 151
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Modelo",
+          "x0": 43,
+          "x1": 70
+        },
+        {
+          "text": "GT3-12KD1",
+          "x0": 200,
+          "x1": 239
+        },
+        {
+          "text": "GT3-15KD1",
+          "x0": 263,
+          "x1": 302
+        },
+        {
+          "text": "GT3-17KD1",
+          "x0": 326,
+          "x1": 365
+        },
+        {
+          "text": "GT3-20KD1",
+          "x0": 389,
+          "x1": 429
+        },
+        {
+          "text": "GT3-22KD1",
+          "x0": 452,
+          "x1": 492
+        },
+        {
+          "text": "GT3-25KD1",
+          "x0": 516,
+          "x1": 555
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Entrada FV",
+          "x0": 43,
+          "x1": 83
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Potência de Entrada CC",
+          "x0": 43,
+          "x1": 146
+        },
+        {
+          "text": "18000Wp",
+          "x0": 201,
+          "x1": 238
+        },
+        {
+          "text": "22500Wp",
+          "x0": 264,
+          "x1": 301
+        },
+        {
+          "text": "25500Wp",
+          "x0": 327,
+          "x1": 364
+        },
+        {
+          "text": "30000Wp",
+          "x0": 390,
+          "x1": 427
+        },
+        {
+          "text": "33000Wp",
+          "x0": 454,
+          "x1": 491
+        },
+        {
+          "text": "37500Wp",
+          "x0": 517,
+          "x1": 554
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Tensão de Entrada CC",
+          "x0": 43,
+          "x1": 141
+        },
+        {
+          "text": "1100V",
+          "x0": 365,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão Min. de Entrada FV",
+          "x0": 43,
+          "x1": 138
+        },
+        {
+          "text": "140V",
+          "x0": 367,
+          "x1": 387
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão de Partida de Entrada CC",
+          "x0": 43,
+          "x1": 161
+        },
+        {
+          "text": "160V",
+          "x0": 367,
+          "x1": 387
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão Nominal de Entrada CC",
+          "x0": 43,
+          "x1": 154
+        },
+        {
+          "text": "650V",
+          "x0": 367,
+          "x1": 387
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão MPPT",
+          "x0": 43,
+          "x1": 124
+        },
+        {
+          "text": "140V-1000V",
+          "x0": 354,
+          "x1": 401
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Corrente de Entrada CC",
+          "x0": 43,
+          "x1": 147
+        },
+        {
+          "text": "40A+20A",
+          "x0": 233,
+          "x1": 269
+        },
+        {
+          "text": "40A+40A",
+          "x0": 423,
+          "x1": 458
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Corrente de Curto-Circuito",
+          "x0": 43,
+          "x1": 157
+        },
+        {
+          "text": "52A+26A",
+          "x0": 233,
+          "x1": 269
+        },
+        {
+          "text": "52A+52A",
+          "x0": 423,
+          "x1": 458
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "N° de MPPTs / Strings por MPPT",
+          "x0": 43,
+          "x1": 159
+        },
+        {
+          "text": "2 / 2+1",
+          "x0": 238,
+          "x1": 264
+        },
+        {
+          "text": "2 / 2+2",
+          "x0": 428,
+          "x1": 453
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Saída (CA)",
+          "x0": 43,
+          "x1": 81
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Potência Nominal de Saída",
+          "x0": 43,
+          "x1": 138
+        },
+        {
+          "text": "12000W",
+          "x0": 203,
+          "x1": 236
+        },
+        {
+          "text": "15000W",
+          "x0": 266,
+          "x1": 299
+        },
+        {
+          "text": "17000W",
+          "x0": 329,
+          "x1": 362
+        },
+        {
+          "text": "20000W",
+          "x0": 392,
+          "x1": 425
+        },
+        {
+          "text": "22000W",
+          "x0": 456,
+          "x1": 488
+        },
+        {
+          "text": "25000W",
+          "x0": 519,
+          "x1": 552
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Potência Aparente",
+          "x0": 43,
+          "x1": 128
+        },
+        {
+          "text": "13200VA",
+          "x0": 202,
+          "x1": 237
+        },
+        {
+          "text": "16500VA",
+          "x0": 265,
+          "x1": 300
+        },
+        {
+          "text": "18700VA",
+          "x0": 328,
+          "x1": 363
+        },
+        {
+          "text": "22000VA",
+          "x0": 391,
+          "x1": 426
+        },
+        {
+          "text": "24200VA",
+          "x0": 455,
+          "x1": 490
+        },
+        {
+          "text": "27500VA",
+          "x0": 518,
+          "x1": 553
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Corrente Nominal de Saída CA",
+          "x0": 43,
+          "x1": 152
+        },
+        {
+          "text": "17.3A",
+          "x0": 208,
+          "x1": 230
+        },
+        {
+          "text": "21.7A",
+          "x0": 272,
+          "x1": 294
+        },
+        {
+          "text": "24.5A",
+          "x0": 335,
+          "x1": 357
+        },
+        {
+          "text": "28.9A",
+          "x0": 398,
+          "x1": 420
+        },
+        {
+          "text": "31.8A",
+          "x0": 461,
+          "x1": 483
+        },
+        {
+          "text": "36.1A",
+          "x0": 524,
+          "x1": 546
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. Corrente de Saída CA",
+          "x0": 43,
+          "x1": 139
+        },
+        {
+          "text": "19.1A",
+          "x0": 208,
+          "x1": 230
+        },
+        {
+          "text": "23.8A",
+          "x0": 272,
+          "x1": 294
+        },
+        {
+          "text": "27.0A",
+          "x0": 335,
+          "x1": 357
+        },
+        {
+          "text": "31.8A",
+          "x0": 398,
+          "x1": 420
+        },
+        {
+          "text": "34.9A",
+          "x0": 461,
+          "x1": 483
+        },
+        {
+          "text": "39.7A",
+          "x0": 524,
+          "x1": 546
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão Nominal de Rede CA",
+          "x0": 43,
+          "x1": 145
+        },
+        {
+          "text": "3/N/PE, 220V/380V, 230V/400V",
+          "x0": 319,
+          "x1": 435
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Tensão de Rede CA",
+          "x0": 43,
+          "x1": 144
+        },
+        {
+          "text": "270V-480V",
+          "x0": 356,
+          "x1": 399
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Frequência Nominal de Rede CA",
+          "x0": 43,
+          "x1": 159
+        },
+        {
+          "text": "50Hz / 60Hz",
+          "x0": 355,
+          "x1": 400
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Frequência de Rede CA",
+          "x0": 43,
+          "x1": 158
+        },
+        {
+          "text": "45Hz-55Hz / 55Hz-66Hz",
+          "x0": 332,
+          "x1": 422
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Fator de Potência",
+          "x0": 43,
+          "x1": 105
+        },
+        {
+          "text": "> 0.99 Potência Nominal (Ajustável 0.8 Capacitivo- 0.8 Indutivo)",
+          "x0": 263,
+          "x1": 492
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "THDi de Saída (@Saída Nominal)",
+          "x0": 43,
+          "x1": 161
+        },
+        {
+          "text": "<3%",
+          "x0": 369,
+          "x1": 386
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência",
+          "x0": 43,
+          "x1": 76
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência Máx.",
+          "x0": 43,
+          "x1": 95
+        },
+        {
+          "text": "98.60%",
+          "x0": 205,
+          "x1": 234
+        },
+        {
+          "text": "98.50%",
+          "x0": 268,
+          "x1": 297
+        },
+        {
+          "text": "98.50%",
+          "x0": 331,
+          "x1": 360
+        },
+        {
+          "text": "98.60%",
+          "x0": 395,
+          "x1": 423
+        },
+        {
+          "text": "98.60%",
+          "x0": 458,
+          "x1": 486
+        },
+        {
+          "text": "98.60%",
+          "x0": 521,
+          "x1": 550
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência Européia",
+          "x0": 43,
+          "x1": 109
+        },
+        {
+          "text": "98.20%",
+          "x0": 205,
+          "x1": 234
+        },
+        {
+          "text": "98.10%",
+          "x0": 268,
+          "x1": 297
+        },
+        {
+          "text": "98.10%",
+          "x0": 331,
+          "x1": 360
+        },
+        {
+          "text": "98.20%",
+          "x0": 395,
+          "x1": 423
+        },
+        {
+          "text": "98.20%",
+          "x0": 458,
+          "x1": 486
+        },
+        {
+          "text": "98.20%",
+          "x0": 521,
+          "x1": 550
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência MPPT",
+          "x0": 43,
+          "x1": 99
+        },
+        {
+          "text": ">99%",
+          "x0": 366,
+          "x1": 388
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteções",
+          "x0": 43,
+          "x1": 79
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção Contra Surtos (DPS)",
+          "x0": 43,
+          "x1": 149
+        },
+        {
+          "text": "Tipo II",
+          "x0": 366,
+          "x1": 388
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Detecção de Corrente Residual",
+          "x0": 43,
+          "x1": 153
+        },
+        {
+          "text": "Integrado",
+          "x0": 360,
+          "x1": 395
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção Anti Curto-Circuito CA",
+          "x0": 43,
+          "x1": 157
+        },
+        {
+          "text": "Integrado",
+          "x0": 360,
+          "x1": 395
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção Anti-Ilhamento",
+          "x0": 43,
+          "x1": 131
+        },
+        {
+          "text": "Integrado",
+          "x0": 360,
+          "x1": 395
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra Sobrecorrente",
+          "x0": 43,
+          "x1": 151
+        },
+        {
+          "text": "Integrado",
+          "x0": 360,
+          "x1": 395
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção Contra Arco-Elétrico AFCI",
+          "x0": 43,
+          "x1": 168
+        },
+        {
+          "text": "Integrado",
+          "x0": 360,
+          "x1": 394
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Parâmetros Gerais",
+          "x0": 43,
+          "x1": 110
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dimensões (L*A*C)",
+          "x0": 43,
+          "x1": 111
+        },
+        {
+          "text": "520*420*193mm",
+          "x0": 345,
+          "x1": 409
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Peso",
+          "x0": 43,
+          "x1": 60
+        },
+        {
+          "text": "24.5kg",
+          "x0": 365,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Grau de Proteção",
+          "x0": 43,
+          "x1": 105
+        },
+        {
+          "text": "IP65",
+          "x0": 369,
+          "x1": 386
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Resfriamento",
+          "x0": 43,
+          "x1": 90
+        },
+        {
+          "text": "Ventilação Forçada",
+          "x0": 343,
+          "x1": 411
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de Temperatura de Operação",
+          "x0": 43,
+          "x1": 168
+        },
+        {
+          "text": "–30°C ~ +60°C (Redução a 45°C)",
+          "x0": 318,
+          "x1": 436
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Emissão Típica de Ruído",
+          "x0": 43,
+          "x1": 130
+        },
+        {
+          "text": "<30dB",
+          "x0": 365,
+          "x1": 390
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Autoconsumo Noturno",
+          "x0": 43,
+          "x1": 124
+        },
+        {
+          "text": "< 1W",
+          "x0": 367,
+          "x1": 388
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Display",
+          "x0": 43,
+          "x1": 70
+        },
+        {
+          "text": "LED + APP",
+          "x0": 357,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Comunicação",
+          "x0": 43,
+          "x1": 90
+        },
+        {
+          "text": "RS485 (Meter), Wi-Fi + Bluetooth, DRM",
+          "x0": 305,
+          "x1": 449
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Normas e Certificações",
+          "x0": 43,
+          "x1": 126
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Regulamento de Rede Elétrica",
+          "x0": 43,
+          "x1": 151
+        },
+        {
+          "text": "IEC61727, IEC62116, EN50549, CQC(NB/T32004)",
+          "x0": 286,
+          "x1": 469
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Segurança/EMC",
+          "x0": 43,
+          "x1": 100
+        },
+        {
+          "text": "IEC62109-1/2, EN61000-6-1/2/3/4",
+          "x0": 314,
+          "x1": 441
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Garantia Padrão",
+          "x0": 43,
+          "x1": 101
+        },
+        {
+          "text": "5 Anos / 10 Anos (Opcional)",
+          "x0": 327,
+          "x1": 428
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "- 37 -",
+          "x0": 289,
+          "x1": 320
+        }
+      ]
+    }
+  ]
+}

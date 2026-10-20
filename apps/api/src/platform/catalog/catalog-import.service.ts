@@ -16,7 +16,10 @@ import {
 import {
   ImportParseError,
   equipmentCsvTemplate,
+  buildLayoutLines,
+  extractInverterDatasheet,
   extractModuleDatasheet,
+  type PdfTextItem,
   parseEquipmentCsv,
   parsePvsystFile,
   validateSpec,
@@ -50,6 +53,7 @@ export class CatalogImportService {
     file: UploadedFile | undefined,
     format: ImportFormat,
     kind: EquipmentKind | undefined,
+    modelHint = '',
   ): Promise<ImportPreviewDto> {
     if (!file) throw new BadRequestException('Envie o arquivo no campo "file"');
     if (file.size === 0) throw new BadRequestException('Arquivo vazio');
@@ -78,9 +82,28 @@ export class CatalogImportService {
         parsed = [item];
       } else {
         let text: string;
+        const pages: PdfTextItem[][] = [];
         try {
           const pdf = await getDocumentProxy(new Uint8Array(file.buffer));
           text = (await extractText(pdf, { mergePages: true })).text;
+          // Posição de cada pedaço de texto: fichas de inversor têm uma coluna por modelo.
+          for (let n = 1; n <= pdf.numPages; n++) {
+            const content = await (await pdf.getPage(n)).getTextContent();
+            pages.push(
+              content.items.flatMap((item) =>
+                'str' in item
+                  ? [
+                      {
+                        text: item.str,
+                        x: item.transform[4],
+                        y: item.transform[5],
+                        width: item.width,
+                      },
+                    ]
+                  : [],
+              ),
+            );
+          }
         } catch {
           throw new ImportParseError('Não foi possível ler o PDF (corrompido ou protegido).');
         }
@@ -88,7 +111,25 @@ export class CatalogImportService {
           throw new ImportParseError(
             'O PDF não tem texto legível (provavelmente é uma imagem escaneada). Preencha à mão.',
           );
-        parsed = [extractModuleDatasheet(text)];
+        // Sem tipo informado, tenta como ficha de inversor (tabela com colunas por modelo) e depois como módulo.
+        const inverters =
+          kind === 'MODULE'
+            ? []
+            : pages
+                .flatMap((items) =>
+                  extractInverterDatasheet(buildLayoutLines(items), text, modelHint),
+                )
+                .filter((item) => Object.keys(item.spec).length >= 8);
+        if (inverters.length > 0) {
+          parsed = inverters;
+          notes.push(
+            `Ficha de inversor com ${inverters.length} modelo(s): confira cada coluna contra o PDF antes de importar.`,
+          );
+        } else if (kind === 'INVERTER')
+          throw new ImportParseError(
+            'Não reconheci a tabela de especificações de inversor neste PDF (o layout é diferente dos que o sistema conhece). Preencha à mão ou envie o arquivo .OND.',
+          );
+        else parsed = [extractModuleDatasheet(text)];
       }
     } catch (error) {
       if (error instanceof ImportParseError) errors.push({ message: error.message });

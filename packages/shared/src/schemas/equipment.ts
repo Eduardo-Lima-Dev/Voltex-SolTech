@@ -212,3 +212,14 @@ export const priceImportQuerySchema = z.object({
     .transform((v) => v === 'true')
     .optional(),
 });
+
+/** Fontes de catálogo na internet (listagens públicas de fichas técnicas). */
+export const CATALOG_SITE_SOURCE_KEYS = ['techlux'] as const;
+
+export const listSourceDocumentsQuerySchema = paginationQuerySchema.extend({
+  search: z.string().trim().optional(),
+  /** `Datasheet`, `Manual`... como o site rotula. */
+  docType: z.string().trim().max(40).optional(),
+  equipment: z.enum(['MODULE', 'INVERTER', 'OTHER']).optional(),
+});
+export type ListSourceDocumentsQuery = z.infer<typeof listSourceDocumentsQuerySchema>;

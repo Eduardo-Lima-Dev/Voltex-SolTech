@@ -104,6 +104,7 @@ describe('Central de Dados Externos (e2e)', () => {
         'cec-library',
         'nasa-power',
         'pvgis',
+        'techlux',
       ]);
       // A biblioteca CEC/SAM fica com a licença por conferir e só liga por configuração.
       expect(byKey['cec-library']?.licenseStatus).toBe('PENDING_REVIEW');

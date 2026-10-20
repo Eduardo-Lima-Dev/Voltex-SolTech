@@ -1,0 +1,767 @@
+{
+  "documentText": "Inversor de string trifásico 350 kW CSI-350K-T800. CSI Solar Co., Ltd.",
+  "lines": [
+    {
+      "cells": [
+        {
+          "text": "DADOS TÉCNICOS/SISTEMA",
+          "x0": 44,
+          "x1": 165
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "NOME DO MODELO",
+          "x0": 44,
+          "x1": 121
+        },
+        {
+          "text": "CSI-350K-T800 1A-E",
+          "x0": 257,
+          "x1": 333
+        },
+        {
+          "text": "CSI-350K-T800 1B-E",
+          "x0": 430,
+          "x1": 506
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "ENTRADA (CC)",
+          "x0": 44,
+          "x1": 100
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. tensão de entrada CC",
+          "x0": 44,
+          "x1": 133
+        },
+        {
+          "text": "1500V",
+          "x0": 377,
+          "x1": 398
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão de partida de entrada CC",
+          "x0": 44,
+          "x1": 152
+        },
+        {
+          "text": "550V",
+          "x0": 379,
+          "x1": 396
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de operação de tensão do MPPT",
+          "x0": 44,
+          "x1": 169
+        },
+        {
+          "text": "500-1500V",
+          "x0": 368,
+          "x1": 406
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de tensão no MPPT para carga total (V)",
+          "x0": 44,
+          "x1": 191
+        },
+        {
+          "text": "880-1300V",
+          "x0": 370,
+          "x1": 404
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão nominal de entrada (V)",
+          "x0": 44,
+          "x1": 145
+        },
+        {
+          "text": "1200V",
+          "x0": 377,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. corrente de entrada (A)",
+          "x0": 44,
+          "x1": 138
+        },
+        {
+          "text": "40A",
+          "x0": 296,
+          "x1": 308
+        },
+        {
+          "text": "32A",
+          "x0": 472,
+          "x1": 484
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. corrente de curto-circuito (A)",
+          "x0": 44,
+          "x1": 156
+        },
+        {
+          "text": "60A",
+          "x0": 296,
+          "x1": 308
+        },
+        {
+          "text": "60A",
+          "x0": 472,
+          "x1": 484
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Número de MPPTs",
+          "x0": 44,
+          "x1": 105
+        },
+        {
+          "text": "12",
+          "x0": 298,
+          "x1": 306
+        },
+        {
+          "text": "16",
+          "x0": 474,
+          "x1": 482
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Número de entradas CC",
+          "x0": 44,
+          "x1": 123
+        },
+        {
+          "text": "24",
+          "x0": 298,
+          "x1": 306
+        },
+        {
+          "text": "32",
+          "x0": 474,
+          "x1": 482
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "SAÍDA CA",
+          "x0": 44,
+          "x1": 81
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. potência de saída CA (Aparente)",
+          "x0": 44,
+          "x1": 169
+        },
+        {
+          "text": "352kVA @35/",
+          "x0": 318,
+          "x1": 361
+        },
+        {
+          "text": "320kVA @45 / 295kVA @50",
+          "x0": 371,
+          "x1": 465
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tensão nominal de saída",
+          "x0": 44,
+          "x1": 126
+        },
+        {
+          "text": "800V",
+          "x0": 382,
+          "x1": 398
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipo de conexão de rede",
+          "x0": 44,
+          "x1": 125
+        },
+        {
+          "text": "3Φ / PE",
+          "x0": 378,
+          "x1": 403
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. corrente de saída",
+          "x0": 44,
+          "x1": 119
+        },
+        {
+          "text": "254A",
+          "x0": 379,
+          "x1": 396
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Frequência nominal de saída",
+          "x0": 44,
+          "x1": 151
+        },
+        {
+          "text": "50Hz/60Hz",
+          "x0": 371,
+          "x1": 409
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "THDi",
+          "x0": 44,
+          "x1": 61
+        },
+        {
+          "text": "< 2% (Potência Nominal",
+          "x0": 357,
+          "x1": 436
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Fator de Potência",
+          "x0": 44,
+          "x1": 102
+        },
+        {
+          "text": "> 0.99 / 0,8 capacitivo... 0,8 indutivo",
+          "x0": 337,
+          "x1": 455
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "EFICIÊNCIA",
+          "x0": 44,
+          "x1": 89
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Máx. eficiência",
+          "x0": 44,
+          "x1": 94
+        },
+        {
+          "text": "99.01%",
+          "x0": 378,
+          "x1": 403
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Eficiência da UE",
+          "x0": 44,
+          "x1": 96
+        },
+        {
+          "text": "98.8%",
+          "x0": 380,
+          "x1": 401
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "SEGURANÇA & PROTEÇÃO",
+          "x0": 44,
+          "x1": 146
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção anti-ilhamento",
+          "x0": 44,
+          "x1": 124
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Resistência de isolamento CC",
+          "x0": 44,
+          "x1": 140
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento de corrente residual",
+          "x0": 44,
+          "x1": 164
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramento de strings",
+          "x0": 44,
+          "x1": 131
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra sobrecorrente de saída CA",
+          "x0": 44,
+          "x1": 185
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Proteção contra curto-circuito CA",
+          "x0": 44,
+          "x1": 153
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Monitoramentode rede",
+          "x0": 44,
+          "x1": 122
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Diagnóstico inteligente da Curva IV",
+          "x0": 44,
+          "x1": 160
+        },
+        {
+          "text": "Sim",
+          "x0": 384,
+          "x1": 397
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Chave CC Inteligente",
+          "x0": 44,
+          "x1": 113
+        },
+        {
+          "text": "Opcional",
+          "x0": 375,
+          "x1": 408
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Módulo Anti-PID",
+          "x0": 44,
+          "x1": 107
+        },
+        {
+          "text": "Opcional",
+          "x0": 375,
+          "x1": 408
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Classe de Sobretensão",
+          "x0": 44,
+          "x1": 119
+        },
+        {
+          "text": "II (CC),III(CA)",
+          "x0": 365,
+          "x1": 415
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "DPS CC / CA",
+          "x0": 44,
+          "x1": 85
+        },
+        {
+          "text": "DPS CC Tipo II / DPS CA Tipo II",
+          "x0": 328,
+          "x1": 443
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "PARÂMETROS GERAIS",
+          "x0": 44,
+          "x1": 129
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tela",
+          "x0": 44,
+          "x1": 58
+        },
+        {
+          "text": "LED+ APP (Opcional)",
+          "x0": 351,
+          "x1": 429
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Comunicação",
+          "x0": 44,
+          "x1": 89
+        },
+        {
+          "text": "RS485 / PLC / Wi-fi",
+          "x0": 355,
+          "x1": 427
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Faixa de temperatura de operação",
+          "x0": 44,
+          "x1": 158
+        },
+        {
+          "text": "-30 até 60",
+          "x0": 375,
+          "x1": 407
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Dimensões (L x A x P)",
+          "x0": 44,
+          "x1": 113
+        },
+        {
+          "text": "1130 x 894 x 372 mm",
+          "x0": 358,
+          "x1": 428
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Grau de Proteção",
+          "x0": 44,
+          "x1": 102
+        },
+        {
+          "text": "IP66",
+          "x0": 384,
+          "x1": 399
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Peso",
+          "x0": 45,
+          "x1": 62
+        },
+        {
+          "text": "120kg",
+          "x0": 381,
+          "x1": 404
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipos de entradas CC",
+          "x0": 44,
+          "x1": 113
+        },
+        {
+          "text": "MC4-EVO2",
+          "x0": 373,
+          "x1": 412
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Tipos de saidas CA",
+          "x0": 45,
+          "x1": 106
+        },
+        {
+          "text": "Suporte dos Terminais OT/DT 400mm2",
+          "x0": 318,
+          "x1": 466
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "CERTIFICAÇÕES",
+          "x0": 44,
+          "x1": 105
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Segurança",
+          "x0": 45,
+          "x1": 80
+        },
+        {
+          "text": "IEC62109-1/2",
+          "x0": 371,
+          "x1": 414
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "EMC padrão",
+          "x0": 45,
+          "x1": 86
+        },
+        {
+          "text": "IEC 61000-6-2/4",
+          "x0": 368,
+          "x1": 420
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Codigo de Rede",
+          "x0": 45,
+          "x1": 97
+        },
+        {
+          "text": "IEC61727 & IEC62116, IEC 50530, IEC 61683,PO 12.3, NTS2.1",
+          "x0": 297,
+          "x1": 500
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "*Qualquer sistema com uma relação CC/CA inferior a 1,5 é coberto por nossa garantia. Caso contrario, Entre em contato com o suporte técnico local da Canadian Solar para confirmação",
+          "x0": 37,
+          "x1": 558
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "adicional.",
+          "x0": 37,
+          "x1": 63
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "A especificação e as principais característicasdescritas nesta ficha técnica podem apresentar pequenas diferenças e não são garantidas.Devido à contínua inovação, pesquisa e",
+          "x0": 37,
+          "x1": 561
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "aprimoramento de produtos, a CSI SOLAR CO., LTD. se reserva o direito de fazer os ajustes necessários às informações aqui descritas a qualquer momento, sem aviso prévio. Obtenha",
+          "x0": 37,
+          "x1": 561
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "sempre a versão mais recente da ficha técnica, que deverá ser devidamente incorporada no contrato vinculante celebrado pelas partes, que rege todas as transações relacionadas com a",
+          "x0": 37,
+          "x1": 561
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "compra e venda dos produtos aqui descritos",
+          "x0": 37,
+          "x1": 162
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "CSI Solar Co., Ltd.",
+          "x0": 37,
+          "x1": 106
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "199 Lushan Road, SND, Suzhou, Jiangsu, China, 215129, www.csisolar.com, service.inverter@csisolar.com",
+          "x0": 37,
+          "x1": 430
+        }
+      ]
+    },
+    {
+      "cells": [
+        {
+          "text": "Maio 2024,Todos os direitos reservados. Ficha técnica do produto inversor fotovoltaico V1.2_Pt-BR",
+          "x0": 281,
+          "x1": 556
+        }
+      ]
+    }
+  ]
+}

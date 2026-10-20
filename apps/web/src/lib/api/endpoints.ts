@@ -105,6 +105,9 @@ import {
   type EngineeringProjectDetailDto,
   type EngineeringProjectDto,
   type EngineeringRequestListItemDto,
+  type CatalogSourceDocumentDto,
+  type CatalogSourceDto,
+  type ListSourceDocumentsQuery,
   type EngineeringVersionComparisonDto,
   type EngineeringShareLinkDto,
   type PublicEngineeringReportDto,
@@ -391,6 +394,17 @@ export function createEndpoints(client: ApiClient) {
         client.post<{ created: EquipmentDto[] }>('/catalog/import/commit', input),
       attachDatasheet: (id: string, documentId: string) =>
         client.post<EquipmentDto>(`/catalog/items/${id}/datasheet`, { documentId }),
+      sources: () => client.get<CatalogSourceDto[]>('/catalog/sources'),
+      refreshSource: (key: string) =>
+        client.post<{ pages: number; found: number; created: number }>(
+          `/catalog/sources/${key}/refresh`,
+        ),
+      sourceDocuments: (key: string, query: Partial<ListSourceDocumentsQuery> = {}) =>
+        client.get<Paginated<CatalogSourceDocumentDto>>(`/catalog/sources/${key}/documents`, {
+          query: query as QueryParams,
+        }),
+      previewSourceDocument: (id: string) =>
+        client.post<ImportPreviewDto>(`/catalog/sources/documents/${id}/preview`),
       references: (query: Partial<ListReferencesQuery> = {}) =>
         client.get<Paginated<ExternalReferenceDto>>('/catalog/references', {
           query: query as QueryParams,

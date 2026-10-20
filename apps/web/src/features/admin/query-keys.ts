@@ -63,6 +63,9 @@ export const queryKeys = {
   catalog: (filters?: unknown) =>
     filters === undefined ? (['catalog'] as const) : (['catalog', filters] as const),
   catalogItem: (id: string) => ['catalog', 'item', id] as const,
+  catalogSources: ['catalog', 'sources'] as const,
+  catalogSourceDocuments: (key: string, filters?: unknown) =>
+    ['catalog', 'sources', key, 'documents', filters ?? {}] as const,
   catalogReferences: (filters?: unknown) => ['catalog', 'references', filters ?? {}] as const,
   engineeringRequests: (filters?: unknown) =>
     filters === undefined

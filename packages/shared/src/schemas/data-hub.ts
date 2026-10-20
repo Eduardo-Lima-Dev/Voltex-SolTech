@@ -2,7 +2,13 @@ import { z } from 'zod';
 
 /** Central de Dados Externos (Fase 9B, ADR-0018): contratos de entrada da API. */
 
-export const DATA_SOURCE_KEYS = ['pvgis', 'nasa-power', 'aneel-tariffs', 'cec-library'] as const;
+export const DATA_SOURCE_KEYS = [
+  'pvgis',
+  'nasa-power',
+  'aneel-tariffs',
+  'cec-library',
+  'techlux',
+] as const;
 export type DataSourceKey = (typeof DATA_SOURCE_KEYS)[number];
 
 /** Fontes de clima que a Central sabe consultar. */

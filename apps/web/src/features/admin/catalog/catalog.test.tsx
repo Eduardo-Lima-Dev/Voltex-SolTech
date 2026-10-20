@@ -416,6 +416,7 @@ describe('Administração → Catálogo técnico', () => {
   it('referências externas: explica por que a lista está vazia e permite adotar com os campos que faltam', async () => {
     let adopted: unknown;
     base(
+      http.get(`${API}/catalog/sources`, () => HttpResponse.json([])),
       http.get(`${API}/catalog/references`, ({ request }) =>
         HttpResponse.json(
           new URL(request.url).searchParams.get('search') === 'vazio'
@@ -454,6 +455,109 @@ describe('Administração → Catálogo técnico', () => {
     await user.type(within(dialog).getByLabelText(/Largura/), '1134');
     await user.click(within(dialog).getByRole('button', { name: 'Adotar como rascunho' }));
     await waitFor(() => expect(adopted).toMatchObject({ spec: { lengthMm: 2278, widthMm: 1134 } }));
+  });
+
+  it('fontes na internet: lista as fontes, busca fichas, lê a prévia e só importa depois da confirmação', async () => {
+    let committed: unknown;
+    const sources = [
+      {
+        key: 'techlux',
+        label: 'Techlux (distribuidora): fichas técnicas e manuais',
+        baseUrl: 'https://techlux.com.br',
+        license: 'x',
+        attribution: 'Techlux',
+        licenseStatus: 'PENDING_REVIEW',
+        enabled: true,
+        notes: 'Só a lista de links é guardada.',
+        documentCount: 2,
+        indexedAt: now,
+        mode: 'documents',
+      },
+      {
+        key: 'cec-library',
+        label: 'Biblioteca CEC/SAM',
+        baseUrl: 'https://github.com/NREL/SAM',
+        license: 'x',
+        attribution: 'CEC',
+        licenseStatus: 'PENDING_REVIEW',
+        enabled: false,
+        notes: 'Bloqueada.',
+        documentCount: 0,
+        indexedAt: null,
+        mode: 'library',
+      },
+    ];
+    const doc = {
+      id: 'd-1',
+      sourceKey: 'techlux',
+      docType: 'Datasheet',
+      title: 'Inversor CSI 15-25K Trifásico',
+      brand: 'CSI',
+      pdfUrl: 'https://techlux.com.br/storage/a.pdf',
+      productUrl: null,
+      equipmentHint: 'INVERTER',
+      collectedAt: now,
+    };
+    const preview: ImportPreviewDto = {
+      format: 'datasheet-pdf',
+      candidates: [
+        {
+          kind: 'INVERTER',
+          manufacturer: 'CSI',
+          model: 'CSI-15K',
+          spec: { topology: 'STRING', pAcNomW: 15000 } as never,
+          origin: 'DATASHEET_PDF',
+          fieldConfidence: {},
+          issues: [],
+          exists: false,
+          missing: [],
+        } as never,
+      ],
+      errors: [],
+      notes: ['Fonte: Inversor CSI — https://techlux.com.br/storage/a.pdf'],
+    };
+    base(
+      http.get(`${API}/catalog/sources`, () => HttpResponse.json(sources)),
+      http.get(`${API}/catalog/sources/techlux/documents`, ({ request }) => {
+        const q = new URL(request.url).searchParams.get('search');
+        return HttpResponse.json(
+          q === 'nada' ? page([]) : { data: [doc], meta: { page: 1, pageSize: 20, total: 1 } },
+        );
+      }),
+      http.post(`${API}/catalog/sources/documents/d-1/preview`, () => HttpResponse.json(preview)),
+      http.post(`${API}/catalog/import/commit`, async ({ request }) => {
+        committed = await request.json();
+        return HttpResponse.json({ created: [{ id: 'n-1' }] }, { status: 201 });
+      }),
+    );
+    renderApp('/engine/catalogo');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Referências externas' }));
+    // Todas as fontes aparecem, com situação e licença.
+    expect(
+      await screen.findByText('Techlux (distribuidora): fichas técnicas e manuais'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Biblioteca CEC/SAM')).toBeInTheDocument();
+    expect(screen.getByText('Ligada')).toBeInTheDocument();
+    expect(screen.getByText('Desligada')).toBeInTheDocument();
+    await user.click(
+      screen.getAllByRole('button', { name: 'Buscar nesta fonte' })[0] as HTMLElement,
+    );
+    expect(await screen.findByText('Inversor CSI 15-25K Trifásico')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Buscar fichas técnicas'), 'nada');
+    expect(await screen.findByText(/Nenhum documento/)).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('Buscar fichas técnicas'));
+    await user.click(await screen.findByRole('button', { name: 'Ver prévia e importar' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Fonte: Inversor CSI/)).toBeInTheDocument();
+    expect(committed).toBeUndefined();
+    await user.click(within(dialog).getByRole('checkbox'));
+    await user.click(within(dialog).getByRole('button', { name: /Importar|Criar|Gravar/ }));
+    await waitFor(() =>
+      expect(committed).toMatchObject({
+        items: [{ kind: 'INVERTER', model: 'CSI-15K', origin: 'DATASHEET_PDF' }],
+      }),
+    );
   });
 
   it('quem não tem permissão de ler o catálogo não acessa a tela', async () => {

@@ -1,7 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileUp, Plus } from 'lucide-react';
 import { useState } from 'react';
-import type { EquipmentKind, EquipmentStatus, ExternalReferenceDto } from '@voltex/shared';
+import type {
+  EquipmentKind,
+  EquipmentStatus,
+  ExternalReferenceDto,
+  ImportPreviewDto,
+} from '@voltex/shared';
 import {
   Badge,
   Button,
@@ -244,7 +249,203 @@ function EquipmentList({ kind }: { kind: EquipmentKind }) {
   );
 }
 
+function SourceCards({
+  selected,
+  onSelect,
+}: {
+  selected: string | null;
+  onSelect: (key: string) => void;
+}) {
+  const sources = useQuery({
+    queryKey: queryKeys.catalogSources,
+    queryFn: () => endpoints.catalog.sources(),
+  });
+  if (sources.isPending) return <Skeleton className="h-24 w-full" />;
+  if (sources.isError)
+    return <p className="text-sm text-destructive">Não foi possível carregar as fontes.</p>;
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2" aria-label="Fontes de equipamentos">
+      {sources.data.map((source) => (
+        <li
+          key={source.key}
+          className={`space-y-2 rounded-lg border p-3 ${selected === source.key ? 'border-primary' : ''}`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-medium">{source.label}</h3>
+            <div className="flex gap-1">
+              <Badge variant={source.enabled ? 'green' : 'secondary'}>
+                {source.enabled ? 'Ligada' : 'Desligada'}
+              </Badge>
+              {source.licenseStatus !== 'CLEARED' ? (
+                <Badge variant="yellow">Termos a conferir</Badge>
+              ) : null}
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">{source.notes}</p>
+          <p className="text-xs text-muted-foreground">
+            {source.documentCount} registro(s)
+            {source.indexedAt ? ` · atualizado em ${formatDate(source.indexedAt)}` : ''}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => onSelect(source.key)}>
+            Buscar nesta fonte
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SourceDocuments({ source }: { source: string }) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [equipment, setEquipment] = useState<'' | 'MODULE' | 'INVERTER' | 'OTHER'>('');
+  const [preview, setPreview] = useState<ImportPreviewDto | null>(null);
+  const filters = {
+    search: search || undefined,
+    equipment: equipment || undefined,
+    page: 1,
+    pageSize: 20,
+  };
+  const list = useQuery({
+    queryKey: queryKeys.catalogSourceDocuments(source, filters),
+    queryFn: () => endpoints.catalog.sourceDocuments(source, filters),
+  });
+  const refresh = useMutation({
+    mutationFn: () => endpoints.catalog.refreshSource(source),
+    onSuccess: async (r) => {
+      toast.success(`Lista atualizada: ${r.found} documento(s) em ${r.pages} página(s).`);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalogSources });
+      await queryClient.invalidateQueries({ queryKey: ['catalog', 'sources', source] });
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível atualizar a lista.')),
+  });
+  const read = useMutation({
+    mutationFn: (id: string) => endpoints.catalog.previewSourceDocument(id),
+    onSuccess: (result) => setPreview(result),
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível ler a ficha.')),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="grid min-w-56 gap-1">
+          <Label htmlFor="src-search">Buscar fichas técnicas</Label>
+          <Input
+            id="src-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Marca ou modelo"
+          />
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="src-equipment">Tipo</Label>
+          <NativeSelect
+            id="src-equipment"
+            value={equipment}
+            onChange={(e) => setEquipment(e.target.value as typeof equipment)}
+          >
+            <option value="">Todos</option>
+            <option value="INVERTER">Inversor</option>
+            <option value="MODULE">Módulo</option>
+            <option value="OTHER">Outros</option>
+          </NativeSelect>
+        </div>
+        <Can permission="platform.catalog.manage">
+          <Button variant="outline" disabled={refresh.isPending} onClick={() => refresh.mutate()}>
+            {refresh.isPending ? <Spinner /> : null} Atualizar lista da fonte
+          </Button>
+        </Can>
+      </div>
+      {list.isPending ? (
+        <Skeleton className="h-24 w-full" />
+      ) : list.isError ? (
+        <p className="text-sm text-destructive">Não foi possível carregar os documentos.</p>
+      ) : list.data.data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum documento. Use <strong>Atualizar lista da fonte</strong> para ler a listagem do
+          site (só os links são guardados).
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Documento</TableHead>
+              <TableHead>Marca</TableHead>
+              <TableHead>Tipo</TableHead>
+              <Can permission="platform.catalog.manage">
+                <TableHead className="text-right">Ações</TableHead>
+              </Can>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.data.data.map((doc) => (
+              <TableRow key={doc.id}>
+                <TableCell className="font-medium">
+                  {doc.title}
+                  <div className="text-xs font-normal text-muted-foreground">{doc.docType}</div>
+                </TableCell>
+                <TableCell>{doc.brand || '—'}</TableCell>
+                <TableCell>
+                  {doc.equipmentHint === 'INVERTER'
+                    ? 'Inversor'
+                    : doc.equipmentHint === 'MODULE'
+                      ? 'Módulo'
+                      : 'Outro'}
+                </TableCell>
+                <Can permission="platform.catalog.manage">
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={read.isPending}
+                      onClick={() => read.mutate(doc.id)}
+                    >
+                      Ver prévia e importar
+                    </Button>
+                  </TableCell>
+                </Can>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {preview ? (
+        <ImportDialog
+          open
+          onOpenChange={(open) => !open && setPreview(null)}
+          defaultKind="INVERTER"
+          initialPreview={preview}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function References() {
+  const [source, setSource] = useState<string | null>(null);
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Fontes de equipamentos</CardTitle>
+          <CardDescription>
+            Bibliotecas e sites públicos de onde você pode trazer fichas técnicas. Você escolhe uma,
+            busca, confere a prévia e <strong>só então importa</strong>: tudo entra como rascunho,
+            aguardando a aprovação do responsável técnico. A ligação de cada fonte é feita no
+            servidor.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <SourceCards selected={source} onSelect={setSource} />
+          {source && source !== 'cec-library' ? <SourceDocuments source={source} /> : null}
+        </CardContent>
+      </Card>
+      {source === 'cec-library' || source === null ? <CecReferences /> : null}
+    </div>
+  );
+}
+
+function CecReferences() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [adopting, setAdopting] = useState<ExternalReferenceDto | null>(null);

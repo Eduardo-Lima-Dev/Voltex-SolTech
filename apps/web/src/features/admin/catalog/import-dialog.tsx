@@ -72,17 +72,22 @@ export function ImportDialog({
   open,
   onOpenChange,
   defaultKind,
+  initialPreview = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultKind: EquipmentKind;
+  /** Prévia já lida (ex.: ficha baixada de uma fonte na internet): abre direto na conferência. */
+  initialPreview?: ImportPreviewDto | null;
 }) {
   const queryClient = useQueryClient();
   const [format, setFormat] = useState<ImportFormat>('csv');
   const [kind, setKind] = useState<EquipmentKind>(defaultKind);
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<ImportPreviewDto | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [preview, setPreview] = useState<ImportPreviewDto | null>(initialPreview);
+  const [rows, setRows] = useState<Row[]>(
+    initialPreview ? initialPreview.candidates.map((c) => ({ ...c, selected: false })) : [],
+  );
   const [editing, setEditing] = useState<number | null>(null);
 
   const read = useMutation({
