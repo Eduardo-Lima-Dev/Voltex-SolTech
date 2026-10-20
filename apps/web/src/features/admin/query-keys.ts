@@ -64,6 +64,16 @@ export const queryKeys = {
     filters === undefined ? (['catalog'] as const) : (['catalog', filters] as const),
   catalogItem: (id: string) => ['catalog', 'item', id] as const,
   catalogReferences: (filters?: unknown) => ['catalog', 'references', filters ?? {}] as const,
+  engineeringRequests: (filters?: unknown) =>
+    filters === undefined
+      ? (['engineering', 'requests'] as const)
+      : (['engineering', 'requests', filters] as const),
+  engineeringProjects: (filters?: unknown) =>
+    filters === undefined
+      ? (['engineering', 'projects'] as const)
+      : (['engineering', 'projects', filters] as const),
+  engineeringProject: (id: string) => ['engineering', 'project', id] as const,
+  engineeringVersion: (id: string) => ['engineering', 'version', id] as const,
   catalogPrices: ['catalog', 'prices'] as const,
   sourceWatches: ['data-hub', 'watches'] as const,
   updateProposals: (filters?: unknown) =>

@@ -99,7 +99,7 @@ describe('Administração → Catálogo técnico', () => {
 
   it('lista os módulos com resumo da ficha, situação e origem; as outras abas começam vazias', async () => {
     base();
-    renderApp('/admin/catalogo');
+    renderApp('/engine/catalogo');
     const draft = (await screen.findByText(/FT-550M/)).closest('tr') as HTMLElement;
     expect(within(draft).getByText('550 Wp · 49,7 V (Voc)')).toBeInTheDocument();
     expect(within(draft).getByText('Rascunho')).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('Administração → Catálogo técnico', () => {
         HttpResponse.json(detail({ id: 'e-9', model: 'NOVO' })),
       ),
     );
-    renderApp('/admin/catalogo');
+    renderApp('/engine/catalogo');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Novo módulo/ }));
     const dialog = await screen.findByRole('dialog');
@@ -170,7 +170,7 @@ describe('Administração → Catálogo técnico', () => {
         return HttpResponse.json(equipment(), { status: 201 });
       }),
     );
-    renderApp('/admin/catalogo');
+    renderApp('/engine/catalogo');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Novo módulo/ }));
     const dialog = await screen.findByRole('dialog');
@@ -191,7 +191,7 @@ describe('Administração → Catálogo técnico', () => {
         return HttpResponse.json(detail({ status: 'APPROVED', approvedAt: now }));
       }),
     );
-    const view = renderApp('/admin/catalogo', { session: makeSession('TECHNICAL_LEAD') });
+    const view = renderApp('/engine/catalogo', { session: makeSession('TECHNICAL_LEAD') });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Abrir Fabricante Teste FT-550M/ }));
     const dialog = await screen.findByRole('dialog');
@@ -202,7 +202,7 @@ describe('Administração → Catálogo técnico', () => {
     view.unmount();
 
     base(http.get(`${API}/catalog/items/e-1`, () => HttpResponse.json(detail())));
-    renderApp('/admin/catalogo', { session: makeSession('ENGINEERING') });
+    renderApp('/engine/catalogo', { session: makeSession('ENGINEERING') });
     await userEvent
       .setup()
       .click(await screen.findByRole('button', { name: /Abrir Fabricante Teste FT-550M/ }));
@@ -231,7 +231,7 @@ describe('Administração → Catálogo técnico', () => {
         ),
       ),
     );
-    renderApp('/admin/catalogo', { session: makeSession('TECHNICAL_LEAD') });
+    renderApp('/engine/catalogo', { session: makeSession('TECHNICAL_LEAD') });
     await userEvent
       .setup()
       .click(await screen.findByRole('button', { name: /Abrir Fabricante Teste FT-550M/ }));
@@ -256,7 +256,7 @@ describe('Administração → Catálogo técnico', () => {
         return HttpResponse.json(equipment({ id: 'e-2', status: 'APPROVED' }));
       }),
     );
-    renderApp('/admin/catalogo', { session: makeSession('TECHNICAL_LEAD') });
+    renderApp('/engine/catalogo', { session: makeSession('TECHNICAL_LEAD') });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Abrir Fabricante Teste FT-600M/ }));
     const dialog = await screen.findByRole('dialog');
@@ -310,7 +310,7 @@ describe('Administração → Catálogo técnico', () => {
           return HttpResponse.json({ created: [equipment()] }, { status: 201 });
         }),
       );
-      renderApp('/admin/catalogo');
+      renderApp('/engine/catalogo');
       const user = userEvent.setup();
       await user.click(
         (await screen.findAllByRole('button', { name: /Importar/ }))[0] as HTMLElement,
@@ -368,7 +368,7 @@ describe('Administração → Catálogo técnico', () => {
           } satisfies ImportPreviewDto),
         ),
       );
-      renderApp('/admin/catalogo');
+      renderApp('/engine/catalogo');
       const user = userEvent.setup();
       await user.click(
         (await screen.findAllByRole('button', { name: /Importar/ }))[0] as HTMLElement,
@@ -400,7 +400,7 @@ describe('Administração → Catálogo técnico', () => {
         });
       }),
     );
-    renderApp('/admin/catalogo');
+    renderApp('/engine/catalogo');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('tab', { name: 'Preços' }));
     await user.upload(
@@ -442,7 +442,7 @@ describe('Administração → Catálogo técnico', () => {
         return HttpResponse.json(equipment({ origin: 'CEC' }), { status: 201 });
       }),
     );
-    renderApp('/admin/catalogo');
+    renderApp('/engine/catalogo');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('tab', { name: 'Referências externas' }));
     expect(await screen.findByText(/Ref R-550/)).toBeInTheDocument();
@@ -458,7 +458,7 @@ describe('Administração → Catálogo técnico', () => {
 
   it('quem não tem permissão de ler o catálogo não acessa a tela', async () => {
     base();
-    renderApp('/admin/catalogo', { session: makeSession('SALESPERSON') });
+    renderApp('/engine/catalogo', { session: makeSession('SALESPERSON') });
     expect(
       await screen.findByText(/não tem permissão|sem permissão|Acesso negado/i),
     ).toBeInTheDocument();

@@ -1,6 +1,5 @@
 import {
   Building2,
-  Boxes,
   DatabaseZap,
   Inbox,
   FileText,
@@ -26,7 +25,6 @@ export interface AdminTab {
     | 'tarifas'
     | 'irradiacao'
     | 'regras'
-    | 'catalogo'
     | 'fontes'
     | 'atualizacoes'
     | 'margens'
@@ -89,13 +87,6 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'Limites e parâmetros do Solar Calculator',
     icon: Scale,
     anyOf: ['platform.rule.read'],
-  },
-  {
-    path: 'catalogo',
-    label: 'Catálogo técnico',
-    description: 'Módulos, inversores, proteções, cabos e preços',
-    icon: Boxes,
-    anyOf: ['platform.catalog.read'],
   },
   {
     path: 'fontes',
