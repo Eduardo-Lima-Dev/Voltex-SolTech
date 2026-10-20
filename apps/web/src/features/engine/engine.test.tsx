@@ -610,6 +610,19 @@ describe('Engine: editor da versão', () => {
     ]);
     const user = userEvent.setup();
     expect(await screen.findByText(/2 visualização/)).toBeInTheDocument();
+    server.use(
+      http.post(`${API}/engineering/versions/v-3/attach-homologation`, () =>
+        HttpResponse.json({
+          projectId: 'p-1',
+          attached: [{ code: 'MEMORIAL', documentId: 'd-1' }],
+          skipped: [],
+        }),
+      ),
+    );
+    await user.click(screen.getByRole('button', { name: 'Anexar à homologação' }));
+    expect(
+      await screen.findByText(/Anexado ao checklist de homologação: MEMORIAL/),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Gerar link/ }));
     expect(await screen.findByText(/\/r\/tok123/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Revogar' }));

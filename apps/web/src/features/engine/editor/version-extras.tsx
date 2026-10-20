@@ -24,8 +24,30 @@ function saveBlob(blob: Blob, name: string) {
 }
 
 /** Baixa memorial e unifilar. Antes da aprovação trazem marca de rascunho. */
-export function DeliverablesPanel({ versionId }: { versionId: string }) {
+export function DeliverablesPanel({
+  versionId,
+  approved = false,
+}: {
+  versionId: string;
+  approved?: boolean;
+}) {
+  const { can } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [attachedMessage, setAttachedMessage] = useState<string | null>(null);
+  const attach = useMutation({
+    mutationFn: () => endpoints.engineering.attachHomologation(versionId),
+    onMutate: () => {
+      setError(null);
+      setAttachedMessage(null);
+    },
+    onSuccess: (r) =>
+      setAttachedMessage(
+        r.attached.length
+          ? `Anexado ao checklist de homologação: ${r.attached.map((a) => a.code).join(', ')}.`
+          : 'Nada novo para anexar: os itens já têm documento.',
+      ),
+    onError: (e) => setError(errorMessage(e)),
+  });
   const download = useMutation({
     mutationFn: async (item: (typeof DELIVERABLES)[number]) =>
       saveBlob(await endpoints.engineering.deliverable(versionId, item.file), item.name),
@@ -51,7 +73,13 @@ export function DeliverablesPanel({ versionId }: { versionId: string }) {
             {item.label}
           </Button>
         ))}
+        {approved && can('engine.project.write') ? (
+          <Button size="sm" disabled={attach.isPending} onClick={() => attach.mutate()}>
+            Anexar à homologação
+          </Button>
+        ) : null}
       </div>
+      {attachedMessage ? <p className="text-sm">{attachedMessage}</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

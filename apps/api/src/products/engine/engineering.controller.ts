@@ -31,6 +31,7 @@ import type { Response } from 'express';
 import { Public, RequirePermissions } from '../../common/decorators';
 import { EngineeringConfiguratorService } from './engineering-configurator.service';
 import { EngineeringProjectsService } from './engineering-projects.service';
+import { EngineeringHomologationService } from './engineering-homologation.service';
 import { EngineeringShareService } from './engineering-share.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
@@ -65,6 +66,7 @@ export class EngineeringController {
     private readonly versions: EngineeringVersionsService,
     private readonly configurator: EngineeringConfiguratorService,
     private readonly shares: EngineeringShareService,
+    private readonly homologation: EngineeringHomologationService,
   ) {}
 
   // ---- Fila de pedidos ----
@@ -154,6 +156,13 @@ export class EngineeringController {
   @RequirePermissions('engine.project.write')
   revokeShareLink(@Param('linkId', ParseUUIDPipe) linkId: string) {
     return this.shares.revoke(linkId);
+  }
+
+  @Post('versions/:id/attach-homologation')
+  @HttpCode(200)
+  @RequirePermissions('engine.project.write')
+  attachHomologation(@Param('id', ParseUUIDPipe) id: string) {
+    return this.homologation.attach(id);
   }
 
   @Get('versions/:id/compare')

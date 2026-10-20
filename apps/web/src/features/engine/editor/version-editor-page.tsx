@@ -329,7 +329,7 @@ export function VersionEditorPage() {
 
         <Step />
 
-        <DeliverablesPanel versionId={versionId} />
+        <DeliverablesPanel versionId={versionId} approved={v.status === 'APPROVED'} />
         <ComparePanel versionId={versionId} projectId={projectId} />
         {v.status === 'APPROVED' ? <ShareLinksPanel versionId={versionId} /> : null}
 

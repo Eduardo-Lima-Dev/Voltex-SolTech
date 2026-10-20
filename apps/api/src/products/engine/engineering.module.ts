@@ -1,5 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { CrmModule } from '../crm/crm.module';
+import { DocumentsModule } from '../../platform/documents/documents.module';
+import { EngineeringHomologationService } from './engineering-homologation.service';
 import { EngineeringController, PublicEngineeringController } from './engineering.controller';
 import { EngineeringProjectsService } from './engineering-projects.service';
 import { EngineeringConfiguratorService } from './engineering-configurator.service';
@@ -12,7 +14,7 @@ import { EngineeringCrmIntegrationService } from './engineering-crm-integration.
 /** Solar Engine Studio (Fase 9). */
 @Global()
 @Module({
-  imports: [CrmModule],
+  imports: [CrmModule, DocumentsModule],
   controllers: [EngineeringController, PublicEngineeringController],
   providers: [
     EngineeringRequestsService,
@@ -22,6 +24,7 @@ import { EngineeringCrmIntegrationService } from './engineering-crm-integration.
     EngineeringConfiguratorService,
     EngineeringCrmIntegrationService,
     EngineeringShareService,
+    EngineeringHomologationService,
   ],
   exports: [EngineeringRequestsService, EngineeringProjectsService, EngineeringVersionsService],
 })

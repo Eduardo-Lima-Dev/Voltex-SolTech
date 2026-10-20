@@ -354,6 +354,12 @@ export function createEndpoints(client: ApiClient) {
         ),
       revokeShareLink: (linkId: string) =>
         client.post<EngineeringShareLinkDto>(`/engineering/share-links/${linkId}/revoke`),
+      attachHomologation: (id: string) =>
+        client.post<{
+          projectId: string;
+          attached: { code: string; documentId: string }[];
+          skipped: { code: string; reason: string }[];
+        }>(`/engineering/versions/${id}/attach-homologation`),
       /** Entregáveis do projeto: memorial e unifilar (PDF), unifilar em SVG e DXF. */
       deliverable: (
         id: string,
