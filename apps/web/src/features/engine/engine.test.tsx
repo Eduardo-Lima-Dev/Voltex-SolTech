@@ -67,6 +67,7 @@ const design = (o: Partial<EngineeringDesign> = {}): EngineeringDesign => ({
     horizon: null,
   },
   surfaces: [],
+  inverters: [],
   ...o,
 });
 
@@ -114,6 +115,7 @@ const version = (o: Partial<EngineeringVersionDetailDto> = {}): EngineeringVersi
     createdAt: now,
     updatedAt: now,
     project: project(),
+    rules: { engineDesign: { ref: null, parameters: {} } },
     equipment: [],
     ...o,
   };
@@ -129,10 +131,56 @@ const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjec
   ...o,
 });
 
+const INVERTER_ID = '0198a000-0000-7000-8000-0000000000b1';
+const inverterItem: EquipmentDto = {
+  ...moduleItem,
+  id: INVERTER_ID,
+  kind: 'INVERTER',
+  model: 'FT-5K',
+  spec: {
+    topology: 'STRING',
+    pAcNomW: 5000,
+    pAcMaxW: 5500,
+    pDcMaxW: 7500,
+    vDcMaxV: 1100,
+    vStartV: 180,
+    mpptMinV: 140,
+    mpptMaxV: 1000,
+    mpptCount: 2,
+    inputsPerMppt: 2,
+    iMaxPerMpptA: 16,
+    iscMaxPerMpptA: 22,
+    vAcV: 220,
+    phases: 1,
+    exportLimitation: false,
+  } as never,
+};
+const fullModuleItem: EquipmentDto = {
+  ...moduleItem,
+  spec: {
+    technology: 'MONO_SI',
+    pmaxWp: 550,
+    vmppV: 41.7,
+    imppA: 13.19,
+    vocV: 49.7,
+    iscA: 13.98,
+    betaVocPctPerC: -0.27,
+    alphaIscPctPerC: 0.05,
+    gammaPmaxPctPerC: -0.34,
+    noctC: 45,
+    lengthMm: 2278,
+    widthMm: 1134,
+    bifacial: false,
+  } as never,
+};
 const modulesList = () =>
-  http.get(`${API}/catalog/items`, () =>
-    HttpResponse.json({ data: [moduleItem], meta: { page: 1, pageSize: 100, total: 1 } }),
-  );
+  http.get(`${API}/catalog/items`, ({ request }) => {
+    const inverter = new URL(request.url).searchParams.get('kind') === 'INVERTER';
+    return HttpResponse.json({
+      data: [inverter ? inverterItem : fullModuleItem],
+      meta: { page: 1, pageSize: 100, total: 1 },
+    });
+  });
 
 describe('Engine: fila de pedidos', () => {
   it('lista pedidos com cliente e motivo; pega o pedido e abre o projeto', async () => {
@@ -187,6 +235,8 @@ describe('Engine: fila de pedidos', () => {
     await user.type(within(dialog).getByLabelText('Longitude'), '-47,93');
     await user.click(within(dialog).getByRole('button', { name: 'Abrir o projeto' }));
     await waitFor(() => expect(bodies).toEqual([{}, { latitude: -15.78, longitude: -47.93 }]));
+    // Espera o editor carregar para não deixar requisições soltas para o teste seguinte.
+    expect(await screen.findByRole('heading', { name: /Versão 1/ })).toBeInTheDocument();
   });
 
   it('cancelar exige o motivo; quem só lê não vê as ações', async () => {
@@ -478,5 +528,241 @@ describe('Engine: editor da versão', () => {
     renderApp('/engine/catalogo', { session: makeSession('ENGINEERING') });
     expect(await screen.findByRole('tab', { name: 'Módulos' })).toBeInTheDocument();
     expect(screen.getAllByText(/Solar Engine Studio/).length).toBeGreaterThan(0);
+  });
+});
+
+describe('Engine: equipamentos e strings', () => {
+  const surface = {
+    id: 's1',
+    name: 'Água norte',
+    kind: 'PITCHED' as const,
+    azimuthDegrees: 0,
+    tiltDegrees: 20,
+    widthM: 10,
+    depthM: 5,
+    setbackM: { left: 0.3, right: 0.3, top: 0.3, bottom: 0.3 },
+    moduleOrientation: 'PORTRAIT' as const,
+    moduleGapM: 0.02,
+    obstacles: [],
+  };
+  const site = {
+    latitude: -15.78,
+    longitude: -47.93,
+    designTminC: 5,
+    designTmaxAmbientC: 35,
+    climate: null,
+    horizon: null,
+  };
+  const rules = {
+    engineDesign: {
+      ref: 'r@1',
+      parameters: { hotCellIrradianceWm2: 1000, dcAcRatioMin: 0.8, dcAcRatioMax: 1.4 },
+    },
+  };
+  const mount = (
+    v: EngineeringVersionDetailDto,
+    extra: Parameters<typeof server.use>[0][] = [],
+  ) => {
+    server.use(
+      http.get(`${API}/engineering/versions/${v.id}`, () => HttpResponse.json(v)),
+      modulesList(),
+      ...extra,
+    );
+    return renderApp(`/engine/projetos/pj-1/versoes/${v.id}`, {
+      session: makeSession('ENGINEERING'),
+    });
+  };
+  const withInverter = (n: number) =>
+    version({
+      design: design({
+        site,
+        defaultModuleId: MODULE_ID,
+        surfaces: [surface],
+        inverters: [
+          {
+            id: 'e1',
+            inverterId: INVERTER_ID,
+            mppts: [
+              { strings: [{ id: 'g1', surfaceId: 's1', modulesInSeries: n, parallel: 1 }] },
+              { strings: [{ id: 'g2', surfaceId: 's1', modulesInSeries: n, parallel: 1 }] },
+            ],
+          },
+        ],
+      }),
+      rules,
+      equipment: [fullModuleItem, inverterItem].map((e) => ({
+        id: e.id,
+        kind: e.kind,
+        manufacturer: e.manufacturer,
+        model: e.model,
+        status: e.status,
+        spec: e.spec as never,
+        issues: [],
+      })),
+    });
+
+  const openStep = async () => {
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /3\. Equipamentos e strings/ }));
+    return user;
+  };
+
+  it('mostra a compatibilidade ao vivo, com a explicação de cada verificação', async () => {
+    mount(withInverter(6));
+    await openStep();
+    // 12 módulos em 2 strings de 6 num inversor de 5 kW: relação 1,32, dentro da faixa 0,8–1,4.
+    expect(await screen.findByText('Válido', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('12 módulos ligados')).toBeInTheDocument();
+    expect(screen.getByText(/CC\/CA 1,32/)).toBeInTheDocument();
+    expect(screen.getAllByText('Como foi calculado').length).toBeGreaterThan(3);
+    expect(screen.getAllByText(/Ns × Voc\(Tmín\) ≤ Vdc máx\. do inversor/).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText(/Manual CRESESB 2014, Eq\. 6\.30/).length).toBeGreaterThan(0);
+  });
+
+  it('Voc frio acima do máximo deixa o projeto inválido e explica o valor × limite', async () => {
+    mount(withInverter(21));
+    await openStep();
+    expect(await screen.findAllByText('Inválido')).not.toHaveLength(0);
+    expect((await screen.findAllByText(/Voc frio da string/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1\.100,06 V × 1\.100 V/).length).toBeGreaterThan(0);
+  });
+
+  it('sem a temperatura de projeto e sem regra, lista o que falta e leva para a etapa certa', async () => {
+    const v = withInverter(6);
+    // Copia o local: o objeto original é compartilhado entre os testes.
+    v.design = {
+      ...v.design,
+      site: { ...v.design.site, designTminC: null, designTmaxAmbientC: null },
+    };
+    v.rules = { engineDesign: { ref: null, parameters: {} } };
+    mount(v);
+    const user = await openStep();
+    const pending = await screen.findByRole('list', { name: /O que falta para concluir/ });
+    expect(within(pending).getByText(/temperatura mínima de projeto/)).toBeInTheDocument();
+    expect(within(pending).getAllByText('regra')).toHaveLength(2);
+    expect(screen.getByText('Incompleto', { selector: 'span' })).toBeInTheDocument();
+    await user.click(
+      within(pending).getAllByRole('button', { name: 'Ir para Local e clima' })[0] as HTMLElement,
+    );
+    expect(await screen.findByText('Temperatura de projeto')).toBeInTheDocument();
+  });
+
+  it('adiciona um inversor aprovado, liga uma string e o cálculo reage', async () => {
+    mount(
+      version({
+        design: design({ site, defaultModuleId: MODULE_ID, surfaces: [surface] }),
+        rules,
+        equipment: [],
+      }),
+    );
+    const user = await openStep();
+    expect(await screen.findByText(/Nenhum inversor no projeto/)).toBeInTheDocument();
+    await user.selectOptions(await screen.findByLabelText('Inversor'), INVERTER_ID);
+    await user.click(screen.getByRole('button', { name: /Adicionar$/ }));
+    expect((await screen.findAllByText('Fabricante Teste FT-5K')).length).toBeGreaterThan(0);
+    expect(screen.getByText('MPPT 1')).toBeInTheDocument();
+    expect(screen.getByText('MPPT 2')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /Adicionar string/ })[0] as HTMLElement);
+    // A nova string tem 6 módulos em série; o layout tem 8 módulos: 2 sem string (aviso).
+    expect(await screen.findByText('6 módulos ligados')).toBeInTheDocument();
+    expect(await screen.findByText(/Permitido: 5 a 20/)).toBeInTheDocument();
+    const series = screen.getByLabelText('Módulos em série');
+    await user.clear(series);
+    await user.type(series, '21');
+    expect(await screen.findByText('21 módulos ligados')).toBeInTheDocument();
+    expect(screen.getAllByText('Inválido').length).toBeGreaterThan(0);
+  });
+
+  it('o gerador mostra as configurações, aplica a escolhida e avisa quando falta dado', async () => {
+    const config = {
+      moduleId: MODULE_ID,
+      inverterId: INVERTER_ID,
+      inverterCount: 1,
+      modulesInSeries: 6,
+      totalStrings: 2,
+      moduleCount: 12,
+      powerKwp: 6.6,
+      dcAcRatio: 1.32,
+      vocMarginPct: 71,
+      costCents: 1120000,
+      unpriced: [],
+      status: 'VALID' as const,
+      warnings: [],
+      entries: [
+        {
+          id: 'inv-1',
+          inverterId: INVERTER_ID,
+          mppts: [
+            { strings: [{ id: 'a', surfaceId: 's1', modulesInSeries: 6, parallel: 1 }] },
+            { strings: [{ id: 'b', surfaceId: 's1', modulesInSeries: 6, parallel: 1 }] },
+          ],
+        },
+      ],
+    };
+    let sent: { surfaceId: string; targetKwp: number } | undefined;
+    let calls = 0;
+    mount(
+      version({
+        design: design({
+          site,
+          defaultModuleId: MODULE_ID,
+          surfaces: [{ ...surface, widthM: 20, depthM: 10 }],
+        }),
+        rules,
+        equipment: [],
+      }),
+      [
+        http.post(`${API}/engineering/versions/v-1/configurations`, async ({ request: req }) => {
+          calls += 1;
+          sent = (await req.json()) as typeof sent;
+          return HttpResponse.json(
+            calls === 1
+              ? { configurations: [config], discarded: [], pending: [] }
+              : {
+                  configurations: [],
+                  discarded: [],
+                  pending: [
+                    {
+                      code: 'TMIN_MISSING',
+                      kind: 'DATA',
+                      message: 'Falta a temperatura mínima de projeto do local.',
+                    },
+                  ],
+                },
+          );
+        }),
+      ],
+    );
+    const user = await openStep();
+    await user.clear(await screen.findByLabelText(/Potência-alvo/));
+    await user.type(screen.getByLabelText(/Potência-alvo/), '6,6');
+    await user.click(screen.getByRole('button', { name: 'Gerar configurações' }));
+    const list = await screen.findByRole('list', { name: 'Configurações sugeridas' });
+    expect(within(list).getByText(/1 × Fabricante Teste FT-5K/)).toBeInTheDocument();
+    expect(
+      within(list).getByText(/12 × Fabricante Teste FT-550M · 2 string\(s\) de 6 · 6,6 kWp/),
+    ).toBeInTheDocument();
+    expect(within(list).getByText(/CC\/CA 1,32/)).toBeInTheDocument();
+    expect(sent).toMatchObject({ surfaceId: 's1', targetKwp: 6.6 });
+    await user.click(within(list).getByRole('button', { name: 'Usar esta' }));
+    expect(await screen.findByText('12 módulos ligados')).toBeInTheDocument();
+    expect(screen.getByText('alterações não salvas')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Gerar configurações' }));
+    expect(await screen.findByText('Ainda não dá para gerar:')).toBeInTheDocument();
+    expect(
+      screen.getByText('Falta a temperatura mínima de projeto do local.', { selector: 'li' }),
+    ).toBeInTheDocument();
+  });
+
+  it('versão congelada não mostra o gerador nem os botões de edição', async () => {
+    mount({ ...withInverter(6), status: 'SUBMITTED' });
+    await openStep();
+    expect(await screen.findByText('12 módulos ligados')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gerar configurações' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remover inversor/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Adicionar string/ })).not.toBeInTheDocument();
   });
 });

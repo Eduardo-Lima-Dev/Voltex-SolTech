@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import type { EngineeringDesign } from '@voltex/shared';
+import type { EngineeringDesign, InverterSpec, ModuleSpec } from '@voltex/shared';
 import { computeEngineeringResults } from '@voltex/solar-engine';
 import { Badge, Button, Skeleton, Spinner, toast } from '@voltex/ui';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -12,12 +12,14 @@ import { queryKeys } from '../../admin/query-keys';
 import { VERSION_STATUS_BADGE, VERSION_STATUS_LABELS } from '../labels';
 import { EditorContext, type EditorContextValue } from './editor-context';
 import { SiteStep } from './site-step';
+import { StringsStep } from './strings-step';
 import { SurfacesStep } from './surfaces-step';
 
 /** Etapas do editor. Cada fase do Engine acrescenta as suas. */
 export const EDITOR_STEPS = [
   { id: 'local', label: 'Local e clima', component: SiteStep },
   { id: 'superficies', label: 'Superfícies, layout e sombra', component: SurfacesStep },
+  { id: 'strings', label: 'Equipamentos e strings', component: StringsStep },
 ] as const;
 
 export function VersionEditorPage() {
@@ -49,18 +51,31 @@ export function VersionEditorPage() {
 
   const readOnly = version.data?.status !== 'DRAFT' || !can('engine.project.write');
 
+  const approvedInverters = useQuery({
+    queryKey: queryKeys.catalog({ kind: 'INVERTER', status: 'APPROVED', editor: true }),
+    queryFn: () => endpoints.catalog.list({ kind: 'INVERTER', status: 'APPROVED', pageSize: 100 }),
+  });
   const modules = useMemo(() => approvedModules.data?.data ?? [], [approvedModules.data]);
+  const inverters = useMemo(() => approvedInverters.data?.data ?? [], [approvedInverters.data]);
+  const designParameters = version.data?.rules.engineDesign.parameters;
   const results = useMemo(() => {
     if (!design) return null;
-    const map: Record<string, { lengthMm: number; widthMm: number; pmaxWp: number } | undefined> =
-      {};
-    for (const m of [...modules, ...(version.data?.equipment ?? [])]) {
-      const spec = m.spec as { lengthMm?: number; widthMm?: number; pmaxWp?: number };
-      if (spec.lengthMm && spec.widthMm && spec.pmaxWp)
-        map[m.id] = { lengthMm: spec.lengthMm, widthMm: spec.widthMm, pmaxWp: spec.pmaxWp };
+    const moduleMap: Record<string, ModuleSpec> = {};
+    const inverterMap: Record<string, InverterSpec> = {};
+    const status: Record<string, 'DRAFT' | 'APPROVED' | 'RETIRED'> = {};
+    // A versão traz as fichas usadas (mesmo se já aposentadas); o catálogo aprovado traz as opções de escolha.
+    for (const e of [...modules, ...inverters, ...(version.data?.equipment ?? [])]) {
+      status[e.id] = e.status as 'DRAFT' | 'APPROVED' | 'RETIRED';
+      if (e.kind === 'MODULE') moduleMap[e.id] = e.spec as unknown as ModuleSpec;
+      if (e.kind === 'INVERTER') inverterMap[e.id] = e.spec as unknown as InverterSpec;
     }
-    return computeEngineeringResults(design, { modules: map });
-  }, [design, modules, version.data]);
+    return computeEngineeringResults(design, {
+      modules: moduleMap,
+      inverters: inverterMap,
+      status,
+      parameters: designParameters ?? {},
+    });
+  }, [design, modules, inverters, version.data, designParameters]);
 
   const save = useMutation({
     mutationFn: () => endpoints.engineering.saveDesign(versionId, design as EngineeringDesign),
@@ -105,6 +120,12 @@ export function VersionEditorPage() {
     readOnly,
     results,
     modules,
+    inverters,
+    designParameters: designParameters ?? {},
+    goToStep: (target) => {
+      if (EDITOR_STEPS.some((s) => s.id === target))
+        setStepId(target as (typeof EDITOR_STEPS)[number]['id']);
+    },
   };
   const Step = EDITOR_STEPS.find((s) => s.id === stepId)?.component ?? SiteStep;
 

@@ -1,6 +1,6 @@
 # Memorial: temperatura, strings e compatibilidade (ENG-F01 a F09)
 
-Pacote `@voltex/solar-engine`, pastas `engine/thermal` e `engine/strings` (**implementadas na 9A**); `engine/compatibility` e o gerador de configurações entram na 9E. Fontes: [CRESESB 2014](../referencias/cresesb-2014/README.md) (CR-01..08) e [EnergIF 2023](../referencias/energif-2023/regras-e-medidas.md) (EF-M10, M11, R12, R13).
+Pacote `@voltex/solar-engine`, pastas `engine/thermal` e `engine/strings` (**9A**), `engine/compatibility` (`compat-1.0.0`) e `engine/configurator` (`configurator-1.0.0`) (**9E, implementados**). Fontes: [CRESESB 2014](../referencias/cresesb-2014/README.md) (CR-01..08) e [EnergIF 2023](../referencias/energif-2023/regras-e-medidas.md) (EF-M10, M11, R12, R13).
 
 **Estado de cada fórmula:** as de física pura (lineares, séries e paralelos) estão prontas e testadas. **Fatores normativos** (margem de corrente, limite de strings sem fusível, relação CC/CA) **não têm valor embutido**: são parâmetros da regra `engine.design`; sem regra ativa e revisada, o resultado fica **pendente** e a aprovação trava (ADR-0016).
 
@@ -47,18 +47,69 @@ Casos: Vmpp 41,5 V, β −0,27 %/°C: frio (5 °C) 43,741 V; quente (70 °C) 36,
 
 Casos: Voc frio 53,5 V, Vmpp frio 43,7 V, Vmpp quente 36,5 V, inversor 1100 V / MPPT 200–1000 V / partida 250 V → Nmax 20 (tensão do inversor), Nmin 7 (partida). Com tensão máxima do sistema do módulo 1000 V → Nmax 18.
 
-## ENG-F07..F09 e a avaliação de compatibilidade (9E)
+## Compatibility Engine (`compat-1.0.0`)
 
-- **F07 corrente por MPPT:** `Np,max = floor(Ii,max / Isc)` (CR-07). O Engine usa a Isc corrigida pela temperatura **quando a regra `engine.design` pedir**, e sempre confere o curto-circuito admissível do MPPT.
-- **F08 relação CC/CA:** `FDI = P_ca_nom / P_FV` (CR-08). Faixa de política **versionada** (o manual cita 0,75–0,85 como mínimo de mercado e 1,05 como máximo, mas é referência, não regra).
-- **F09 desequilíbrio:** strings iguais por MPPT (EF-R13).
-- **Códigos estáveis do resultado:** `VOC_COLD_EXCEEDS_MAX`, `VMPP_BELOW_MPPT`, `VMPP_ABOVE_MPPT`, `START_VOLTAGE_NOT_REACHED`, `MPPT_CURRENT_EXCEEDED`, `MPPT_SHORT_CIRCUIT_EXCEEDED`, `DC_POWER_EXCEEDED`, `DC_AC_RATIO_OUT_OF_POLICY`, `STRING_MISMATCH`, `MODULE_NOT_APPROVED`, `INVERTER_NOT_APPROVED`, `MICRO_INPUT_MISMATCH`, `MODULE_SYSTEM_VOLTAGE_EXCEEDED`. Status: `VALID`, `VALID_WITH_WARNINGS`, `INVALID`; `INVALID` bloqueia a aprovação (RN-013).
+Confere cada **inversor do projeto** (strings por MPPT ou microinversor) e a **alocação dos módulos** de cada superfície. Cada verificação devolve: código estável, severidade (`ERROR`, `WARNING`, `INFO`), resultado (`PASS`, `FAIL`, `PENDING`), mensagem, **fórmula**, **fonte**, valor, limite e unidade. A tela mostra "Como foi calculado" em cada uma.
+
+| Código                                                                                                           | Fórmula                                                                                                  | Severidade                 | Fonte                   |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------- |
+| `VOC_COLD_EXCEEDS_MAX`                                                                                           | `Ns × Voc(Tmín) ≤ Vdc máx. do inversor`                                                                  | ERRO                       | CRESESB Eq. 6.30 e 4.2  |
+| `MODULE_SYSTEM_VOLTAGE_EXCEEDED`                                                                                 | `Ns × Voc(Tmín) ≤ tensão máx. do sistema do módulo`                                                      | ERRO                       | CRESESB p. 333          |
+| `VMPP_ABOVE_MPPT`                                                                                                | `Ns × Vmpp(Tmín) ≤ V MPPT máx.`                                                                          | ERRO                       | CRESESB Eq. 6.31        |
+| `VMPP_BELOW_MPPT`                                                                                                | `Ns × Vmpp(Tcél. máx.) ≥ V MPPT mín.`                                                                    | ERRO                       | CRESESB Eq. 6.31        |
+| `START_VOLTAGE_NOT_REACHED`                                                                                      | `Ns × Vmpp(Tcél. máx.) ≥ V de partida`                                                                   | aviso                      | CRESESB Eq. 6.31        |
+| `MPPT_CURRENT_EXCEEDED`                                                                                          | `Σ (strings em paralelo × Impp) ≤ corrente máx. por MPPT`                                                | ERRO                       | CRESESB Eq. 6.32; ficha |
+| `MPPT_SHORT_CIRCUIT_EXCEEDED`                                                                                    | `Σ (strings em paralelo × Isc) ≤ Isc admissível por MPPT` (só se a ficha traz)                           | ERRO                       | ficha                   |
+| `INPUTS_PER_MPPT_EXCEEDED`, `MPPT_COUNT_EXCEEDED`                                                                | contagens contra a ficha                                                                                 | ERRO                       | ficha                   |
+| `STRING_MISMATCH`                                                                                                | mesmo MPPT: mesmo módulo e mesmo nº em série (**erro**); orientação diferente em mais de 10° (**aviso**) | ERRO / aviso               | EnergIF p. 169 (EF-R13) |
+| `DC_POWER_EXCEEDED`                                                                                              | `Σ Pmax dos módulos ≤ potência CC máxima`                                                                | ERRO                       | ficha                   |
+| `DC_AC_RATIO_OUT_OF_POLICY`                                                                                      | `CC/CA = Σ Pmax ÷ Pac nominal` na faixa da regra                                                         | aviso (pendente sem regra) | regra `engine.design`   |
+| `MICRO_INPUT_MISMATCH`                                                                                           | módulos por unidade ≤ entradas do microinversor                                                          | ERRO                       | ficha                   |
+| `MODULES_OVER_ALLOCATED` / `MODULES_NOT_ALLOCATED`                                                               | módulos nas strings × módulos do layout por superfície                                                   | ERRO / aviso               | geometria               |
+| `MODULE_NOT_APPROVED`, `INVERTER_NOT_APPROVED`, `INVERTER_NOT_FOUND`, `MODULE_NOT_SELECTED`, `SURFACE_NOT_FOUND` | catálogo e referências                                                                                   | ERRO                       | ADR-0017                |
+
+**Temperaturas (ENG-F01..F03).** `Voc` e `Vmpp` frios usam a **temperatura mínima de projeto** (`site.designTminC`) como temperatura da célula. `Vmpp` quente usa a célula quente `Tcel = Tamb,máx + (NOCT − 20)/800 × G`, com `Tamb,máx = site.designTmaxAmbientC` e `G` = parâmetro `hotCellIrradianceWm2` da regra. Sem NOCT na ficha usa-se `Kt = 0,03` (CRESESB, NOCT equivalente de 44 °C) e a origem aparece como `KT_DEFAULT`. Sem `β_Vmpp` usa-se `β_Voc` (`BETA_VOC_ASSUMED`; conservador nos dois sentidos).
+
+**Status do projeto:** `INVALID` (algum erro falhou) > `INCOMPLETE` (falta dado ou regra) > `VALID_WITH_WARNINGS` > `VALID`. **Inválido e incompleto bloqueiam a aprovação** (RN-013 e trava das regras, 9I). Erro físico não impede **salvar**: a versão fica salva e explicada.
+
+**O que fica pendente em vez de ser presumido:**
+
+| Pendência                      | Tipo  | Como resolver                                                                               |
+| ------------------------------ | ----- | ------------------------------------------------------------------------------------------- |
+| `TMIN_MISSING`, `TMAX_MISSING` | dado  | o responsável técnico informa a temperatura de projeto, com a fonte, na etapa Local e clima |
+| `RULE_HOT_CELL_IRRADIANCE`     | regra | parâmetro `hotCellIrradianceWm2` da regra `engine.design`                                   |
+| `RULE_DC_AC_RATIO`             | regra | parâmetros `dcAcRatioMin` e `dcAcRatioMax` da regra `engine.design`                         |
+| `NO_INVERTERS`                 | dado  | adicionar um inversor ao projeto                                                            |
+
+**Regra `engine.design` — modelo para o responsável técnico (valores de PARTIDA, não revisados).** O Manual CRESESB cita, para o fator de dimensionamento do inversor (potência CA ÷ potência CC), limite inferior de mercado de 0,75 a 0,85 e superior de 1,05 (CR-08), o que equivale a uma relação CC/CA de **cerca de 0,95 a 1,33**; o exemplo da p. 152 usa 1000 W/m² na célula. Esses números são **referência de literatura**; a política da empresa é do responsável técnico, que cria e ativa a regra com a fonte:
+
+```json
+{
+  "key": "engine.design",
+  "definition": {
+    "parameters": { "dcAcRatioMin": 0.95, "dcAcRatioMax": 1.33, "hotCellIrradianceWm2": 1000 }
+  },
+  "sources": [
+    {
+      "type": "BOOK",
+      "reference": "Manual CRESESB 2014, p. 152 e 332 (política da empresa a revisar)"
+    }
+  ]
+}
+```
+
+**Impacto.** Ativar uma nova versão de regra `engine.*` ou aposentar/revisar um equipamento marca como **desatualizadas** as versões que os usam (com o motivo). A versão aprovada não é alterada: só ganha a marca. Recalcular um rascunho limpa a marca e registra a nova referência da regra (`ruleRefs`).
+
+## Microinversor
+
+Cada unidade liga `modulesPerUnit` módulos da mesma superfície. Confere: módulos por unidade ≤ entradas; Voc frio ≤ Vdc máx.; Vmpp frio/quente na faixa; Impp ≤ corrente por entrada; Isc ≤ Isc admissível; potência CC por unidade ≤ máximo; relação CC/CA por unidade.
 
 ## Premissas e limites
 
 - Modelo linear de temperatura (padrão de fichas); não modela efeito de baixa irradiância no Voc.
 - Células tratadas como uniformes no arranjo (sem gradiente térmico entre módulos).
-- Microinversores têm regra própria (entrada por módulo), tratada na 9E.
+- Efeito de baixa irradiância no Voc e gradiente térmico entre módulos não são modelados.
+- Corrente por MPPT usa `Impp` e `Isc` nas STC (sem fator de segurança embutido): um fator normativo entraria como parâmetro da regra.
 
 ## Testes
 

@@ -115,6 +115,40 @@ export const siteDesignSchema = z.object({
 });
 export type SiteDesign = z.infer<typeof siteDesignSchema>;
 
+// ---------------------------------------------------------------------------------------------------------
+// Inversores, strings e MPPT (Fase 9E)
+// ---------------------------------------------------------------------------------------------------------
+
+/** Strings iguais ligadas em paralelo a uma entrada de MPPT: `parallel` strings de `modulesInSeries` módulos cada. */
+export const stringGroupSchema = z.object({
+  id: idSchema,
+  surfaceId: idSchema,
+  modulesInSeries: z.number().int().min(1).max(60),
+  parallel: z.number().int().min(1).max(20).default(1),
+});
+export type StringGroup = z.infer<typeof stringGroupSchema>;
+
+export const mpptAllocationSchema = z.object({
+  strings: z.array(stringGroupSchema).max(8).default([]),
+});
+
+/** Um inversor do projeto (uma unidade física), com o que está ligado em cada MPPT. */
+export const inverterEntrySchema = z.object({
+  id: idSchema,
+  inverterId: z.uuid(),
+  name: z.string().trim().max(80).optional(),
+  mppts: z.array(mpptAllocationSchema).max(24).default([]),
+  /** Microinversor: cada unidade liga `modulesPerUnit` módulos da superfície; `units` unidades iguais. */
+  micro: z
+    .object({
+      surfaceId: idSchema,
+      units: z.number().int().min(1).max(500),
+      modulesPerUnit: z.number().int().min(1).max(8),
+    })
+    .optional(),
+});
+export type InverterEntry = z.infer<typeof inverterEntrySchema>;
+
 export const engineeringDesignSchema = z.object({
   schemaVersion: z
     .literal(ENGINEERING_DESIGN_SCHEMA_VERSION)
@@ -123,6 +157,8 @@ export const engineeringDesignSchema = z.object({
   /** Módulo padrão do projeto (catálogo aprovado). */
   defaultModuleId: z.uuid().optional(),
   surfaces: z.array(surfaceSchema).max(20).default([]),
+  /** Inversores, strings e MPPT. */
+  inverters: z.array(inverterEntrySchema).max(30).default([]),
 });
 export type EngineeringDesign = z.output<typeof engineeringDesignSchema>;
 export type EngineeringDesignInput = z.input<typeof engineeringDesignSchema>;
@@ -183,3 +219,26 @@ export const saveDesignSchema = z.object({
   design: engineeringDesignSchema,
 });
 export type SaveDesignInput = z.input<typeof saveDesignSchema>;
+
+/** Parâmetros da regra `engine.design` que o Engine lê (sem valor padrão: ausente = pendente de regra). */
+export const ENGINE_DESIGN_PARAMETERS = {
+  /** Faixa da relação potência CC dos módulos ÷ potência CA nominal do inversor. */
+  dcAcRatioMin: 'Relação CC/CA mínima',
+  dcAcRatioMax: 'Relação CC/CA máxima',
+  /** Irradiância (W/m²) para a temperatura máxima da célula (`Tcel = Tamb + (NOCT − 20)/800 × G`). */
+  hotCellIrradianceWm2: 'Irradiância para a temperatura máxima da célula (W/m²)',
+} as const;
+export type EngineDesignParameter = keyof typeof ENGINE_DESIGN_PARAMETERS;
+
+export const suggestConfigurationsSchema = z.object({
+  surfaceId: idSchema,
+  /** Potência-alvo do arranjo desta superfície (kWp). */
+  targetKwp: z.number().positive().max(10000),
+  moduleIds: z.array(z.uuid()).max(30).optional(),
+  inverterIds: z.array(z.uuid()).max(30).optional(),
+  maxInverters: z.number().int().min(1).max(8).default(4),
+  /** Desenho atual (ainda não salvo). Vazio = o desenho salvo da versão. */
+  design: engineeringDesignSchema.optional(),
+  limit: z.number().int().min(1).max(30).default(10),
+});
+export type SuggestConfigurationsInput = z.input<typeof suggestConfigurationsSchema>;

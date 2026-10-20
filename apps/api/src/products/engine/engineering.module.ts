@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { EngineeringController } from './engineering.controller';
 import { EngineeringProjectsService } from './engineering-projects.service';
+import { EngineeringConfiguratorService } from './engineering-configurator.service';
+import { EngineeringImpactService } from './engineering-impact.service';
 import { EngineeringRequestsService } from './engineering-requests.service';
 import { EngineeringVersionsService } from './engineering-versions.service';
 
@@ -8,7 +10,13 @@ import { EngineeringVersionsService } from './engineering-versions.service';
 @Global()
 @Module({
   controllers: [EngineeringController],
-  providers: [EngineeringRequestsService, EngineeringProjectsService, EngineeringVersionsService],
+  providers: [
+    EngineeringRequestsService,
+    EngineeringProjectsService,
+    EngineeringVersionsService,
+    EngineeringImpactService,
+    EngineeringConfiguratorService,
+  ],
   exports: [EngineeringRequestsService, EngineeringProjectsService, EngineeringVersionsService],
 })
 export class EngineeringModule {}

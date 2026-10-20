@@ -107,6 +107,8 @@ import {
   type EngineeringVersionDetailDto,
   type HorizonResultDto,
   type ListEngineeringProjectsQuery,
+  type SuggestConfigurationsInput,
+  type SuggestConfigurationsResult,
   type ListEngineeringRequestsQuery,
   type WeatherResultDto,
   type CreateSourceWatchInput,
@@ -302,6 +304,11 @@ export function createEndpoints(client: ApiClient) {
         client.get<EngineeringVersionDetailDto>(`/engineering/versions/${id}`),
       saveDesign: (id: string, design: EngineeringDesignInput) =>
         client.put<EngineeringVersionDetailDto>(`/engineering/versions/${id}/design`, { design }),
+      suggestConfigurations: (id: string, input: SuggestConfigurationsInput) =>
+        client.post<SuggestConfigurationsResult>(
+          `/engineering/versions/${id}/configurations`,
+          input,
+        ),
       recalculate: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
       newVersion: (id: string) =>

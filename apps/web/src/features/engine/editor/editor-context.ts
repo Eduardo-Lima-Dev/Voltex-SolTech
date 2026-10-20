@@ -17,6 +17,12 @@ export interface EditorContextValue {
   results: EngineeringResults;
   /** Módulos aprovados do catálogo, para escolha. */
   modules: EquipmentDto[];
+  /** Inversores aprovados do catálogo, para escolha. */
+  inverters: EquipmentDto[];
+  /** Parâmetros da regra `engine.design` em vigor (vazio = sem regra). */
+  designParameters: Record<string, number>;
+  /** Pede ao editor para abrir uma etapa (ex.: ir ao Local para informar a temperatura). */
+  goToStep: (id: string) => void;
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
