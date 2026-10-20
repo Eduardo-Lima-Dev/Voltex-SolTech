@@ -1,0 +1,189 @@
+// Central de Dados Externos (Fase 9B, ADR-0018): coleta de bases públicas, vigilância de páginas e caixa de
+// atualizações. Dado externo NUNCA entra direto: vira proposta, com origem e diferença, e uma pessoa decide.
+//
+// Tabelas GLOBAIS (sem tenantId, só dado público; acesso pelo cliente de sistema): DataSource, DataCollection,
+// WeatherSeries, HorizonProfile. Tabelas POR EMPRESA: SourceWatch, UpdateProposal.
+
+enum DataCollectionStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  /// Fonte desligada ou limite de uso: nada foi buscado.
+  SKIPPED
+
+  @@map("data_collection_status")
+}
+
+enum WatchKind {
+  /// Resolução, norma ou procedimento (ANEEL, distribuidoras).
+  NORM
+  /// Lei ou decreto.
+  LAW
+  OTHER
+
+  @@map("watch_kind")
+}
+
+enum UpdateProposalType {
+  TARIFF
+  WATCH_CHANGE
+  CATALOG_ITEM
+  SOLAR_RESOURCE
+  RULE_REVIEW
+
+  @@map("update_proposal_type")
+}
+
+enum UpdateProposalStatus {
+  PENDING
+  APPROVED
+  DISCARDED
+
+  @@map("update_proposal_status")
+}
+
+/// Fonte externa conhecida (PVGIS, NASA POWER...). O cadastro nasce do registro no código; aqui ficam a licença
+/// e a situação da conferência dos termos, que aparecem na tela de fontes.
+model DataSource {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  key            String    @unique
+  label          String
+  baseUrl        String    @map("base_url")
+  license        String
+  attribution    String
+  /// `PENDING_REVIEW` (termos não conferidos), `CLEARED` (conferidos) ou `BLOCKED`.
+  licenseStatus  String    @default("PENDING_REVIEW") @map("license_status")
+  termsCheckedAt DateTime? @map("terms_checked_at")
+  termsCheckedBy String?   @map("terms_checked_by")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  collections     DataCollection[]
+  weatherSeries   WeatherSeries[]
+  horizonProfiles HorizonProfile[]
+
+  @@map("data_sources")
+}
+
+/// Uma execução de coleta, com o que foi lido, o que mudou e o erro, se houve.
+model DataCollection {
+  id          String               @id @default(uuid(7)) @db.Uuid
+  sourceId    String               @map("source_id") @db.Uuid
+  status      DataCollectionStatus @default(RUNNING)
+  startedAt   DateTime             @default(now()) @map("started_at")
+  finishedAt  DateTime?            @map("finished_at")
+  /// Resumo do pedido (ex.: coordenada, período) e do resultado.
+  summary     Json                 @default("{}")
+  contentHash String?              @map("content_hash")
+  error       String?
+
+  source          DataSource       @relation(fields: [sourceId], references: [id])
+  weatherSeries   WeatherSeries[]
+  horizonProfiles HorizonProfile[]
+
+  @@index([sourceId, startedAt])
+  @@map("data_collections")
+}
+
+/// Clima de um local, em cache: o projeto não depende da internet na hora de calcular.
+model WeatherSeries {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  sourceId     String   @map("source_id") @db.Uuid
+  /// `CLIMATOLOGY` (12 meses) ou `HOURLY` (série horária de um período).
+  kind         String
+  /// Coordenadas arredondadas (2 casas, ~1 km): chave do cache.
+  latitude     Float
+  longitude    Float
+  /// Ex.: `1999-2023` (climatologia) ou `2020` (série horária).
+  period       String
+  /// Médias mensais e extremos (consultável sem abrir a série).
+  summary      Json
+  /// Série horária compactada (gzip de JSON); nulo na climatologia.
+  payload      Bytes?
+  collectionId String   @map("collection_id") @db.Uuid
+  fetchedAt    DateTime @default(now()) @map("fetched_at")
+
+  source     DataSource     @relation(fields: [sourceId], references: [id])
+  collection DataCollection @relation(fields: [collectionId], references: [id])
+
+  @@unique([sourceId, kind, latitude, longitude, period])
+  @@map("weather_series")
+}
+
+/// Perfil de horizonte (sombreamento distante) de um local.
+model HorizonProfile {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  sourceId     String   @map("source_id") @db.Uuid
+  latitude     Float
+  longitude    Float
+  elevationM   Float?   @map("elevation_m")
+  /// `[{ azimuthDegrees, heightDegrees }]`, azimute do norte, horário.
+  points       Json
+  collectionId String   @map("collection_id") @db.Uuid
+  fetchedAt    DateTime @default(now()) @map("fetched_at")
+
+  source     DataSource     @relation(fields: [sourceId], references: [id])
+  collection DataCollection @relation(fields: [collectionId], references: [id])
+
+  @@unique([sourceId, latitude, longitude])
+  @@map("horizon_profiles")
+}
+
+/// Página, PDF ou texto vigiado por uma empresa (norma de distribuidora, resolução, lei). A coleta periódica compara
+/// o texto com o anterior; mudou → proposta na caixa de atualizações. Nunca altera regra sozinho.
+model SourceWatch {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  label       String
+  url         String
+  kind        WatchKind @default(NORM)
+  enabled     Boolean   @default(true)
+  /// SHA-256 do texto normalizado da última coleta.
+  lastHash    String?   @map("last_hash")
+  /// Texto normalizado da última coleta (base da diferença).
+  lastText    String?   @map("last_text")
+  checkedAt   DateTime? @map("checked_at")
+  changedAt   DateTime? @map("changed_at")
+  lastError   String?   @map("last_error")
+  createdById String?   @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, url])
+  @@index([tenantId, enabled])
+  @@map("source_watches")
+}
+
+/// Caixa de atualizações: algo que veio de fora e espera decisão humana.
+model UpdateProposal {
+  id             String               @id @default(uuid(7)) @db.Uuid
+  tenantId       String               @map("tenant_id") @db.Uuid
+  type           UpdateProposalType
+  status         UpdateProposalStatus @default(PENDING)
+  title          String
+  /// O que seria alterado (ex.: `{ distributorId }`), nulo quando a proposta é só um aviso.
+  target         Json?
+  /// O conteúdo proposto (ex.: a nova tarifa).
+  proposed       Json
+  /// Diferença em relação ao que existe (ex.: linhas que entraram e saíram de uma norma).
+  diff           Json?
+  /// Proveniência: `{ source, url, collectedAt, contentHash, license, attribution }`.
+  origin         Json
+  /// Evita propostas duplicadas para o mesmo fato (ex.: mesma tarifa, mesma versão de página).
+  dedupeKey      String               @map("dedupe_key")
+  decidedById    String?              @map("decided_by_id") @db.Uuid
+  decidedAt      DateTime?            @map("decided_at")
+  decisionReason String?              @map("decision_reason")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, status, createdAt])
+  @@map("update_proposals")
+}

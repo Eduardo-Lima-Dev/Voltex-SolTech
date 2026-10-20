@@ -398,6 +398,34 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'fontes',
+                lazy: async () => {
+                  const { SourcesPage } = await import('@/features/admin/data-hub/sources-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('fontes').anyOf}>
+                        <SourcesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Fontes de dados' },
+                  };
+                },
+              },
+              {
+                path: 'atualizacoes',
+                lazy: async () => {
+                  const { UpdatesPage } = await import('@/features/admin/data-hub/updates-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('atualizacoes').anyOf}>
+                        <UpdatesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Atualizações' },
+                  };
+                },
+              },
+              {
                 path: 'margens',
                 lazy: async () => {
                   const { MarginsPage } = await import('@/features/admin/margins/margins-page');

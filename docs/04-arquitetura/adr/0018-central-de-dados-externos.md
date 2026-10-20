@@ -27,3 +27,10 @@ Fontes, regras, catálogos e projetos dependem de dados que existem em bases pú
 ## Alternativas consideradas
 
 Importar tudo e aplicar automaticamente (risco regulatório e de dado ruim); manter tudo manual (desatualiza); depender de API paga de terceiros (custo e vínculo).
+
+## Como ficou na implementação (Fase 9B)
+
+- **Fontes vigiadas são por empresa** (`SourceWatch` com `tenantId`), e não globais como esboçado acima: cada empresa cadastra as normas que importam para ela, e a proposta nasce direto na caixa dela. O custo é baixar a mesma página mais de uma vez; um cache por endereço pode vir depois.
+- **Ligar uma fonte é decisão de configuração** (`DATA_HUB_ENABLED_SOURCES`), separada da situação dos termos (`licenseStatus`). Sem estar na lista, a fonte só serve o que já está em cache.
+- **Aprovar só aplica tipos com aplicação definida** (`TARIFF`; `WATCH_CHANGE` apenas registra a revisão). Os demais tipos (`CATALOG_ITEM`, `SOLAR_RESOURCE`, `RULE_REVIEW`) recusam aprovação até a fase que os implementa.
+- Detalhes e limites: [Central de Dados Externos](../../07-desenvolvimento/central-de-dados.md).

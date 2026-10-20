@@ -50,6 +50,8 @@ model Tenant {
   invitations            Invitation[]
   documents              Document[]
   ruleSets               RuleSet[]
+  sourceWatches          SourceWatch[]
+  updateProposals        UpdateProposal[]
   distributors           Distributor[]
   tariffs                Tariff[]
   solarResources         SolarResource[]

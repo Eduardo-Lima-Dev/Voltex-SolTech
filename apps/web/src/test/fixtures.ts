@@ -190,6 +190,8 @@ export const solarResource = (overrides: Partial<SolarResourceDto> = {}): SolarR
 export const ruleSet = (overrides: Partial<RuleSetDto> = {}): RuleSetDto => ({
   id: 'rs-1',
   key: 'calculator.rules',
+  scope: null,
+  scopeKey: '',
   version: 1,
   status: 'ACTIVE',
   validFrom: '2026-02-01T00:00:00.000Z',
