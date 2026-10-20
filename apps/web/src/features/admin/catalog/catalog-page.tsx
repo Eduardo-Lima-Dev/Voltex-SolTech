@@ -427,6 +427,10 @@ const EQUIPMENT_LABEL: Record<string, string> = {
   INVERTER: 'Inversor',
   PROTECTION: 'Proteção',
   CABLE: 'Cabo',
+  BATTERY: 'Bateria',
+  CHARGE_CONTROLLER: 'Controlador de carga',
+  OFFGRID_INVERTER: 'Inversor off-grid',
+  GENERATOR: 'Gerador',
   OTHER: 'Outro',
 };
 const CONFIDENCE_BADGE = { HIGH: 'green', MEDIUM: 'yellow', LOW: 'secondary' } as const;

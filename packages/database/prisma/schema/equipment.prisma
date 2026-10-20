@@ -6,6 +6,10 @@ enum EquipmentKind {
   INVERTER
   PROTECTION
   CABLE
+  BATTERY
+  CHARGE_CONTROLLER
+  OFFGRID_INVERTER
+  GENERATOR
 
   @@map("equipment_kind")
 }

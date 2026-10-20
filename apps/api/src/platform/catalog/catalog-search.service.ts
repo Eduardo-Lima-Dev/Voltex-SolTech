@@ -8,6 +8,10 @@ const KIND_LABEL: Record<string, string> = {
   INVERTER: 'Inversor',
   PROTECTION: 'Proteção',
   CABLE: 'Cabo',
+  BATTERY: 'Bateria',
+  CHARGE_CONTROLLER: 'Controlador de carga',
+  OFFGRID_INVERTER: 'Inversor off-grid',
+  GENERATOR: 'Gerador',
   OTHER: 'Outro',
 };
 

@@ -199,3 +199,4 @@ export * from './data-hub.js';
 export * from './equipment.js';
 export * from './engineering.js';
 export * from './engineering-management.js';
+export * from './offgrid.js';

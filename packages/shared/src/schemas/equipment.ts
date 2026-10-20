@@ -6,7 +6,16 @@ import { isoDateTimeSchema, paginationQuerySchema } from './common.js';
  * equipamento; a governança (rascunho → aprovado → aposentado) e a proveniência ficam no registro.
  */
 
-export const EQUIPMENT_KINDS = ['MODULE', 'INVERTER', 'PROTECTION', 'CABLE'] as const;
+export const EQUIPMENT_KINDS = [
+  'MODULE',
+  'INVERTER',
+  'PROTECTION',
+  'CABLE',
+  'BATTERY',
+  'CHARGE_CONTROLLER',
+  'OFFGRID_INVERTER',
+  'GENERATOR',
+] as const;
 export type EquipmentKind = (typeof EQUIPMENT_KINDS)[number];
 export const EQUIPMENT_STATUSES = ['DRAFT', 'APPROVED', 'RETIRED'] as const;
 export type EquipmentStatus = (typeof EQUIPMENT_STATUSES)[number];
@@ -118,14 +127,126 @@ export const cableSpecSchema = z.object({
 });
 export type CableSpec = z.output<typeof cableSpecSchema>;
 
+export const BATTERY_CHEMISTRIES = [
+  'LEAD_FLOODED',
+  'LEAD_AGM',
+  'LEAD_GEL',
+  'OPZS',
+  'OPZV',
+  'LFP',
+  'NMC',
+  'OTHER',
+] as const;
+export type BatteryChemistry = (typeof BATTERY_CHEMISTRIES)[number];
+
+/** Bateria (Fase 10). Capacidade no regime informado (`capacityHours`, ex.: C20 = 20 h). */
+export const batterySpecSchema = z.object({
+  chemistry: z.enum(BATTERY_CHEMISTRIES),
+  nominalVoltageV: positive,
+  capacityAh: positive,
+  capacityHours: z.number().positive().max(200).default(20),
+  /** Profundidade de descarga máxima recomendada pelo fabricante. */
+  maxDodPct: z.number().min(5).max(100),
+  roundTripEfficiencyPct: z.number().min(40).max(100).optional(),
+  /** Vida em ciclos na profundidade `cycleDodPct`. */
+  cycleLife: z.number().int().positive().optional(),
+  cycleDodPct: z.number().min(5).max(100).optional(),
+  calendarLifeYears: optionalPositive,
+  maxChargeCurrentA: optionalPositive,
+  maxDischargeCurrentA: optionalPositive,
+  /** Máximo de unidades em paralelo recomendado pelo fabricante. */
+  maxParallel: z.number().int().positive().optional(),
+  weightKg: optionalPositive,
+  lengthMm: optionalPositive,
+  widthMm: optionalPositive,
+  heightMm: optionalPositive,
+});
+export type BatterySpec = z.output<typeof batterySpecSchema>;
+
+export const CONTROLLER_TECHNOLOGIES = ['MPPT', 'PWM'] as const;
+
+/** Controlador de carga. `batteryVoltageV` é a maior tensão nominal de banco aceita (12, 24, 48…). */
+export const chargeControllerSpecSchema = z.object({
+  technology: z.enum(CONTROLLER_TECHNOLOGIES),
+  batteryVoltageV: positive,
+  /** Aceita bancos de tensões nominais menores (12/24/48 automático). */
+  autoVoltage: z.boolean().default(false),
+  ratedChargeCurrentA: positive,
+  /** Tensão máxima de circuito aberto do arranjo FV (Voc a frio). */
+  pvVocMaxV: positive,
+  mpptMinV: optionalPositive,
+  mpptMaxV: optionalPositive,
+  pvPowerMaxW: optionalPositive,
+  pvIscMaxA: optionalPositive,
+  efficiencyPct: z.number().min(50).max(100).optional(),
+  tempCompensation: z.boolean().default(false),
+});
+export type ChargeControllerSpec = z.output<typeof chargeControllerSpecSchema>;
+
+export const OFFGRID_INVERTER_TOPOLOGIES = ['OFFGRID', 'HYBRID'] as const;
+
+/** Inversor autônomo ou híbrido (inversor/carregador, com entrada de rede e/ou gerador). */
+export const offgridInverterSpecSchema = z.object({
+  topology: z.enum(OFFGRID_INVERTER_TOPOLOGIES),
+  batteryVoltageV: positive,
+  pContinuousW: positive,
+  pSurgeW: optionalPositive,
+  surgeSeconds: optionalPositive,
+  efficiencyPct: z.number().min(50).max(100).optional(),
+  standbyW: optionalPositive,
+  vAcV: positive,
+  phases: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  sineWave: z.boolean().default(true),
+  /** Carregador de bateria a partir da rede/gerador. */
+  chargerCurrentA: optionalPositive,
+  gridInput: z.boolean().default(false),
+  generatorInput: z.boolean().default(false),
+  /** MPPT embutido. */
+  mpptBuiltIn: z.boolean().default(false),
+  mpptCount: z.number().int().positive().optional(),
+  mpptMinV: optionalPositive,
+  mpptMaxV: optionalPositive,
+  pvVocMaxV: optionalPositive,
+  pvPowerMaxW: optionalPositive,
+  mpptCurrentA: optionalPositive,
+});
+export type OffgridInverterSpec = z.output<typeof offgridInverterSpecSchema>;
+
+export const GENERATOR_FUELS = ['DIESEL', 'GASOLINE', 'GAS', 'ETHANOL'] as const;
+
+export const generatorSpecSchema = z.object({
+  fuel: z.enum(GENERATOR_FUELS),
+  pContinuousW: positive,
+  pStandbyW: optionalPositive,
+  vAcV: positive,
+  phases: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  /** Consumo a 75% de carga. */
+  fuelLitersPerHour: optionalPositive,
+  minLoadPct: z.number().min(0).max(100).optional(),
+  autoStart: z.boolean().default(false),
+});
+export type GeneratorSpec = z.output<typeof generatorSpecSchema>;
+
 export const SPEC_SCHEMAS = {
   MODULE: moduleSpecSchema,
   INVERTER: inverterSpecSchema,
   PROTECTION: protectionSpecSchema,
   CABLE: cableSpecSchema,
+  BATTERY: batterySpecSchema,
+  CHARGE_CONTROLLER: chargeControllerSpecSchema,
+  OFFGRID_INVERTER: offgridInverterSpecSchema,
+  GENERATOR: generatorSpecSchema,
 } as const;
 
-export type EquipmentSpec = ModuleSpec | InverterSpec | ProtectionSpec | CableSpec;
+export type EquipmentSpec =
+  | ModuleSpec
+  | InverterSpec
+  | ProtectionSpec
+  | CableSpec
+  | BatterySpec
+  | ChargeControllerSpec
+  | OffgridInverterSpec
+  | GeneratorSpec;
 
 /** Confiança de cada campo lido de arquivo: o que foi lido direto, convertido ou presumido. */
 export const FIELD_CONFIDENCES = ['HIGH', 'MEDIUM', 'LOW'] as const;
@@ -151,6 +272,10 @@ export const createEquipmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('INVERTER'), ...base, spec: inverterSpecSchema }),
   z.object({ kind: z.literal('PROTECTION'), ...base, spec: protectionSpecSchema }),
   z.object({ kind: z.literal('CABLE'), ...base, spec: cableSpecSchema }),
+  z.object({ kind: z.literal('BATTERY'), ...base, spec: batterySpecSchema }),
+  z.object({ kind: z.literal('CHARGE_CONTROLLER'), ...base, spec: chargeControllerSpecSchema }),
+  z.object({ kind: z.literal('OFFGRID_INVERTER'), ...base, spec: offgridInverterSpecSchema }),
+  z.object({ kind: z.literal('GENERATOR'), ...base, spec: generatorSpecSchema }),
 ]);
 export type CreateEquipmentInput = z.input<typeof createEquipmentSchema>;
 export type CreateEquipmentData = z.output<typeof createEquipmentSchema>;
@@ -240,7 +365,18 @@ export type CatalogSearchQuery = z.infer<typeof catalogSearchQuerySchema>;
 
 export const listLinkDocumentsQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().optional(),
-  equipment: z.enum(['MODULE', 'INVERTER', 'PROTECTION', 'CABLE', 'OTHER']).optional(),
+  equipment: z
+    .enum([
+      'MODULE',
+      'INVERTER',
+      'PROTECTION',
+      'CABLE',
+      'BATTERY',
+      'CHARGE_CONTROLLER',
+      'GENERATOR',
+      'OTHER',
+    ])
+    .optional(),
   fileType: z.enum(['pdf', 'csv', 'pan', 'ond']).optional(),
 });
 export type ListLinkDocumentsQuery = z.infer<typeof listLinkDocumentsQuerySchema>;
