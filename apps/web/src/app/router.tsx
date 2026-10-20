@@ -44,6 +44,15 @@ const pageRoutes: RouteObject[] = [
     },
   },
   {
+    // Relatório técnico do projeto aprovado para o cliente: link com token, sem login.
+    path: '/r/:token',
+    lazy: async () => {
+      const { PublicEngineeringReportPage } =
+        await import('@/features/public-engineering/public-engineering-page');
+      return { Component: PublicEngineeringReportPage, handle: { title: 'Relatório técnico' } };
+    },
+  },
+  {
     element: <RequireAuth />,
     errorElement: <RouteErrorPage />,
     children: [

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type {
   EngineeringDesign,
   EngineeringProjectDetailDto,
@@ -69,6 +69,8 @@ const design = (o: Partial<EngineeringDesign> = {}): EngineeringDesign => ({
   surfaces: [],
   inverters: [],
   ...o,
+  cables: o.cables ?? [],
+  protectionOverrides: o.protectionOverrides ?? [],
 });
 
 const moduleItem: EquipmentDto = {
@@ -115,11 +117,26 @@ const version = (o: Partial<EngineeringVersionDetailDto> = {}): EngineeringVersi
     createdAt: now,
     updatedAt: now,
     project: project(),
-    rules: { engineDesign: { ref: null, parameters: {} } },
+    rules: {
+      engineDesign: { ref: null, parameters: {} },
+      engineCables: { ref: null, parameters: {}, tables: {} },
+    },
+    candidates: [],
+    prices: {},
+    labels: {},
     equipment: [],
     ...o,
   };
 };
+
+// Endpoints auxiliares da revisão: handlers específicos abaixo ainda sobrescrevem estes padrões.
+beforeEach(() => {
+  server.use(
+    http.get(`${API}/engineering/versions/:id/comments`, () => HttpResponse.json([])),
+    http.get(`${API}/engineering/versions/:id`, () => HttpResponse.json(version())),
+    http.get(`${API}/engineering/projects/pj-1`, () => HttpResponse.json(detail())),
+  );
+});
 
 const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjectDetailDto => ({
   ...project(),
@@ -515,6 +532,103 @@ describe('Engine: editor da versão', () => {
     expect(await screen.findByLabelText(/Latitude/)).toBeEnabled();
   });
 
+  it('compara com outra versão do projeto: indicadores e o que mudou no desenho', async () => {
+    mount(version({ id: 'v-2', number: 2, status: 'SUBMITTED' }), [
+      http.get(`${API}/engineering/projects/pj-1`, () =>
+        HttpResponse.json(
+          detail({
+            versions: [
+              {
+                id: 'v-2',
+                number: 2,
+                status: 'SUBMITTED',
+                stale: false,
+                createdAt: now,
+                decidedAt: null,
+              },
+              {
+                id: 'v-1',
+                number: 1,
+                status: 'DRAFT',
+                stale: false,
+                createdAt: now,
+                decidedAt: null,
+              },
+            ],
+          }),
+        ),
+      ),
+      http.get(`${API}/engineering/versions/v-2/compare`, ({ request: req }) => {
+        expect(new URL(req.url).searchParams.get('with')).toBe('v-1');
+        return HttpResponse.json({
+          from: { id: 'v-1', number: 1, status: 'DRAFT' },
+          to: { id: 'v-2', number: 2, status: 'SUBMITTED' },
+          designChanges: [
+            {
+              section: 'surfaces',
+              path: 'surfaces[s1].tiltDegrees',
+              kind: 'CHANGED',
+              before: 20,
+              after: 25,
+            },
+          ],
+          resultChanges: [{ metric: 'modules', label: 'Módulos', before: 8, after: 10, delta: 2 }],
+          truncated: false,
+        });
+      }),
+    ]);
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('Versão para comparar'), 'v-1');
+    expect(await screen.findByText('surfaces[s1].tiltDegrees')).toBeInTheDocument();
+    expect(screen.getByText('alterado')).toBeInTheDocument();
+    expect(screen.getByText('Módulos')).toBeInTheDocument();
+    expect(screen.getByText(/Da versão 1 para a versão 2/)).toBeInTheDocument();
+  });
+
+  it('versão aprovada gera o link do relatório do cliente (aparece uma vez) e permite revogar', async () => {
+    let revoked = '';
+    const link = {
+      id: 'l-1',
+      expiresAt: now,
+      revokedAt: null,
+      viewCount: 2,
+      lastViewedAt: null,
+      createdAt: now,
+    };
+    mount(version({ id: 'v-3', number: 3, status: 'APPROVED' }), [
+      http.get(`${API}/engineering/versions/v-3/share-links`, () => HttpResponse.json([link])),
+      http.post(`${API}/engineering/versions/v-3/share-links`, () =>
+        HttpResponse.json(
+          { ...link, id: 'l-2', token: 'tok123', path: '/r/tok123' },
+          { status: 201 },
+        ),
+      ),
+      http.post(`${API}/engineering/share-links/l-1/revoke`, () => {
+        revoked = 'l-1';
+        return HttpResponse.json({ ...link, revokedAt: now });
+      }),
+    ]);
+    const user = userEvent.setup();
+    expect(await screen.findByText(/2 visualização/)).toBeInTheDocument();
+    server.use(
+      http.post(`${API}/engineering/versions/v-3/attach-homologation`, () =>
+        HttpResponse.json({
+          projectId: 'p-1',
+          attached: [{ code: 'MEMORIAL', documentId: 'd-1' }],
+          skipped: [],
+        }),
+      ),
+    );
+    await user.click(screen.getByRole('button', { name: 'Anexar à homologação' }));
+    expect(
+      await screen.findByText(/Anexado ao checklist de homologação: MEMORIAL/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Gerar link/ }));
+    expect(await screen.findByText(/\/r\/tok123/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Revogar' }));
+    await waitFor(() => expect(revoked).toBe('l-1'));
+  });
+
   it('Engine aparece no menu e o catálogo vive em /engine/catalogo', async () => {
     server.use(
       http.get(`${API}/catalog/items`, () =>
@@ -558,6 +672,7 @@ describe('Engine: equipamentos e strings', () => {
       ref: 'r@1',
       parameters: { hotCellIrradianceWm2: 1000, dcAcRatioMin: 0.8, dcAcRatioMax: 1.4 },
     },
+    engineCables: { ref: null, parameters: {}, tables: {} },
   };
   const mount = (
     v: EngineeringVersionDetailDto,
@@ -636,7 +751,10 @@ describe('Engine: equipamentos e strings', () => {
       ...v.design,
       site: { ...v.design.site, designTminC: null, designTmaxAmbientC: null },
     };
-    v.rules = { engineDesign: { ref: null, parameters: {} } };
+    v.rules = {
+      engineDesign: { ref: null, parameters: {} },
+      engineCables: { ref: null, parameters: {}, tables: {} },
+    };
     mount(v);
     const user = await openStep();
     const pending = await screen.findByRole('list', { name: /O que falta para concluir/ });

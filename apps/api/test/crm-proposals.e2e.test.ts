@@ -178,6 +178,75 @@ describe('CRM · Proposta (e2e)', () => {
       expect(timeline.some((e: { type: string }) => e.type === 'PROPOSAL_GENERATED')).toBe(true);
     });
 
+    it('usa a geração e a economia do snapshot técnico aprovado na proposta', async () => {
+      const ready = await quotingOpportunity();
+      const project = await t.prisma.system.engineeringProject.create({
+        data: {
+          tenantId: a.id,
+          code: `ENG-PROP-${Math.random().toString(36).slice(2, 8)}`,
+          name: 'Projeto técnico da proposta',
+          opportunityId: ready.opportunityId,
+        },
+      });
+      const version = await t.prisma.system.engineeringVersion.create({
+        data: {
+          tenantId: a.id,
+          projectId: project.id,
+          number: 1,
+          status: 'APPROVED',
+          design: { schemaVersion: 1 },
+          results: {},
+        },
+      });
+      const snapshot = await t.prisma.system.engineeringSnapshot.create({
+        data: {
+          tenantId: a.id,
+          projectId: project.id,
+          versionId: version.id,
+          hash: `proposal-engineering-${Math.random().toString(36).slice(2, 8)}`,
+          content: {
+            version: {
+              results: {
+                totals: { powerKwp: 7.15, moduleCount: 13 },
+                simulation: { energyKwh: 11_234 },
+                economics: {
+                  status: 'VALID',
+                  firstYearSavingsCents: 864_000,
+                  accumulatedSavingsCents: 19_200_000,
+                  simplePaybackYears: 3.7,
+                  horizonYears: 25,
+                },
+              },
+            },
+          },
+        },
+      });
+      await t.prisma.system.quote.update({
+        where: { id: ready.quoteId },
+        data: { engineeringSnapshotId: snapshot.id },
+      });
+
+      const proposal = await createProposal(ready.opportunityId, [ready.quoteId]);
+      expect(proposal.status).toBe(201);
+      const proposalSnapshot = await t.prisma.system.proposalSnapshot.findUniqueOrThrow({
+        where: { id: proposal.body.snapshotId },
+      });
+      expect(proposalSnapshot.content).toMatchObject({
+        scenarios: [
+          {
+            engineeringSnapshotId: snapshot.id,
+            installedPowerKwp: 7.15,
+            moduleCount: 13,
+            annualGenerationKwh: 11_234,
+            firstYearSavingsCents: 864_000,
+            accumulatedSavingsCents: 19_200_000,
+            simplePaybackYears: 3.7,
+            horizonYears: 25,
+          },
+        ],
+      });
+    });
+
     it('vários cenários, com nomes; o snapshot é imutável no banco', async () => {
       const ready = await quotingOpportunity();
       const second = await post(

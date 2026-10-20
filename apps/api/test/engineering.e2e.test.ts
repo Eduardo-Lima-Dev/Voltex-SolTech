@@ -21,6 +21,7 @@ const moduleSpec = {
   betaVocPctPerC: -0.27,
   alphaIscPctPerC: 0.05,
   gammaPmaxPctPerC: -0.34,
+  maxSeriesFuseA: 25,
   lengthMm: 2278,
   widthMm: 1134,
 };
@@ -155,6 +156,53 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
     it('cada empresa só vê os seus pedidos', async () => {
       expect((await get('/engineering/requests', adminB)).body).toEqual([]);
     });
+  });
+
+  it('aprovação técnica encerra o pedido, registra a linha do tempo e reavalia o Guard', async () => {
+    const opportunity = await newOpportunity(false);
+    const project = await t.prisma.system.engineeringProject.create({
+      data: {
+        tenantId: a.id,
+        code: `ENG-EVENT-${Math.random().toString(36).slice(2, 8)}`,
+        name: 'Integração aprovada',
+        opportunityId: opportunity.id,
+      },
+    });
+    const request = await t.prisma.system.engineeringRequest.create({
+      data: {
+        tenantId: a.id,
+        opportunityId: opportunity.id,
+        projectId: project.id,
+        reason: 'Aguardando aprovação técnica',
+        status: 'IN_PROGRESS',
+      },
+    });
+    const { EngineeringCrmIntegrationService } =
+      await import('../src/products/engine/engineering-crm-integration.service');
+    await t.app.get(EngineeringCrmIntegrationService).onApproved({
+      id: 'event-test',
+      type: 'EngineeringVersionApproved',
+      tenantId: a.id,
+      actorId: null,
+      projectCode: project.code,
+      schemaVersion: 1,
+      occurredAt: new Date(),
+      payload: { projectId: project.id, versionId: 'v-approved', snapshotHash: 'snapshot-hash' },
+    });
+    expect(
+      (await t.prisma.system.engineeringRequest.findUniqueOrThrow({ where: { id: request.id } }))
+        .status,
+    ).toBe('DONE');
+    const timeline = (await get(`/opportunities/${opportunity.id}/timeline`, seller)).body;
+    expect(timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'ENGINEERING_APPROVED',
+          data: expect.objectContaining({ snapshotHash: 'snapshot-hash' }),
+        }),
+        expect.objectContaining({ type: 'GUARD_EVALUATED' }),
+      ]),
+    );
   });
 
   describe('projeto a partir do pedido', () => {
@@ -785,6 +833,370 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
       const recalculated = await post(`/engineering/versions/${versionId}/recalculate`, engineer);
       expect(recalculated.body.stale).toBe(false);
       expect(recalculated.body.rules.engineDesign.ref).toBe(`${next.body.id}@${next.body.version}`);
+    });
+  });
+
+  describe('proteções, cabos e lista de materiais', () => {
+    let versionId = '';
+    let inverterId = '';
+    let pricedModuleId = '';
+    const ids = {} as Record<'fuse' | 'disc' | 'surge' | 'breaker' | 'rcd' | 'dc6' | 'ac6', string>;
+    let publisher: { publishPending: (n: number, tenantId: string) => Promise<unknown> };
+    const item = async (
+      key: keyof typeof ids,
+      kind: string,
+      model: string,
+      spec: object,
+      cost: number,
+    ) => {
+      const res = await post('/catalog/items', engineer, {
+        kind,
+        manufacturer: `Prot ${suffix}`,
+        model,
+        spec,
+        referenceCostCents: cost,
+      });
+      expect(res.status).toBe(201);
+      expect((await post(`/catalog/items/${res.body.id}/approve`, lead)).status).toBe(200);
+      ids[key] = res.body.id;
+    };
+    const activate = async (key: string, definition: object) => {
+      const rule = await post('/rules', lead, {
+        key,
+        definition,
+        sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste' }],
+      });
+      expect(rule.status).toBe(201);
+      expect(
+        (await post(`/rules/${rule.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+      ).toBe(200);
+      return `${rule.body.id}@${rule.body.version}`;
+    };
+    // Valores de TESTE (não são regra de nenhuma norma).
+    const designParameters = {
+      hotCellIrradianceWm2: 1000,
+      dcAcRatioMin: 0.5,
+      dcAcRatioMax: 1.5,
+      maxParallelStringsWithoutFuse: 2,
+      fuseMinFactor: 1.25,
+      dcSwitchCurrentFactor: 1.25,
+      acBreakerFactor: 1.25,
+      rcdSensitivityMa: 30,
+    };
+    const cableParameters = {
+      conductorTempC: 70,
+      maxVoltageDropDcPct: 1,
+      maxVoltageDropAcPct: 3,
+      cableCurrentFactorDc: 1.25,
+      cableCurrentFactorAc: 1,
+    };
+    const ampacity = [
+      { crossSectionMm2: 4, method: 'A', ampacityA: 40 },
+      { crossSectionMm2: 6, method: 'A', ampacityA: 52 },
+      { crossSectionMm2: 10, method: 'A', ampacityA: 72 },
+    ];
+    const design = (over: Record<string, unknown> = {}) => ({
+      schemaVersion: 1,
+      site: {
+        latitude: -15.78,
+        longitude: -47.93,
+        designTminC: 5,
+        designTmaxAmbientC: 35,
+        designTemperatureSource: 'Teste',
+      },
+      defaultModuleId: pricedModuleId,
+      surfaces: [surface({ widthM: 20, depthM: 10 })],
+      inverters: [
+        {
+          id: 'e1',
+          inverterId,
+          mppts: [
+            { strings: [{ id: 'g1', surfaceId: 's1', modulesInSeries: 6, parallel: 3 }] },
+            { strings: [] },
+          ],
+        },
+      ],
+      cables: [
+        {
+          id: 'c1',
+          label: 'String 1',
+          kind: 'DC_STRING',
+          inverterEntryId: 'e1',
+          mpptIndex: 0,
+          lengthM: 20,
+          count: 3,
+          installMethod: 'A',
+        },
+        {
+          id: 'c2',
+          label: 'Saída CA',
+          kind: 'AC',
+          inverterEntryId: 'e1',
+          lengthM: 10,
+          installMethod: 'A',
+        },
+      ],
+      ...over,
+    });
+
+    it('prepara catálogo aprovado (com custo de referência), regras ativas e projeto', async () => {
+      const module = await post('/catalog/items', engineer, {
+        kind: 'MODULE',
+        manufacturer: `Prot ${suffix}`,
+        model: 'MOD-550',
+        spec: moduleSpec,
+        referenceCostCents: 50000,
+      });
+      pricedModuleId = module.body.id;
+      expect((await post(`/catalog/items/${pricedModuleId}/approve`, lead)).status).toBe(200);
+      await item(
+        'fuse',
+        'PROTECTION',
+        'F20',
+        { protectionKind: 'FUSE_DC', ratedCurrentA: 20, ratedVoltageV: 1000 },
+        600,
+      );
+      await item(
+        'disc',
+        'PROTECTION',
+        'S63',
+        { protectionKind: 'DISCONNECTOR_DC', ratedCurrentA: 63, ratedVoltageV: 1000 },
+        15000,
+      );
+      await item(
+        'surge',
+        'PROTECTION',
+        'DPS',
+        { protectionKind: 'SURGE_DC', ratedVoltageV: 600 },
+        8000,
+      );
+      await item(
+        'breaker',
+        'PROTECTION',
+        'D32',
+        { protectionKind: 'BREAKER_AC', ratedCurrentA: 32, ratedVoltageV: 230, poles: 2 },
+        4000,
+      );
+      await item(
+        'rcd',
+        'PROTECTION',
+        'DR40',
+        { protectionKind: 'RCD', ratedCurrentA: 40, sensitivityMa: 30 },
+        3500,
+      );
+      await item(
+        'dc6',
+        'CABLE',
+        'DC6',
+        { cableKind: 'DC_SOLAR', crossSectionMm2: 6, voltageRatingV: 1800 },
+        1000,
+      );
+      await item(
+        'ac6',
+        'CABLE',
+        'AC6',
+        { cableKind: 'AC', crossSectionMm2: 6, voltageRatingV: 750 },
+        800,
+      );
+      const inv = await post('/catalog/items', engineer, {
+        kind: 'INVERTER',
+        manufacturer: `Prot ${suffix}`,
+        model: 'INV-5K',
+        referenceCostCents: 400000,
+        spec: {
+          topology: 'STRING',
+          pAcNomW: 5000,
+          pAcMaxW: 5500,
+          pDcMaxW: 7500,
+          vDcMaxV: 1100,
+          vStartV: 180,
+          mpptMinV: 140,
+          mpptMaxV: 1000,
+          mpptCount: 2,
+          inputsPerMppt: 3,
+          iMaxPerMpptA: 60,
+          iscMaxPerMpptA: 80,
+          vAcV: 220,
+          phases: 1,
+          iAcMaxA: 25,
+        },
+      });
+      inverterId = inv.body.id;
+      expect((await post(`/catalog/items/${inverterId}/approve`, lead)).status).toBe(200);
+      await activate('engine.design', { parameters: designParameters });
+      const p = await post('/engineering/projects', engineer, {
+        name: 'Proteções',
+        site: { latitude: -15.78, longitude: -47.93 },
+      });
+      versionId = p.body.versions[0].id;
+      const { OutboxPublisher } = await import('../src/platform/events/outbox-publisher.service');
+      publisher = t.app.get(OutboxPublisher);
+    });
+
+    it('sem a regra engine.cables: proteções calculadas, cabos pendentes de regra e a lista sem os cabos escolhidos', async () => {
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design(),
+      });
+      expect(res.status).toBe(200);
+      const r = res.body.results;
+      expect(r.protection.status).toBe('VALID');
+      const fuse = r.protection.items.find((i: { role: string }) => i.role === 'STRING_FUSE');
+      expect(fuse).toMatchObject({ quantity: 3, outcome: 'OK' });
+      expect(fuse.chosen.equipmentId).toBe(ids.fuse);
+      expect(r.cables.status).toBe('INCOMPLETE');
+      expect(r.cables.pending.map((x: { code: string }) => x.code)).toContain(
+        'RULE_CONDUCTOR_TEMP',
+      );
+      expect(res.body.rules.engineCables).toEqual({ ref: null, parameters: {}, tables: {} });
+      expect(res.body.candidates.map((c: { id: string }) => c.id)).toEqual(
+        expect.arrayContaining([ids.fuse, ids.dc6, ids.ac6]),
+      );
+    });
+
+    it('com a regra: seleciona proteção e cabo, soma a lista com o custo de referência e sincroniza o impacto', async () => {
+      const cablesRef = await activate('engine.cables', {
+        parameters: cableParameters,
+        tables: { ampacity },
+      });
+      const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design(),
+      });
+      const r = res.body.results;
+      expect(res.body.ruleRefs).toHaveLength(2);
+      expect(res.body.ruleRefs).toContain(cablesRef);
+      expect(res.body.rules.engineCables.ref).toBe(cablesRef);
+      expect(r.cables.status).toBe('VALID');
+      expect(
+        r.cables.runs.map((x: { chosen: { equipmentId: string } }) => x.chosen.equipmentId),
+      ).toEqual([ids.dc6, ids.ac6]);
+      const bom = r.bom;
+      expect(bom.unpricedCount).toBe(0);
+      const line = (id: string) =>
+        bom.lines.find((l: { equipmentId: string }) => l.equipmentId === id);
+      // Fusíveis: 3 strings; cabo CC: 20 m × 3 strings × 2 condutores = 120 m.
+      expect(line(ids.fuse)).toMatchObject({
+        quantity: 3,
+        totalCents: 1800,
+        priceSource: 'REFERENCE',
+      });
+      expect(line(ids.dc6)).toMatchObject({ quantity: 120, unit: 'm', totalCents: 120000 });
+      expect(line(ids.ac6)).toMatchObject({ quantity: 20, unit: 'm', totalCents: 16000 });
+      expect(line(inverterId)).toMatchObject({ quantity: 1, totalCents: 400000 });
+      const rows = await t.prisma.system.engineeringVersionEquipment.findMany({
+        where: { versionId },
+      });
+      expect(rows.find((x) => x.equipmentId === ids.dc6)).toMatchObject({
+        kind: 'CABLE',
+        quantity: 120,
+      });
+      expect(rows.find((x) => x.equipmentId === ids.fuse)).toMatchObject({
+        kind: 'PROTECTION',
+        quantity: 3,
+      });
+
+      const report = await get(`/engineering/versions/${versionId}/report.pdf`, engineer);
+      expect(report.status).toBe(200);
+      expect(report.headers['content-type']).toContain('application/pdf');
+      expect(Buffer.isBuffer(report.body)).toBe(true);
+      expect(report.body.subarray(0, 4).toString()).toBe('%PDF');
+
+      const singleLinePdf = await get(
+        `/engineering/versions/${versionId}/single-line.pdf`,
+        engineer,
+      );
+      expect(singleLinePdf.status).toBe(200);
+      expect(singleLinePdf.headers['content-type']).toContain('application/pdf');
+      expect(singleLinePdf.body.subarray(0, 4).toString()).toBe('%PDF');
+    });
+
+    it('preço vigente da tabela vence o custo de referência', async () => {
+      const price = await t.http
+        .post(`${API}/catalog/prices/import`)
+        .set(bearer(engineer))
+        .attach(
+          'file',
+          Buffer.from(
+            `fabricante;modelo;descricao;fornecedor;sku;preco_reais;vigencia_inicio;vigencia_fim\nProt ${suffix};F20;;Distribuidor Teste;;7,50;01/01/2020;\n`,
+          ),
+          'precos.csv',
+        );
+      expect(price.status).toBe(200);
+      expect(price.body).toMatchObject({ created: 1, errors: [], unmatched: [] });
+      const res = await post(`/engineering/versions/${versionId}/recalculate`, engineer);
+      const l = res.body.results.bom.lines.find(
+        (x: { equipmentId: string }) => x.equipmentId === ids.fuse,
+      );
+      expect(l).toMatchObject({ unitCostCents: 750, priceSource: 'PRICE_LIST', totalCents: 2250 });
+    });
+
+    it('troca manual: item aprovado que serve é aceito; que não serve reprova; cabo rascunho ou de outro tipo é recusado', async () => {
+      const small = await post('/catalog/items', engineer, {
+        kind: 'PROTECTION',
+        manufacturer: `Prot ${suffix}`,
+        model: 'S32',
+        spec: { protectionKind: 'DISCONNECTOR_DC', ratedCurrentA: 32, ratedVoltageV: 1000 },
+      });
+      await post(`/catalog/items/${small.body.id}/approve`, lead);
+      const bad = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: design({
+          protectionOverrides: [
+            {
+              id: 'o1',
+              role: 'DC_DISCONNECTOR',
+              inverterEntryId: 'e1',
+              mpptIndex: 0,
+              equipmentId: small.body.id,
+            },
+          ],
+        }),
+      });
+      expect(bad.status).toBe(200);
+      expect(bad.body.results.protection.status).toBe('INVALID');
+      const disc = bad.body.results.protection.items.find(
+        (i: { role: string }) => i.role === 'DC_DISCONNECTOR',
+      );
+      expect(disc).toMatchObject({ manual: true, outcome: 'OVERRIDE_FAILS' });
+
+      const draft = await post('/catalog/items', engineer, {
+        kind: 'CABLE',
+        manufacturer: `Prot ${suffix}`,
+        model: 'RASCUNHO',
+        spec: { cableKind: 'DC_SOLAR', crossSectionMm2: 10 },
+      });
+      const withDraft = design();
+      withDraft.cables[0] = { ...withDraft.cables[0], cableId: draft.body.id } as never;
+      const refused = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: withDraft,
+      });
+      expect(refused.status).toBe(422);
+      expect(refused.body.code).toBe('EQUIPMENT_NOT_AVAILABLE');
+      expect(refused.body.data.problems[0].message).toMatch(/não está aprovado/);
+
+      const wrongKind = design();
+      wrongKind.cables[0] = { ...wrongKind.cables[0], cableId: ids.fuse } as never;
+      const wrong = await put(`/engineering/versions/${versionId}/design`, engineer, {
+        design: wrongKind,
+      });
+      expect(wrong.status).toBe(422);
+      expect(wrong.body.data.problems[0].message).toMatch(/não é um cabo/);
+    });
+
+    it('nova regra engine.cables deixa a versão desatualizada; aposentar o cabo também', async () => {
+      await put(`/engineering/versions/${versionId}/design`, engineer, { design: design() });
+      await activate('engine.cables', {
+        parameters: { ...cableParameters, maxVoltageDropDcPct: 2 },
+        tables: { ampacity },
+      });
+      await publisher.publishPending(500, a.id);
+      const stale = (await get(`/engineering/versions/${versionId}`, engineer)).body;
+      expect(stale.stale).toBe(true);
+      expect(stale.staleReasons.join(' ')).toMatch(/engine\.cables foi atualizada/);
+      await post(`/engineering/versions/${versionId}/recalculate`, engineer);
+      await post(`/catalog/items/${ids.ac6}/retire`, lead);
+      await publisher.publishPending(500, a.id);
+      const after = (await get(`/engineering/versions/${versionId}`, engineer)).body;
+      expect(after.stale).toBe(true);
+      expect(after.staleReasons.join(' ')).toMatch(/foi aposentado/);
     });
   });
 

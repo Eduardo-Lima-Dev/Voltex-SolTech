@@ -39,7 +39,14 @@ export class EngineeringImpactService {
   async onRuleActivated(event: DomainEventEnvelope): Promise<number> {
     const key = String(event.payload.key ?? '');
     if (!key.startsWith('engine.')) return 0;
+    const ref = String(event.payload.ref ?? '');
     const previousRef = event.payload.previousRef ? String(event.payload.previousRef) : null;
+    const sections =
+      key === 'engine.design'
+        ? ['compatibility', 'protection']
+        : key === 'engine.cables'
+          ? ['cables']
+          : [];
     return this.context.run({ tenantId: event.tenantId }, async () => {
       const versions = await this.prisma.db.engineeringVersion.findMany({
         where: { status: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] } },
@@ -48,12 +55,14 @@ export class EngineeringImpactService {
       const affected = versions
         .filter((v) => {
           const refs = v.ruleRefs as string[];
-          const pending =
-            (v.results as { compatibility?: { pending?: { kind: string }[] } } | null)
-              ?.compatibility?.pending ?? [];
+          const results = v.results as Record<
+            string,
+            { pending?: { kind: string }[] } | undefined
+          > | null;
+          const pending = sections.flatMap((section) => results?.[section]?.pending ?? []);
           return (
             (previousRef !== null && refs.includes(previousRef)) ||
-            pending.some((p) => p.kind === 'RULE')
+            (ref !== '' && !refs.includes(ref) && pending.some((p) => p.kind === 'RULE'))
           );
         })
         .map((v) => v.id);

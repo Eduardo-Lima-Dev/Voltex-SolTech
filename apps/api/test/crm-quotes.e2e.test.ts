@@ -148,6 +148,73 @@ describe('CRM · Cotação e Margin Guard (e2e)', () => {
   });
 
   describe('cotação', () => {
+    it('importa materiais do snapshot técnico aprovado e recusa snapshot de outra oportunidade', async () => {
+      await resetPolicies();
+      await policy(0.2);
+      const ready = await buildOpportunity(flow);
+      const project = await t.prisma.system.engineeringProject.create({
+        data: {
+          tenantId: a.id,
+          code: `ENG-QUOTE-${Math.random().toString(36).slice(2, 8)}`,
+          name: 'Projeto para cotação',
+          opportunityId: ready.opportunityId,
+        },
+      });
+      const version = await t.prisma.system.engineeringVersion.create({
+        data: {
+          tenantId: a.id,
+          projectId: project.id,
+          number: 1,
+          status: 'APPROVED',
+          design: { schemaVersion: 1 },
+          results: {},
+        },
+      });
+      const snapshot = await t.prisma.system.engineeringSnapshot.create({
+        data: {
+          tenantId: a.id,
+          projectId: project.id,
+          versionId: version.id,
+          hash: 'snapshot-quote',
+          content: {
+            version: {
+              results: {
+                bom: {
+                  lines: [
+                    {
+                      category: 'MODULE',
+                      description: 'Módulo técnico',
+                      quantity: 10,
+                      unitCostCents: 50_000,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      });
+      const imported = await post(
+        `/opportunities/${ready.opportunityId}/quotes/from-engineering`,
+        seller,
+        { engineeringSnapshotId: snapshot.id, priceCents: 900_000 },
+      );
+      expect(imported.status).toBe(201);
+      expect(imported.body).toMatchObject({
+        engineeringSnapshotId: snapshot.id,
+        items: [{ category: 'MODULE', description: 'Módulo técnico', quantity: 10 }],
+      });
+      const other = await buildOpportunity(flow);
+      expect(
+        (
+          await post(`/opportunities/${other.opportunityId}/quotes/from-engineering`, seller, {
+            engineeringSnapshotId: snapshot.id,
+            priceCents: 900_000,
+          })
+        ).status,
+      ).toBe(422);
+    });
+
     it('cria a versão 1 com a margem calculada, vincula o último cálculo e registra tudo', async () => {
       await resetPolicies();
       await policy(0.2);

@@ -10,7 +10,9 @@ import {
   DomainEvent,
   MarginStatus,
   TimelineEventType,
+  createQuoteFromEngineeringSchema,
   type ApprovalDto,
+  type CreateQuoteFromEngineeringInput,
   type DecideApprovalInput,
   type ListApprovalsQuery,
   type QuoteDto,
@@ -99,6 +101,10 @@ export class QuotesService {
       opportunityId,
       data.calculationSessionId,
     );
+    const engineeringSnapshotId = await this.resolveEngineeringSnapshot(
+      opportunityId,
+      data.engineeringSnapshotId,
+    );
 
     const policy = await this.policies.resolveFor(opportunity);
     const margin = calculateMargin({
@@ -121,6 +127,7 @@ export class QuotesService {
           version: (last?.version ?? 0) + 1,
           title: data.title ?? null,
           calculationSessionId,
+          engineeringSnapshotId,
           items: data.items as object,
           costs: data.costs as object,
           priceCents: data.priceCents,
@@ -175,6 +182,58 @@ export class QuotesService {
     return this.toDto(row, policy);
   }
 
+  /** Cria uma cotação com BOM do snapshot aprovado; não inventa custos nem preço comercial. */
+  async createFromEngineering(
+    opportunityId: string,
+    input: CreateQuoteFromEngineeringInput,
+  ): Promise<QuoteDto> {
+    const data = createQuoteFromEngineeringSchema.parse(input);
+    const snapshot = await this.prisma.db.engineeringSnapshot.findFirst({
+      where: { id: data.engineeringSnapshotId, project: { opportunityId } },
+      select: { id: true, content: true },
+    });
+    if (!snapshot)
+      throw new UnprocessableEntityException(
+        'Snapshot de engenharia não pertence a esta oportunidade.',
+      );
+    const content = snapshot.content as { version?: { results?: { bom?: { lines?: unknown[] } } } };
+    const lines = content.version?.results?.bom?.lines;
+    if (!Array.isArray(lines) || !lines.length)
+      throw new UnprocessableEntityException(
+        'O snapshot não contém uma lista de materiais utilizável.',
+      );
+    const categories = new Set(['MODULE', 'INVERTER', 'PROTECTION', 'CABLE']);
+    const items = lines.flatMap((line) => {
+      const row = line as {
+        category?: string;
+        description?: string;
+        quantity?: number;
+        unitCostCents?: number | null;
+      };
+      return categories.has(row.category ?? '') &&
+        typeof row.description === 'string' &&
+        typeof row.quantity === 'number'
+        ? [
+            {
+              category: row.category as 'MODULE' | 'INVERTER' | 'PROTECTION' | 'CABLE',
+              description: row.description,
+              quantity: row.quantity,
+              unitCostCents: row.unitCostCents ?? 0,
+            },
+          ]
+        : [];
+    });
+    if (!items.length)
+      throw new UnprocessableEntityException('Não há itens de material válidos no snapshot.');
+    return this.create(opportunityId, {
+      title: data.title,
+      engineeringSnapshotId: snapshot.id,
+      items,
+      costs: data.costs,
+      priceCents: data.priceCents,
+    });
+  }
+
   async update(id: string, data: UpdateQuoteData): Promise<QuoteDto> {
     const { quote, opportunity } = await this.findWithOpportunity(id);
     if (quote.lockedAt)
@@ -198,6 +257,13 @@ export class QuotesService {
         : data.calculationSessionId === null
           ? null
           : await this.resolveCalculation(opportunity.id, data.calculationSessionId);
+    const engineeringSnapshotId =
+      data.engineeringSnapshotId === undefined
+        ? quote.engineeringSnapshotId
+        : await this.resolveEngineeringSnapshot(
+            opportunity.id,
+            data.engineeringSnapshotId ?? undefined,
+          );
 
     const numbersChanged =
       !sameJson(items, quote.items) ||
@@ -213,6 +279,7 @@ export class QuotesService {
         data: {
           ...(data.title !== undefined ? { title: data.title } : {}),
           calculationSessionId,
+          engineeringSnapshotId,
           items: items as object,
           costs: costs as object,
           priceCents,
@@ -530,6 +597,23 @@ export class QuotesService {
     return latest?.id ?? null;
   }
 
+  /** Snapshot técnico só pode ser usado pela cotação da mesma oportunidade e nunca é aceito de projeto avulso. */
+  private async resolveEngineeringSnapshot(
+    opportunityId: string,
+    snapshotId: string | undefined,
+  ): Promise<string | null> {
+    if (!snapshotId) return null;
+    const snapshot = await this.prisma.db.engineeringSnapshot.findFirst({
+      where: { id: snapshotId, project: { opportunityId } },
+      select: { id: true },
+    });
+    if (!snapshot)
+      throw new UnprocessableEntityException(
+        'O snapshot de engenharia não pertence a esta oportunidade ou não está aprovado.',
+      );
+    return snapshot.id;
+  }
+
   private async findWithOpportunity(id: string) {
     const quote = await this.prisma.db.quote.findFirst({ where: { id, deletedAt: null } });
     if (!quote) throw new NotFoundException('Cotação não encontrada');
@@ -551,6 +635,7 @@ export class QuotesService {
       version: row.version,
       title: row.title,
       calculationSessionId: row.calculationSessionId,
+      engineeringSnapshotId: row.engineeringSnapshotId,
       items,
       costs,
       priceCents: row.priceCents,

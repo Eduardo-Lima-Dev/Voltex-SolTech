@@ -499,6 +499,7 @@ export const makeQuote = (overrides: Partial<QuoteDto> = {}): QuoteDto => ({
   version: 1,
   title: null,
   calculationSessionId: 'calc-1',
+  engineeringSnapshotId: null,
   items: [{ category: 'MODULE', description: 'Módulo 550 Wp', quantity: 8, unitCostCents: 60_000 }],
   costs: {
     freightCents: 40_000,

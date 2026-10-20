@@ -6,6 +6,8 @@ export const saveQuoteSchema = z.object({
   title: z.string().trim().max(120).optional(),
   /** Cálculo que dimensiona este cenário (opcional; a proposta mostra os números dele). */
   calculationSessionId: z.uuid().optional(),
+  /** Snapshot técnico aprovado do qual a lista de materiais foi importada. */
+  engineeringSnapshotId: z.uuid().optional(),
   items: z.array(quoteItemSchema).min(1, 'Informe ao menos um item da lista de materiais').max(100),
   costs: quoteCostsSchema.default(() => quoteCostsSchema.parse({})),
   /** Preço de venda em centavos. */
@@ -18,6 +20,7 @@ export type SaveQuoteData = z.output<typeof saveQuoteSchema>;
 export const updateQuoteSchema = z.object({
   title: z.string().trim().max(120).optional(),
   calculationSessionId: z.uuid().nullable().optional(),
+  engineeringSnapshotId: z.uuid().nullable().optional(),
   items: z.array(quoteItemSchema).min(1).max(100).optional(),
   costs: quoteCostsBase.partial().optional(),
   priceCents: z.number().int().positive().optional(),

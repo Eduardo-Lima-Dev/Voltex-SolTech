@@ -17,7 +17,7 @@ export class DataSourcesService implements OnModuleInit {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  /** Mantém o cadastro do banco igual ao do código (licença e atribuição) sem apagar a conferência de termos. */
+  /** Mantém o cadastro do banco igual à decisão documentada sobre licença, atribuição e fonte. */
   async onModuleInit(): Promise<void> {
     try {
       await this.sync();
@@ -44,6 +44,7 @@ export class DataSourcesService implements OnModuleInit {
           baseUrl: def.baseUrl,
           license: def.license,
           attribution: def.attribution,
+          licenseStatus: def.licenseStatus,
           notes: def.notes,
         },
       });

@@ -74,6 +74,8 @@ export interface QuoteDto {
   version: number;
   title: string | null;
   calculationSessionId: string | null;
+  /** Snapshot técnico aprovado de onde os materiais foram importados, se houver. */
+  engineeringSnapshotId: string | null;
   items: {
     category: string;
     description: string;

@@ -142,6 +142,179 @@ export interface CompatibilityResult {
   algorithmVersion: string;
 }
 
+export type ProtectionOutcome = 'OK' | 'NONE_AVAILABLE' | 'PENDING' | 'OVERRIDE_FAILS';
+
+/** Uma proteção exigida pelo projeto, com a escolha do catálogo (sugerida ou manual) e a justificativa. */
+export interface ProtectionItem {
+  id: string;
+  role: 'STRING_FUSE' | 'DC_DISCONNECTOR' | 'DC_SURGE' | 'AC_BREAKER' | 'RCD';
+  inverterEntryId: string;
+  mpptIndex: number | null;
+  quantity: number;
+  /** Exigência em texto (ex.: "In de 20,98 A a 25 A; tensão ≥ 628 V"). */
+  requirement: string;
+  currentMinA: number | null;
+  currentMaxA: number | null;
+  voltageMinV: number | null;
+  sensitivityMaxMa: number | null;
+  chosen: {
+    equipmentId: string;
+    label: string;
+    ratedCurrentA: number | null;
+    ratedVoltageV: number | null;
+    sensitivityMa: number | null;
+    costCents: number | null;
+  } | null;
+  /** `true` quando a pessoa escolheu o item (e não o sistema). */
+  manual: boolean;
+  outcome: ProtectionOutcome;
+  justification: string;
+  source: string;
+}
+
+export interface ProtectionResult {
+  status: CompatibilityStatus;
+  items: ProtectionItem[];
+  pending: { code: string; kind: 'DATA' | 'RULE'; message: string }[];
+  algorithmVersion: string;
+}
+
+export interface CableRunResult {
+  runId: string;
+  label: string;
+  kind: 'DC_STRING' | 'DC_MAIN' | 'AC';
+  lengthM: number;
+  count: number;
+  /** Corrente de operação (A) e corrente de projeto (com o fator da regra), quando conhecida. */
+  currentA: number | null;
+  designCurrentA: number | null;
+  /** Tensão de referência para a queda percentual (V). */
+  referenceVoltageV: number | null;
+  resistivityOhmMm2PerM: number | null;
+  /** Seção mínima só pela queda de tensão (mm²) e seção usada na verificação. */
+  minSectionByDropMm2: number | null;
+  sectionMm2: number | null;
+  voltageDropV: number | null;
+  voltageDropPct: number | null;
+  limitPct: number | null;
+  ampacityA: number | null;
+  chosen: {
+    equipmentId: string;
+    label: string;
+    crossSectionMm2: number;
+    costCents: number | null;
+  } | null;
+  manual: boolean;
+  checks: CompatibilityCheck[];
+  status: CompatibilityStatus;
+}
+
+export interface CableResult {
+  status: CompatibilityStatus;
+  runs: CableRunResult[];
+  pending: { code: string; kind: 'DATA' | 'RULE'; message: string }[];
+  algorithmVersion: string;
+}
+
+export interface BomLine {
+  category: 'MODULE' | 'INVERTER' | 'PROTECTION' | 'CABLE';
+  equipmentId: string | null;
+  description: string;
+  quantity: number;
+  unit: 'un' | 'm';
+  unitCostCents: number | null;
+  totalCents: number | null;
+  priceSource: 'PRICE_LIST' | 'REFERENCE' | 'NONE';
+  note: string | null;
+}
+
+export interface BillOfMaterials {
+  lines: BomLine[];
+  /** Soma das linhas com preço; nulo se nenhuma linha tem preço. */
+  totalCents: number | null;
+  /** Linhas sem preço (bloqueiam a cotação desse item). */
+  unpricedCount: number;
+  algorithmVersion: string;
+}
+
+/** Resultado da simulação de geração (9G). Ausente só em versões legadas ainda não recalculadas. */
+export interface EngineeringSimulationResult {
+  status: CompatibilityStatus;
+  energyKwh: number | null;
+  clippingKwh: number | null;
+  performanceRatio: number | null;
+  monthlyKwh?: number[];
+  typicalDayKw?: number[];
+  losses?: { id: string; label: string; kwh: number }[];
+  /** Comparações independentes da geração anual (PVGIS e Calculator). */
+  comparisons?: { source: 'PVGIS' | 'CALCULATOR'; referenceKwh: number; deltaPct: number }[];
+  warnings: string[];
+  algorithmVersion: string;
+}
+
+/** Conexão avaliada exclusivamente a partir de regras versionadas da distribuidora (9G). */
+export interface EngineeringConnectionResult {
+  status: CompatibilityStatus;
+  findings: {
+    ruleId: string;
+    severity: 'INFO' | 'WARNING' | 'BLOCKING';
+    code: string;
+    message: string;
+    source: string;
+  }[];
+  pending: { code: string; message: string }[];
+  algorithmVersion: string;
+}
+
+/** Viabilidade econômica de 25 anos (ou horizonte selecionado), sempre ligada à tarifa e regra usadas. */
+export interface EngineeringEconomicsResult {
+  status: CompatibilityStatus;
+  capexCents: number | null;
+  /** Economia do primeiro ano e acumulado do horizonte; vêm do fluxo de caixa persistido. */
+  firstYearSavingsCents: number | null;
+  accumulatedSavingsCents: number | null;
+  horizonYears: number | null;
+  simplePaybackYears: number | null;
+  discountedPaybackYears: number | null;
+  npvCents: number | null;
+  irrPct: number | null;
+  lcoeCentsPerKwh: number | null;
+  /** Financiamento (Price ou SAC), quando informado. */
+  financing?: {
+    system: 'PRICE' | 'SAC';
+    principalCents: number;
+    downPaymentCents: number;
+    firstInstallmentCents: number;
+    lastInstallmentCents: number;
+    totalPaidCents: number;
+    totalInterestCents: number;
+    annualInstallmentsCents: number[];
+    npvCents: number;
+    simplePaybackYears: number | null;
+    irrPct: number | null;
+  };
+  scenarios?: {
+    name: string;
+    simplePaybackYears: number | null;
+    npvCents: number;
+    irrPct: number | null;
+    lcoeCentsPerKwh: number | null;
+  }[];
+  /** Tornado: efeito de ±10% em cada premissa sobre o VPL, do maior ao menor. */
+  sensitivity?: {
+    variable: string;
+    label: string;
+    lowNpvCents: number;
+    highNpvCents: number;
+    swingCents: number;
+  }[];
+  /** Fluxo anual do caso-base (para o gráfico de caixa acumulado). */
+  cashFlow?: { year: number; netCashFlowCents: number; cumulativeCents: number }[];
+  warnings: string[];
+  pending: { code: string; message: string }[];
+  algorithmVersion: string;
+}
+
 export interface EngineeringResults {
   /** Versões dos algoritmos que produziram estes resultados. */
   algorithmVersions: Record<string, string>;
@@ -149,6 +322,15 @@ export interface EngineeringResults {
   shading: SurfaceShadingResult[];
   /** Compatibilidade módulo × inversor × strings (9E). */
   compatibility: CompatibilityResult;
+  /** Proteções exigidas e escolhidas (9F). */
+  protection: ProtectionResult;
+  /** Cabos: queda de tensão, capacidade de condução e seção (9F). */
+  cables: CableResult;
+  /** Lista de materiais com preço vigente (9F). */
+  bom: BillOfMaterials;
+  simulation?: EngineeringSimulationResult;
+  connection?: EngineeringConnectionResult;
+  economics?: EngineeringEconomicsResult;
   totals: { moduleCount: number; powerKwp: number | null; moduleAreaM2: number | null };
   /** Pendências que impedem concluir (módulo não escolhido, local sem coordenadas...). */
   pending: { code: string; message: string }[];
@@ -198,7 +380,23 @@ export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
   /** Regras em vigor que o cálculo usa (o navegador recalcula com os mesmos parâmetros). */
   rules: {
     engineDesign: { ref: string | null; parameters: Record<string, number> };
+    engineCables: {
+      ref: string | null;
+      parameters: Record<string, number>;
+      /** Tabelas da regra (ex.: `ampacity`). */
+      tables: Record<string, Record<string, number | string | null>[]>;
+    };
   };
+  /** Proteções e cabos **aprovados** (candidatos à seleção automática) e preços unitários, para o cálculo no navegador. */
+  candidates: {
+    id: string;
+    kind: 'PROTECTION' | 'CABLE';
+    label: string;
+    costCents: number | null;
+    spec: Record<string, unknown>;
+  }[];
+  prices: Record<string, { cents: number; source: 'PRICE_LIST' | 'REFERENCE' }>;
+  labels: Record<string, string>;
   /** Equipamentos do catálogo usados no desenho (ficha para o cálculo no navegador). */
   equipment: {
     id: string;
@@ -236,4 +434,57 @@ export interface SuggestConfigurationsResult {
   /** Por que combinações foram descartadas (para a explicação quando não há nenhuma). */
   discarded: { moduleId: string; inverterId: string; reason: string }[];
   pending: CompatibilityResult['pending'];
+}
+
+/** Comparação entre duas versões do mesmo projeto (9I). */
+export interface EngineeringVersionComparisonDto {
+  from: { id: string; number: number; status: string };
+  to: { id: string; number: number; status: string };
+  designChanges: {
+    section: string;
+    path: string;
+    kind: 'ADDED' | 'REMOVED' | 'CHANGED';
+    before: unknown;
+    after: unknown;
+  }[];
+  resultChanges: {
+    metric: string;
+    label: string;
+    before: number | string | null;
+    after: number | string | null;
+    delta: number | null;
+  }[];
+  truncated: boolean;
+}
+
+/** Relatório técnico simplificado para o cliente final (link público, sem custos nem margem). */
+export interface PublicEngineeringReportDto {
+  companyName: string;
+  projectName: string;
+  city: string | null;
+  state: string | null;
+  approvedAt: string;
+  powerKwp: number | null;
+  moduleCount: number;
+  moduleAreaM2: number | null;
+  annualEnergyKwh: number | null;
+  performanceRatio: number | null;
+  monthlyKwh: number[] | null;
+  monthlyConsumptionKwh: number | null;
+  economics: {
+    firstYearSavingsCents: number | null;
+    accumulatedSavingsCents: number | null;
+    simplePaybackYears: number | null;
+    horizonYears: number | null;
+  } | null;
+  notes: string[];
+}
+
+export interface EngineeringShareLinkDto {
+  id: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  viewCount: number;
+  lastViewedAt: string | null;
+  createdAt: string;
 }

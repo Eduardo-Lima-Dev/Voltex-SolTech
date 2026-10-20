@@ -99,12 +99,18 @@ import {
   type Thresholds,
   type CreateDistributorInput,
   type CreateEngineeringProjectInput,
+  type CreateQuoteFromEngineeringInput,
   type CreateEquipmentInput,
   type EngineeringDesignInput,
   type EngineeringProjectDetailDto,
   type EngineeringProjectDto,
   type EngineeringRequestListItemDto,
+  type EngineeringVersionComparisonDto,
+  type EngineeringShareLinkDto,
+  type PublicEngineeringReportDto,
   type EngineeringVersionDetailDto,
+  type EngineeringDecisionInput,
+  type EngineeringReviewCommentInput,
   type HorizonResultDto,
   type ListEngineeringProjectsQuery,
   type SuggestConfigurationsInput,
@@ -311,8 +317,54 @@ export function createEndpoints(client: ApiClient) {
         ),
       recalculate: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
+      submit: (id: string) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/submit`),
+      comments: (id: string) =>
+        client.get<
+          {
+            id: string;
+            section: string;
+            text: string;
+            status: 'OPEN' | 'RESOLVED';
+            authorId: string | null;
+            resolvedAt: string | null;
+            createdAt: string;
+          }[]
+        >(`/engineering/versions/${id}/comments`),
+      addComment: (id: string, input: EngineeringReviewCommentInput) =>
+        client.post(`/engineering/versions/${id}/comments`, input),
+      resolveComment: (id: string, commentId: string) =>
+        client.post(`/engineering/versions/${id}/comments/${commentId}/resolve`),
+      approve: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/approve`, input),
+      reject: (id: string, input: EngineeringDecisionInput) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/reject`, input),
       newVersion: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/new-version`),
+      compare: (id: string, withId: string) =>
+        client.get<EngineeringVersionComparisonDto>(`/engineering/versions/${id}/compare`, {
+          query: { with: withId },
+        }),
+      shareLinks: (id: string) =>
+        client.get<EngineeringShareLinkDto[]>(`/engineering/versions/${id}/share-links`),
+      createShareLink: (id: string, validDays: number) =>
+        client.post<EngineeringShareLinkDto & { token: string; path: string }>(
+          `/engineering/versions/${id}/share-links`,
+          { validDays },
+        ),
+      revokeShareLink: (linkId: string) =>
+        client.post<EngineeringShareLinkDto>(`/engineering/share-links/${linkId}/revoke`),
+      attachHomologation: (id: string) =>
+        client.post<{
+          projectId: string;
+          attached: { code: string; documentId: string }[];
+          skipped: { code: string; reason: string }[];
+        }>(`/engineering/versions/${id}/attach-homologation`),
+      /** Entregáveis do projeto: memorial e unifilar (PDF), unifilar em SVG e DXF. */
+      deliverable: (
+        id: string,
+        file: 'report.pdf' | 'single-line.pdf' | 'single-line.svg' | 'single-line.dxf',
+      ) => client.getBlob(`/engineering/versions/${id}/${file}`),
       removeVersion: (id: string) => client.delete<{ id: string }>(`/engineering/versions/${id}`),
     },
     catalog: {
@@ -555,6 +607,8 @@ export function createEndpoints(client: ApiClient) {
         }),
     },
     quotes: {
+      fromEngineering: (opportunityId: string, input: CreateQuoteFromEngineeringInput) =>
+        client.post<QuoteDto>(`/opportunities/${opportunityId}/quotes/from-engineering`, input),
       update: (id: string, input: UpdateQuoteInput) =>
         client.patch<QuoteDto>(`${ROUTES.quotes}/${id}`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.quotes}/${id}`),
@@ -591,6 +645,10 @@ export function createEndpoints(client: ApiClient) {
         }),
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
+    },
+    publicEngineering: {
+      get: (token: string) =>
+        client.get<PublicEngineeringReportDto>(`/public/engineering/${token}`, { auth: false }),
     },
     privacy: {
       policy: () => client.get<RetentionPolicyDto>(`${ROUTES.privacy}/retention`),

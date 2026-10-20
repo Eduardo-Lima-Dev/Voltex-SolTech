@@ -93,6 +93,21 @@ export class ApiClient {
     return this.request<T>('POST', path, { ...options, formData });
   }
 
+  /** Baixa um arquivo (PDF, SVG, DXF) de rota autenticada. */
+  async getBlob(
+    path: string,
+    options: Omit<RequestOptions, 'body' | 'formData'> = {},
+  ): Promise<Blob> {
+    let response = await this.send('GET', path, options);
+    if (response.status === 401 && options.auth !== false) {
+      const session = await this.refreshSession();
+      if (session) response = await this.send('GET', path, options);
+      else this.config.onUnauthenticated();
+    }
+    if (!response.ok) throw await toApiError(response);
+    return response.blob();
+  }
+
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const response = await this.send(method, path, options);
     if (response.status === 401 && options.auth !== false && !AUTH_PATHS.includes(path)) {

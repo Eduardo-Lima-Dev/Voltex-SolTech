@@ -47,7 +47,7 @@ const SRC = {
   ef: 'EnergIF 2023, p. 41–42 (EF-M11) e p. 169 (EF-R13)',
 };
 
-function check(
+export function makeCheck(
   base: Pick<
     CompatibilityCheck,
     'code' | 'severity' | 'message' | 'formula' | 'source' | 'unit' | 'scope'
@@ -130,7 +130,7 @@ function voltageChecks(
   const checks: CompatibilityCheck[] = [];
   const vocString = t.vocColdV === null ? null : roundTo(ns * t.vocColdV, 2);
   checks.push(
-    check({
+    makeCheck({
       code: 'VOC_COLD_EXCEEDS_MAX',
       severity: 'ERROR',
       scope,
@@ -148,7 +148,7 @@ function voltageChecks(
   );
   if (module.maxSystemVoltageV !== undefined)
     checks.push(
-      check({
+      makeCheck({
         code: 'MODULE_SYSTEM_VOLTAGE_EXCEEDED',
         severity: 'ERROR',
         scope,
@@ -166,7 +166,7 @@ function voltageChecks(
     );
   const vmppCold = t.vmppColdV === null ? null : roundTo(ns * t.vmppColdV, 2);
   checks.push(
-    check({
+    makeCheck({
       code: 'VMPP_ABOVE_MPPT',
       severity: 'ERROR',
       scope,
@@ -184,7 +184,7 @@ function voltageChecks(
   );
   const vmppHot = t.vmppHotV === null ? null : roundTo(ns * t.vmppHotV, 2);
   checks.push(
-    check({
+    makeCheck({
       code: 'VMPP_BELOW_MPPT',
       severity: 'ERROR',
       scope,
@@ -202,7 +202,7 @@ function voltageChecks(
   );
   if (inverter.vStartV !== undefined)
     checks.push(
-      check({
+      makeCheck({
         code: 'START_VOLTAGE_NOT_REACHED',
         severity: 'WARNING',
         scope,
@@ -235,7 +235,7 @@ function evaluateStringEntry(
 
   if (entry.mppts.length > inverter.mpptCount)
     checks.push(
-      check({
+      makeCheck({
         code: 'MPPT_COUNT_EXCEEDED',
         severity: 'ERROR',
         scope: entry.id,
@@ -263,7 +263,7 @@ function evaluateStringEntry(
     for (const g of groups) {
       if (!g.surface)
         checks.push(
-          check({
+          makeCheck({
             code: 'SURFACE_NOT_FOUND',
             severity: 'ERROR',
             scope,
@@ -276,7 +276,7 @@ function evaluateStringEntry(
         );
       else if (!g.module)
         checks.push(
-          check({
+          makeCheck({
             code: 'MODULE_NOT_SELECTED',
             severity: 'ERROR',
             scope,
@@ -289,7 +289,7 @@ function evaluateStringEntry(
         );
       else if (g.moduleId && input.status[g.moduleId] !== 'APPROVED')
         checks.push(
-          check({
+          makeCheck({
             code: 'MODULE_NOT_APPROVED',
             severity: 'ERROR',
             scope,
@@ -305,7 +305,7 @@ function evaluateStringEntry(
 
     const inputsUsed = mppt.strings.reduce((n, s) => n + s.parallel, 0);
     checks.push(
-      check({
+      makeCheck({
         code: 'INPUTS_PER_MPPT_EXCEEDED',
         severity: 'ERROR',
         scope,
@@ -324,7 +324,7 @@ function evaluateStringEntry(
     const moduleIds = new Set(valid.map((g) => g.moduleId));
     if (lengths.size > 1 || moduleIds.size > 1)
       checks.push(
-        check({
+        makeCheck({
           code: 'STRING_MISMATCH',
           severity: 'ERROR',
           scope,
@@ -355,7 +355,7 @@ function evaluateStringEntry(
     );
     if (orientationGap > ORIENTATION_TOLERANCE_DEG)
       checks.push(
-        check({
+        makeCheck({
           code: 'STRING_MISMATCH',
           severity: 'WARNING',
           scope,
@@ -392,7 +392,7 @@ function evaluateStringEntry(
     const impp = valid.reduce((sum, g) => sum + g.s.parallel * (g.module as ModuleSpec).imppA, 0);
     const isc = valid.reduce((sum, g) => sum + g.s.parallel * (g.module as ModuleSpec).iscA, 0);
     checks.push(
-      check({
+      makeCheck({
         code: 'MPPT_CURRENT_EXCEEDED',
         severity: 'ERROR',
         scope,
@@ -407,7 +407,7 @@ function evaluateStringEntry(
     );
     if (inverter.iscMaxPerMpptA !== undefined)
       checks.push(
-        check({
+        makeCheck({
           code: 'MPPT_SHORT_CIRCUIT_EXCEEDED',
           severity: 'ERROR',
           scope,
@@ -430,7 +430,7 @@ function evaluateStringEntry(
   // Inversor sem aprovação no catálogo.
   if (input.status[entry.inverterId] !== 'APPROVED')
     checks.push(
-      check({
+      makeCheck({
         code: 'INVERTER_NOT_APPROVED',
         severity: 'ERROR',
         scope: entry.id,
@@ -462,7 +462,7 @@ function evaluateMicroEntry(
   let modulesConnected = 0;
   if (!micro) {
     checks.push(
-      check({
+      makeCheck({
         code: 'MICRO_INPUT_MISMATCH',
         severity: 'ERROR',
         scope: entry.id,
@@ -480,7 +480,7 @@ function evaluateMicroEntry(
   const module = moduleId ? input.modules[moduleId] : undefined;
   if (!surface || !module || !moduleId) {
     checks.push(
-      check({
+      makeCheck({
         code: 'MODULE_NOT_SELECTED',
         severity: 'ERROR',
         scope: entry.id,
@@ -495,7 +495,7 @@ function evaluateMicroEntry(
   }
   if (input.status[moduleId] !== 'APPROVED')
     checks.push(
-      check({
+      makeCheck({
         code: 'MODULE_NOT_APPROVED',
         severity: 'ERROR',
         scope: entry.id,
@@ -508,7 +508,7 @@ function evaluateMicroEntry(
     );
   const inputs = inverter.mpptCount * inverter.inputsPerMppt;
   checks.push(
-    check({
+    makeCheck({
       code: 'MICRO_INPUT_MISMATCH',
       severity: 'ERROR',
       scope: entry.id,
@@ -524,7 +524,7 @@ function evaluateMicroEntry(
   const t = thermals.get(moduleId) as Thermal;
   checks.push(...voltageChecks(`${entry.id}/módulo`, 1, module, inverter, t));
   checks.push(
-    check({
+    makeCheck({
       code: 'MPPT_CURRENT_EXCEEDED',
       severity: 'ERROR',
       scope: entry.id,
@@ -539,7 +539,7 @@ function evaluateMicroEntry(
   );
   if (inverter.iscMaxPerMpptA !== undefined)
     checks.push(
-      check({
+      makeCheck({
         code: 'MPPT_SHORT_CIRCUIT_EXCEEDED',
         severity: 'ERROR',
         scope: entry.id,
@@ -555,7 +555,7 @@ function evaluateMicroEntry(
   const perUnitWp = micro.modulesPerUnit * module.pmaxWp;
   if (inverter.pDcMaxW !== undefined)
     checks.push(
-      check({
+      makeCheck({
         code: 'DC_POWER_EXCEEDED',
         severity: 'ERROR',
         scope: entry.id,
@@ -593,7 +593,7 @@ function finishInverter(
   const ratio = acW > 0 && totals.dcWp > 0 ? roundTo(totals.dcWp / acW, 3) : null;
   if (inverter.pDcMaxW !== undefined && inverter.topology !== 'MICRO')
     checks.push(
-      check({
+      makeCheck({
         code: 'DC_POWER_EXCEEDED',
         severity: 'ERROR',
         scope: entry.id,
@@ -611,7 +611,7 @@ function finishInverter(
   const policyKnown = min !== undefined && max !== undefined;
   if (totals.dcWp > 0)
     checks.push(
-      check({
+      makeCheck({
         code: 'DC_AC_RATIO_OUT_OF_POLICY',
         severity: 'WARNING',
         scope: entry.id,
@@ -707,7 +707,7 @@ export function evaluateCompatibility(input: CompatibilityInput): CompatibilityR
         inverterId: entry.inverterId,
         status: 'INVALID',
         checks: [
-          check({
+          makeCheck({
             code: 'INVERTER_NOT_FOUND',
             severity: 'ERROR',
             scope: entry.id,
@@ -751,7 +751,7 @@ export function evaluateCompatibility(input: CompatibilityInput): CompatibilityR
     if (!hasInverters && allocated === 0) continue;
     if (allocated > available)
       allocation.push(
-        check({
+        makeCheck({
           code: 'MODULES_OVER_ALLOCATED',
           severity: 'ERROR',
           scope: surface.id,
@@ -766,7 +766,7 @@ export function evaluateCompatibility(input: CompatibilityInput): CompatibilityR
       );
     else if (allocated < available)
       allocation.push(
-        check({
+        makeCheck({
           code: 'MODULES_NOT_ALLOCATED',
           severity: 'WARNING',
           scope: surface.id,

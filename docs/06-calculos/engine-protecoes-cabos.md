@@ -1,6 +1,6 @@
 # Memorial: proteções, cabos e lista de materiais (ENG-F10 a F14, F24)
 
-**Estado: projeto (implementação na 9F).** Nada aqui tem valor normativo embutido: fatores e tabelas vêm das regras `engine.design` e `engine.cables`, revisadas pelo responsável técnico. Sem regra ativa, a etapa mostra "pendente de regra" e **bloqueia a aprovação**.
+**Estado: implementado na 9F.** Nada aqui tem valor normativo embutido: fatores e tabelas vêm das regras `engine.design` e `engine.cables`, revisadas pelo responsável técnico. Sem regra ativa, a etapa mostra "pendente de regra" e **bloqueia a aprovação**.
 
 ## O que o livro e o manual dão (e o que não dão)
 
