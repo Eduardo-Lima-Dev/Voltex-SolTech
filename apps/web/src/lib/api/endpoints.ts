@@ -98,7 +98,21 @@ import {
   type RuleSource,
   type Thresholds,
   type CreateDistributorInput,
+  type CreateEquipmentInput,
   type CreateSourceWatchInput,
+  type EquipmentDetailDto,
+  type EquipmentDto,
+  type ExternalReferenceDto,
+  type ImportCommitInput,
+  type ImportFormat,
+  type ImportPreviewDto,
+  type InmetroCheckInput,
+  type ListEquipmentQuery,
+  type ListReferencesQuery,
+  type PriceImportResultDto,
+  type PriceItemDto,
+  type ProposeSolarResourceInput,
+  type UpdateEquipmentInput,
   type DataSourceDto,
   type DecideProposalInput,
   type ListProposalsQuery,
@@ -248,7 +262,51 @@ export function createEndpoints(client: ApiClient) {
         client.post<RuleSetDto>(`${ROUTES.rules}/${id}/activate`, input),
       remove: (id: string) => client.delete<{ id: string }>(`${ROUTES.rules}/${id}`),
     },
+    catalog: {
+      list: (query: Partial<ListEquipmentQuery> = {}) =>
+        client.get<Paginated<EquipmentDto>>('/catalog/items', { query: query as QueryParams }),
+      get: (id: string) => client.get<EquipmentDetailDto>(`/catalog/items/${id}`),
+      create: (input: CreateEquipmentInput) => client.post<EquipmentDto>('/catalog/items', input),
+      update: (id: string, input: UpdateEquipmentInput) =>
+        client.patch<EquipmentDto>(`/catalog/items/${id}`, input),
+      remove: (id: string) => client.delete<{ id: string }>(`/catalog/items/${id}`),
+      approve: (id: string) => client.post<EquipmentDetailDto>(`/catalog/items/${id}/approve`),
+      retire: (id: string) => client.post<EquipmentDto>(`/catalog/items/${id}/retire`),
+      revise: (id: string) => client.post<EquipmentDto>(`/catalog/items/${id}/revise`),
+      inmetro: (id: string, input: InmetroCheckInput) =>
+        client.post<EquipmentDto>(`/catalog/items/${id}/inmetro`, input),
+      preview: (file: File, format: ImportFormat, kind?: string) => {
+        const form = new FormData();
+        form.append('file', file);
+        return client.upload<ImportPreviewDto>('/catalog/import/preview', form, {
+          query: { format, ...(kind ? { kind } : {}) },
+        });
+      },
+      commit: (input: ImportCommitInput) =>
+        client.post<{ created: EquipmentDto[] }>('/catalog/import/commit', input),
+      attachDatasheet: (id: string, documentId: string) =>
+        client.post<EquipmentDto>(`/catalog/items/${id}/datasheet`, { documentId }),
+      references: (query: Partial<ListReferencesQuery> = {}) =>
+        client.get<Paginated<ExternalReferenceDto>>('/catalog/references', {
+          query: query as QueryParams,
+        }),
+      adopt: (id: string, spec?: Record<string, unknown>) =>
+        client.post<EquipmentDto>(`/catalog/references/${id}/adopt`, { spec }),
+      prices: (equipmentId?: string) =>
+        client.get<PriceItemDto[]>('/catalog/prices', {
+          query: equipmentId ? { equipmentId } : {},
+        }),
+      importPrices: (file: File, dryRun: boolean) => {
+        const form = new FormData();
+        form.append('file', file);
+        return client.upload<PriceImportResultDto>('/catalog/prices/import', form, {
+          query: { dryRun: String(dryRun) },
+        });
+      },
+    },
     dataHub: {
+      proposeSolarResource: (input: ProposeSolarResourceInput) =>
+        client.post<UpdateProposalDto>(`${ROUTES.dataHub}/solar-resources/propose`, input),
       sources: () => client.get<DataSourceDto[]>(`${ROUTES.dataHub}/sources`),
       watches: {
         list: () => client.get<SourceWatchDto[]>(`${ROUTES.dataHub}/watches`),

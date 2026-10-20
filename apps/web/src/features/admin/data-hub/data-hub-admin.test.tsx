@@ -283,3 +283,65 @@ describe('Administração → Atualizações', () => {
     expect(seen[0]).toBe('PENDING');
   });
 });
+
+describe('Irradiação → Buscar da NASA', () => {
+  it('pede a proposta com as coordenadas e leva a pessoa para Atualizações', async () => {
+    let sent: unknown;
+    server.use(
+      http.get(`${API}/solar-resources`, () =>
+        HttpResponse.json({ data: [], meta: { page: 1, pageSize: 20, total: 0 } }),
+      ),
+      http.post(`${API}/data-hub/solar-resources/propose`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(proposal({ id: 'p-9', type: 'SOLAR_RESOURCE' }), { status: 201 });
+      }),
+    );
+    renderApp('/admin/irradiacao');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /Buscar da NASA/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Buscar e propor' }));
+    expect(await within(dialog).findByText('Informe o nome do local.')).toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText('Local'), 'Brasília');
+    await user.selectOptions(within(dialog).getByLabelText('UF'), 'DF');
+    await user.type(within(dialog).getByLabelText('Latitude'), '95');
+    await user.click(within(dialog).getByRole('button', { name: 'Buscar e propor' }));
+    expect(await within(dialog).findByText(/Latitude inválida/)).toBeInTheDocument();
+    await user.clear(within(dialog).getByLabelText('Latitude'));
+    await user.type(within(dialog).getByLabelText('Latitude'), '-15,78');
+    await user.type(within(dialog).getByLabelText('Longitude'), '-47,93');
+    await user.click(within(dialog).getByRole('button', { name: 'Buscar e propor' }));
+    await waitFor(() =>
+      expect(sent).toEqual({ name: 'Brasília', state: 'DF', latitude: -15.78, longitude: -47.93 }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('a caixa de atualizações mostra a irradiação proposta e se o local já existe', async () => {
+    server.use(
+      http.get(`${API}/data-hub/updates`, () =>
+        HttpResponse.json([
+          proposal({
+            id: 'p-3',
+            type: 'SOLAR_RESOURCE',
+            title: 'Irradiação de Brasília/DF: HSP médio 5,54 kWh/m²·dia (NASA POWER)',
+            proposed: {
+              hspMonthly: [5.87, 5.92, 5.5, 5.34, 4.96, 4.83, 5.14, 5.81, 6.14, 5.96, 5.42, 5.65],
+              temperatures: { note: 'Climatologia da fonte: não é a temperatura de projeto.' },
+            },
+            diff: { previousHspMonthly: Array<number>(12).fill(5) },
+            origin: {
+              source: 'nasa-power',
+              collectedAt: now,
+              license: 'Sem restrições declaradas',
+            },
+          }),
+        ]),
+      ),
+    );
+    renderApp('/admin/atualizacoes');
+    expect(await screen.findByText(/5,87 · 5,92/)).toBeInTheDocument();
+    expect(screen.getByText(/Já existe este local, com média de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/não é a temperatura de projeto/)).toBeInTheDocument();
+  });
+});

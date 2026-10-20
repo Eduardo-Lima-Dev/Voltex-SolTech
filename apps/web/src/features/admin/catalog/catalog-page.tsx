@@ -1,0 +1,524 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileUp, Plus } from 'lucide-react';
+import { useState } from 'react';
+import type { EquipmentKind, EquipmentStatus, ExternalReferenceDto } from '@voltex/shared';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  NativeSelect,
+  Skeleton,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  toast,
+} from '@voltex/ui';
+import { Can } from '@/app/guards';
+import { endpoints } from '@/lib/api/endpoints';
+import { errorMessage, fieldErrors, isApiError } from '@/lib/api/errors';
+import { formatDate } from '@/lib/format';
+import { queryKeys } from '../query-keys';
+import {
+  KIND_LABELS,
+  KIND_SINGULAR,
+  ORIGIN_LABELS,
+  STATUS_LABELS,
+  specSummary,
+} from './catalog-fields';
+import { EquipmentFormDialog, type EquipmentFormValues } from './equipment-form-dialog';
+import { ImportDialog } from './import-dialog';
+import { ItemDetailDialog } from './item-detail-dialog';
+
+const STATUS_BADGE = { DRAFT: 'secondary', APPROVED: 'green', RETIRED: 'outline' } as const;
+const KINDS = Object.keys(KIND_LABELS) as EquipmentKind[];
+const PAGE_SIZE = 20;
+
+function EquipmentList({ kind }: { kind: EquipmentKind }) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<EquipmentStatus | ''>('');
+  const [page, setPage] = useState(1);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
+
+  const filters = {
+    kind,
+    search: search || undefined,
+    status: status || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  };
+  const list = useQuery({
+    queryKey: queryKeys.catalog(filters),
+    queryFn: () => endpoints.catalog.list(filters),
+    placeholderData: keepPreviousData,
+  });
+
+  const create = useMutation({
+    mutationFn: (values: EquipmentFormValues) =>
+      endpoints.catalog.create({ kind, ...values, origin: 'MANUAL' } as never),
+    onSuccess: async (created) => {
+      toast.success('Rascunho criado. O responsável técnico precisa aprová-lo para uso.');
+      setCreating(false);
+      setServerErrors({});
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+      setOpenId(created.id);
+    },
+    onError: (error) => {
+      if (isApiError(error) && error.status === 409) toast.error(error.message);
+      else {
+        setServerErrors(fieldErrors(error));
+        toast.error(errorMessage(error, 'Não foi possível criar o equipamento.'));
+      }
+    },
+  });
+
+  const total = list.data?.meta.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1.5">
+          <CardTitle>{KIND_LABELS[kind]}</CardTitle>
+          <CardDescription>
+            Só itens <strong>aprovados</strong> entram nos projetos. Depois de aprovada, a ficha não
+            muda: para corrigir, crie uma nova revisão.
+          </CardDescription>
+        </div>
+        <Can permission="platform.catalog.manage">
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setImporting(true)}>
+              <FileUp /> Importar
+            </Button>
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <Plus /> Novo {KIND_SINGULAR[kind]}
+            </Button>
+          </div>
+        </Can>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-3">
+          <div className="grid gap-1">
+            <Label htmlFor={`search-${kind}`}>Buscar</Label>
+            <Input
+              id={`search-${kind}`}
+              placeholder="Fabricante ou modelo"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor={`status-${kind}`}>Situação</Label>
+            <NativeSelect
+              id={`status-${kind}`}
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as EquipmentStatus | '');
+                setPage(1);
+              }}
+            >
+              <option value="">Todas</option>
+              <option value="DRAFT">Rascunho</option>
+              <option value="APPROVED">Aprovado</option>
+              <option value="RETIRED">Aposentado</option>
+            </NativeSelect>
+          </div>
+        </div>
+
+        {list.isPending ? (
+          <Skeleton className="h-32 w-full" />
+        ) : list.isError ? (
+          <p className="text-sm text-destructive">Não foi possível carregar o catálogo.</p>
+        ) : list.data.data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nada por aqui ainda. Cadastre um {KIND_SINGULAR[kind]} ou importe uma planilha, um
+            arquivo .PAN/.OND ou uma ficha em PDF.
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Equipamento</TableHead>
+                <TableHead>Ficha</TableHead>
+                <TableHead>Situação</TableHead>
+                <TableHead>Origem</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.data.data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">
+                    {item.manufacturer} {item.model}
+                    <span className="ml-2 text-xs text-muted-foreground">rev. {item.revision}</span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {specSummary(item.kind, item.spec as unknown as Record<string, unknown>)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_BADGE[item.status]}>{STATUS_LABELS[item.status]}</Badge>
+                    {(item.kind === 'MODULE' || item.kind === 'INVERTER') &&
+                    item.inmetroStatus === 'VERIFIED' ? (
+                      <Badge variant="outline" className="ml-1">
+                        INMETRO
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {ORIGIN_LABELS[item.origin]}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Abrir ${item.manufacturer} ${item.model}`}
+                      onClick={() => setOpenId(item.id)}
+                    >
+                      Abrir
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+
+        {pages > 1 ? (
+          <div className="flex items-center justify-end gap-2 text-sm">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Anterior
+            </Button>
+            <span>
+              Página {page} de {pages}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        ) : null}
+      </CardContent>
+
+      <EquipmentFormDialog
+        open={creating}
+        onOpenChange={setCreating}
+        kind={kind}
+        title={`Novo ${KIND_SINGULAR[kind]}`}
+        description="Preencha a ficha técnica conforme o datasheet. Ela entra como rascunho."
+        pending={create.isPending}
+        serverErrors={serverErrors}
+        onSubmit={(values) => create.mutate(values)}
+      />
+      <ImportDialog open={importing} onOpenChange={setImporting} defaultKind={kind} />
+      <ItemDetailDialog id={openId} onClose={() => setOpenId(null)} />
+    </Card>
+  );
+}
+
+function References() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [adopting, setAdopting] = useState<ExternalReferenceDto | null>(null);
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
+  const filters = { search: search || undefined, page: 1, pageSize: 20 };
+  const list = useQuery({
+    queryKey: queryKeys.catalogReferences(filters),
+    queryFn: () => endpoints.catalog.references(filters),
+  });
+  const adopt = useMutation({
+    mutationFn: (values: EquipmentFormValues) =>
+      endpoints.catalog.adopt((adopting as ExternalReferenceDto).id, values.spec),
+    onSuccess: async () => {
+      toast.success('Adotado como rascunho no seu catálogo.');
+      setAdopting(null);
+      setServerErrors({});
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+    },
+    onError: (error) => {
+      if (isApiError(error) && error.status === 409) toast.error(error.message);
+      else {
+        setServerErrors(fieldErrors(error));
+        toast.error(errorMessage(error, 'Não foi possível adotar.'));
+      }
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Referências externas</CardTitle>
+        <CardDescription>
+          Equipamentos de bibliotecas públicas (como a CEC/SAM, do mercado norte-americano). Você
+          escolhe quais <strong>adotar</strong>: viram rascunho no seu catálogo, com a origem
+          registrada, e só valem depois de aprovados. Confira se o equipamento é vendido e
+          homologado no Brasil.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid max-w-sm gap-1">
+          <Label htmlFor="ref-search">Buscar</Label>
+          <Input
+            id="ref-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Fabricante ou modelo"
+          />
+        </div>
+        {list.isPending ? (
+          <Skeleton className="h-24 w-full" />
+        ) : list.isError ? (
+          <p className="text-sm text-destructive">Não foi possível carregar as referências.</p>
+        ) : list.data.data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma referência carregada. A biblioteca CEC/SAM só é carregada quando a fonte é
+            ligada no servidor, depois de conferida a licença (veja <strong>Fontes de dados</strong>
+            ).
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Equipamento</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Coletado em</TableHead>
+                <Can permission="platform.catalog.manage">
+                  <TableHead className="text-right">Ações</TableHead>
+                </Can>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.data.data.map((ref) => (
+                <TableRow key={ref.id}>
+                  <TableCell className="font-medium">
+                    {ref.manufacturer} {ref.model}
+                    <div className="text-xs font-normal text-muted-foreground">
+                      {ref.attribution}
+                    </div>
+                  </TableCell>
+                  <TableCell>{ref.kind === 'MODULE' ? 'Módulo' : 'Inversor'}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(ref.collectedAt)}
+                  </TableCell>
+                  <Can permission="platform.catalog.manage">
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => setAdopting(ref)}>
+                        Adotar
+                      </Button>
+                    </TableCell>
+                  </Can>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+      {adopting ? (
+        <EquipmentFormDialog
+          open
+          onOpenChange={(open) => !open && setAdopting(null)}
+          kind={adopting.kind}
+          title={`Adotar ${adopting.manufacturer} ${adopting.model}`}
+          description="Complete o que a biblioteca não traz (por exemplo, as dimensões do módulo)."
+          initial={{
+            manufacturer: adopting.manufacturer,
+            model: adopting.model,
+            spec: adopting.spec,
+          }}
+          lockIdentity
+          submitLabel="Adotar como rascunho"
+          pending={adopt.isPending}
+          serverErrors={serverErrors}
+          onSubmit={(values) => adopt.mutate(values)}
+        />
+      ) : null}
+    </Card>
+  );
+}
+
+function Prices() {
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const prices = useQuery({
+    queryKey: queryKeys.catalogPrices,
+    queryFn: () => endpoints.catalog.prices(),
+  });
+  const run = useMutation({
+    mutationFn: ({ dryRun }: { dryRun: boolean }) =>
+      endpoints.catalog.importPrices(file as File, dryRun),
+    onSuccess: async (result) => {
+      if (result.dryRun) {
+        toast.message(
+          `${result.rowsRead} linha(s): ${result.rowsRead - result.errors.length - result.unmatched.length} prontas, ${result.unmatched.length} sem equipamento aprovado, ${result.errors.length} com erro.`,
+        );
+        setReport(result);
+      } else {
+        toast.success(`${result.created} preço(s) importado(s).`);
+        setReport(result);
+        setFile(null);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.catalogPrices });
+      }
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível importar a planilha.')),
+  });
+  const [report, setReport] = useState<Awaited<
+    ReturnType<typeof endpoints.catalog.importPrices>
+  > | null>(null);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tabelas de preço</CardTitle>
+        <CardDescription>
+          Preços de distribuidores com vigência. Cada linha aponta para um equipamento{' '}
+          <strong>aprovado</strong> (fabricante e modelo) ou é um insumo avulso (só descrição).
+          Colunas: fabricante; modelo; descricao; fornecedor; sku; preco_reais; vigencia_inicio;
+          vigencia_fim.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Can permission="platform.catalog.manage">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-1">
+              <Label htmlFor="price-file">Planilha (CSV)</Label>
+              <Input
+                id="price-file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setReport(null);
+                }}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!file || run.isPending}
+              onClick={() => run.mutate({ dryRun: true })}
+            >
+              Conferir
+            </Button>
+            <Button
+              size="sm"
+              disabled={!file || run.isPending}
+              onClick={() => run.mutate({ dryRun: false })}
+            >
+              {run.isPending ? <Spinner /> : null}
+              Importar
+            </Button>
+          </div>
+        </Can>
+        {report ? (
+          <div className="space-y-1 rounded border p-3 text-sm">
+            <p>
+              {report.dryRun ? 'Conferência' : 'Importação'}: {report.rowsRead} linha(s) lidas,{' '}
+              {report.created} criadas.
+            </p>
+            {report.unmatched.map((u) => (
+              <p key={u.row} className="text-muted-foreground">
+                Linha {u.row}: {u.manufacturer} {u.model} não está aprovado no catálogo.
+              </p>
+            ))}
+            {report.errors.map((e) => (
+              <p key={e.row} className="text-destructive">
+                Linha {e.row}: {e.message}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {prices.isPending ? (
+          <Skeleton className="h-24 w-full" />
+        ) : prices.isError ? (
+          <p className="text-sm text-destructive">Não foi possível carregar os preços.</p>
+        ) : prices.data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum preço cadastrado.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Fornecedor</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Vigência</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {prices.data.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.description}</TableCell>
+                  <TableCell>{p.supplier}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {(p.priceCents / 100).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(p.validFrom)}
+                    {p.validTo ? ` a ${formatDate(p.validTo)}` : ' em diante'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CatalogPage() {
+  return (
+    <Tabs defaultValue="MODULE" className="space-y-4">
+      <TabsList className="flex-wrap">
+        {KINDS.map((k) => (
+          <TabsTrigger key={k} value={k}>
+            {KIND_LABELS[k]}
+          </TabsTrigger>
+        ))}
+        <TabsTrigger value="references">Referências externas</TabsTrigger>
+        <TabsTrigger value="prices">Preços</TabsTrigger>
+      </TabsList>
+      {KINDS.map((k) => (
+        <TabsContent key={k} value={k}>
+          <EquipmentList kind={k} />
+        </TabsContent>
+      ))}
+      <TabsContent value="references">
+        <References />
+      </TabsContent>
+      <TabsContent value="prices">
+        <Prices />
+      </TabsContent>
+    </Tabs>
+  );
+}

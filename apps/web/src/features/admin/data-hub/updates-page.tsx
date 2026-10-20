@@ -79,6 +79,31 @@ function Detail({ proposal }: { proposal: UpdateProposalDto }) {
       </div>
     );
   }
+  if (proposal.type === 'SOLAR_RESOURCE') {
+    const proposed = proposal.proposed as {
+      hspMonthly: number[];
+      temperatures?: { note?: string };
+    };
+    const previous = (proposal.diff as { previousHspMonthly?: number[] } | null)
+      ?.previousHspMonthly;
+    const avg = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
+    return (
+      <div className="space-y-1 text-sm">
+        <p>
+          HSP mensal (kWh/m²·dia):{' '}
+          <span className="tabular-nums">
+            {proposed.hspMonthly.map((v) => formatNumber(v, 2)).join(' · ')}
+          </span>
+        </p>
+        <p className="text-muted-foreground">
+          {previous
+            ? `Já existe este local, com média de ${formatNumber(avg(previous), 2)}: aprovar atualiza os valores.`
+            : 'Local novo: aprovar cria o registro.'}{' '}
+          {proposed.temperatures?.note}
+        </p>
+      </div>
+    );
+  }
   if (proposal.type === 'TARIFF') {
     const proposed = proposal.proposed as { energyCentsPerKwh: number; validFrom: string };
     const previous = (proposal.diff as { previousEnergyCentsPerKwh?: number } | null)
@@ -120,6 +145,8 @@ function DecisionDialog({
       await queryClient.invalidateQueries({ queryKey: queryKeys.updateProposals() });
       if (proposal?.type === 'TARIFF')
         await queryClient.invalidateQueries({ queryKey: queryKeys.tariffs() });
+      if (proposal?.type === 'SOLAR_RESOURCE')
+        await queryClient.invalidateQueries({ queryKey: queryKeys.solarResources() });
     },
     onError: (error) => toast.error(errorMessage(error, 'Não foi possível registrar a decisão.')),
   });
@@ -132,7 +159,9 @@ function DecisionDialog({
           <DialogDescription>
             {proposal?.type === 'TARIFF'
               ? 'Aprovar cria ou atualiza a tarifa da concessionária, com a fonte registrada.'
-              : 'Aprovar registra que você revisou a mudança. Nenhuma regra é alterada automaticamente: crie a nova versão da regra, se for o caso.'}
+              : proposal?.type === 'SOLAR_RESOURCE'
+                ? 'Aprovar cria ou atualiza o local na lista de irradiação, com a fonte e as temperaturas informativas.'
+                : 'Aprovar registra que você revisou a mudança. Nenhuma regra é alterada automaticamente: crie a nova versão da regra, se for o caso.'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
