@@ -1,5 +1,7 @@
 import { Plus, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import {
+  lazy,
+  Suspense,
   useMemo,
   useRef,
   useState,
@@ -36,13 +38,26 @@ import { formatNumber } from '@/lib/format';
 import { NumberField } from '../../engine/editor/number-field';
 import { snapTo } from '../../engine/editor/scene-3d-math';
 import { useOffgrid } from './offgrid-context';
+import { ElementSymbol } from './plan-symbols';
 import {
   buildOffgridScene,
-  elementCorners,
   projectOffgridScene,
   type OffgridPolygonKind,
   type SceneArray,
 } from './scene-math';
+
+const TerrainCanvas = lazy(() => import('./terrain-canvas'));
+
+/** O 3D realista precisa de WebGL; sem ele, a cena simplificada em SVG continua disponível. */
+const hasWebGL = (): boolean => {
+  try {
+    if (typeof WebGLRenderingContext === 'undefined') return false;
+    const canvas = document.createElement('canvas');
+    return !!(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
+};
 
 export const ELEMENT_LABELS: Record<LayoutElementKind, string> = {
   HOUSE: 'Casa (cargas)',
@@ -99,6 +114,8 @@ export function VisualStep() {
   const { design, update, readOnly, results } = useOffgrid();
   const layout = design.layout;
   const [mode, setMode] = useState<'2d' | '3d'>('2d');
+  const [view, setView] = useState<'iso' | 'top' | 'front'>('iso');
+  const webgl = useMemo(hasWebGL, []);
   const [selected, setSelected] = useState<Selection>(null);
   const [yaw, setYaw] = useState(30);
   const [pitch, setPitch] = useState(40);
@@ -485,17 +502,19 @@ export function VisualStep() {
                       onFocus={() => setSelected({ type: 'element', id: e.id })}
                       className="cursor-move outline-none"
                     >
-                      <polygon
-                        points={poly(elementCorners(e))}
-                        className={FILL[e.kind]}
-                        strokeWidth={isSel ? 0.3 : 0.12}
-                      />
+                      <g
+                        transform={`translate(${e.positionM.x} ${sy(e.positionM.y)}) rotate(${e.rotationDeg})`}
+                      >
+                        <ElementSymbol kind={e.kind} w={e.widthM} d={e.depthM} selected={isSel} />
+                      </g>
                       <text
                         x={e.positionM.x}
-                        y={sy(e.positionM.y) + 0.3}
-                        fontSize={0.9}
+                        y={sy(e.positionM.y) + Math.max(e.widthM, e.depthM) / 2 + 1.1}
+                        fontSize={0.95}
                         textAnchor="middle"
-                        className="pointer-events-none fill-foreground"
+                        paintOrder="stroke"
+                        strokeWidth={0.35}
+                        className="pointer-events-none fill-foreground stroke-white"
                       >
                         {e.name}
                       </text>
@@ -606,6 +625,62 @@ export function VisualStep() {
                   </text>
                 </g>
               </svg>
+            ) : webgl ? (
+              <div className="space-y-2">
+                <div className="h-[32rem] w-full overflow-hidden rounded border bg-sky-100">
+                  <Suspense
+                    fallback={
+                      <p className="p-4 text-sm text-muted-foreground">Carregando a cena 3D…</p>
+                    }
+                  >
+                    <TerrainCanvas
+                      lot={{ widthM: layout.lotWidthM, depthM: layout.lotDepthM }}
+                      elements={layout.elements}
+                      arrays={sceneArrays.map((a) => ({
+                        ...a,
+                        name: design.arrays.find((x) => x.id === a.id)?.name ?? '',
+                      }))}
+                      runs={cableRuns.map(({ run, from, to }) => ({
+                        id: run.id,
+                        kind: run.kind,
+                        from,
+                        to,
+                      }))}
+                      sun={sun}
+                      shadows={shadows}
+                      selected={selected}
+                      view={view}
+                      readOnly={readOnly}
+                      onSelect={setSelected}
+                      onMove={moveTo}
+                    />
+                  </Suspense>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-medium">Vista:</span>
+                  {(
+                    [
+                      ['iso', 'Isométrica'],
+                      ['top', 'De cima'],
+                      ['front', 'De frente'],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <Button
+                      key={id}
+                      size="sm"
+                      variant={view === id ? 'default' : 'outline'}
+                      aria-pressed={view === id}
+                      onClick={() => setView(id)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                  <span className="text-xs text-muted-foreground">
+                    Arraste o fundo para girar, a roda aproxima, e arraste um objeto para movê-lo no
+                    chão.
+                  </span>
+                </div>
+              </div>
             ) : (
               <div className="space-y-2">
                 <svg

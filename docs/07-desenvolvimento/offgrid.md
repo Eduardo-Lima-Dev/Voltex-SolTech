@@ -57,3 +57,9 @@ Menu **Off-Grid Designer**: `/offgrid/painel`, `/offgrid/pedidos` (e `:id`), `/o
 - SIGFI (RN ANEEL 493/2012) fica como dado de regra ainda não implementado (ver [CR-19](../referencias/cresesb-2014/README.md)).
 - Sem autodescarga, Peukert e derating por temperatura; conversão do carregador fixa em 90%.
 - Valores de regra são **exemplos** até a revisão do responsável técnico.
+
+### Visual realista (3D e 2D)
+
+- **Cena 3D:** `three` + `@react-three/fiber` + `@react-three/drei` (carregados só ao abrir a cena, em um pacote separado). Modelos montados por código, sem arquivos externos: casa com telhado de duas águas, porta e janelas; casa de máquinas com porta metálica e placa de risco; gerador; poste com cruzeta, isoladores e transformador; caixa d'água elevada; árvore; painéis com moldura, células e estrutura. Sol com sombras suaves e céu pela data e hora escolhidas; cabos CC (vermelho) e CA (azul tracejado), com a linha da rede aérea. Vistas isométrica, de cima e de frente; arrastar um objeto o move no chão.
+- **Planta 2D:** cada objeto tem símbolo próprio visto de cima (telhado com cumeeira e telhas, raio na casa de máquinas, ventoinha no gerador, cruzeta no poste, caixa d'água, copa da árvore).
+- **Sem WebGL** (navegador ou máquina sem aceleração) a cena simplificada em SVG continua disponível.

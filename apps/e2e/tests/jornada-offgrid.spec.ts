@@ -285,7 +285,12 @@ test('do pedido off-grid ao projeto aprovado pelo responsável técnico', async 
     await expect(page.getByRole('table', { name: 'Trajetos de cabo' })).toBeVisible();
     await snap(page, info, '4c-planta-2d');
     await page.getByRole('button', { name: 'Cena 3D' }).click();
-    await expect(page.getByRole('img', { name: 'Cena 3D do terreno' })).toBeVisible();
+    await expect(
+      page
+        .locator('canvas')
+        .or(page.getByRole('img', { name: 'Cena 3D do terreno' }))
+        .first(),
+    ).toBeVisible();
     await snap(page, info, '4d-cena-3d');
     await page.getByRole('button', { name: /Simulação/ }).click();
     await expect(page.getByText('Perda de carga', { exact: true })).toBeVisible();
