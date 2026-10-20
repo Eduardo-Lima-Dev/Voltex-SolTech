@@ -725,6 +725,9 @@ export class OpportunitiesService {
       calculationSessionId: r.calculationSessionId,
       reason: r.reason,
       status: r.status,
+      projectId: r.projectId,
+      assigneeId: r.assigneeId,
+      resolution: r.resolution,
       createdAt: r.createdAt.toISOString(),
     }));
   }

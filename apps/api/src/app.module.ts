@@ -24,6 +24,7 @@ import { MetricsModule } from './platform/metrics/metrics.module';
 import { MailModule } from './platform/mail/mail.module';
 import { PrismaModule } from './platform/prisma/prisma.module';
 import { CatalogModule } from './platform/catalog/catalog.module';
+import { EngineeringModule } from './products/engine/engineering.module';
 import { DataHubModule } from './platform/data-hub/data-hub.module';
 import { ReferenceDataModule } from './platform/reference-data/reference-data.module';
 import { RulesModule } from './platform/rules/rules.module';
@@ -108,6 +109,7 @@ import { UsersModule } from './platform/users/users.module';
     ReferenceDataModule,
     DataHubModule,
     CatalogModule,
+    EngineeringModule,
     CalculatorModule,
     CrmModule,
     HealthModule,
