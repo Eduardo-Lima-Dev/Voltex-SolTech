@@ -86,30 +86,34 @@ export function ImportDialog({
   onCreated?: (created: EquipmentDto[]) => void;
 }) {
   const queryClient = useQueryClient();
+  const { can } = useAuth();
   const [format, setFormat] = useState<ImportFormat>('csv');
   const [kind, setKind] = useState<EquipmentKind>(defaultKind);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreviewDto | null>(initialPreview);
+  // Quem pode aprovar já importa aprovado: um clique deixa o item pronto para usar.
+  const canApprove = can('engine.project.approve');
   const [rows, setRows] = useState<Row[]>(
-    initialPreview ? initialPreview.candidates.map((c) => ({ ...c, selected: false })) : [],
+    initialPreview
+      ? initialPreview.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) }))
+      : [],
   );
   const [editing, setEditing] = useState<number | null>(null);
-  const [approveNow, setApproveNow] = useState(false);
-  const { can } = useAuth();
+  const [approveNow, setApproveNow] = useState(canApprove);
 
   const read = useMutation({
     mutationFn: () =>
       endpoints.catalog.preview(file as File, format, format === 'csv' ? kind : undefined),
     onSuccess: (result) => {
       setPreview(result);
-      setRows(result.candidates.map((c) => ({ ...c, selected: false })));
+      setRows(result.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) })));
     },
     onError: (error) => toast.error(errorMessage(error, 'Não foi possível ler o arquivo.')),
   });
 
   const save = useMutation({
-    mutationFn: () => {
-      const items = rows
+    mutationFn: (toSave: Row[]) => {
+      const items = toSave
         .filter((r) => r.selected)
         .map((r) => ({
           kind: r.kind,
@@ -166,24 +170,21 @@ export function ImportDialog({
       origin: editingRow.origin,
       fieldConfidence: editingRow.fieldConfidence,
     });
-    setRows((current) =>
-      current.map((r, i) =>
-        i === editing
-          ? {
-              ...r,
-              manufacturer: values.manufacturer,
-              model: values.model,
-              spec: values.spec,
-              missing: check.success ? [] : r.missing.filter((m) => !(m in values.spec)),
-              issues: r.issues.filter(
-                (issue) => issue.severity !== 'ERROR' || !(issue.field in values.spec),
-              ),
-              selected: check.success,
-            }
-          : r,
+    const update = (r: Row): Row => ({
+      ...r,
+      manufacturer: values.manufacturer,
+      model: values.model,
+      spec: values.spec,
+      missing: check.success ? [] : r.missing.filter((m) => !(m in values.spec)),
+      issues: r.issues.filter(
+        (issue) => issue.severity !== 'ERROR' || !(issue.field in values.spec),
       ),
-    );
+      selected: check.success,
+    });
+    setRows((current) => current.map((r, i) => (i === editing ? update(r) : r)));
     setEditing(null);
+    // Um item só (ex.: ficha escolhida na busca): completar já grava e, se possível, aprova. Sem segundo clique.
+    if (rows.length === 1 && check.success) save.mutate([update(editingRow)]);
   };
 
   return (
@@ -324,7 +325,7 @@ export function ImportDialog({
                               )
                             }
                           />
-                          Gravar
+                          Importar
                         </Label>
                       </div>
                     </div>
@@ -348,7 +349,7 @@ export function ImportDialog({
                 ))}
               </ul>
             )}
-            {can('engine.project.approve') ? (
+            {canApprove ? (
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -364,18 +365,18 @@ export function ImportDialog({
               </Button>
               <Button
                 disabled={chosen.length === 0 || save.isPending}
-                onClick={() => save.mutate()}
+                onClick={() => save.mutate(chosen)}
               >
                 {save.isPending ? <Spinner /> : null}
                 {approveNow
-                  ? `Gravar e aprovar ${chosen.length}`
+                  ? `Importar e aprovar ${chosen.length}`
                   : `Gravar ${chosen.length} rascunho(s)`}
               </Button>
             </DialogFooter>
             {selectable.length < rows.length ? (
               <p className="text-xs text-muted-foreground">
                 Só itens com a ficha completa e sem erro físico podem ser gravados. Use “Conferir e
-                completar”.
+                completar”: com um item só, salvar já importa e aprova.
               </p>
             ) : null}
           </div>
@@ -395,7 +396,13 @@ export function ImportDialog({
             fieldConfidence: editingRow.fieldConfidence,
             missing: editingRow.missing,
           }}
-          submitLabel="Usar estes valores"
+          submitLabel={
+            rows.length === 1
+              ? approveNow
+                ? 'Salvar, aprovar e usar'
+                : 'Salvar como rascunho'
+              : 'Usar estes valores'
+          }
           onSubmit={applyEdit}
         />
       ) : null}

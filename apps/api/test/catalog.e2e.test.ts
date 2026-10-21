@@ -651,4 +651,97 @@ describe('Catálogo técnico (e2e)', () => {
       expect(later.proposed).toBeGreaterThanOrEqual(0);
     });
   });
+
+  describe('busca de equipamentos do Off-Grid e carga da biblioteca CEC', () => {
+    it('sem digitar, lista o que já existe do tipo; ao digitar, filtra; palavras do título classificam documentos sem tipo', async () => {
+      const battery = await t.http
+        .post(`${API}/catalog/items`)
+        .set(bearer(engineer))
+        .send({
+          kind: 'BATTERY',
+          manufacturer: `Bat ${suffix}`,
+          model: 'LFP100-L',
+          spec: { chemistry: 'LFP', nominalVoltageV: 51.2, capacityAh: 100, maxDodPct: 90 },
+        });
+      expect(battery.status).toBe(201);
+      const link = await t.prisma.system.catalogSourceLink.create({
+        data: { tenantId: a.id, url: `https://exemplo.test/${suffix}`, label: 'Fonte de teste' },
+      });
+      await t.prisma.system.catalogSourceDocument.create({
+        data: {
+          tenantId: a.id,
+          linkId: link.id,
+          url: `https://exemplo.test/${suffix}/bateria.pdf`,
+          title: `Bateria Estacionária ${suffix} 48V 100AH`,
+          brand: 'Marca',
+          fileType: 'pdf',
+          docType: 'DATASHEET',
+          equipmentHint: 'OTHER',
+          pageUrl: `https://exemplo.test/${suffix}`,
+          confidence: 'LOW',
+        },
+      });
+      const empty = await t.http.get(`${API}/catalog/search?kind=BATTERY`).set(bearer(engineer));
+      expect(empty.status).toBe(200);
+      const names = (empty.body as { model: string; origin: string }[]).map(
+        (r) => `${r.origin}:${r.model}`,
+      );
+      expect(names).toEqual(expect.arrayContaining(['CATALOG:LFP100-L']));
+      expect(names.some((n) => n.startsWith('LINK:') && n.includes(suffix))).toBe(true);
+      const typed = await t.http
+        .get(`${API}/catalog/search?kind=BATTERY&q=LFP100`)
+        .set(bearer(engineer));
+      expect((typed.body as unknown[]).length).toBe(1);
+      const none = await t.http
+        .get(`${API}/catalog/search?kind=GENERATOR&q=zzzinexistente`)
+        .set(bearer(engineer));
+      expect(none.body).toEqual([]);
+    });
+
+    it('sincroniza a biblioteca CEC/SAM pela internet (resposta gravada) e a busca a encontra', async () => {
+      const on = await createTestApp({ DATA_HUB_ENABLED_SOURCES: 'cec-library' });
+      try {
+        const { DataHubHttp } = await import('../src/platform/data-hub/data-hub-http');
+        const http = on.app.get(DataHubHttp) as {
+          getBuffer: (url: string) => Promise<{ body: Buffer; contentType: string | null }>;
+        };
+        const modules = [
+          'Name,Manufacturer,Technology,Bifacial,STC,PTC,A_c,Length,Width,N_s,I_sc_ref,V_oc_ref,I_mp_ref,V_mp_ref,alpha_sc,beta_oc,T_NOCT,gamma_pmp',
+          'Units,,,,,,m2,m,m,,A,V,A,V,A/K,V/K,C,%/K',
+          `Sync ${suffix} S-400,Sync ${suffix},Mono-c-Si,0,400,380,1.9,1.8,1.05,72,10.5,48,9.9,40.5,0.005,-0.14,45,-0.37`,
+        ].join('\n');
+        const inverters = [
+          'Name,Vac,Pso,Paco,Pdco,Vdco,C0,C1,C2,C3,Pnt,Vdcmax,Idcmax,Mppt_low,Mppt_high',
+          'Units,V,W,W,W,V,1/W,1/V,1/V,1/V,W,V,A,V,V',
+          `Sync ${suffix}: SI-5000 [240V],240,30,5000,5200,360,0,0,0,0,1,600,15,200,550`,
+        ].join('\n');
+        const urls: string[] = [];
+        http.getBuffer = async (url) => {
+          urls.push(url);
+          return {
+            body: Buffer.from(url.includes('Modules') ? modules : inverters),
+            contentType: 'text/csv',
+          };
+        };
+        const token = await tokenFor(on.http, a.admin);
+        const res = await on.http.post(`${API}/catalog/references/sync`).set(bearer(token));
+        expect([res.status, JSON.stringify(res.body)]).toEqual([200, expect.anything()]);
+        expect(res.body.modules.created).toBe(1);
+        expect(res.body.inverters.created).toBe(1);
+        expect(urls.every((u) => u.startsWith('https://raw.githubusercontent.com/NREL/SAM/'))).toBe(
+          true,
+        );
+        const found = await on.http
+          .get(`${API}/catalog/search?kind=MODULE&q=Sync%20${suffix}`)
+          .set(bearer(token));
+        expect((found.body as { origin: string }[]).some((r) => r.origin === 'REFERENCE')).toBe(
+          true,
+        );
+        const again = await on.http.post(`${API}/catalog/references/sync`).set(bearer(token));
+        expect(again.body.modules).toEqual({ read: 1, created: 0, updated: 0 });
+      } finally {
+        await on.close();
+      }
+    });
+  });
 });

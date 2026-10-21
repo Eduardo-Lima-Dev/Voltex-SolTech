@@ -1,3 +1,4 @@
+import type { EquipmentKind } from '@voltex/shared';
 import { createHash } from 'node:crypto';
 import {
   BadRequestException,
@@ -239,7 +240,7 @@ export class CatalogSourcesService {
   }
 
   /** Baixa a ficha escolhida, lê e devolve a prévia (mesmo caminho do envio manual). O PDF não é guardado. */
-  async preview(documentId: string): Promise<ImportPreviewDto> {
+  async preview(documentId: string, kind?: EquipmentKind): Promise<ImportPreviewDto> {
     const record = await this.prisma.system.externalRecord.findUnique({
       where: { id: documentId },
       include: { source: true },
@@ -265,9 +266,10 @@ export class CatalogSourcesService {
         size: body.length,
       },
       'datasheet-pdf',
-      spec.equipmentHint === 'INVERTER' || spec.equipmentHint === 'MODULE'
-        ? spec.equipmentHint
-        : undefined,
+      kind ??
+        (spec.equipmentHint === 'INVERTER' || spec.equipmentHint === 'MODULE'
+          ? spec.equipmentHint
+          : undefined),
       modelFromTitle(record.model, record.manufacturer),
     );
     const brand = record.manufacturer === '—' ? '' : record.manufacturer;

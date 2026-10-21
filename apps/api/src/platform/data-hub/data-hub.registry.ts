@@ -48,7 +48,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
       'Biblioteca de equipamentos CEC/SAM (NREL, dados da California Energy Commission).',
     licenseStatus: 'PENDING_REVIEW',
     notes:
-      'Bloqueada até a leitura da licença. Equipamentos do mercado norte-americano: confira registro e venda no Brasil.',
+      'Ligada por decisão do responsável do projeto (22/10/2026), com a licença dos arquivos ainda NÃO confirmada: confira antes de uso comercial. Equipamentos do mercado norte-americano: confira registro e venda no Brasil. O botão "Carregar da internet" baixa as planilhas do repositório público do NREL.',
   },
   {
     key: 'techlux',

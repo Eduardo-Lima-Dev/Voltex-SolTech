@@ -357,7 +357,8 @@ export const createCatalogSourceLinkSchema = z.object({
 export type CreateCatalogSourceLinkInput = z.input<typeof createCatalogSourceLinkSchema>;
 
 export const catalogSearchQuerySchema = z.object({
-  q: z.string().trim().min(2).max(100),
+  /** Vazio lista o que já existe (do tipo pedido) sem precisar digitar. */
+  q: z.string().trim().max(100).default(''),
   kind: z.enum(EQUIPMENT_KINDS).optional(),
   limit: z.coerce.number().int().min(1).max(40).default(15),
 });

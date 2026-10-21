@@ -250,6 +250,27 @@ function EquipmentList({ kind }: { kind: EquipmentKind }) {
   );
 }
 
+/** Baixa a biblioteca CEC/SAM (módulos e inversores de referência) do repositório público do NREL. */
+function SyncCecButton() {
+  const queryClient = useQueryClient();
+  const sync = useMutation({
+    mutationFn: () => endpoints.catalog.syncReferences(),
+    onSuccess: async (r) => {
+      toast.success(
+        `Biblioteca CEC/SAM carregada: ${r.modules.created + r.modules.updated} módulo(s) e ${r.inverters.created + r.inverters.updated} inversor(es) novos ou atualizados.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalogSources });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível carregar a biblioteca.')),
+  });
+  return (
+    <Button size="sm" disabled={sync.isPending} onClick={() => sync.mutate()}>
+      {sync.isPending ? <Spinner /> : null} Carregar da internet
+    </Button>
+  );
+}
+
 function SourceCards({
   selected,
   onSelect,
@@ -287,9 +308,12 @@ function SourceCards({
             {source.documentCount} registro(s)
             {source.indexedAt ? ` · atualizado em ${formatDate(source.indexedAt)}` : ''}
           </p>
-          <Button size="sm" variant="outline" onClick={() => onSelect(source.key)}>
-            Buscar nesta fonte
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => onSelect(source.key)}>
+              Buscar nesta fonte
+            </Button>
+            {source.key === 'cec-library' && source.enabled ? <SyncCecButton /> : null}
+          </div>
         </li>
       ))}
     </ul>

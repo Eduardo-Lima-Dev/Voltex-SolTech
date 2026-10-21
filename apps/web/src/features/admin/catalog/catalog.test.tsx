@@ -310,6 +310,7 @@ describe('Administração → Catálogo técnico', () => {
           committed = (await request.json()) as typeof committed;
           return HttpResponse.json({ created: [equipment()] }, { status: 201 });
         }),
+        http.post(`${API}/catalog/items/:id/approve`, () => HttpResponse.json(equipment())),
       );
       renderApp('/engine/catalogo');
       const user = userEvent.setup();
@@ -325,7 +326,7 @@ describe('Administração → Catálogo técnico', () => {
       await user.click(within(dialog).getByRole('button', { name: /Ler arquivo/ }));
       expect(await within(dialog).findByText('faltam 4 campo(s)')).toBeInTheDocument();
       expect(within(dialog).getByText(/Fabricante e modelo não são lidos/)).toBeInTheDocument();
-      const save = within(dialog).getByRole('button', { name: /Gravar 0 rascunho/ });
+      const save = within(dialog).getByRole('button', { name: /Importar e aprovar 0/ });
       expect(save).toBeDisabled();
       expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeDisabled();
 
@@ -343,12 +344,8 @@ describe('Administração → Catálogo técnico', () => {
       await user.type(within(form).getByLabelText(/Coeficiente de potência/), '-0,34');
       await user.type(within(form).getByLabelText(/Comprimento/), '2278');
       await user.type(within(form).getByLabelText(/Largura/), '1134');
-      await user.click(within(form).getByRole('button', { name: 'Usar estes valores' }));
-
-      await waitFor(() =>
-        expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeChecked(),
-      );
-      await user.click(within(dialog).getByRole('button', { name: /Gravar 1 rascunho/ }));
+      // Com um item só, completar já grava e aprova: não há segundo clique.
+      await user.click(within(form).getByRole('button', { name: 'Salvar, aprovar e usar' }));
       await waitFor(() => expect(committed).toBeDefined());
       expect(committed?.items[0]).toMatchObject({
         manufacturer: 'Fabricante Teste',
@@ -532,6 +529,7 @@ describe('Administração → Catálogo técnico', () => {
         committed = await request.json();
         return HttpResponse.json({ created: [{ id: 'n-1' }] }, { status: 201 });
       }),
+      http.post(`${API}/catalog/items/:id/approve`, () => HttpResponse.json({ id: 'n-1' })),
     );
     renderApp('/engine/catalogo');
     const user = userEvent.setup();
@@ -554,8 +552,8 @@ describe('Administração → Catálogo técnico', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/Fonte: Inversor CSI/)).toBeInTheDocument();
     expect(committed).toBeUndefined();
-    await user.click(within(dialog).getAllByRole('checkbox')[0] as HTMLElement);
-    await user.click(within(dialog).getByRole('button', { name: /Importar|Criar|Gravar/ }));
+    // A ficha completa já vem marcada para importar.
+    await user.click(within(dialog).getByRole('button', { name: /Importar e aprovar 1|Gravar 1/ }));
     await waitFor(() =>
       expect(committed).toMatchObject({
         items: [{ kind: 'INVERTER', model: 'CSI-15K', origin: 'DATASHEET_PDF' }],

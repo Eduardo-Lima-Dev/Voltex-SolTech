@@ -531,12 +531,21 @@ export function createEndpoints(client: ApiClient) {
         client.get<Paginated<CatalogSourceDocumentDto>>(`/catalog/sources/${key}/documents`, {
           query: query as QueryParams,
         }),
-      previewSourceDocument: (id: string) =>
-        client.post<ImportPreviewDto>(`/catalog/sources/documents/${id}/preview`),
+      previewSourceDocument: (id: string, kind?: EquipmentKind) =>
+        client.post<ImportPreviewDto>(
+          `/catalog/sources/documents/${id}/preview${kind ? `?kind=${kind}` : ''}`,
+        ),
+      syncReferences: () =>
+        client.post<{
+          modules: { read: number; created: number; updated: number };
+          inverters: { read: number; created: number; updated: number };
+        }>('/catalog/references/sync'),
       references: (query: Partial<ListReferencesQuery> = {}) =>
         client.get<Paginated<ExternalReferenceDto>>('/catalog/references', {
           query: query as QueryParams,
         }),
+      previewReference: (id: string) =>
+        client.post<ImportPreviewDto>(`/catalog/references/${id}/preview`),
       adopt: (id: string, spec?: Record<string, unknown>) =>
         client.post<EquipmentDto>(`/catalog/references/${id}/adopt`, { spec }),
       prices: (equipmentId?: string) =>

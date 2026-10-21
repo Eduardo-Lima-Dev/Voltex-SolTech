@@ -864,3 +864,80 @@ describe('Off-Grid Designer: tamanho da área do terreno', () => {
     expect(screen.queryByRole('dialog', { name: 'Terreno em tela cheia' })).not.toBeInTheDocument();
   });
 });
+
+describe('Off-Grid Designer: busca de equipamentos', () => {
+  const searchResult = (over: object = {}) => ({
+    origin: 'SOURCE',
+    id: 'r1',
+    kind: 'BATTERY',
+    manufacturer: 'Unipower',
+    model: 'Bateria UNIPOWER 4,8KWH - 48V 100AH',
+    sourceLabel: 'Techlux (distribuidora)',
+    detail: 'Bateria · Datasheet (PDF)',
+    fileType: 'pdf',
+    ...over,
+  });
+  const open = async () => {
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    await screen.findByRole('navigation', { name: 'Etapas do projeto' });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Baterias/ }));
+    return user;
+  };
+
+  it('ao abrir já lista o que existe do tipo, sem digitar, e mostra de onde vem', async () => {
+    const calls: string[] = [];
+    server.use(
+      http.get(`${API}/catalog/search`, ({ request: r }) => {
+        const u = new URL(r.url);
+        calls.push(`${u.searchParams.get('q') ?? ''}|${u.searchParams.get('kind')}`);
+        return HttpResponse.json([searchResult()]);
+      }),
+    );
+    const user = await open();
+    await user.click(await screen.findByLabelText(/Bateria \(atual/));
+    expect(
+      await screen.findByText('Bateria UNIPOWER 4,8KWH - 48V 100AH', { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Techlux (distribuidora)')).toBeInTheDocument();
+    expect(calls[0]).toBe('|BATTERY');
+  });
+
+  it('sem resultado oferece a busca na internet e cadastrar um link na hora', async () => {
+    let posted: unknown = null;
+    server.use(
+      http.get(`${API}/catalog/search`, () => HttpResponse.json([])),
+      http.post(`${API}/catalog/source-links`, async ({ request: r }) => {
+        posted = await r.json();
+        return HttpResponse.json(
+          {
+            id: 'l1',
+            url: 'https://x.com/b.pdf',
+            label: 'x.com',
+            status: 'ACTIVE',
+            pagesRead: 1,
+            lastError: null,
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    const user = await open();
+    await user.type(await screen.findByLabelText(/Bateria \(atual/), 'pylontech');
+    expect(await screen.findByText(/Nada encontrado nas suas fichas/)).toBeInTheDocument();
+    const google = screen.getByRole('link', { name: /Procurar “pylontech” na internet/ });
+    expect(google).toHaveAttribute(
+      'href',
+      expect.stringContaining('google.com/search?q=pylontech'),
+    );
+    expect(google).toHaveAttribute('target', '_blank');
+    const add = screen.getByRole('button', { name: 'Adicionar' });
+    expect(add).toBeDisabled();
+    await user.type(
+      screen.getByLabelText('Link da ficha ou da página do fabricante'),
+      'https://x.com/b.pdf',
+    );
+    await user.click(add);
+    await waitFor(() => expect(posted).toMatchObject({ url: 'https://x.com/b.pdf' }));
+  });
+});

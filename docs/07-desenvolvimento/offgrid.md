@@ -15,7 +15,7 @@ Tenancy: todas as tabelas estão em `TENANT_SCOPED_MODELS`. Evento de domínio `
 
 ## Catálogo
 
-Quatro tipos novos em `EquipmentKind`: `BATTERY` (química, tensão, Ah no regime, DoD máxima, eficiência, ciclos × DoD, vida de calendário, correntes, paralelo máximo), `CHARGE_CONTROLLER` (MPPT/PWM, tensão do banco, corrente, Voc máxima, faixa MPPT), `OFFGRID_INVERTER` (off-grid ou híbrido; contínua, surto, tensão do banco, carregador, entradas de rede e gerador, MPPT embutido) e `GENERATOR` (combustível, potência, consumo, carga mínima). Têm validação física (`catalog/validate.ts`), modelo de planilha CSV, formulário e rótulos no catálogo, e o classificador de fontes por link reconhece bateria, controlador e gerador. **Leitura automática de PDF para estes tipos ainda não existe**: eles entram por planilha ou cadastro manual (limite declarado).
+Quatro tipos novos em `EquipmentKind`: `BATTERY` (química, tensão, Ah no regime, DoD máxima, eficiência, ciclos × DoD, vida de calendário, correntes, paralelo máximo), `CHARGE_CONTROLLER` (MPPT/PWM, tensão do banco, corrente, Voc máxima, faixa MPPT), `OFFGRID_INVERTER` (off-grid ou híbrido; contínua, surto, tensão do banco, carregador, entradas de rede e gerador, MPPT embutido) e `GENERATOR` (combustível, potência, consumo, carga mínima). Têm validação física (`catalog/validate.ts`), modelo de planilha CSV, formulário e rótulos no catálogo, e o classificador de fontes por link reconhece bateria, controlador e gerador. A **leitura de ficha em PDF** para estes tipos usa rótulos em português e inglês e o título do produto (`datasheet-offgrid`): o que não achar aparece como "faltando" na prévia, e a pessoa completa e importa com um clique. Também entram por planilha ou cadastro manual.
 
 ## Regra `offgrid.design`
 
@@ -51,7 +51,7 @@ Menu **Off-Grid Designer**: `/offgrid/painel`, `/offgrid/pedidos` (e `:id`), `/o
 
 ## Limites desta entrega
 
-- Leitura de PDF/ficha para bateria, controlador, inversor off-grid e gerador: **não implementada**.
+- A leitura de PDF dos tipos do Off-Grid é por rótulos e título, menos precisa que a de módulo e inversor de rede: sempre conferir a prévia.
 - Sem integração de cotação a partir do snapshot off-grid (a cotação do CRM segue o Engine).
 - Sem unifilar nem relatório público para cliente final.
 - SIGFI (RN ANEEL 493/2012) fica como dado de regra ainda não implementado (ver [CR-19](../referencias/cresesb-2014/README.md)).
@@ -67,3 +67,10 @@ Menu **Off-Grid Designer**: `/offgrid/painel`, `/offgrid/pedidos` (e `:id`), `/o
 ### Objetos do terreno: tipos e descrição em texto
 
 Além de casa, casa de máquinas, gerador, poste, caixa d'água e árvore, há **contêiner, galpão, estufa, silo, aerogerador, torre/antena, poço, piscina/lago, veículo e muro/cerca**, todos com modelo 3D e símbolo 2D, e **cor** escolhível. Em **Descreva um objeto e eu desenho** a pessoa escreve em português (ex.: "contêiner azul de 6 x 2,5 x 2,6 m", "galpão grande verde", "torre de antena com 20 m de altura") e o sistema reconhece o tipo por palavras, as medidas por padrões numéricos e a cor por nome, mostrando o que entendeu. O interpretador é local, determinístico e funciona sem internet; o que não reconhece vira um bloco genérico (o tipo, as medidas e a cor podem ser trocados ao selecionar o objeto). Uma interpretação por IA generativa (descrições livres, objetos novos) não está incluída: exigiria um serviço externo e chave de acesso.
+
+### Busca de equipamentos e importação
+
+- Ao abrir o campo de equipamento, **já aparece a lista** do tipo (suas fichas, bibliotecas e fontes), sem digitar. Ao digitar, a busca olha a lista da empresa, a biblioteca CEC/SAM (módulos e inversores), as fontes públicas (Techlux) e as fontes por link. Documentos sem tipo são classificados por palavras do título (bateria, controlador, gerador, híbrido/off-grid); o inversor off-grid também mostra inversores comuns ao digitar.
+- Sem resultado (ou no rodapé da lista): **Procurar na internet** abre a busca com o tipo e "ficha técnica datasheet pdf", e há um campo para **colar o link** do PDF ou da página do fabricante, que vira fonte da empresa na hora.
+- **Importação em um clique:** quem pode aprovar já importa aprovado. Item com ficha completa vem marcado; item com campos faltando abre a conferência e, ao salvar, grava e aprova sem segundo clique (item único).
+- **Biblioteca CEC/SAM:** botão **Carregar da internet** (Catálogo → Referências externas) baixa as planilhas do repositório público do NREL (cerca de 21 mil módulos e 2,3 mil inversores). A licença dos arquivos não está confirmada.

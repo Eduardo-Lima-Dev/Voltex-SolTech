@@ -2,12 +2,22 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { CatalogSearchResultDto, EquipmentKind, ImportPreviewDto } from '@voltex/shared';
-import { Badge, Input, Label, Spinner, toast } from '@voltex/ui';
+import { Badge, Button, Input, Label, Spinner, toast } from '@voltex/ui';
 import { ImportDialog } from '@/features/admin/catalog/import-dialog';
 import { queryKeys } from '@/features/admin/query-keys';
 import { useAuth } from '@/features/auth/auth-provider';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
+
+/** Palavras para a busca na internet de cada tipo. */
+const KIND_SEARCH: Partial<Record<EquipmentKind, string>> = {
+  MODULE: 'módulo fotovoltaico',
+  INVERTER: 'inversor solar',
+  BATTERY: 'bateria solar estacionária',
+  CHARGE_CONTROLLER: 'controlador de carga solar MPPT',
+  OFFGRID_INVERTER: 'inversor off-grid híbrido',
+  GENERATOR: 'gerador',
+};
 
 const ORIGIN_BADGE = {
   CATALOG: 'green',
@@ -40,6 +50,8 @@ export function EquipmentSearch({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<ImportPreviewDto | null>(null);
+  const [link, setLink] = useState('');
+  const [addingLink, setAddingLink] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setTerm(text.trim()), 250);
@@ -48,10 +60,31 @@ export function EquipmentSearch({
 
   const results = useQuery({
     queryKey: ['catalog', 'search', kind, term],
-    queryFn: () => endpoints.catalog.search(term, kind, 12),
-    enabled: term.length >= 2,
+    // Aberta sem digitar, já lista o que existe do tipo (catálogo, bibliotecas e fontes).
+    queryFn: () => endpoints.catalog.search(term, kind, 15),
+    enabled: open,
     staleTime: 30_000,
   });
+
+  /** Cadastra o link colado como fonte da empresa: o sistema lê a página/arquivo e a busca passa a achar o que ele traz. */
+  const addLink = async () => {
+    setAddingLink(true);
+    try {
+      const created = await endpoints.catalog.addSourceLink({ url: link.trim() });
+      toast.success(
+        created.status === 'ERROR'
+          ? `Link guardado, mas não consegui ler: ${created.lastError ?? 'erro desconhecido'}`
+          : `Link analisado: ${created.pagesRead} página(s). Procurando de novo…`,
+      );
+      setLink('');
+      await queryClient.invalidateQueries({ queryKey: ['catalog', 'search'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+    } catch (error) {
+      toast.error(errorMessage(error, 'Não foi possível adicionar o link.'));
+    } finally {
+      setAddingLink(false);
+    }
+  };
 
   const choose = async (item: CatalogSearchResultDto) => {
     setOpen(false);
@@ -68,14 +101,14 @@ export function EquipmentSearch({
           onPick(item.id);
           setText('');
         } else toast.info('Este item é um rascunho: peça a aprovação do responsável técnico.');
-      } else if (item.origin === 'REFERENCE') {
-        toast.info('Adote esta referência na aba Referências externas do catálogo.');
       } else {
         setBusy(true);
         setPreview(
-          item.origin === 'LINK'
-            ? await endpoints.catalog.previewLinkDocument(item.id, kind)
-            : await endpoints.catalog.previewSourceDocument(item.id),
+          item.origin === 'REFERENCE'
+            ? await endpoints.catalog.previewReference(item.id)
+            : item.origin === 'LINK'
+              ? await endpoints.catalog.previewLinkDocument(item.id, kind)
+              : await endpoints.catalog.previewSourceDocument(item.id, kind),
         );
       }
     } catch (error) {
@@ -118,18 +151,20 @@ export function EquipmentSearch({
           <Spinner className="absolute top-2.5 right-2.5 size-4" />
         ) : null}
       </div>
-      {open && term.length >= 2 ? (
+      {open ? (
         <ul
           id={`${id}-list`}
           role="listbox"
-          aria-label={`Resultados para ${term}`}
+          aria-label={term ? `Resultados para ${term}` : 'Equipamentos disponíveis'}
           className="absolute top-full z-30 mt-1 max-h-80 w-full min-w-80 overflow-auto rounded-md border bg-popover p-1 shadow-md"
         >
           {results.isError ? (
             <li className="p-2 text-sm text-destructive">Não foi possível buscar.</li>
           ) : results.data && results.data.length === 0 ? (
             <li className="p-2 text-sm text-muted-foreground">
-              Nada encontrado. Cadastre uma fonte por link ou importe um arquivo no catálogo.
+              {term
+                ? 'Nada encontrado nas suas fichas, nas bibliotecas e nas fontes cadastradas.'
+                : 'Ainda não há nada deste tipo. Digite o nome ou use as opções abaixo.'}
             </li>
           ) : (
             (results.data ?? []).map((item) => (
@@ -153,6 +188,42 @@ export function EquipmentSearch({
               </li>
             ))
           )}
+          <li role="presentation" className="mt-1 space-y-2 border-t p-2 text-xs">
+            <p className="font-medium text-foreground">Não achou?</p>
+            <a
+              className="inline-block text-primary underline underline-offset-2"
+              href={`https://www.google.com/search?q=${encodeURIComponent(`${term} ${KIND_SEARCH[kind] ?? ''} ficha técnica datasheet pdf`.trim())}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              Procurar “{term || KIND_SEARCH[kind]}” na internet ↗
+            </a>
+            {can('platform.catalog.manage') ? (
+              <form
+                className="flex gap-1"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void addLink();
+                }}
+              >
+                <Input
+                  aria-label="Link da ficha ou da página do fabricante"
+                  placeholder="Cole aqui o link do PDF ou da página"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  className="h-8"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!/^https?:\/\//i.test(link.trim()) || addingLink}
+                >
+                  {addingLink ? <Spinner /> : null} Adicionar
+                </Button>
+              </form>
+            ) : null}
+          </li>
         </ul>
       ) : null}
       {preview ? (
