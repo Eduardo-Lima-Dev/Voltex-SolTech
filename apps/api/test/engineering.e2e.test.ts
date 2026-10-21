@@ -661,7 +661,12 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
       });
       expect(rule.status).toBe(201);
       expect(
-        (await post(`/rules/${rule.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+        (
+          await post(`/rules/${rule.body.id}/activate`, lead, {
+            reviewedBy: 'Eng. Teste',
+            reviewedByRegistration: 'CREA-SP 123456',
+          })
+        ).status,
       ).toBe(200);
 
       const res = await put(`/engineering/versions/${versionId}/design`, engineer, {
@@ -824,7 +829,10 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
         },
         sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste v2' }],
       });
-      await post(`/rules/${next.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' });
+      await post(`/rules/${next.body.id}/activate`, lead, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
       await publisher.publishPending(500, a.id);
       const after = (await get(`/engineering/versions/${versionId}`, engineer)).body;
       expect(after.stale).toBe(true);
@@ -868,7 +876,12 @@ describe('Solar Engine Studio: projetos e versões (e2e)', () => {
       });
       expect(rule.status).toBe(201);
       expect(
-        (await post(`/rules/${rule.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+        (
+          await post(`/rules/${rule.body.id}/activate`, lead, {
+            reviewedBy: 'Eng. Teste',
+            reviewedByRegistration: 'CREA-SP 123456',
+          })
+        ).status,
       ).toBe(200);
       return `${rule.body.id}@${rule.body.version}`;
     };

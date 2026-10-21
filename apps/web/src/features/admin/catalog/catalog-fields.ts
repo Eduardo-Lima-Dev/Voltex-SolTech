@@ -209,6 +209,183 @@ export const CATALOG_FIELDS: Record<EquipmentKind, readonly CatalogField[]> = {
     },
     { key: 'standard', label: 'Norma', type: 'text' },
   ],
+  BATTERY: [
+    {
+      key: 'chemistry',
+      label: 'Química',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'LEAD_FLOODED', label: 'Chumbo-ácido aberto' },
+        { value: 'LEAD_AGM', label: 'Chumbo AGM (VRLA)' },
+        { value: 'LEAD_GEL', label: 'Chumbo gel (VRLA)' },
+        { value: 'OPZS', label: 'OPzS (estacionária)' },
+        { value: 'OPZV', label: 'OPzV (estacionária gel)' },
+        { value: 'LFP', label: 'Lítio ferro-fosfato (LFP)' },
+        { value: 'NMC', label: 'Lítio NMC' },
+        { value: 'OTHER', label: 'Outra' },
+      ],
+    },
+    { key: 'nominalVoltageV', label: 'Tensão nominal', unit: 'V', type: 'number', required: true },
+    { key: 'capacityAh', label: 'Capacidade', unit: 'Ah', type: 'number', required: true },
+    {
+      key: 'capacityHours',
+      label: 'Regime da capacidade',
+      unit: 'h',
+      type: 'number',
+      hint: 'C20 = 20 h (padrão); lítio costuma ser C5 ou C1',
+    },
+    {
+      key: 'maxDodPct',
+      label: 'Descarga máxima (DoD)',
+      unit: '%',
+      type: 'number',
+      required: true,
+    },
+    { key: 'roundTripEfficiencyPct', label: 'Eficiência de ciclo', unit: '%', type: 'number' },
+    { key: 'cycleLife', label: 'Vida em ciclos', type: 'int' },
+    { key: 'cycleDodPct', label: 'DoD da vida em ciclos', unit: '%', type: 'number' },
+    { key: 'calendarLifeYears', label: 'Vida de calendário', unit: 'anos', type: 'number' },
+    { key: 'maxChargeCurrentA', label: 'Corrente de carga máxima', unit: 'A', type: 'number' },
+    {
+      key: 'maxDischargeCurrentA',
+      label: 'Corrente de descarga máxima',
+      unit: 'A',
+      type: 'number',
+    },
+    { key: 'maxParallel', label: 'Máximo em paralelo', type: 'int' },
+    { key: 'weightKg', label: 'Peso', unit: 'kg', type: 'number' },
+  ],
+  CHARGE_CONTROLLER: [
+    {
+      key: 'technology',
+      label: 'Tecnologia',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'MPPT', label: 'MPPT' },
+        { value: 'PWM', label: 'PWM' },
+      ],
+    },
+    {
+      key: 'batteryVoltageV',
+      label: 'Tensão do banco (máxima)',
+      unit: 'V',
+      type: 'number',
+      required: true,
+    },
+    { key: 'autoVoltage', label: 'Reconhece 12/24/48 V automaticamente', type: 'bool' },
+    {
+      key: 'ratedChargeCurrentA',
+      label: 'Corrente de carga',
+      unit: 'A',
+      type: 'number',
+      required: true,
+    },
+    {
+      key: 'pvVocMaxV',
+      label: 'Voc máxima de entrada',
+      unit: 'V',
+      type: 'number',
+      required: true,
+    },
+    { key: 'mpptMinV', label: 'MPPT mínimo', unit: 'V', type: 'number' },
+    { key: 'mpptMaxV', label: 'MPPT máximo', unit: 'V', type: 'number' },
+    { key: 'pvPowerMaxW', label: 'Potência FV máxima', unit: 'W', type: 'number' },
+    { key: 'pvIscMaxA', label: 'Isc máxima de entrada', unit: 'A', type: 'number' },
+    { key: 'efficiencyPct', label: 'Eficiência', unit: '%', type: 'number' },
+    { key: 'tempCompensation', label: 'Compensação de temperatura', type: 'bool' },
+  ],
+  OFFGRID_INVERTER: [
+    {
+      key: 'topology',
+      label: 'Topologia',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'OFFGRID', label: 'Off-grid (isolado)' },
+        { value: 'HYBRID', label: 'Híbrido (rede + bateria)' },
+      ],
+    },
+    {
+      key: 'batteryVoltageV',
+      label: 'Tensão do banco',
+      unit: 'V',
+      type: 'number',
+      required: true,
+    },
+    {
+      key: 'pContinuousW',
+      label: 'Potência contínua',
+      unit: 'W',
+      type: 'number',
+      required: true,
+    },
+    { key: 'pSurgeW', label: 'Potência de surto', unit: 'W', type: 'number' },
+    { key: 'surgeSeconds', label: 'Duração do surto', unit: 's', type: 'number' },
+    { key: 'efficiencyPct', label: 'Eficiência', unit: '%', type: 'number' },
+    { key: 'standbyW', label: 'Consumo em vazio', unit: 'W', type: 'number' },
+    { key: 'vAcV', label: 'Tensão CA', unit: 'V', type: 'number', required: true },
+    {
+      key: 'phases',
+      label: 'Fases',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 1, label: 'Monofásico' },
+        { value: 2, label: 'Bifásico' },
+        { value: 3, label: 'Trifásico' },
+      ],
+    },
+    { key: 'sineWave', label: 'Onda senoidal pura', type: 'bool' },
+    { key: 'chargerCurrentA', label: 'Carregador (rede/gerador)', unit: 'A', type: 'number' },
+    { key: 'gridInput', label: 'Entrada de rede', type: 'bool' },
+    { key: 'generatorInput', label: 'Entrada de gerador', type: 'bool' },
+    { key: 'mpptBuiltIn', label: 'MPPT embutido', type: 'bool' },
+    { key: 'mpptCount', label: 'Quantidade de MPPT', type: 'int' },
+    { key: 'mpptMinV', label: 'MPPT mínimo', unit: 'V', type: 'number' },
+    { key: 'mpptMaxV', label: 'MPPT máximo', unit: 'V', type: 'number' },
+    { key: 'pvVocMaxV', label: 'Voc máxima de entrada', unit: 'V', type: 'number' },
+    { key: 'pvPowerMaxW', label: 'Potência FV máxima', unit: 'W', type: 'number' },
+    { key: 'mpptCurrentA', label: 'Corrente de entrada do MPPT', unit: 'A', type: 'number' },
+  ],
+  GENERATOR: [
+    {
+      key: 'fuel',
+      label: 'Combustível',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'DIESEL', label: 'Diesel' },
+        { value: 'GASOLINE', label: 'Gasolina' },
+        { value: 'GAS', label: 'Gás' },
+        { value: 'ETHANOL', label: 'Etanol' },
+      ],
+    },
+    {
+      key: 'pContinuousW',
+      label: 'Potência contínua',
+      unit: 'W',
+      type: 'number',
+      required: true,
+    },
+    { key: 'pStandbyW', label: 'Potência de emergência', unit: 'W', type: 'number' },
+    { key: 'vAcV', label: 'Tensão CA', unit: 'V', type: 'number', required: true },
+    {
+      key: 'phases',
+      label: 'Fases',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 1, label: 'Monofásico' },
+        { value: 2, label: 'Bifásico' },
+        { value: 3, label: 'Trifásico' },
+      ],
+    },
+    { key: 'fuelLitersPerHour', label: 'Consumo a 75% de carga', unit: 'L/h', type: 'number' },
+    { key: 'minLoadPct', label: 'Carga mínima', unit: '%', type: 'number' },
+    { key: 'autoStart', label: 'Partida automática', type: 'bool' },
+  ],
 };
 
 export const KIND_LABELS: Record<EquipmentKind, string> = {
@@ -216,6 +393,10 @@ export const KIND_LABELS: Record<EquipmentKind, string> = {
   INVERTER: 'Inversores',
   PROTECTION: 'Proteções',
   CABLE: 'Cabos',
+  BATTERY: 'Baterias',
+  CHARGE_CONTROLLER: 'Controladores de carga',
+  OFFGRID_INVERTER: 'Inversores off-grid',
+  GENERATOR: 'Geradores',
 };
 
 export const KIND_SINGULAR: Record<EquipmentKind, string> = {
@@ -223,6 +404,10 @@ export const KIND_SINGULAR: Record<EquipmentKind, string> = {
   INVERTER: 'inversor',
   PROTECTION: 'proteção',
   CABLE: 'cabo',
+  BATTERY: 'bateria',
+  CHARGE_CONTROLLER: 'controlador de carga',
+  OFFGRID_INVERTER: 'inversor off-grid',
+  GENERATOR: 'gerador',
 };
 
 export const STATUS_LABELS: Record<EquipmentStatus, string> = {
@@ -268,6 +453,16 @@ export function specSummary(kind: EquipmentKind, spec: Record<string, unknown>):
           ]
         : kind === 'PROTECTION'
           ? [fmt(n('ratedCurrentA'), 'A'), fmt(n('ratedVoltageV'), 'V')]
-          : [fmt(n('crossSectionMm2'), 'mm²')];
+          : kind === 'BATTERY'
+            ? [fmt(n('nominalVoltageV'), 'V'), fmt(n('capacityAh'), 'Ah')]
+            : kind === 'CHARGE_CONTROLLER'
+              ? [fmt(n('ratedChargeCurrentA'), 'A'), fmt(n('batteryVoltageV'), 'V')]
+              : kind === 'OFFGRID_INVERTER' || kind === 'GENERATOR'
+                ? [
+                    n('pContinuousW') !== undefined
+                      ? fmt((n('pContinuousW') as number) / 1000, 'kW')
+                      : null,
+                  ]
+                : [fmt(n('crossSectionMm2'), 'mm²')];
   return parts.filter(Boolean).join(' · ') || '—';
 }

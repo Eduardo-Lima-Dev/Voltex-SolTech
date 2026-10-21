@@ -172,6 +172,7 @@ export interface RuleSetDto {
   definition: Record<string, unknown>;
   sources: { type: string; reference: string; url?: string; notes?: string }[];
   reviewedBy: string | null;
+  reviewedByRegistration: string | null;
   reviewedAt: string | null;
   notes: string | null;
   createdAt: string;
@@ -199,3 +200,4 @@ export * from './data-hub.js';
 export * from './equipment.js';
 export * from './engineering.js';
 export * from './engineering-management.js';
+export * from './offgrid.js';

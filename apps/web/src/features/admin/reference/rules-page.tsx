@@ -23,7 +23,9 @@ import {
 } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
 import { formatDate, formatNumber } from '@/lib/format';
+import { Can } from '@/app/guards';
 import { queryKeys } from '../query-keys';
+import { ActivateRuleDialog, ImportRuleDialog } from './rule-dialogs';
 
 const STATUS_BADGE = { ACTIVE: 'green', DRAFT: 'secondary', RETIRED: 'outline' } as const;
 
@@ -133,9 +135,15 @@ function Versions() {
       <CardHeader>
         <CardTitle>Versões da regra</CardTitle>
         <CardDescription>
-          Regras ativadas não mudam mais e exigem um responsável pela revisão. Para criar ou ativar
-          uma nova versão, fale com o suporte da plataforma.
+          Regras ativadas não mudam mais e exigem um responsável pela revisão (nas regras do Engine,
+          com o registro no conselho). Importe uma proposta como rascunho, confira as fontes e
+          ative.
         </CardDescription>
+        <Can permission="platform.rule.manage">
+          <div className="pt-2">
+            <ImportRuleDialog />
+          </div>
+        </Can>
       </CardHeader>
       <CardContent>
         {rules.isPending ? (
@@ -150,15 +158,18 @@ function Versions() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Regra</TableHead>
                 <TableHead>Versão</TableHead>
                 <TableHead>Situação</TableHead>
                 <TableHead>Vigência</TableHead>
                 <TableHead>Revisão</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rules.data.map((rule) => (
                 <TableRow key={rule.id}>
+                  <TableCell className="text-muted-foreground">{rule.key}</TableCell>
                   <TableCell className="font-medium">v{rule.version}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_BADGE[rule.status]}>
@@ -171,6 +182,14 @@ function Versions() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {rule.reviewedBy ?? 'Sem revisão'}
+                    {rule.reviewedByRegistration ? ` (${rule.reviewedByRegistration})` : ''}
+                  </TableCell>
+                  <TableCell>
+                    {rule.status === 'DRAFT' ? (
+                      <Can permission="platform.rule.manage">
+                        <ActivateRuleDialog rule={rule} />
+                      </Can>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

@@ -170,11 +170,113 @@ const CABLE_COLUMNS: Column[] = [
   { header: 'norma', field: 'standard', type: 'string' },
 ];
 
+const PHASES_ENUM = { '1': 1, '2': 2, '3': 3, monofasico: 1, bifasico: 2, trifasico: 3 };
+
+const BATTERY_COLUMNS: Column[] = [
+  {
+    header: 'quimica',
+    field: 'chemistry',
+    type: 'enum',
+    values: {
+      chumbo_aberto: 'LEAD_FLOODED',
+      chumbo_acido: 'LEAD_FLOODED',
+      agm: 'LEAD_AGM',
+      gel: 'LEAD_GEL',
+      opzs: 'OPZS',
+      opzv: 'OPZV',
+      lfp: 'LFP',
+      litio: 'LFP',
+      lifepo4: 'LFP',
+      nmc: 'NMC',
+      outra: 'OTHER',
+    },
+  },
+  { header: 'tensao_nominal_v', field: 'nominalVoltageV', type: 'number' },
+  { header: 'capacidade_ah', field: 'capacityAh', type: 'number' },
+  { header: 'regime_horas', field: 'capacityHours', type: 'number' },
+  { header: 'dod_maxima_pct', field: 'maxDodPct', type: 'number' },
+  { header: 'eficiencia_ciclo_pct', field: 'roundTripEfficiencyPct', type: 'number' },
+  { header: 'ciclos_de_vida', field: 'cycleLife', type: 'int' },
+  { header: 'dod_dos_ciclos_pct', field: 'cycleDodPct', type: 'number' },
+  { header: 'vida_calendario_anos', field: 'calendarLifeYears', type: 'number' },
+  { header: 'corrente_carga_max_a', field: 'maxChargeCurrentA', type: 'number' },
+  { header: 'corrente_descarga_max_a', field: 'maxDischargeCurrentA', type: 'number' },
+  { header: 'max_paralelo', field: 'maxParallel', type: 'int' },
+  { header: 'peso_kg', field: 'weightKg', type: 'number' },
+];
+
+const CHARGE_CONTROLLER_COLUMNS: Column[] = [
+  {
+    header: 'tecnologia',
+    field: 'technology',
+    type: 'enum',
+    values: { mppt: 'MPPT', pwm: 'PWM' },
+  },
+  { header: 'tensao_banco_v', field: 'batteryVoltageV', type: 'number' },
+  { header: 'tensao_automatica', field: 'autoVoltage', type: 'bool' },
+  { header: 'corrente_carga_a', field: 'ratedChargeCurrentA', type: 'number' },
+  { header: 'voc_max_v', field: 'pvVocMaxV', type: 'number' },
+  { header: 'mppt_min_v', field: 'mpptMinV', type: 'number' },
+  { header: 'mppt_max_v', field: 'mpptMaxV', type: 'number' },
+  { header: 'potencia_fv_max_w', field: 'pvPowerMaxW', type: 'number' },
+  { header: 'isc_max_a', field: 'pvIscMaxA', type: 'number' },
+  { header: 'eficiencia_pct', field: 'efficiencyPct', type: 'number' },
+  { header: 'compensacao_temperatura', field: 'tempCompensation', type: 'bool' },
+];
+
+const OFFGRID_INVERTER_COLUMNS: Column[] = [
+  {
+    header: 'topologia',
+    field: 'topology',
+    type: 'enum',
+    values: { offgrid: 'OFFGRID', isolado: 'OFFGRID', hibrido: 'HYBRID', hybrid: 'HYBRID' },
+  },
+  { header: 'tensao_banco_v', field: 'batteryVoltageV', type: 'number' },
+  { header: 'potencia_continua_w', field: 'pContinuousW', type: 'number' },
+  { header: 'potencia_surto_w', field: 'pSurgeW', type: 'number' },
+  { header: 'surto_segundos', field: 'surgeSeconds', type: 'number' },
+  { header: 'eficiencia_pct', field: 'efficiencyPct', type: 'number' },
+  { header: 'consumo_vazio_w', field: 'standbyW', type: 'number' },
+  { header: 'tensao_ca_v', field: 'vAcV', type: 'number' },
+  { header: 'fases', field: 'phases', type: 'enum', values: PHASES_ENUM },
+  { header: 'onda_senoidal', field: 'sineWave', type: 'bool' },
+  { header: 'carregador_a', field: 'chargerCurrentA', type: 'number' },
+  { header: 'entrada_rede', field: 'gridInput', type: 'bool' },
+  { header: 'entrada_gerador', field: 'generatorInput', type: 'bool' },
+  { header: 'mppt_embutido', field: 'mpptBuiltIn', type: 'bool' },
+  { header: 'mppt_quantidade', field: 'mpptCount', type: 'int' },
+  { header: 'mppt_min_v', field: 'mpptMinV', type: 'number' },
+  { header: 'mppt_max_v', field: 'mpptMaxV', type: 'number' },
+  { header: 'voc_max_v', field: 'pvVocMaxV', type: 'number' },
+  { header: 'potencia_fv_max_w', field: 'pvPowerMaxW', type: 'number' },
+  { header: 'corrente_mppt_a', field: 'mpptCurrentA', type: 'number' },
+];
+
+const GENERATOR_COLUMNS: Column[] = [
+  {
+    header: 'combustivel',
+    field: 'fuel',
+    type: 'enum',
+    values: { diesel: 'DIESEL', gasolina: 'GASOLINE', gas: 'GAS', etanol: 'ETHANOL' },
+  },
+  { header: 'potencia_continua_w', field: 'pContinuousW', type: 'number' },
+  { header: 'potencia_emergencia_w', field: 'pStandbyW', type: 'number' },
+  { header: 'tensao_ca_v', field: 'vAcV', type: 'number' },
+  { header: 'fases', field: 'phases', type: 'enum', values: PHASES_ENUM },
+  { header: 'consumo_l_h', field: 'fuelLitersPerHour', type: 'number' },
+  { header: 'carga_minima_pct', field: 'minLoadPct', type: 'number' },
+  { header: 'partida_automatica', field: 'autoStart', type: 'bool' },
+];
+
 const COLUMNS: Record<EquipmentKind, Column[]> = {
   MODULE: MODULE_COLUMNS,
   INVERTER: INVERTER_COLUMNS,
   PROTECTION: PROTECTION_COLUMNS,
   CABLE: CABLE_COLUMNS,
+  BATTERY: BATTERY_COLUMNS,
+  CHARGE_CONTROLLER: CHARGE_CONTROLLER_COLUMNS,
+  OFFGRID_INVERTER: OFFGRID_INVERTER_COLUMNS,
+  GENERATOR: GENERATOR_COLUMNS,
 };
 
 const COMMON = ['fabricante', 'modelo'];

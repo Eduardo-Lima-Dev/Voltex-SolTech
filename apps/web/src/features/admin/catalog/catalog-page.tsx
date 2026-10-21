@@ -78,7 +78,7 @@ function EquipmentList({ kind }: { kind: EquipmentKind }) {
 
   const create = useMutation({
     mutationFn: (values: EquipmentFormValues) =>
-      endpoints.catalog.create({ kind, ...values, origin: 'MANUAL' } as never),
+      endpoints.catalog.create({ kind, ...values, origin: values.origin ?? 'MANUAL' } as never),
     onSuccess: async (created) => {
       toast.success('Rascunho criado. O responsável técnico precisa aprová-lo para uso.');
       setCreating(false);
@@ -250,6 +250,27 @@ function EquipmentList({ kind }: { kind: EquipmentKind }) {
   );
 }
 
+/** Baixa a biblioteca CEC/SAM (módulos e inversores de referência) do repositório público do NREL. */
+function SyncCecButton() {
+  const queryClient = useQueryClient();
+  const sync = useMutation({
+    mutationFn: () => endpoints.catalog.syncReferences(),
+    onSuccess: async (r) => {
+      toast.success(
+        `Biblioteca CEC/SAM carregada: ${r.modules.created + r.modules.updated} módulo(s) e ${r.inverters.created + r.inverters.updated} inversor(es) novos ou atualizados.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalogSources });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.catalog() });
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível carregar a biblioteca.')),
+  });
+  return (
+    <Button size="sm" disabled={sync.isPending} onClick={() => sync.mutate()}>
+      {sync.isPending ? <Spinner /> : null} Carregar da internet
+    </Button>
+  );
+}
+
 function SourceCards({
   selected,
   onSelect,
@@ -287,9 +308,12 @@ function SourceCards({
             {source.documentCount} registro(s)
             {source.indexedAt ? ` · atualizado em ${formatDate(source.indexedAt)}` : ''}
           </p>
-          <Button size="sm" variant="outline" onClick={() => onSelect(source.key)}>
-            Buscar nesta fonte
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => onSelect(source.key)}>
+              Buscar nesta fonte
+            </Button>
+            {source.key === 'cec-library' && source.enabled ? <SyncCecButton /> : null}
+          </div>
         </li>
       ))}
     </ul>
@@ -427,6 +451,10 @@ const EQUIPMENT_LABEL: Record<string, string> = {
   INVERTER: 'Inversor',
   PROTECTION: 'Proteção',
   CABLE: 'Cabo',
+  BATTERY: 'Bateria',
+  CHARGE_CONTROLLER: 'Controlador de carga',
+  OFFGRID_INVERTER: 'Inversor off-grid',
+  GENERATOR: 'Gerador',
   OTHER: 'Outro',
 };
 const CONFIDENCE_BADGE = { HIGH: 'green', MEDIUM: 'yellow', LOW: 'secondary' } as const;

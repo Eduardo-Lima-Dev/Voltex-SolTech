@@ -88,7 +88,8 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   return url;
 }
 
-const USER_AGENT = 'VoltexSolTech-DataHub/1.0 (+coleta de dados abertos com atribuição)';
+/** Só ASCII e sem parênteses: o firewall do PVGIS (JRC) responde 403 a um User-Agent com acentos ou o sufixo entre parênteses. */
+const USER_AGENT = 'VoltexSolTech-DataHub/1.0';
 const TIMEOUT_MS = 90_000;
 const DEFAULT_MAX_BYTES = 25 * 1024 * 1024;
 

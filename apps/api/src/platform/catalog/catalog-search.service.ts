@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@voltex/database';
 import type { CatalogSearchQuery, CatalogSearchResultDto } from '@voltex/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { dataSourceDefinition } from '../data-hub/data-hub.registry';
@@ -8,7 +9,42 @@ const KIND_LABEL: Record<string, string> = {
   INVERTER: 'Inversor',
   PROTECTION: 'Proteção',
   CABLE: 'Cabo',
+  BATTERY: 'Bateria',
+  CHARGE_CONTROLLER: 'Controlador de carga',
+  OFFGRID_INVERTER: 'Inversor off-grid',
+  GENERATOR: 'Gerador',
   OTHER: 'Outro',
+};
+
+/** Palavras que identificam o tipo no título quando a fonte não classificou o documento. */
+const KIND_WORDS: Record<string, string[]> = {
+  PROTECTION: [
+    'disjuntor',
+    'dps',
+    'fusivel',
+    'fusível',
+    'seccionador',
+    'seccionadora',
+    'string box',
+    'diferencial',
+    'protetor',
+    'minidisjuntor',
+  ],
+  CABLE: ['cabo', 'cable', 'condutor', 'pv1-f', 'h1z2z2'],
+  BATTERY: ['bateria', 'battery', 'lifepo4', 'estacionaria', 'estacionária', 'litio', 'lítio'],
+  CHARGE_CONTROLLER: ['controlador', 'controller', 'mppt', 'pwm', 'regulador de carga'],
+  GENERATOR: ['gerador', 'generator'],
+  OFFGRID_INVERTER: [
+    'hibrido',
+    'híbrido',
+    'hybrid',
+    'off-grid',
+    'off grid',
+    'offgrid',
+    'isolado',
+    'inversor carregador',
+    'inversor/carregador',
+  ],
 };
 
 /**
@@ -21,44 +57,81 @@ export class CatalogSearchService {
   constructor(private readonly prisma: PrismaService) {}
 
   async search(query: CatalogSearchQuery): Promise<CatalogSearchResultDto[]> {
-    const contains = { contains: query.q, mode: 'insensitive' as const };
+    const text = query.q.trim();
+    const contains = { contains: text, mode: 'insensitive' as const };
     const limit = query.limit;
+    const kind = query.kind;
+    const words = kind ? (KIND_WORDS[kind] ?? []) : [];
+    /** Inversor off-grid também aparece entre os inversores comuns (muitos são híbridos): só ao digitar. */
+    const alsoInverter = kind === 'OFFGRID_INVERTER' && text.length > 0;
+    const typeFilter = (field: 'model' | 'title') =>
+      kind && words.length > 0
+        ? words.map((w) => ({ [field]: { contains: w, mode: 'insensitive' as const } }))
+        : [];
+
+    const publicWhere: Prisma.ExternalRecordWhereInput = {
+      kind: { startsWith: 'DOC_' },
+      ...(text ? { OR: [{ model: contains }, { manufacturer: contains }] } : {}),
+      ...(kind
+        ? {
+            AND: [
+              {
+                OR: [
+                  { spec: { path: ['equipmentHint'], equals: kind } },
+                  ...(alsoInverter
+                    ? [{ spec: { path: ['equipmentHint'], equals: 'INVERTER' } }]
+                    : []),
+                  ...typeFilter('model'),
+                ],
+              },
+            ],
+          }
+        : {}),
+    };
+    const linkWhere: Prisma.CatalogSourceDocumentWhereInput = {
+      ...(text ? { OR: [{ title: contains }, { brand: contains }] } : {}),
+      ...(kind
+        ? {
+            AND: [
+              {
+                OR: [
+                  { equipmentHint: kind },
+                  ...(alsoInverter ? [{ equipmentHint: 'INVERTER' }] : []),
+                  ...typeFilter('title'),
+                ],
+              },
+            ],
+          }
+        : {}),
+    };
+    const refKind = kind === 'MODULE' || kind === 'INVERTER' ? kind : undefined;
     const [items, linkDocs, publicDocs, refs] = await Promise.all([
       this.prisma.db.equipmentItem.findMany({
         where: {
           status: { not: 'RETIRED' },
-          ...(query.kind ? { kind: query.kind } : {}),
-          OR: [{ manufacturer: contains }, { model: contains }],
+          ...(kind ? { kind } : {}),
+          ...(text ? { OR: [{ manufacturer: contains }, { model: contains }] } : {}),
         },
         orderBy: [{ status: 'asc' }, { manufacturer: 'asc' }, { model: 'asc' }],
         take: limit,
       }),
       this.prisma.db.catalogSourceDocument.findMany({
-        where: {
-          ...(query.kind ? { equipmentHint: query.kind } : {}),
-          OR: [{ title: contains }, { brand: contains }],
-        },
+        where: linkWhere,
         include: { link: { select: { label: true } } },
         orderBy: [{ confidence: 'asc' }, { title: 'asc' }],
         take: limit,
       }),
-      !query.kind || query.kind === 'INVERTER' || query.kind === 'MODULE'
+      this.prisma.system.externalRecord.findMany({
+        where: publicWhere,
+        include: { source: { select: { key: true, label: true } } },
+        orderBy: [{ manufacturer: 'asc' }, { model: 'asc' }],
+        take: limit,
+      }),
+      !kind || refKind
         ? this.prisma.system.externalRecord.findMany({
             where: {
-              kind: { startsWith: 'DOC_' },
-              OR: [{ model: contains }, { manufacturer: contains }],
-              ...(query.kind ? { spec: { path: ['equipmentHint'], equals: query.kind } } : {}),
-            },
-            include: { source: { select: { key: true, label: true } } },
-            orderBy: [{ manufacturer: 'asc' }, { model: 'asc' }],
-            take: limit,
-          })
-        : Promise.resolve([]),
-      !query.kind || query.kind === 'INVERTER' || query.kind === 'MODULE'
-        ? this.prisma.system.externalRecord.findMany({
-            where: {
-              kind: query.kind ? `CEC_${query.kind}` : { startsWith: 'CEC_' },
-              OR: [{ model: contains }, { manufacturer: contains }],
+              kind: refKind ? `CEC_${refKind}` : { startsWith: 'CEC_' },
+              ...(text ? { OR: [{ model: contains }, { manufacturer: contains }] } : {}),
             },
             orderBy: [{ manufacturer: 'asc' }, { model: 'asc' }],
             take: limit,
@@ -92,7 +165,9 @@ export class CatalogSearchService {
         return {
           origin: 'SOURCE' as const,
           id: r.id,
-          kind: (spec.equipmentHint ?? 'OTHER') as CatalogSearchResultDto['kind'],
+          kind: (kind && spec.equipmentHint !== kind && spec.equipmentHint !== 'INVERTER'
+            ? kind
+            : (spec.equipmentHint ?? 'OTHER')) as CatalogSearchResultDto['kind'],
           manufacturer: r.manufacturer === '—' ? '' : r.manufacturer,
           model: r.model,
           sourceLabel: r.source.label,

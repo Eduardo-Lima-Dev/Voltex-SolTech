@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { INTERNAL_TEST_RULE_WARNING } from '@voltex/shared';
 import type {
   EngineeringDesign,
   EngineeringResults,
@@ -24,6 +25,17 @@ export interface EngineeringReportInput {
   status: EngineeringVersionStatus;
   design: EngineeringDesign;
   results: EngineeringResults;
+  /** Alguma regra usada é de teste interno: o memorial leva o aviso em destaque. */
+  internalTestRules?: boolean;
+  /** Profissional que assina o projeto (ficha do projeto); ausente = ainda não informado. */
+  signatory?: {
+    name: string | null;
+    councilType: string | null;
+    councilRegistration: string | null;
+    councilState: string | null;
+    artType: string | null;
+    artNumber: string | null;
+  };
 }
 
 /**
@@ -79,6 +91,14 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
         .fontSize(10)
         .text('RASCUNHO PARA REVISÃO — não substitui projeto elétrico assinado.');
     }
+    if (input.internalTestRules) {
+      doc
+        .moveDown(0.5)
+        .fillColor('#a82020')
+        .font('Helvetica-Bold')
+        .fontSize(10)
+        .text(INTERNAL_TEST_RULE_WARNING, { width });
+    }
 
     heading('Local e premissas');
     line(
@@ -95,6 +115,19 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
       `${n(input.design.site.designTminC, 1)} °C · ${input.design.site.designTemperatureSource ?? 'fonte não informada'}`,
     );
     line('Superfícies', `${input.design.surfaces.length}`);
+    const { climate, horizon } = input.design.site;
+    if (climate) {
+      line(
+        'Fonte do clima',
+        `${climate.source === 'pvgis' ? 'PVGIS' : 'NASA POWER'} · ${climate.period} · coletado em ${climate.fetchedAt.slice(0, 10)}${climate.attribution ? ` · ${climate.attribution}` : ''}`,
+      );
+    }
+    if (horizon) {
+      line(
+        'Fonte do horizonte',
+        `PVGIS · coletado em ${horizon.fetchedAt.slice(0, 10)} · PVGIS © European Communities, 2001-2026`,
+      );
+    }
 
     heading('Compatibilidade e proteções');
     line('Compatibilidade', input.results.compatibility.status);
@@ -150,6 +183,15 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
     );
 
     heading('Rastreabilidade');
+    {
+      const sig = input.signatory;
+      line(
+        'Responsável técnico',
+        sig?.name
+          ? `${sig.name} · ${sig.councilType ?? 'conselho'} ${sig.councilRegistration ?? '—'}/${sig.councilState ?? '—'} · ${sig.artType ?? 'ART'} ${sig.artNumber ?? 'não informada'}`
+          : 'Não informado na ficha do projeto',
+      );
+    }
     line(
       'Algoritmos',
       Object.entries(input.results.algorithmVersions)
@@ -168,7 +210,7 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
       .fontSize(8)
       .fillColor('#555')
       .text(
-        'Memorial gerado a partir da versão persistida do Solar Engine Studio. Fontes, regras e equipamentos usados permanecem registrados no snapshot aprovado.',
+        'Memorial gerado a partir da versão persistida do Solar Engine Studio. Fontes, regras, equipamentos e o responsável técnico permanecem registrados no snapshot aprovado. Este documento não substitui a ART/TRT/RRT.',
         { width },
       );
     doc.end();
@@ -200,6 +242,7 @@ export function buildSingleLinePdf(input: EngineeringReportInput): Promise<Buffe
       .font('Helvetica-Bold')
       .fontSize(10)
       .text('RASCUNHO PARA REVISÃO — não substitui projeto elétrico assinado.');
+    if (input.internalTestRules) doc.moveDown(0.3).text(INTERNAL_TEST_RULE_WARNING);
 
     const y = 250;
     const box = (x: number, title: string, body: string) => {

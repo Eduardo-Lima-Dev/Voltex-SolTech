@@ -1,5 +1,9 @@
 import type {
+  BatterySpec,
   CableSpec,
+  ChargeControllerSpec,
+  GeneratorSpec,
+  OffgridInverterSpec,
   EquipmentKind,
   InverterSpec,
   ModuleSpec,
@@ -275,6 +279,157 @@ export function validateCableSpec(spec: CableSpec): SpecIssue[] {
   return issues;
 }
 
+/** Bateria: coerência entre química, profundidade de descarga e ciclos. */
+export function validateBatterySpec(spec: BatterySpec): SpecIssue[] {
+  const issues: SpecIssue[] = [];
+  const lead = ['LEAD_FLOODED', 'LEAD_AGM', 'LEAD_GEL', 'OPZS', 'OPZV'].includes(spec.chemistry);
+  if (lead && spec.maxDodPct > 80)
+    issues.push(
+      warn('LEAD_DOD_HIGH', 'maxDodPct', 'Chumbo-ácido costuma limitar a descarga a 80% ou menos.'),
+    );
+  if (spec.chemistry === 'LEAD_FLOODED' && spec.maxDodPct > 50)
+    issues.push(
+      warn(
+        'FLOODED_DOD_HIGH',
+        'maxDodPct',
+        'Chumbo aberto/automotivo costuma suportar até 50% de descarga.',
+      ),
+    );
+  if (spec.cycleLife !== undefined && spec.cycleDodPct === undefined)
+    issues.push(
+      warn(
+        'CYCLE_DOD_MISSING',
+        'cycleDodPct',
+        'Informe a profundidade de descarga da vida em ciclos.',
+      ),
+    );
+  if (spec.cycleDodPct !== undefined && spec.cycleDodPct > spec.maxDodPct + 0.001)
+    issues.push(
+      err('CYCLE_DOD_ABOVE_MAX', 'cycleDodPct', 'A DoD da vida em ciclos excede a DoD máxima.'),
+    );
+  if (![2, 4, 6, 12, 24, 36, 48, 51.2, 25.6, 12.8, 3.2, 3.7].includes(spec.nominalVoltageV))
+    issues.push(
+      warn(
+        'BATTERY_VOLTAGE_ATYPICAL',
+        'nominalVoltageV',
+        'Tensão nominal atípica: confira a ficha.',
+      ),
+    );
+  if (spec.capacityAh > 5000)
+    issues.push(
+      warn('CAPACITY_RANGE', 'capacityAh', 'Capacidade acima de 5000 Ah: confira a unidade.'),
+    );
+  if (spec.roundTripEfficiencyPct !== undefined && spec.roundTripEfficiencyPct < 60)
+    issues.push(
+      warn('EFFICIENCY_LOW', 'roundTripEfficiencyPct', 'Eficiência de ciclo abaixo de 60%.'),
+    );
+  return issues;
+}
+
+export function validateChargeControllerSpec(spec: ChargeControllerSpec): SpecIssue[] {
+  const issues: SpecIssue[] = [];
+  if (spec.technology === 'MPPT') {
+    if (spec.mpptMinV === undefined || spec.mpptMaxV === undefined)
+      issues.push(
+        err('MPPT_RANGE_REQUIRED', 'mpptMinV', 'Controlador MPPT exige a faixa de tensão do MPPT.'),
+      );
+    else if (spec.mpptMinV >= spec.mpptMaxV)
+      issues.push(
+        err(
+          'MPPT_RANGE_INVERTED',
+          'mpptMinV',
+          'A tensão mínima do MPPT deve ser menor que a máxima.',
+        ),
+      );
+    else if (spec.mpptMaxV > spec.pvVocMaxV)
+      issues.push(
+        err('MPPT_ABOVE_VOC_MAX', 'mpptMaxV', 'A faixa do MPPT passa da tensão máxima de entrada.'),
+      );
+  }
+  if (spec.pvPowerMaxW !== undefined) {
+    const batteryPower = spec.ratedChargeCurrentA * spec.batteryVoltageV;
+    if (spec.pvPowerMaxW > batteryPower * 2.5)
+      issues.push(
+        warn(
+          'PV_POWER_HIGH',
+          'pvPowerMaxW',
+          'Potência FV máxima muito acima da potência de saída: confira a ficha.',
+        ),
+      );
+  }
+  if (![12, 24, 36, 48, 96, 120, 144, 192, 240].includes(spec.batteryVoltageV))
+    issues.push(warn('BATTERY_VOLTAGE_ATYPICAL', 'batteryVoltageV', 'Tensão de banco atípica.'));
+  return issues;
+}
+
+export function validateOffgridInverterSpec(spec: OffgridInverterSpec): SpecIssue[] {
+  const issues: SpecIssue[] = [];
+  if (spec.pSurgeW !== undefined && spec.pSurgeW < spec.pContinuousW)
+    issues.push(
+      err(
+        'SURGE_BELOW_CONTINUOUS',
+        'pSurgeW',
+        'O surto deve ser maior ou igual à potência contínua.',
+      ),
+    );
+  if (spec.topology === 'HYBRID' && !spec.gridInput)
+    issues.push(
+      warn('HYBRID_WITHOUT_GRID', 'gridInput', 'Inversor híbrido sem entrada de rede: confira.'),
+    );
+  if (spec.mpptBuiltIn) {
+    if (spec.mpptMinV === undefined || spec.mpptMaxV === undefined || spec.pvVocMaxV === undefined)
+      issues.push(
+        err(
+          'MPPT_RANGE_REQUIRED',
+          'mpptMinV',
+          'MPPT embutido exige faixa e tensão máxima de entrada.',
+        ),
+      );
+    else if (spec.mpptMinV >= spec.mpptMaxV)
+      issues.push(
+        err(
+          'MPPT_RANGE_INVERTED',
+          'mpptMinV',
+          'A tensão mínima do MPPT deve ser menor que a máxima.',
+        ),
+      );
+  }
+  if (spec.chargerCurrentA === undefined && (spec.gridInput || spec.generatorInput))
+    issues.push(
+      warn(
+        'CHARGER_MISSING',
+        'chargerCurrentA',
+        'Com entrada de rede ou gerador, informe a corrente do carregador.',
+      ),
+    );
+  if (!spec.sineWave)
+    issues.push(
+      warn('NOT_SINE', 'sineWave', 'Onda não senoidal: não serve para a maioria das cargas.'),
+    );
+  return issues;
+}
+
+export function validateGeneratorSpec(spec: GeneratorSpec): SpecIssue[] {
+  const issues: SpecIssue[] = [];
+  if (spec.pStandbyW !== undefined && spec.pStandbyW < spec.pContinuousW)
+    issues.push(
+      err(
+        'STANDBY_BELOW_CONTINUOUS',
+        'pStandbyW',
+        'A potência de emergência deve ser maior ou igual à contínua.',
+      ),
+    );
+  if (spec.fuelLitersPerHour === undefined)
+    issues.push(
+      warn(
+        'FUEL_MISSING',
+        'fuelLitersPerHour',
+        'Sem consumo, o custo de combustível não é calculado.',
+      ),
+    );
+  return issues;
+}
+
 /** Valida a ficha pelo tipo. O formato (campos e tipos) já foi conferido pelo schema; aqui é a coerência física. */
 export function validateSpec(kind: EquipmentKind, spec: unknown): SpecIssue[] {
   switch (kind) {
@@ -286,6 +441,14 @@ export function validateSpec(kind: EquipmentKind, spec: unknown): SpecIssue[] {
       return validateProtectionSpec(spec as ProtectionSpec);
     case 'CABLE':
       return validateCableSpec(spec as CableSpec);
+    case 'BATTERY':
+      return validateBatterySpec(spec as BatterySpec);
+    case 'CHARGE_CONTROLLER':
+      return validateChargeControllerSpec(spec as ChargeControllerSpec);
+    case 'OFFGRID_INVERTER':
+      return validateOffgridInverterSpec(spec as OffgridInverterSpec);
+    case 'GENERATOR':
+      return validateGeneratorSpec(spec as GeneratorSpec);
   }
 }
 

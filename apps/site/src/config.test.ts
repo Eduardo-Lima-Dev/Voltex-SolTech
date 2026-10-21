@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { siteConfig, utmFromSearch } from './config';
+import { legalInfo, siteConfig, utmFromSearch } from './config';
 
 describe('siteConfig', () => {
   it('usa a porta da aplicação em desenvolvimento quando nada é informado', () => {
@@ -33,5 +33,21 @@ describe('utmFromSearch', () => {
 
   it('devolve nada quando não há campanha', () => {
     expect(utmFromSearch('?x=1')).toBeUndefined();
+  });
+});
+
+describe('legalInfo', () => {
+  it('não inventa dados da empresa: sem valor no ambiente, o campo fica vazio', () => {
+    expect(Object.values(legalInfo({})).every((v) => v === null)).toBe(true);
+    expect(legalInfo({ VITE_LEGAL_COMPANY: '  ' }).company).toBeNull();
+  });
+
+  it('usa o que o ambiente informa, sem espaços nas pontas', () => {
+    const info = legalInfo({
+      VITE_LEGAL_COMPANY: ' Voltex SolTech Ltda ',
+      VITE_LEGAL_PRIVACY_EMAIL: 'privacidade@exemplo.com.br',
+    });
+    expect(info.company).toBe('Voltex SolTech Ltda');
+    expect(info.privacyEmail).toBe('privacidade@exemplo.com.br');
   });
 });

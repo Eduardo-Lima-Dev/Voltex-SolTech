@@ -5,12 +5,13 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import type {
-  CreateEngineeringShareLinkInput,
-  EngineeringDesign,
-  EngineeringResults,
-  EngineeringShareLinkDto,
-  PublicEngineeringReportDto,
+import {
+  INTERNAL_TEST_RULE_WARNING,
+  type CreateEngineeringShareLinkInput,
+  type EngineeringDesign,
+  type EngineeringResults,
+  type EngineeringShareLinkDto,
+  type PublicEngineeringReportDto,
 } from '@voltex/shared';
 import { RequestContext } from '../../common/context/request-context';
 import { AuditService } from '../../platform/audit/audit.service';
@@ -136,6 +137,7 @@ export class EngineeringShareService {
     const content = link.snapshot.content as unknown as {
       version: { design: EngineeringDesign; results: EngineeringResults };
       approvedAt: string;
+      internalTestRules?: boolean;
     };
     const { design, results } = content.version;
     const economics = results.economics;
@@ -162,6 +164,7 @@ export class EngineeringShareService {
             }
           : null,
       notes: [
+        ...(content.internalTestRules ? [INTERNAL_TEST_RULE_WARNING] : []),
         'Estimativas de geração e economia dependem do clima, do consumo e das tarifas e podem variar.',
         'Este relatório resume o projeto técnico aprovado; o memorial completo fica com o responsável técnico.',
       ],

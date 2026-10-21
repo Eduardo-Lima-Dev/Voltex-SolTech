@@ -16,7 +16,18 @@ export default defineConfig(({ mode }) => {
     envDir: path.resolve(here, '../..'),
     server: { port: 5174, strictPort: true, proxy },
     preview: { port: 4174, proxy },
-    build: { sourcemap: true, target: 'es2022' },
+    build: {
+      sourcemap: true,
+      target: 'es2022',
+      // Além da página inicial, as páginas legais (privacidade e termos).
+      rollupOptions: {
+        input: {
+          main: path.resolve(here, 'index.html'),
+          privacidade: path.resolve(here, 'privacidade.html'),
+          termos: path.resolve(here, 'termos.html'),
+        },
+      },
+    },
     test: { environment: 'jsdom', include: ['src/**/*.test.ts'] },
   };
 });

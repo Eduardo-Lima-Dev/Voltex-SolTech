@@ -1,0 +1,37 @@
+{
+  "proposta": {
+    "status": "RASCUNHO PARA CONFERÊNCIA — aguarda mudança de código (tabela do Fio B por ano)",
+    "confianca": "alta para o cronograma da Lei 14.300 (lido em espelho secundário); reconferir no Planalto",
+    "quemConfirma": "Financeiro e engenheiro",
+    "naoPreenchidos": {
+      "2029+": "a partir de 2029 vale o art. 17 da Lei 14.300 (definição pela ANEEL): cenário do financeiro",
+      "direitoAdquirido": "unidades em operação ou com solicitação de acesso até 06/01/2023 mantêm as regras anteriores até 31/12/2045"
+    }
+  },
+  "rule": {
+    "key": "engine.economics",
+    "definition": {
+      "parameters": {},
+      "tables": {
+        "fio_b": [
+          { "ano": 2023, "percentual": 15 },
+          { "ano": 2024, "percentual": 30 },
+          { "ano": 2025, "percentual": 45 },
+          { "ano": 2026, "percentual": 60 },
+          { "ano": 2027, "percentual": 75 },
+          { "ano": 2028, "percentual": 90 }
+        ]
+      },
+      "rules": []
+    },
+    "sources": [
+      {
+        "type": "REGULATION",
+        "reference": "Lei 14.300/2022, art. 27 (Fio B sobre a energia compensada, 2023 a 2028) e art. 17 (2029 em diante)",
+        "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14300.htm",
+        "notes": "Texto oficial não pôde ser baixado na pesquisa; conferir antes de ativar."
+      }
+    ],
+    "notes": "Proposta de governança MVP2 (pesquisa de 20/10/2026)."
+  }
+}

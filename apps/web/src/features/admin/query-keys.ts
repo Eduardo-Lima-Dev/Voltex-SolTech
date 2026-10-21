@@ -82,6 +82,14 @@ export const queryKeys = {
   engineeringDashboard: ['engineering', 'dashboard'] as const,
   engineeringProject: (id: string) => ['engineering', 'project', id] as const,
   engineeringVersion: (id: string) => ['engineering', 'version', id] as const,
+  offgridRequests: (filters?: object) =>
+    filters ? (['offgrid', 'requests', filters] as const) : (['offgrid', 'requests'] as const),
+  offgridRequest: (id: string) => ['offgrid', 'request', id] as const,
+  offgridProjects: (filters?: object) =>
+    filters ? (['offgrid', 'projects', filters] as const) : (['offgrid', 'projects'] as const),
+  offgridProject: (id: string) => ['offgrid', 'project', id] as const,
+  offgridVersion: (id: string) => ['offgrid', 'version', id] as const,
+  offgridDashboard: ['offgrid', 'dashboard'] as const,
   catalogPrices: ['catalog', 'prices'] as const,
   sourceWatches: ['data-hub', 'watches'] as const,
   updateProposals: (filters?: unknown) =>

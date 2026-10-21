@@ -19,6 +19,9 @@ export interface SimulationHour {
   /** Mês (0–11) e hora (0–23) locais, para agregações mensais e perfil de dia típico. */
   monthIndex?: number;
   hourOfDay?: number;
+  /** Dia do ano (1–366) e dia da semana (0 = domingo) locais, para despacho e cargas semanais. */
+  dayOfYear?: number;
+  weekday?: number;
 }
 
 /** Uma etapa da cascata de perdas, em kWh de energia (CA ao final). */
@@ -70,23 +73,19 @@ export interface ProjectSimulationInput extends Omit<SimulationInput, 'hours' | 
   surfaces: SimulationSurface[];
 }
 
+export interface PlaneHoursInput {
+  albedo?: number;
+  series: HourlySeries;
+  site: Pick<SiteDesign, 'latitude' | 'longitude' | 'horizon'>;
+  surfaces: SimulationSurface[];
+}
+
 /**
- * ENG-F18–F20. Decompõe GHI/DHI da Central e transpõe para cada plano pelo modelo isotrópico simples.
- * A série NASA está em hora solar local, enquanto a PVGIS está em UTC; as duas são convertidas para a
- * posição solar antes de aplicar horizonte/obstáculos e o limite CA horário.
+ * Transpõe a série horária da Central (GHI/DHI/temperatura) para o plano de cada superfície, ponderando pela
+ * potência CC, e devolve uma entrada por hora com dado (mês e hora locais inclusos). Reaproveitado pelo Off-Grid.
  */
-export function simulateProjectHourly(input: ProjectSimulationInput): SimulationResult {
+export function buildPlaneHours(input: PlaneHoursInput): SimulationHour[] {
   const dcPowerWp = input.surfaces.reduce((sum, surface) => sum + surface.dcPowerWp, 0);
-  if (!input.surfaces.length || dcPowerWp <= 0)
-    return {
-      energyKwh: 0,
-      dcEnergyKwh: 0,
-      clippingKwh: 0,
-      performanceRatio: null,
-      cellTemperatureMeanC: null,
-      algorithmVersion: SIMULATION_ALGORITHM_VERSION,
-      warnings: ['Sem potência CC em superfícies para simular.'],
-    };
   const start = new Date(
     `${input.series.startAt}${input.series.timeStandard === 'UTC' ? '' : 'Z'}`,
   );
@@ -147,8 +146,35 @@ export function simulateProjectHourly(input: ProjectSimulationInput): Simulation
       ambientC: temp,
       monthIndex: local.getUTCMonth(),
       hourOfDay: local.getUTCHours(),
+      dayOfYear: Math.floor(
+        (Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) -
+          Date.UTC(local.getUTCFullYear(), 0, 0)) /
+          86_400_000,
+      ),
+      weekday: local.getUTCDay(),
     });
   }
+  return hours;
+}
+
+/**
+ * ENG-F18–F20. Decompõe GHI/DHI da Central e transpõe para cada plano pelo modelo isotrópico simples.
+ * A série NASA está em hora solar local, enquanto a PVGIS está em UTC; as duas são convertidas para a
+ * posição solar antes de aplicar horizonte/obstáculos e o limite CA horário.
+ */
+export function simulateProjectHourly(input: ProjectSimulationInput): SimulationResult {
+  const dcPowerWp = input.surfaces.reduce((sum, surface) => sum + surface.dcPowerWp, 0);
+  if (!input.surfaces.length || dcPowerWp <= 0)
+    return {
+      energyKwh: 0,
+      dcEnergyKwh: 0,
+      clippingKwh: 0,
+      performanceRatio: null,
+      cellTemperatureMeanC: null,
+      algorithmVersion: SIMULATION_ALGORITHM_VERSION,
+      warnings: ['Sem potência CC em superfícies para simular.'],
+    };
+  const hours = buildPlaneHours(input);
   const result = simulateHourly({ ...input, hours, dcPowerWp });
   return {
     ...result,

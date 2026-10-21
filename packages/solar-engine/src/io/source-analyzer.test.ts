@@ -114,3 +114,13 @@ describe('página de listagem', () => {
     });
   });
 });
+
+describe('tipos off-grid no classificador', () => {
+  it('reconhece bateria, controlador de carga e gerador pelo texto', () => {
+    const hint = (title: string) =>
+      classifyDocument({ url: 'https://exemplo.com/x.pdf', title }).equipmentHint;
+    expect(hint('Datasheet bateria estacionária LiFePO4 100Ah')).toBe('BATTERY');
+    expect(hint('Datasheet controlador de carga MPPT 60A')).toBe('CHARGE_CONTROLLER');
+    expect(hint('Datasheet gerador a diesel 5kVA')).toBe('GENERATOR');
+  });
+});

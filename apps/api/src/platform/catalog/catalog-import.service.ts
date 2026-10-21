@@ -19,8 +19,13 @@ import {
   buildLayoutLines,
   extractInverterDatasheet,
   extractModuleDatasheet,
+  extractOffgridDatasheet,
+  extractProtectionDatasheet,
+  isProtectionKind,
+  isOffgridKind,
   type PdfTextItem,
   parseEquipmentCsv,
+  decodePvsystBytes,
   parsePvsystFile,
   validateSpec,
   type ParsedEquipment,
@@ -73,7 +78,7 @@ export class CatalogImportService {
             `Colunas ignoradas (o modelo não as conhece): ${result.ignoredColumns.join(', ')}.`,
           );
       } else if (format === 'pan' || format === 'ond') {
-        const item = parsePvsystFile(file.buffer.toString('utf8'));
+        const item = parsePvsystFile(decodePvsystBytes(file.buffer));
         const expected = format === 'pan' ? 'MODULE' : 'INVERTER';
         if (item.kind !== expected)
           throw new ImportParseError(
@@ -111,25 +116,33 @@ export class CatalogImportService {
           throw new ImportParseError(
             'O PDF não tem texto legível (provavelmente é uma imagem escaneada). Preencha à mão.',
           );
-        // Sem tipo informado, tenta como ficha de inversor (tabela com colunas por modelo) e depois como módulo.
-        const inverters =
-          kind === 'MODULE'
-            ? []
-            : pages
-                .flatMap((items) =>
-                  extractInverterDatasheet(buildLayoutLines(items), text, modelHint),
-                )
-                .filter((item) => Object.keys(item.spec).length >= 8);
-        if (inverters.length > 0) {
-          parsed = inverters;
-          notes.push(
-            `Ficha de inversor com ${inverters.length} modelo(s): confira cada coluna contra o PDF antes de importar.`,
-          );
-        } else if (kind === 'INVERTER')
-          throw new ImportParseError(
-            'Não reconheci a tabela de especificações de inversor neste PDF (o layout é diferente dos que o sistema conhece). Preencha à mão ou envie o arquivo .OND.',
-          );
-        else parsed = [extractModuleDatasheet(text)];
+        if (isOffgridKind(kind)) {
+          // Bateria, controlador, inversor off-grid e gerador: leitor por rótulos e título.
+          parsed = [extractOffgridDatasheet(kind, text, modelHint)];
+        } else if (isProtectionKind(kind)) {
+          // Disjuntor, DPS, fusível, seccionadora, DR, string box e cabos.
+          parsed = [extractProtectionDatasheet(kind, text, modelHint)];
+        } else {
+          // Sem tipo informado, tenta como ficha de inversor (tabela com colunas por modelo) e depois como módulo.
+          const inverters =
+            kind === 'MODULE'
+              ? []
+              : pages
+                  .flatMap((items) =>
+                    extractInverterDatasheet(buildLayoutLines(items), text, modelHint),
+                  )
+                  .filter((item) => Object.keys(item.spec).length >= 8);
+          if (inverters.length > 0) {
+            parsed = inverters;
+            notes.push(
+              `Ficha de inversor com ${inverters.length} modelo(s): confira cada coluna contra o PDF antes de importar.`,
+            );
+          } else if (kind === 'INVERTER')
+            throw new ImportParseError(
+              'Não reconheci a tabela de especificações de inversor neste PDF (o layout é diferente dos que o sistema conhece). Preencha à mão ou envie o arquivo .OND.',
+            );
+          else parsed = [extractModuleDatasheet(text)];
+        }
       }
     } catch (error) {
       if (error instanceof ImportParseError) errors.push({ message: error.message });

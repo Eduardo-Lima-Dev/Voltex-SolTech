@@ -377,6 +377,123 @@ const pageRoutes: RouteObject[] = [
             ],
           },
           {
+            path: 'offgrid',
+            handle: { title: 'Off-Grid Designer' },
+            lazy: async () => {
+              const { OffgridLayout } = await import('@/features/offgrid/layout');
+              return { Component: OffgridLayout };
+            },
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { OffgridIndexRedirect } = await import('@/features/offgrid/layout');
+                  return { Component: OffgridIndexRedirect };
+                },
+              },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { OffgridDashboardPage } =
+                    await import('@/features/offgrid/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridDashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel do Off-Grid' },
+                  };
+                },
+              },
+              {
+                path: 'pedidos',
+                lazy: async () => {
+                  const { OffgridRequestsPage } = await import('@/features/offgrid/requests-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridRequestsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pedidos off-grid' },
+                  };
+                },
+              },
+              {
+                path: 'pedidos/:id',
+                lazy: async () => {
+                  const { OffgridRequestPage } = await import('@/features/offgrid/request-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridRequestPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pedido off-grid' },
+                  };
+                },
+              },
+              {
+                path: 'projetos',
+                lazy: async () => {
+                  const { OffgridProjectsPage } = await import('@/features/offgrid/projects-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridProjectsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projetos off-grid' },
+                  };
+                },
+              },
+              {
+                path: 'projetos/:id',
+                lazy: async () => {
+                  const { OffgridProjectPage } = await import('@/features/offgrid/project-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridProjectPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Projeto off-grid' },
+                  };
+                },
+              },
+              {
+                path: 'projetos/:id/versoes/:versionId',
+                lazy: async () => {
+                  const { OffgridVersionEditorPage } =
+                    await import('@/features/offgrid/editor/version-editor-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="offgrid.project.read">
+                        <OffgridVersionEditorPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Versão do projeto off-grid' },
+                  };
+                },
+              },
+              {
+                path: 'catalogo',
+                lazy: async () => {
+                  const { CatalogPage } = await import('@/features/admin/catalog/catalog-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="platform.catalog.read">
+                        <CatalogPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Catálogo técnico' },
+                  };
+                },
+              },
+            ],
+          },
+          {
             path: 'calculator',
             handle: { title: 'Solar Calculator' },
             lazy: async () => {

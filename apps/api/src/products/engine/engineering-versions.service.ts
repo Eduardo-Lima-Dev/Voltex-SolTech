@@ -7,6 +7,13 @@ import {
 import { Prisma } from '@voltex/database';
 import {
   engineRulesDefinitionSchema,
+  INTERNAL_TEST_RULE_WARNING,
+  isInternalTestRule,
+  hasPermission,
+  type EngineeringReviewerDto,
+  type SubmitEngineeringVersionInput,
+  SIGNATORY_FIELD_LABELS,
+  signatoryMissing,
   type EngineeringDesign,
   type EngineeringResults,
   type EngineeringVersionComparisonDto,
@@ -447,7 +454,32 @@ export class EngineeringVersionsService {
     }
   }
 
-  async submit(id: string): Promise<EngineeringVersionDetailDto> {
+  /** Alguma das regras usadas pela versão é de teste interno (valores de exemplo). */
+  async usesInternalTestRules(ruleRefs: string[]): Promise<boolean> {
+    if (ruleRefs.length === 0) return false;
+    const rows = await this.prisma.db.ruleSet.findMany({
+      where: { id: { in: ruleRefs.map((ref) => ref.split('@')[0]!) } },
+      select: { sources: true },
+    });
+    return rows.some((row) => isInternalTestRule(row));
+  }
+
+  /** Engenheiros que podem revisar e aprovar (têm `engine.project.approve`), para pedir a revisão ao enviar. */
+  async reviewers(): Promise<EngineeringReviewerDto[]> {
+    const users = await this.prisma.db.user.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    });
+    return users
+      .filter((u) => hasPermission(u.role, 'engine.version.approve'))
+      .map((u) => ({ id: u.id, name: u.name }));
+  }
+
+  async submit(
+    id: string,
+    input: SubmitEngineeringVersionInput = {},
+  ): Promise<EngineeringVersionDetailDto> {
     const version = await this.require(id);
     if (version.status !== 'DRAFT')
       throw new ConflictException('Só rascunhos podem ser enviados para revisão.');
@@ -455,6 +487,22 @@ export class EngineeringVersionsService {
       throw new UnprocessableEntityException('Salve e calcule a versão antes de enviá-la.');
     const results = version.results as unknown as EngineeringResults;
     this.assertResultsReady(results);
+    const project = await this.prisma.db.engineeringProject.findFirstOrThrow({
+      where: { id: version.projectId },
+    });
+    let reviewerName: string | null = null;
+    if (input.reviewerId) {
+      const reviewer = (await this.reviewers()).find((r) => r.id === input.reviewerId);
+      if (!reviewer)
+        throw new UnprocessableEntityException(
+          'O revisor precisa ser um usuário ativo com permissão de aprovar projetos.',
+        );
+      if (project.requireSecondReview && reviewer.id === this.context.userId)
+        throw new UnprocessableEntityException(
+          'Este projeto exige segunda revisão: peça a revisão de outro engenheiro.',
+        );
+      reviewerName = reviewer.name;
+    }
     await this.prisma.db.$transaction(async (tx) => {
       await tx.engineeringVersion.update({
         where: { id },
@@ -462,6 +510,7 @@ export class EngineeringVersionsService {
           status: 'SUBMITTED',
           submittedAt: new Date(),
           submittedById: this.context.userId ?? null,
+          reviewerId: input.reviewerId ?? null,
         },
       });
       // Enviar para revisão põe o pedido em revisão e registra na linha do tempo do projeto.
@@ -473,8 +522,8 @@ export class EngineeringVersionsService {
         {
           type: 'STATUS',
           projectId: version.projectId,
-          text: `Versão ${version.number} enviada para revisão`,
-          data: { versionId: id },
+          text: `Versão ${version.number} enviada para revisão${reviewerName ? ` (revisão pedida a ${reviewerName})` : ''}`,
+          data: { versionId: id, reviewerId: input.reviewerId ?? null },
         },
         tx,
       );
@@ -572,6 +621,68 @@ export class EngineeringVersionsService {
     const project = await this.prisma.db.engineeringProject.findFirstOrThrow({
       where: { id: version.projectId },
     });
+    if (project.requireSecondReview) {
+      if (version.submittedById && version.submittedById === this.context.userId)
+        throw new UnprocessableEntityException(
+          'Este projeto exige segunda revisão: quem enviou a versão não pode aprová-la. Peça a outro engenheiro.',
+        );
+      if (version.reviewerId && version.reviewerId !== this.context.userId)
+        throw new UnprocessableEntityException(
+          'A revisão foi pedida a outro engenheiro: só ele pode aprovar esta versão.',
+        );
+    }
+    const missingSignatory = signatoryMissing(project as never);
+    if (missingSignatory.length)
+      throw new UnprocessableEntityException(
+        `Informe na ficha do projeto quem assina: ${missingSignatory.map((f) => SIGNATORY_FIELD_LABELS[f]).join(', ')}.`,
+      );
+    const [ruleRows, approver, submitter, requested] = await Promise.all([
+      this.prisma.db.ruleSet.findMany({
+        where: { id: { in: (version.ruleRefs as string[]).map((ref) => ref.split('@')[0]!) } },
+      }),
+      this.context.userId
+        ? this.prisma.db.user.findFirst({
+            where: { id: this.context.userId },
+            select: { id: true, name: true, role: true },
+          })
+        : null,
+      version.submittedById
+        ? this.prisma.db.user.findFirst({
+            where: { id: version.submittedById },
+            select: { id: true, name: true },
+          })
+        : null,
+      version.reviewerId
+        ? this.prisma.db.user.findFirst({
+            where: { id: version.reviewerId },
+            select: { id: true, name: true },
+          })
+        : null,
+    ]);
+    const rulesApplied = (version.ruleRefs as string[]).map((ref) => {
+      const row = ruleRows.find((r) => r.id === ref.split('@')[0]);
+      return {
+        ref,
+        key: row?.key ?? null,
+        version: row?.version ?? null,
+        scope: row?.scope ?? null,
+        sources: row?.sources ?? [],
+        internalTest: row ? isInternalTestRule(row) : false,
+        reviewedBy: row?.reviewedBy ?? null,
+        reviewedByRegistration: row?.reviewedByRegistration ?? null,
+        reviewedAt: row?.reviewedAt?.toISOString() ?? null,
+      };
+    });
+    const internalTestRules = rulesApplied.some((r) => r.internalTest);
+    const signatory = {
+      name: project.signatoryName,
+      councilType: project.councilType,
+      councilRegistration: project.councilRegistration,
+      councilState: project.councilState,
+      artType: project.artType,
+      artNumber: project.artNumber,
+      artIssuedAt: project.artIssuedAt?.toISOString().slice(0, 10) ?? null,
+    };
     const equipment = await this.prisma.db.equipmentItem.findMany({
       where: {
         id: {
@@ -601,6 +712,17 @@ export class EngineeringVersionsService {
         revision: item.revision,
         spec: item.spec,
       })),
+      signatory,
+      rulesApplied,
+      declaration: `${signatory.name} (${signatory.councilType} ${signatory.councilRegistration}/${signatory.councilState}) conferiu as regras aplicadas e assume a responsabilidade técnica por este projeto, conforme ${signatory.artType} ${signatory.artNumber}. A aprovação não substitui a ART/TRT/RRT.${internalTestRules ? ` ATENÇÃO: ${INTERNAL_TEST_RULE_WARNING}` : ''}`,
+      internalTestRules,
+      approvedBy: approver ? { id: approver.id, name: approver.name } : null,
+      review: {
+        requireSecondReview: project.requireSecondReview,
+        submittedBy: submitter,
+        requestedReviewer: requested,
+        selfApproved: !!approver && approver.id === version.submittedById,
+      },
       approvedAt: new Date().toISOString(),
       approvalNote: note,
     };
@@ -786,8 +908,21 @@ export class EngineeringVersionsService {
       this.catalogExtras(design, items),
     ]);
     for (const item of items) extras.labels[item.id] ??= `${item.manufacturer} ${item.model}`;
+    const people = await this.prisma.db.user.findMany({
+      where: { id: { in: [row.submittedById, row.reviewerId].filter((v): v is string => !!v) } },
+      select: { id: true, name: true },
+    });
+    const personName = (userId: string | null) => people.find((p) => p.id === userId)?.name ?? null;
     return {
       ...toVersionDto(row),
+      internalTestRules: await this.usesInternalTestRules(row.ruleRefs as string[]),
+      review: {
+        requireSecondReview: project.requireSecondReview,
+        submittedById: row.submittedById,
+        submittedByName: personName(row.submittedById),
+        reviewerId: row.reviewerId,
+        reviewerName: personName(row.reviewerId),
+      },
       project: toProjectDto(project, {
         requestId: request?.id ?? null,
         responsibleName: null,
@@ -836,6 +971,15 @@ export class EngineeringVersionsService {
       status: version.status,
       design: version.design as unknown as EngineeringDesign,
       results,
+      internalTestRules: await this.usesInternalTestRules(version.ruleRefs as string[]),
+      signatory: {
+        name: project.signatoryName,
+        councilType: project.councilType,
+        councilRegistration: project.councilRegistration,
+        councilState: project.councilState,
+        artType: project.artType,
+        artNumber: project.artNumber,
+      },
     });
     return { buffer, filename: `memorial-${project.code}-v${version.number}.pdf` };
   }
@@ -856,6 +1000,7 @@ export class EngineeringVersionsService {
       status: version.status,
       design: version.design as unknown as EngineeringDesign,
       results,
+      internalTestRules: await this.usesInternalTestRules(version.ruleRefs as string[]),
     });
     return { buffer, filename: `unifilar-${project.code}-v${version.number}.pdf` };
   }
