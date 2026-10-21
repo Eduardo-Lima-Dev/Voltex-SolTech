@@ -310,6 +310,7 @@ describe('Administração → Catálogo técnico', () => {
           committed = (await request.json()) as typeof committed;
           return HttpResponse.json({ created: [equipment()] }, { status: 201 });
         }),
+        http.post(`${API}/catalog/items/:id/approve`, () => HttpResponse.json(equipment())),
       );
       renderApp('/engine/catalogo');
       const user = userEvent.setup();
@@ -325,7 +326,7 @@ describe('Administração → Catálogo técnico', () => {
       await user.click(within(dialog).getByRole('button', { name: /Ler arquivo/ }));
       expect(await within(dialog).findByText('faltam 4 campo(s)')).toBeInTheDocument();
       expect(within(dialog).getByText(/Fabricante e modelo não são lidos/)).toBeInTheDocument();
-      const save = within(dialog).getByRole('button', { name: /Gravar 0 rascunho/ });
+      const save = within(dialog).getByRole('button', { name: /Importar e aprovar 0/ });
       expect(save).toBeDisabled();
       expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeDisabled();
 
@@ -343,12 +344,8 @@ describe('Administração → Catálogo técnico', () => {
       await user.type(within(form).getByLabelText(/Coeficiente de potência/), '-0,34');
       await user.type(within(form).getByLabelText(/Comprimento/), '2278');
       await user.type(within(form).getByLabelText(/Largura/), '1134');
-      await user.click(within(form).getByRole('button', { name: 'Usar estes valores' }));
-
-      await waitFor(() =>
-        expect(within(dialog).getAllByRole('checkbox')[0] as HTMLElement).toBeChecked(),
-      );
-      await user.click(within(dialog).getByRole('button', { name: /Gravar 1 rascunho/ }));
+      // Com um item só, completar já grava e aprova: não há segundo clique.
+      await user.click(within(form).getByRole('button', { name: 'Salvar, aprovar e usar' }));
       await waitFor(() => expect(committed).toBeDefined());
       expect(committed?.items[0]).toMatchObject({
         manufacturer: 'Fabricante Teste',
@@ -532,6 +529,7 @@ describe('Administração → Catálogo técnico', () => {
         committed = await request.json();
         return HttpResponse.json({ created: [{ id: 'n-1' }] }, { status: 201 });
       }),
+      http.post(`${API}/catalog/items/:id/approve`, () => HttpResponse.json({ id: 'n-1' })),
     );
     renderApp('/engine/catalogo');
     const user = userEvent.setup();
@@ -554,8 +552,8 @@ describe('Administração → Catálogo técnico', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/Fonte: Inversor CSI/)).toBeInTheDocument();
     expect(committed).toBeUndefined();
-    await user.click(within(dialog).getAllByRole('checkbox')[0] as HTMLElement);
-    await user.click(within(dialog).getByRole('button', { name: /Importar|Criar|Gravar/ }));
+    // A ficha completa já vem marcada para importar.
+    await user.click(within(dialog).getByRole('button', { name: /Importar e aprovar 1|Gravar 1/ }));
     await waitFor(() =>
       expect(committed).toMatchObject({
         items: [{ kind: 'INVERTER', model: 'CSI-15K', origin: 'DATASHEET_PDF' }],
@@ -653,5 +651,144 @@ describe('Administração → Catálogo técnico', () => {
     expect(
       await screen.findByText(/não tem permissão|sem permissão|Acesso negado/i),
     ).toBeInTheDocument();
+  });
+
+  describe('busca dentro dos modais do catálogo', () => {
+    const result = (over: object = {}) => ({
+      origin: 'SOURCE',
+      id: 'r-1',
+      kind: 'MODULE',
+      manufacturer: 'Fonte',
+      model: 'FT-550M',
+      sourceLabel: 'Techlux (distribuidora)',
+      detail: 'Módulo · Datasheet (PDF)',
+      fileType: 'pdf',
+      ...over,
+    });
+
+    it('o modal de novo equipamento busca nas fontes e preenche o formulário com o que leu', async () => {
+      let body:
+        { origin: string; fieldConfidence: Record<string, string>; model: string } | undefined;
+      base(
+        http.get(`${API}/catalog/search`, () => HttpResponse.json([result()])),
+        http.post(`${API}/catalog/sources/documents/r-1/preview`, () =>
+          HttpResponse.json({
+            format: 'datasheet-pdf',
+            candidates: [
+              {
+                kind: 'MODULE',
+                manufacturer: 'Jinko',
+                model: 'JKM550M',
+                spec: { ...moduleSpec, technology: 'MONO_SI' },
+                origin: 'DATASHEET_PDF',
+                fieldConfidence: { pmaxWp: 'MEDIUM' },
+                issues: [],
+                exists: false,
+                missing: [],
+              },
+            ],
+            errors: [],
+            notes: ['Fonte: Techlux'],
+          } satisfies ImportPreviewDto),
+        ),
+        http.post(`${API}/catalog/items`, async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return HttpResponse.json(equipment({ id: 'e-9' }), { status: 201 });
+        }),
+        http.get(`${API}/catalog/items/e-9`, () => HttpResponse.json(detail({ id: 'e-9' }))),
+      );
+      renderApp('/engine/catalogo');
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole('button', { name: /Novo módulo/ }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByLabelText(/Buscar para preencher/));
+      await user.click(await within(dialog).findByRole('option', { name: /FT-550M/ }));
+      expect(await within(dialog).findByLabelText('Fabricante')).toHaveValue('Jinko');
+      expect(within(dialog).getByLabelText('Modelo')).toHaveValue('JKM550M');
+      expect(within(dialog).getByText(/Preenchido a partir de Techlux/)).toBeInTheDocument();
+      expect(within(dialog).getByLabelText(/Potência máxima/)).toHaveValue('550');
+      await user.click(within(dialog).getByRole('button', { name: 'Salvar rascunho' }));
+      await waitFor(() => expect(body).toBeDefined());
+      expect(body).toMatchObject({
+        origin: 'DATASHEET_PDF',
+        model: 'JKM550M',
+        fieldConfidence: { pmaxWp: 'MEDIUM' },
+      });
+    });
+
+    it('resultado do seu catálogo copia a ficha como base; PDF ilegível avisa e não preenche', async () => {
+      base(
+        http.get(`${API}/catalog/search`, () =>
+          HttpResponse.json([
+            result({
+              origin: 'CATALOG',
+              id: 'e-1',
+              manufacturer: 'Fabricante Teste',
+              model: 'FT-550M',
+              status: 'APPROVED',
+            }),
+            result({ id: 'r-2', model: 'Ruim' }),
+          ]),
+        ),
+        http.get(`${API}/catalog/items/e-1`, () => HttpResponse.json(detail())),
+        http.post(`${API}/catalog/sources/documents/r-2/preview`, () =>
+          HttpResponse.json({
+            format: 'datasheet-pdf',
+            candidates: [],
+            errors: [{ message: 'PDF sem texto' }],
+            notes: [],
+          } satisfies ImportPreviewDto),
+        ),
+      );
+      renderApp('/engine/catalogo');
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole('button', { name: /Novo módulo/ }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByLabelText(/Buscar para preencher/));
+      await user.click(await within(dialog).findByRole('option', { name: /Ruim/ }));
+      await waitFor(() => expect(within(dialog).getByLabelText('Modelo')).toHaveValue(''));
+      await user.click(within(dialog).getByLabelText(/Buscar para preencher/));
+      await user.click(
+        await within(dialog).findByRole('option', { name: /Fabricante Teste FT-550M/ }),
+      );
+      expect(await within(dialog).findByText(/Copiado da ficha/)).toBeInTheDocument();
+      await waitFor(() => expect(within(dialog).getByLabelText('Modelo')).toHaveValue('FT-550M'));
+    });
+
+    it('o modal de importar também tem busca e abre a conferência da ficha escolhida', async () => {
+      base(
+        http.get(`${API}/catalog/search`, () => HttpResponse.json([result()])),
+        http.post(`${API}/catalog/sources/documents/r-1/preview`, () =>
+          HttpResponse.json({
+            format: 'datasheet-pdf',
+            candidates: [
+              {
+                kind: 'MODULE',
+                manufacturer: 'Jinko',
+                model: 'JKM550M',
+                spec: moduleSpec,
+                origin: 'DATASHEET_PDF',
+                fieldConfidence: {},
+                issues: [],
+                exists: false,
+                missing: [],
+              },
+            ],
+            errors: [],
+            notes: [],
+          } satisfies ImportPreviewDto),
+        ),
+      );
+      renderApp('/engine/catalogo');
+      const user = userEvent.setup();
+      await user.click(
+        (await screen.findAllByRole('button', { name: /Importar/ }))[0] as HTMLElement,
+      );
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByLabelText(/Buscar uma ficha/));
+      await user.click(await within(dialog).findByRole('option', { name: /FT-550M/ }));
+      expect(await within(dialog).findByText('ficha completa')).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /Importar e aprovar 1/ })).toBeEnabled();
+    });
   });
 });

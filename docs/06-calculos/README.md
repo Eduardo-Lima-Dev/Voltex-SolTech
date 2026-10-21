@@ -28,7 +28,13 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
   - [Irradiação no plano e simulação horária](engine-irradiacao-simulacao.md) — projeto (9G)
   - [Conexão com a rede](engine-conexao.md) — projeto (9G)
   - [Viabilidade econômica](engine-economia.md) — projeto (9H)
-- Off-Grid (perfil de carga, banco de baterias, autonomia) — MVP3
+- Off-Grid (Fase 10):
+  - [Perfil de carga](offgrid-carga.md)
+  - [Recurso solar e dimensionamento](offgrid-dimensionamento.md)
+  - [Verificação do que foi escolhido](offgrid-compatibilidade.md)
+  - [Despacho horário, gerador, rede e estresse](offgrid-despacho.md)
+  - [Custo](offgrid-economia.md)
+  - [Projeto visual do terreno e cabos](offgrid-layout.md)
 
 ## Fontes
 

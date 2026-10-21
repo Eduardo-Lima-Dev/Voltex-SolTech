@@ -53,6 +53,10 @@ export const REQUIRED_SPEC_FIELDS: Record<EquipmentKind, readonly string[]> = {
   ],
   PROTECTION: ['protectionKind'],
   CABLE: ['cableKind', 'crossSectionMm2'],
+  BATTERY: ['chemistry', 'nominalVoltageV', 'capacityAh', 'maxDodPct'],
+  CHARGE_CONTROLLER: ['technology', 'batteryVoltageV', 'ratedChargeCurrentA', 'pvVocMaxV'],
+  OFFGRID_INVERTER: ['topology', 'batteryVoltageV', 'pContinuousW', 'vAcV', 'phases'],
+  GENERATOR: ['fuel', 'pContinuousW', 'vAcV', 'phases'],
 };
 
 export const missingFields = (kind: EquipmentKind, spec: Record<string, unknown>): string[] =>

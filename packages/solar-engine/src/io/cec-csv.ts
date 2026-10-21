@@ -30,8 +30,17 @@ const r4 = (v: number): number => Math.round(v * 10_000) / 10_000;
 
 export function parseCecModules(text: string): ParsedEquipment[] {
   const { header, rows } = table(text, 'Name');
-  const col = (cells: string[], name: string) => toNumber(cells[header.indexOf(name)]);
-  const str = (cells: string[], name: string) => (cells[header.indexOf(name)] ?? '').trim();
+  // O SAM publica os nomes das colunas ora em maiúsculas, ora em minúsculas (alpha_sc, gamma_pmp...).
+  const lower = header.map((h) => h.toLowerCase());
+  const at = (name: string) => lower.indexOf(name.toLowerCase());
+  const col = (cells: string[], ...names: string[]) => {
+    for (const name of names) {
+      const v = toNumber(cells[at(name)]);
+      if (v !== undefined) return v;
+    }
+    return undefined;
+  };
+  const str = (cells: string[], name: string) => (cells[at(name)] ?? '').trim();
   const out: ParsedEquipment[] = [];
   for (const cells of rows) {
     const stc = col(cells, 'STC');
@@ -56,11 +65,17 @@ export function parseCecModules(text: string): ParsedEquipment[] {
     put('vocV', voc);
     put('imppA', col(cells, 'I_mp_ref'));
     put('vmppV', col(cells, 'V_mp_ref'));
-    const alpha = col(cells, 'Alpha_sc');
+    const alpha = col(cells, 'Alpha_sc', 'alpha_sc');
     if (alpha !== undefined && isc) put('alphaIscPctPerC', r4((alpha / isc) * 100), 'MEDIUM');
-    const beta = col(cells, 'Beta_oc');
+    const beta = col(cells, 'Beta_oc', 'beta_oc');
     if (beta !== undefined && voc) put('betaVocPctPerC', r4((beta / voc) * 100), 'MEDIUM');
-    put('gammaPmaxPctPerC', col(cells, 'gamma_r'));
+    put('gammaPmaxPctPerC', col(cells, 'gamma_r', 'gamma_pmp'));
+    const length = col(cells, 'Length');
+    const width = col(cells, 'Width');
+    if (length !== undefined && width !== undefined && length > 0.2 && width > 0.2) {
+      put('lengthMm', Math.round(Math.max(length, width) * 1000), 'MEDIUM');
+      put('widthMm', Math.round(Math.min(length, width) * 1000), 'MEDIUM');
+    }
     put('noctC', col(cells, 'T_NOCT'));
     const ns = col(cells, 'N_s');
     if (ns !== undefined && Number.isInteger(ns)) put('cellsInSeries', ns);
@@ -76,7 +91,7 @@ export function parseCecModules(text: string): ParsedEquipment[] {
       fieldConfidence: conf,
       missing: missingFields('MODULE', spec),
       notes: [
-        'Coeficientes convertidos de A/°C e V/°C para %/°C. A planilha traz só a área, não as dimensões: informe comprimento e largura.',
+        'Coeficientes convertidos de A/°C e V/°C para %/°C. Se a planilha não trouxer comprimento e largura, informe-os.',
         'Equipamento do mercado norte-americano: confira se é vendido e homologado no Brasil.',
       ],
     });

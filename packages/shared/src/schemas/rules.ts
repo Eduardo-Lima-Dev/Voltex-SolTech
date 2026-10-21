@@ -97,6 +97,7 @@ export const ENGINE_RULESET_KEYS = [
   'engine.transposition',
   'engine.connection',
   'engine.economics',
+  'offgrid.design',
 ] as const;
 export const RULESET_KEYS = [CALCULATOR_RULESET_KEY, ...ENGINE_RULESET_KEYS] as const;
 export type RuleSetKey = (typeof RULESET_KEYS)[number];
@@ -157,6 +158,12 @@ export const RULESET_DEFINITIONS: Record<RuleSetKey, RuleSetDefinition> = {
   'engine.economics': {
     key: 'engine.economics',
     label: 'Engine: premissas econômicas e compensação (Fio B)',
+    schema: engineRulesDefinitionSchema,
+    scoped: true,
+  },
+  'offgrid.design': {
+    key: 'offgrid.design',
+    label: 'Off-Grid: perdas, DoD por química, autonomia mínima, reservas e SIGFI',
     schema: engineRulesDefinitionSchema,
     scoped: true,
   },

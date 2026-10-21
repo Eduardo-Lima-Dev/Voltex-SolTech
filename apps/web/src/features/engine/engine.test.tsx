@@ -553,7 +553,7 @@ describe('Engine: editor da versão', () => {
     expect(await screen.findByText('Seu catálogo')).toBeInTheDocument();
     expect(screen.getByText('Distribuidor Exemplo')).toBeInTheDocument();
     expect(screen.getByText(/Módulo · aprovado/)).toBeInTheDocument();
-    expect(searchCalls.at(-1)).toBe('jin|MODULE');
+    await waitFor(() => expect(searchCalls.at(-1)).toBe('jin|MODULE'));
     // Resultado de fonte: abre a prévia (nada é gravado antes da confirmação).
     await user.click(screen.getByRole('option', { name: /Ficha JKM550M/ }));
     const dialog = await screen.findByRole('dialog');

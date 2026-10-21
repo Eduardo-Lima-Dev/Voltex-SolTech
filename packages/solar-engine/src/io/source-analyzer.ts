@@ -9,7 +9,15 @@ export const SOURCE_ANALYZER_VERSION = 'source-analyzer-1.0.0';
 export const SOURCE_FILE_TYPES = ['pdf', 'csv', 'pan', 'ond'] as const;
 export type SourceFileType = (typeof SOURCE_FILE_TYPES)[number];
 export type SourceDocType = 'DATASHEET' | 'MANUAL' | 'CERTIFICATE' | 'SPREADSHEET' | 'FILE';
-export type SourceEquipmentHint = 'MODULE' | 'INVERTER' | 'PROTECTION' | 'CABLE' | 'OTHER';
+export type SourceEquipmentHint =
+  | 'MODULE'
+  | 'INVERTER'
+  | 'PROTECTION'
+  | 'CABLE'
+  | 'BATTERY'
+  | 'CHARGE_CONTROLLER'
+  | 'GENERATOR'
+  | 'OTHER';
 
 export interface AnalyzedDocument {
   url: string;
@@ -204,6 +212,13 @@ export function classifyDocument(input: { title: string; url: string; context?: 
   let equipmentHint: SourceEquipmentHint = 'OTHER';
   if (file === 'pan') equipmentHint = 'MODULE';
   else if (file === 'ond') equipmentHint = 'INVERTER';
+  else if (
+    /(controlador de carga|charge controller|regulador de carga|\bmppt\b.*\bcontrol)/.test(text)
+  )
+    equipmentHint = 'CHARGE_CONTROLLER';
+  else if (/(bateria|battery|estacionaria|lifepo4|\bopzs\b|\bopzv\b)/.test(text))
+    equipmentHint = 'BATTERY';
+  else if (/(gerador|generator|grupo gerador)/.test(text)) equipmentHint = 'GENERATOR';
   else if (/(microinversor|micro-inversor|inversor|inverter)/.test(text))
     equipmentHint = 'INVERTER';
   else if (/(modulo|painel|panel|module|\bpv\b|fotovoltaic[oa] \d)/.test(text))

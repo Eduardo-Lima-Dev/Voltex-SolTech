@@ -9,3 +9,4 @@ export * from './solar-position/index.js';
 export * from './rules/index.js';
 export * from './io/index.js';
 export * from './catalog/index.js';
+export * from './offgrid/index.js';

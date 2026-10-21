@@ -59,6 +59,12 @@ export const TENANT_SCOPED_MODELS = [
   'EngineeringEvent',
   'EngineeringSurvey',
   'EngineeringDocumentItem',
+  'OffgridRequest',
+  'OffgridProject',
+  'OffgridVersion',
+  'OffgridReviewComment',
+  'OffgridSnapshot',
+  'OffgridEvent',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

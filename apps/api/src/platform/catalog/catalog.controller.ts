@@ -268,8 +268,11 @@ export class CatalogController {
   @HttpCode(200)
   @RequirePermissions('platform.catalog.manage')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  previewSourceDocument(@Param('id', ParseUUIDPipe) id: string) {
-    return this.catalogSources.preview(id);
+  previewSourceDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: LinkPreviewQueryDto,
+  ) {
+    return this.catalogSources.preview(id, query.kind);
   }
 
   // ---- Referências externas ----
@@ -291,6 +294,21 @@ export class CatalogController {
   ) {
     if (!file || file.size === 0) throw new BadRequestException('Envie a planilha no campo "file"');
     return this.references.importCec(query.kind, file.buffer.toString('utf8'));
+  }
+
+  @Post('references/sync')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  @Throttle({ default: { limit: 2, ttl: 60_000 } })
+  syncReferences() {
+    return this.references.syncCec();
+  }
+
+  @Post('references/:id/preview')
+  @HttpCode(200)
+  @RequirePermissions('platform.catalog.manage')
+  previewReference(@Param('id', ParseUUIDPipe) id: string) {
+    return this.references.preview(id);
   }
 
   @Post('references/:id/adopt')

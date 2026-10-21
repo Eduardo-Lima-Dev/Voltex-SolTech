@@ -86,3 +86,25 @@ describe('inversores CEC', () => {
     expect(i?.fieldConfidence.vAcV).toBe('LOW');
   });
 });
+
+describe('formato real da biblioteca SAM', () => {
+  const REAL = [
+    'Name,Manufacturer,Technology,Bifacial,STC,PTC,A_c,Length,Width,N_s,I_sc_ref,V_oc_ref,I_mp_ref,V_mp_ref,alpha_sc,beta_oc,T_NOCT,a_ref,I_L_ref,I_o_ref,R_s,R_sh_ref,Adjust,gamma_pmp,BIPV,Version,Date',
+    'Units,,,,,,m2,m,m,,A,V,A,V,A/K,V/K,C,V,A,A,Ohm,Ohm,%,%/K,,,',
+    '[0],lib_manufacturer,cec_material,lib,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x',
+    'Ablytek 6MN6A270,Ablytek,Mono-c-Si,0,270,243,1.63,1.65,0.99,60,9.34,38.63,8.81,30.72,0.0055,-0.1167,47.4,1.6,9.4,5e-11,0.3,300,10,-0.38,N,SAM 2015,1/1/2020',
+  ].join('\n');
+
+  it('lê colunas em minúsculas, o coeficiente de potência em %/K e as dimensões em metros', () => {
+    const [m] = parseCecModules(REAL);
+    expect(m?.spec).toMatchObject({
+      pmaxWp: 270,
+      gammaPmaxPctPerC: -0.38,
+      lengthMm: 1650,
+      widthMm: 990,
+    });
+    expect(m?.spec.betaVocPctPerC).toBeCloseTo(-0.3021, 3);
+    expect(m?.spec.alphaIscPctPerC).toBeCloseTo(0.0589, 3);
+    expect(m?.missing).toEqual([]);
+  });
+});

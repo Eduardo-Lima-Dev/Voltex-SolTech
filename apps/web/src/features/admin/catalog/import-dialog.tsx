@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileUp } from 'lucide-react';
 import { useState } from 'react';
 import type {
+  CatalogSearchResultDto,
   EquipmentDto,
   EquipmentKind,
   ImportCandidateDto,
@@ -30,6 +31,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, fieldErrors } from '@/lib/api/errors';
 import { queryKeys } from '../query-keys';
 import { KIND_LABELS, ORIGIN_LABELS } from './catalog-fields';
+import { EquipmentSearchBox, fetchPreview } from './equipment-search-box';
 import { EquipmentFormDialog, type EquipmentFormValues } from './equipment-form-dialog';
 
 const FORMATS: { value: ImportFormat; label: string; accept: string }[] = [
@@ -86,30 +88,35 @@ export function ImportDialog({
   onCreated?: (created: EquipmentDto[]) => void;
 }) {
   const queryClient = useQueryClient();
+  const { can } = useAuth();
+  const [searching, setSearching] = useState(false);
   const [format, setFormat] = useState<ImportFormat>('csv');
   const [kind, setKind] = useState<EquipmentKind>(defaultKind);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreviewDto | null>(initialPreview);
+  // Quem pode aprovar já importa aprovado: um clique deixa o item pronto para usar.
+  const canApprove = can('engine.project.approve');
   const [rows, setRows] = useState<Row[]>(
-    initialPreview ? initialPreview.candidates.map((c) => ({ ...c, selected: false })) : [],
+    initialPreview
+      ? initialPreview.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) }))
+      : [],
   );
   const [editing, setEditing] = useState<number | null>(null);
-  const [approveNow, setApproveNow] = useState(false);
-  const { can } = useAuth();
+  const [approveNow, setApproveNow] = useState(canApprove);
 
   const read = useMutation({
     mutationFn: () =>
       endpoints.catalog.preview(file as File, format, format === 'csv' ? kind : undefined),
     onSuccess: (result) => {
       setPreview(result);
-      setRows(result.candidates.map((c) => ({ ...c, selected: false })));
+      setRows(result.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) })));
     },
     onError: (error) => toast.error(errorMessage(error, 'Não foi possível ler o arquivo.')),
   });
 
   const save = useMutation({
-    mutationFn: () => {
-      const items = rows
+    mutationFn: (toSave: Row[]) => {
+      const items = toSave
         .filter((r) => r.selected)
         .map((r) => ({
           kind: r.kind,
@@ -146,6 +153,24 @@ export function ImportDialog({
     },
   });
 
+  /** Escolher um resultado da busca abre a conferência dele, como se o arquivo tivesse sido lido. */
+  const pickFromSearch = async (item: CatalogSearchResultDto) => {
+    if (item.origin === 'CATALOG') {
+      toast.info('Este item já está no seu catálogo: abra-o na lista.');
+      return;
+    }
+    setSearching(true);
+    try {
+      const result = await fetchPreview(item, kind);
+      setPreview(result);
+      setRows(result.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) })));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Não foi possível ler a ficha.'));
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const reset = () => {
     setFile(null);
     setPreview(null);
@@ -166,24 +191,21 @@ export function ImportDialog({
       origin: editingRow.origin,
       fieldConfidence: editingRow.fieldConfidence,
     });
-    setRows((current) =>
-      current.map((r, i) =>
-        i === editing
-          ? {
-              ...r,
-              manufacturer: values.manufacturer,
-              model: values.model,
-              spec: values.spec,
-              missing: check.success ? [] : r.missing.filter((m) => !(m in values.spec)),
-              issues: r.issues.filter(
-                (issue) => issue.severity !== 'ERROR' || !(issue.field in values.spec),
-              ),
-              selected: check.success,
-            }
-          : r,
+    const update = (r: Row): Row => ({
+      ...r,
+      manufacturer: values.manufacturer,
+      model: values.model,
+      spec: values.spec,
+      missing: check.success ? [] : r.missing.filter((m) => !(m in values.spec)),
+      issues: r.issues.filter(
+        (issue) => issue.severity !== 'ERROR' || !(issue.field in values.spec),
       ),
-    );
+      selected: check.success,
+    });
+    setRows((current) => current.map((r, i) => (i === editing ? update(r) : r)));
     setEditing(null);
+    // Um item só (ex.: ficha escolhida na busca): completar já grava e, se possível, aprova. Sem segundo clique.
+    if (rows.length === 1 && check.success) save.mutate([update(editingRow)]);
   };
 
   return (
@@ -206,6 +228,30 @@ export function ImportDialog({
 
         {!preview ? (
           <div className="grid gap-4">
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="imp-kind-search">Tipo de equipamento a buscar</Label>
+                <NativeSelect
+                  id="imp-kind-search"
+                  value={kind}
+                  onChange={(e) => setKind(e.target.value as EquipmentKind)}
+                >
+                  {(Object.keys(KIND_LABELS) as EquipmentKind[]).map((k) => (
+                    <option key={k} value={k}>
+                      {KIND_LABELS[k]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <EquipmentSearchBox
+                kind={kind}
+                label="Buscar uma ficha (bibliotecas e fontes) em vez de enviar um arquivo"
+                idPrefix="import-search"
+                busy={searching}
+                onChoose={(item) => void pickFromSearch(item)}
+              />
+              <p className="text-xs text-muted-foreground">Ou envie um arquivo abaixo.</p>
+            </div>
             <div className="grid gap-1.5">
               <Label htmlFor="imp-format">Tipo de arquivo</Label>
               <NativeSelect
@@ -324,7 +370,7 @@ export function ImportDialog({
                               )
                             }
                           />
-                          Gravar
+                          Importar
                         </Label>
                       </div>
                     </div>
@@ -348,7 +394,7 @@ export function ImportDialog({
                 ))}
               </ul>
             )}
-            {can('engine.project.approve') ? (
+            {canApprove ? (
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -364,18 +410,18 @@ export function ImportDialog({
               </Button>
               <Button
                 disabled={chosen.length === 0 || save.isPending}
-                onClick={() => save.mutate()}
+                onClick={() => save.mutate(chosen)}
               >
                 {save.isPending ? <Spinner /> : null}
                 {approveNow
-                  ? `Gravar e aprovar ${chosen.length}`
+                  ? `Importar e aprovar ${chosen.length}`
                   : `Gravar ${chosen.length} rascunho(s)`}
               </Button>
             </DialogFooter>
             {selectable.length < rows.length ? (
               <p className="text-xs text-muted-foreground">
                 Só itens com a ficha completa e sem erro físico podem ser gravados. Use “Conferir e
-                completar”.
+                completar”: com um item só, salvar já importa e aprova.
               </p>
             ) : null}
           </div>
@@ -395,7 +441,14 @@ export function ImportDialog({
             fieldConfidence: editingRow.fieldConfidence,
             missing: editingRow.missing,
           }}
-          submitLabel="Usar estes valores"
+          searchable={false}
+          submitLabel={
+            rows.length === 1
+              ? approveNow
+                ? 'Salvar, aprovar e usar'
+                : 'Salvar como rascunho'
+              : 'Usar estes valores'
+          }
           onSubmit={applyEdit}
         />
       ) : null}

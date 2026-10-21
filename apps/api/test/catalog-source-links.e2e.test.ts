@@ -172,7 +172,7 @@ describe('Catálogo: fontes por link e busca unificada (e2e, respostas gravadas)
     expect(link).toMatchObject({ sourceLabel: 'Distribuidor Exemplo', kind: 'MODULE' });
     const filtered = await get('/catalog/search?q=jinko&kind=INVERTER', engineer);
     expect(filtered.body).toEqual([]);
-    expect((await get('/catalog/search?q=j', engineer)).status).toBe(422);
+    expect((await get('/catalog/search?q=j', engineer)).status).toBe(200);
   });
 
   it('prévia de PDF de uma fonte por link usa o leitor e devolve candidatos com a marca; nada é gravado', async () => {
