@@ -120,6 +120,7 @@ const version = (o: Partial<EngineeringVersionDetailDto> = {}): EngineeringVersi
     createdAt: now,
     updatedAt: now,
     project: project(),
+    internalTestRules: false,
     review: {
       requireSecondReview: false,
       submittedById: null,
@@ -674,6 +675,19 @@ describe('Engine: editor da versão', () => {
     expect(await screen.findByText(/revisão pedida a Lia Responsável/)).toBeInTheDocument();
     expect(screen.getByText(/segunda revisão obrigatória/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled();
+  });
+
+  it('projeto com regras de teste interno mostra o aviso em destaque', async () => {
+    mount(version({ internalTestRules: true }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/Teste interno/);
+    expect(alert).toHaveTextContent(/Não use em proposta, projeto ou obra reais/);
+  });
+
+  it('sem regra de teste interno não há aviso', async () => {
+    mount(version());
+    await screen.findByRole('heading', { name: /Versão 1/ });
+    expect(screen.queryByText(/Teste interno/)).not.toBeInTheDocument();
   });
 
   it('rascunho aberto por quem pode escrever tem os campos habilitados', async () => {

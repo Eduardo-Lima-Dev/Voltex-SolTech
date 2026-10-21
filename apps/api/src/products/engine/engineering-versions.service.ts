@@ -7,6 +7,8 @@ import {
 import { Prisma } from '@voltex/database';
 import {
   engineRulesDefinitionSchema,
+  INTERNAL_TEST_RULE_WARNING,
+  isInternalTestRule,
   hasPermission,
   type EngineeringReviewerDto,
   type SubmitEngineeringVersionInput,
@@ -452,6 +454,16 @@ export class EngineeringVersionsService {
     }
   }
 
+  /** Alguma das regras usadas pela versão é de teste interno (valores de exemplo). */
+  async usesInternalTestRules(ruleRefs: string[]): Promise<boolean> {
+    if (ruleRefs.length === 0) return false;
+    const rows = await this.prisma.db.ruleSet.findMany({
+      where: { id: { in: ruleRefs.map((ref) => ref.split('@')[0]!) } },
+      select: { sources: true },
+    });
+    return rows.some((row) => isInternalTestRule(row));
+  }
+
   /** Engenheiros que podem revisar e aprovar (têm `engine.project.approve`), para pedir a revisão ao enviar. */
   async reviewers(): Promise<EngineeringReviewerDto[]> {
     const users = await this.prisma.db.user.findMany({
@@ -655,11 +667,13 @@ export class EngineeringVersionsService {
         version: row?.version ?? null,
         scope: row?.scope ?? null,
         sources: row?.sources ?? [],
+        internalTest: row ? isInternalTestRule(row) : false,
         reviewedBy: row?.reviewedBy ?? null,
         reviewedByRegistration: row?.reviewedByRegistration ?? null,
         reviewedAt: row?.reviewedAt?.toISOString() ?? null,
       };
     });
+    const internalTestRules = rulesApplied.some((r) => r.internalTest);
     const signatory = {
       name: project.signatoryName,
       councilType: project.councilType,
@@ -700,7 +714,8 @@ export class EngineeringVersionsService {
       })),
       signatory,
       rulesApplied,
-      declaration: `${signatory.name} (${signatory.councilType} ${signatory.councilRegistration}/${signatory.councilState}) conferiu as regras aplicadas e assume a responsabilidade técnica por este projeto, conforme ${signatory.artType} ${signatory.artNumber}. A aprovação não substitui a ART/TRT/RRT.`,
+      declaration: `${signatory.name} (${signatory.councilType} ${signatory.councilRegistration}/${signatory.councilState}) conferiu as regras aplicadas e assume a responsabilidade técnica por este projeto, conforme ${signatory.artType} ${signatory.artNumber}. A aprovação não substitui a ART/TRT/RRT.${internalTestRules ? ` ATENÇÃO: ${INTERNAL_TEST_RULE_WARNING}` : ''}`,
+      internalTestRules,
       approvedBy: approver ? { id: approver.id, name: approver.name } : null,
       review: {
         requireSecondReview: project.requireSecondReview,
@@ -900,6 +915,7 @@ export class EngineeringVersionsService {
     const personName = (userId: string | null) => people.find((p) => p.id === userId)?.name ?? null;
     return {
       ...toVersionDto(row),
+      internalTestRules: await this.usesInternalTestRules(row.ruleRefs as string[]),
       review: {
         requireSecondReview: project.requireSecondReview,
         submittedById: row.submittedById,
@@ -955,6 +971,7 @@ export class EngineeringVersionsService {
       status: version.status,
       design: version.design as unknown as EngineeringDesign,
       results,
+      internalTestRules: await this.usesInternalTestRules(version.ruleRefs as string[]),
       signatory: {
         name: project.signatoryName,
         councilType: project.councilType,
@@ -983,6 +1000,7 @@ export class EngineeringVersionsService {
       status: version.status,
       design: version.design as unknown as EngineeringDesign,
       results,
+      internalTestRules: await this.usesInternalTestRules(version.ruleRefs as string[]),
     });
     return { buffer, filename: `unifilar-${project.code}-v${version.number}.pdf` };
   }

@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { INTERNAL_TEST_RULE_WARNING } from '@voltex/shared';
 import type {
   EngineeringDesign,
   EngineeringResults,
@@ -24,6 +25,8 @@ export interface EngineeringReportInput {
   status: EngineeringVersionStatus;
   design: EngineeringDesign;
   results: EngineeringResults;
+  /** Alguma regra usada é de teste interno: o memorial leva o aviso em destaque. */
+  internalTestRules?: boolean;
   /** Profissional que assina o projeto (ficha do projeto); ausente = ainda não informado. */
   signatory?: {
     name: string | null;
@@ -87,6 +90,14 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
         .font('Helvetica-Bold')
         .fontSize(10)
         .text('RASCUNHO PARA REVISÃO — não substitui projeto elétrico assinado.');
+    }
+    if (input.internalTestRules) {
+      doc
+        .moveDown(0.5)
+        .fillColor('#a82020')
+        .font('Helvetica-Bold')
+        .fontSize(10)
+        .text(INTERNAL_TEST_RULE_WARNING, { width });
     }
 
     heading('Local e premissas');
@@ -231,6 +242,7 @@ export function buildSingleLinePdf(input: EngineeringReportInput): Promise<Buffe
       .font('Helvetica-Bold')
       .fontSize(10)
       .text('RASCUNHO PARA REVISÃO — não substitui projeto elétrico assinado.');
+    if (input.internalTestRules) doc.moveDown(0.3).text(INTERNAL_TEST_RULE_WARNING);
 
     const y = 250;
     const box = (x: number, title: string, body: string) => {

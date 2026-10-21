@@ -84,7 +84,16 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
     const created = await post('/rules', lead, {
       key,
       definition,
-      sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste do roteiro' }],
+      sources: [
+        {
+          type: 'INTERNAL_POLICY',
+          // Uma das regras é de teste interno: o projeto inteiro passa a carregar o aviso.
+          reference:
+            key === 'engine.economics'
+              ? 'TESTE INTERNO: valores de exemplo'
+              : 'Regra de teste do roteiro',
+        },
+      ],
     });
     expect([key, created.status, JSON.stringify(created.body)]).toEqual([
       key,
@@ -497,6 +506,13 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
       selfApproved: false,
       requestedReviewer: { id: leadId },
     });
+    expect(snapshot.body.content.internalTestRules).toBe(true);
+    expect(
+      snapshot.body.content.rulesApplied.filter((r: { internalTest: boolean }) => r.internalTest),
+    ).toHaveLength(1);
+    expect(snapshot.body.content.declaration).toMatch(/TESTE INTERNO/);
+    const detail = await get(`/engineering/versions/${versionId}`, engineer);
+    expect(detail.body.internalTestRules).toBe(true);
     expect(snapshot.body.content.declaration).toMatch(/assume a responsabilidade técnica/);
     expect(snapshot.body.content.approvedBy.name).toEqual(expect.any(String));
     expect((await get(`/engineering/versions/${versionId}/report.pdf`, engineer)).status).toBe(200);

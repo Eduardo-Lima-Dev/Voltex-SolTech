@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { isInternalTestRule } from '@voltex/shared';
+import { seedInternalTestRules } from '../src/cli/internal-test-rules';
 import {
   API,
   bearer,
@@ -592,6 +594,38 @@ describe('Rules Engine e dados de referência (e2e)', () => {
       expect(
         (await t.http.delete(`${API}/solar-resources/${one.body.id}`).set(bearer(seller))).status,
       ).toBe(403);
+    });
+  });
+
+  describe('regras de teste interno', () => {
+    it('ativa as quatro regras do Engine marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
+      const other = await seedTenant(t.prisma, 'rulestest');
+      const owner = await tokenFor(t.http, other.admin);
+      const first = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(first).toHaveLength(4);
+      expect(first.every((line) => /ativada como TESTE INTERNO/.test(line))).toBe(true);
+
+      const list = await t.http.get(`${API}/rules`).set(bearer(owner));
+      const engine = list.body.filter((x: { key: string }) => x.key.startsWith('engine.'));
+      expect(engine).toHaveLength(4);
+      for (const rule of engine) {
+        expect(rule.status).toBe('ACTIVE');
+        expect(isInternalTestRule(rule)).toBe(true);
+        expect(rule.reviewedBy).toMatch(/TESTE INTERNO/);
+        expect(rule.reviewedByRegistration).toMatch(/SEM REGISTRO/);
+      }
+      const cables = await t.http
+        .get(`${API}/rules/effective?key=engine.cables`)
+        .set(bearer(owner));
+      expect(cables.body.definition.tables.ampacity.length).toBeGreaterThan(3);
+
+      // Segunda rodada: nada muda (idempotente, não cria outra versão).
+      const again = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(again.every((line) => /nada foi alterado/.test(line))).toBe(true);
+      const after = await t.http.get(`${API}/rules`).set(bearer(owner));
+      expect(after.body.filter((x: { key: string }) => x.key.startsWith('engine.'))).toHaveLength(
+        4,
+      );
     });
   });
 });

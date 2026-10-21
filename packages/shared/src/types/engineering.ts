@@ -418,6 +418,8 @@ export interface EngineeringReviewInfoDto {
 export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
   project: EngineeringProjectDto;
   review: EngineeringReviewInfoDto;
+  /** Alguma regra usada é de teste interno (valores de exemplo): o projeto não vale para obra. */
+  internalTestRules: boolean;
   /** Regras em vigor que o cálculo usa (o navegador recalcula com os mesmos parâmetros). */
   rules: {
     engineDesign: { ref: string | null; parameters: Record<string, number> };

@@ -236,6 +236,24 @@ export type CreateRuleSetInput = z.input<typeof createRuleSetSchema>;
 /** Corpo já validado (datas convertidas em `Date`). */
 export type CreateRuleSetData = z.output<typeof createRuleSetSchema>;
 
+/**
+ * Regras criadas só para teste interno (valores de exemplo, sem revisão de engenheiro) levam esta marca no início da
+ * referência de alguma fonte. O sistema as identifica por ela e avisa em telas, memorial e snapshot.
+ */
+export const INTERNAL_TEST_RULE_MARK = 'TESTE INTERNO';
+
+export const isInternalTestRule = (rule: { sources?: unknown }): boolean =>
+  Array.isArray(rule.sources) &&
+  rule.sources.some(
+    (source) =>
+      typeof (source as { reference?: unknown })?.reference === 'string' &&
+      (source as { reference: string }).reference.toUpperCase().startsWith(INTERNAL_TEST_RULE_MARK),
+  );
+
+/** Aviso padrão quando o projeto usa regras de teste interno. */
+export const INTERNAL_TEST_RULE_WARNING =
+  'Este projeto usa regras de TESTE INTERNO (valores de exemplo, não revisados por engenheiro). Não use em proposta, projeto ou obra reais.';
+
 export const activateRuleSetSchema = z.object({
   /** Responsável técnico pela revisão da regra (obrigatório para ativar). */
   reviewedBy: z.string().trim().min(3).max(160),

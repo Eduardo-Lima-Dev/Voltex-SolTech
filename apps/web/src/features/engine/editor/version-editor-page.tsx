@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { INTERNAL_TEST_RULE_WARNING } from '@voltex/shared';
 import type {
   CableSpec,
   EngineeringDesign,
@@ -341,6 +342,15 @@ export function VersionEditorPage() {
               <li key={p.code}>{p.message}</li>
             ))}
           </ul>
+        ) : null}
+
+        {v.internalTestRules ? (
+          <div
+            role="alert"
+            className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <strong>Teste interno.</strong> {INTERNAL_TEST_RULE_WARNING}
+          </div>
         ) : null}
 
         <nav aria-label="Etapas do projeto" className="flex flex-wrap gap-2">

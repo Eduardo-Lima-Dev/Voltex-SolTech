@@ -107,3 +107,16 @@ Quem assina é o **engenheiro de cada local**, não a empresa que usa o sistema.
 - `engine.project.approve` continua sendo do responsável técnico e vale para aprovar equipamento no catálogo; engenheiro não aprova catálogo.
 - O memorial em PDF mostra o responsável técnico e a fonte do clima e do horizonte, e diz que não substitui a ART/TRT/RRT.
 - Os valores das regras e as licenças das fontes estão em [`docs/governanca/`](../governanca/roteiro-governanca-mvp2.md).
+
+## Regras de teste interno
+
+Para testar e demonstrar o fluxo sem esperar a revisão do engenheiro, o CLI `seed-internal-test-rules` cria e **ativa** as regras `engine.design`, `engine.cables`, `engine.connection` e `engine.economics` de uma empresa com **valores de exemplo**:
+
+```bash
+TENANT_SLUG=sol-do-nordeste node dist/cli/seed-internal-test-rules.js   # em dev: pnpm --filter @voltex/api build && node apps/api/dist/cli/seed-internal-test-rules.js
+```
+
+- Cada regra leva a marca **"TESTE INTERNO"** na fonte, no revisor ("TESTE INTERNO (valores de exemplo, sem revisão de engenheiro)") e no registro ("SEM REGISTRO (teste interno)"). Não há nome nem registro profissional inventado.
+- O sistema avisa: faixa no editor da versão, aviso em destaque no memorial e no unifilar em PDF, nota no relatório público do cliente e `internalTestRules` + texto na declaração do snapshot.
+- **Nunca sobrescreve** regra ativa. Para trocar por regra revisada, importe e ative a nova versão em Administração → Regras (a nova versão aposenta a de teste).
+- Valores de exemplo, inclusive a tabela de ampacidade, **não vêm de norma**. Não use em proposta, projeto ou obra reais.
