@@ -940,6 +940,22 @@ ol {
     align-self: start;
   }
 }
+.features--eng {
+  background: #fff;
+  border-top: 1px solid var(--line-light);
+}
+.features__note {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--cyan-strong);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  max-width: 28rem;
+}
+.features__note strong {
+  color: var(--navy);
+}
 .flist {
   display: grid;
 }
