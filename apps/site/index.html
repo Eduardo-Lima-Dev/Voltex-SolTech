@@ -6,7 +6,7 @@
     <title>Voltex SolTech — gestão de vendas e projetos para integradores solares</title>
     <meta
       name="description"
-      content="CRM, cálculo de viabilidade, cotação com margem protegida, proposta, contrato e projeto para integradores fotovoltaicos, ligados ao mesmo cliente."
+      content="CRM, cálculo de viabilidade, projeto técnico, cotação com margem protegida, proposta, contrato e homologação para integradores fotovoltaicos, ligados ao mesmo cliente."
     />
     <meta name="theme-color" content="#002362" />
     <meta property="og:title" content="Voltex SolTech" />
@@ -32,6 +32,7 @@
           <a href="#caminho">Como funciona</a>
           <a href="#margem">Margem</a>
           <a href="#produtos">Produtos</a>
+          <a href="#engenharia">Engenharia</a>
           <a href="#seguranca">Segurança</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>
@@ -67,8 +68,8 @@
               Venda mais projetos solares sem perder o fio do negócio.
             </h1>
             <p class="hero__lead" data-reveal>
-              Do primeiro contato ao projeto instalado: cliente, fatura de energia, cálculo,
-              cotação, proposta e contrato ficam ligados no mesmo lugar.
+              Do primeiro contato ao projeto instalado: cliente, fatura de energia, cálculo, projeto
+              técnico, cotação, proposta e contrato ficam ligados no mesmo lugar.
             </p>
             <div class="hero__cta" data-reveal>
               <a class="btn btn--solid btn--lg" href="#contato" data-magnet>Pedir demonstração</a>
@@ -249,7 +250,7 @@
                   <ul class="check">
                     <li class="done">Contrato assinado</li>
                     <li class="done">Projeto técnico</li>
-                    <li>ART/TRT emitida</li>
+                    <li>ART/TRT registrada</li>
                     <li>Protocolo na distribuidora</li>
                   </ul>
                 </div>
@@ -321,22 +322,108 @@
               </p>
               <span class="badge badge--on">Disponível</span>
             </li>
-            <li class="prow prow--soon">
+            <li class="prow">
               <span class="prow__n">03</span>
               <h3>Solar Engine Studio</h3>
               <p>
-                Dimensionamento técnico: compatibilidade de módulos e inversores, strings, proteções
-                e memorial.
+                Projeto técnico: clima, equipamentos, strings, proteções, cabos, simulação,
+                economia, memorial e revisão pelo engenheiro.
               </p>
-              <span class="badge">Em desenvolvimento</span>
+              <span class="badge">Em validação</span>
             </li>
-            <li class="prow prow--soon">
+            <li class="prow">
               <span class="prow__n">04</span>
               <h3>Off-Grid Designer</h3>
-              <p>Sistemas isolados e híbridos: cargas, autonomia e banco de baterias.</p>
-              <span class="badge">Em desenvolvimento</span>
+              <p>
+                Sistemas isolados e híbridos: cargas, autonomia, banco de baterias, controlador,
+                inversor e gerador, com simulação.
+              </p>
+              <span class="badge">Em validação</span>
             </li>
           </ul>
+        </div>
+      </section>
+
+      <!-- 4b. Engenharia -->
+      <section class="features features--eng" id="engenharia" aria-labelledby="engenharia-titulo">
+        <div class="wrap features__grid">
+          <div class="features__head">
+            <p class="label label--dark">04 — Engenharia</p>
+            <h2 id="engenharia-titulo" class="h2">
+              O projeto técnico fecha com a venda, e quem assina é o engenheiro.
+            </h2>
+            <p class="features__note">
+              <strong>Em validação.</strong> Os resultados dependem das regras e dos dados que a sua
+              empresa revisa e ativa. A plataforma é ferramenta de apoio: não substitui o projeto
+              assinado por profissional habilitado, e as decisões são de quem usa.
+            </p>
+          </div>
+          <dl class="flist">
+            <div>
+              <dt>Clima e dados com fonte</dt>
+              <dd>
+                Clima e série horária do local (PVGIS e NASA POWER), com a fonte, a data e a
+                atribuição registradas.
+              </dd>
+            </div>
+            <div>
+              <dt>Catálogo técnico da sua empresa</dt>
+              <dd>
+                Módulos, inversores, proteções e cabos, com importação de ficha (.PAN, .OND,
+                planilha ou PDF) e aprovação antes do uso em projeto.
+              </dd>
+            </div>
+            <div>
+              <dt>Compatibilidade e strings</dt>
+              <dd>
+                Tensão a frio, faixa de MPPT, corrente por entrada e relação CC/CA, com a fórmula e
+                a fonte de cada verificação. O que falta aparece como pendência, nunca como chute.
+              </dd>
+            </div>
+            <div>
+              <dt>Proteções, cabos e lista de materiais</dt>
+              <dd>
+                Fusíveis, seccionadora, DPS, disjuntor e cabos pelas regras da sua empresa, com o
+                custo de referência e a ligação com a cotação.
+              </dd>
+            </div>
+            <div>
+              <dt>Simulação e economia</dt>
+              <dd>
+                Geração hora a hora com sombra e temperatura; payback, VPL, TIR e financiamento, com
+                cenários e sensibilidade.
+              </dd>
+            </div>
+            <div>
+              <dt>Estúdio 2D e 3D</dt>
+              <dd>
+                Planta editável com superfícies e obstáculos, cena em 3D com a posição do sol e a
+                sombra.
+              </dd>
+            </div>
+            <div>
+              <dt>Memorial e unifilar</dt>
+              <dd>
+                Memorial técnico e diagrama unifilar preliminar em PDF, com um relatório simples por
+                link para o cliente.
+              </dd>
+            </div>
+            <div>
+              <dt>Revisão e responsabilidade técnica</dt>
+              <dd>
+                O engenheiro revisa, comenta e aprova. O registro dele (CREA, CFT ou CAU e ART, TRT
+                ou RRT) e as regras usadas ficam no projeto aprovado, com segunda revisão por outro
+                engenheiro se a sua empresa exigir.
+              </dd>
+            </div>
+            <div>
+              <dt>Off-Grid e híbrido</dt>
+              <dd>
+                Cargas, autonomia, banco de baterias, controlador, inversor e gerador, com
+                simulação, teste de estresse e, no híbrido, a rede como apoio.
+              </dd>
+            </div>
+          </dl>
         </div>
       </section>
 
@@ -344,7 +431,7 @@
       <section class="features" aria-labelledby="recursos-titulo">
         <div class="wrap features__grid">
           <div class="features__head">
-            <p class="label label--dark">04 — No dia a dia</p>
+            <p class="label label--dark">05 — No dia a dia</p>
             <h2 id="recursos-titulo" class="h2">
               Feito para a rotina de quem vende e instala energia solar.
             </h2>
@@ -399,7 +486,7 @@
       <section class="trust" id="seguranca" aria-labelledby="seguranca-titulo">
         <div class="wrap trust__grid">
           <div>
-            <p class="label">05 — Seus dados</p>
+            <p class="label">06 — Seus dados</p>
             <h2 id="seguranca-titulo" class="h2 h2--light">
               Os dados dos seus clientes ficam com você.
             </h2>
@@ -429,15 +516,42 @@
       <section class="faq" id="duvidas" aria-labelledby="duvidas-titulo">
         <div class="wrap faq__grid">
           <div>
-            <p class="label label--dark">06 — Dúvidas</p>
+            <p class="label label--dark">07 — Dúvidas</p>
             <h2 id="duvidas-titulo" class="h2">O que costumam perguntar.</h2>
           </div>
           <div class="acc">
             <details>
               <summary>Preciso usar os quatro produtos?</summary>
               <p>
-                Não. O CRM Solar e o Solar Calculator funcionam hoje, juntos ou separados. Os outros
-                dois estão em desenvolvimento.
+                Não. O CRM Solar e o Solar Calculator estão disponíveis, juntos ou separados. O
+                Solar Engine Studio e o Off-Grid Designer estão em validação: já funcionam, e os
+                resultados dependem das regras que o engenheiro da sua empresa revisa e ativa.
+              </p>
+            </details>
+            <details>
+              <summary>O sistema substitui o engenheiro?</summary>
+              <p>
+                Não. É uma ferramenta que traz as informações e os cálculos mais rápido. Quem assina
+                o projeto é o profissional habilitado, com o registro e a ART, TRT ou RRT dele, e as
+                ações e decisões tomadas no sistema são de quem o usa. Veja os
+                <a href="/termos">Termos de uso</a>.
+              </p>
+            </details>
+            <details>
+              <summary>Quem define as regras e as normas técnicas?</summary>
+              <p>
+                A sua empresa, com o responsável técnico. Cada regra tem fonte, versão e quem a
+                revisou. As normas da ABNT são pagas e o engenheiro as confere na fonte oficial: o
+                sistema não entrega regra pronta como se fosse norma, e o que falta vira pendência
+                em vez de suposição.
+              </p>
+            </details>
+            <details>
+              <summary>Posso testar o Engine sem as regras revisadas?</summary>
+              <p>
+                Pode, em modo de teste interno, com valores de exemplo. Tudo o que usa essas regras
+                leva um aviso no editor, no memorial e no relatório, e não vale para proposta,
+                projeto ou obra reais.
               </p>
             </details>
             <details>
