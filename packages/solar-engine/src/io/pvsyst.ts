@@ -85,8 +85,15 @@ export function parsePanModule(text: string): ParsedEquipment {
   // muVocSpec em mV/°C do módulo; muISC em mA/°C; muPmpReq já em %/°C.
   const muVoc = num(f, 'muVocSpec');
   if (muVoc !== undefined && voc) {
-    set('betaVocPctPerC', round(muVoc / (voc * 10), 4), 'MEDIUM');
+    const beta = round(muVoc / (voc * 10), 4);
+    // A tensão de circuito aberto cai com o calor. Alguns fabricantes gravam o coeficiente com sinal positivo:
+    // lido assim, o Voc a frio seria subestimado (contra a segurança), então o sinal é sempre negativo.
+    set('betaVocPctPerC', beta > 0 ? -beta : beta, beta > 0 ? 'LOW' : 'MEDIUM');
     notes.push('Coeficiente de Voc convertido de mV/°C para %/°C (muVocSpec ÷ Voc).');
+    if (beta > 0)
+      notes.push(
+        'O arquivo traz o coeficiente de Voc com sinal positivo; como o Voc cai com a temperatura, o sinal foi invertido para negativo. Confira na ficha.',
+      );
   }
   const muIsc = num(f, 'muISC');
   if (muIsc !== undefined && isc) {
@@ -120,6 +127,12 @@ export function parsePanModule(text: string): ParsedEquipment {
     set('efficiencyPct', round((pmax / (((l * w) / 1_000_000) * 1000)) * 100, 2), 'LOW');
     notes.push('Eficiência calculada pela potência e pela área (o arquivo não a traz).');
   }
+  const vmp = spec.vmppV as number | undefined;
+  const imp = spec.imppA as number | undefined;
+  if (pmax && vmp && imp && Math.abs(vmp * imp - pmax) / pmax > 0.02)
+    notes.push(
+      `Pmax (${pmax} W) difere de Vmp × Imp (${round(vmp * imp, 1)} W) em mais de 2%: confira a ficha.`,
+    );
   notes.push('O arquivo não traz NOCT nem garantia de potência: preencha à mão se precisar.');
   return {
     kind: 'MODULE',
@@ -173,6 +186,11 @@ export function parseOndInverter(text: string): ParsedEquipment {
     set('mpptCount', mppt, 'HIGH');
     if (inputs !== undefined)
       set('inputsPerMppt', Math.max(1, Math.round(inputs / mppt)), 'MEDIUM');
+    const named = /(\d+)\s*mppt/i.exec(`${model} ${f.get('Comment') ?? ''}`);
+    if (named && Number(named[1]) !== mppt)
+      notes.push(
+        `O nome do modelo cita ${named[1]} MPPT, mas o arquivo traz NbMPPT=${mppt}: confira na ficha do fabricante.`,
+      );
     const iMaxDc = num(f, 'IMaxDC');
     if (iMaxDc !== undefined && iMaxDc > 0) {
       set('iMaxPerMpptA', round(iMaxDc / mppt, 2), 'LOW');
@@ -194,6 +212,18 @@ export function parseOndInverter(text: string): ParsedEquipment {
     missing: missingFields('INVERTER', spec),
     notes,
   };
+}
+
+/**
+ * Texto de um `.PAN`/`.OND` a partir dos bytes. O PVsyst grava em Windows-1252; arquivos novos vêm em UTF-8
+ * (com ou sem BOM). Tenta UTF-8 e, se houver byte inválido, lê como Windows-1252 para não trocar acentos.
+ */
+export function decodePvsystBytes(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
 }
 
 /** Lê um `.PAN` ou `.OND` pelo cabeçalho do arquivo. */
