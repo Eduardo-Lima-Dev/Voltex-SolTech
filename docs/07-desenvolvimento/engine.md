@@ -95,3 +95,28 @@ Motor: `pnpm --filter @voltex/solar-engine test` (cobertura ≥ 90%; casos de ou
 ## Limites da 9D e 9E
 
 Superfícies retangulares; sem editor interativo de telhado; sombreamento estimado pela radiação direta com céu claro (ver [memorial](../06-calculos/engine-posicao-solar-sombreamento.md)); proteções, simulação, conexão, economia e a revisão/aprovação chegam nas fases 9F a 9I. Na 9E: um inversor por entrada (sem agrupar), uma superfície por configuração gerada, sem fator de segurança normativo embutido nas correntes.
+
+## Quem assina o projeto (governança do MVP2)
+
+Quem assina é o **engenheiro de cada local**, não a empresa que usa o sistema. A ficha do projeto guarda o profissional (nome, conselho CREA/CFT/CAU, registro, UF) e a responsabilidade técnica (ART, TRT ou RRT, número e data).
+
+- **Aprovar uma versão exige a ficha completa**: sem ela a API responde 422 "Informe na ficha do projeto quem assina…" (`signatoryMissing`, em `@voltex/shared`).
+- O **snapshot aprovado** grava `signatory`, `rulesApplied` (regra, versão, escopo, fontes, revisor e data), `declaration` (o profissional conferiu as regras e assume a responsabilidade técnica), `approvedBy` e entra no hash.
+- **Quem aprova:** o engenheiro (permissão `engine.version.approve`, de ENGINEERING e do responsável técnico). Por padrão ele pode aprovar o próprio trabalho. Ao enviar, pode **pedir a revisão de outro engenheiro** (`reviewerId`, lista em `GET /engineering/reviewers`).
+- **Segunda revisão obrigatória** (ficha do projeto, `requireSecondReview`), como a revisão exigida em um PR: quem enviou a versão não a aprova, e, se a revisão foi pedida a alguém, só essa pessoa aprova. O snapshot registra `review` (quem enviou, quem foi chamado, se houve auto-aprovação).
+- `engine.project.approve` continua sendo do responsável técnico e vale para aprovar equipamento no catálogo; engenheiro não aprova catálogo.
+- O memorial em PDF mostra o responsável técnico e a fonte do clima e do horizonte, e diz que não substitui a ART/TRT/RRT.
+- Os valores das regras e as licenças das fontes estão em [`docs/governanca/`](../governanca/roteiro-governanca-mvp2.md).
+
+## Regras de teste interno
+
+Para testar e demonstrar o fluxo sem esperar a revisão do engenheiro, o CLI `seed-internal-test-rules` cria e **ativa** as regras `engine.design`, `engine.cables`, `engine.connection` e `engine.economics` de uma empresa com **valores de exemplo**:
+
+```bash
+TENANT_SLUG=sol-do-nordeste node dist/cli/seed-internal-test-rules.js   # em dev: pnpm --filter @voltex/api build && node apps/api/dist/cli/seed-internal-test-rules.js
+```
+
+- Cada regra leva a marca **"TESTE INTERNO"** na fonte, no revisor ("TESTE INTERNO (valores de exemplo, sem revisão de engenheiro)") e no registro ("SEM REGISTRO (teste interno)"). Não há nome nem registro profissional inventado.
+- O sistema avisa: faixa no editor da versão, aviso em destaque no memorial e no unifilar em PDF, nota no relatório público do cliente e `internalTestRules` + texto na declaração do snapshot.
+- **Nunca sobrescreve** regra ativa. Para trocar por regra revisada, importe e ative a nova versão em Administração → Regras (a nova versão aposenta a de teste).
+- Valores de exemplo, inclusive a tabela de ampacidade, **não vêm de norma**. Não use em proposta, projeto ou obra reais.

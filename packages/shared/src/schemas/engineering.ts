@@ -356,6 +356,12 @@ export const engineeringReviewCommentSchema = z.object({
 });
 export type EngineeringReviewCommentInput = z.input<typeof engineeringReviewCommentSchema>;
 
+/** Envio para revisão: opcionalmente pede a revisão de um engenheiro específico. */
+export const submitEngineeringVersionSchema = z.object({
+  reviewerId: z.uuid().nullable().optional(),
+});
+export type SubmitEngineeringVersionInput = z.infer<typeof submitEngineeringVersionSchema>;
+
 export const engineeringDecisionSchema = z.object({
   note: z.string().trim().min(3).max(2_000),
 });
@@ -372,6 +378,8 @@ export const ENGINE_DESIGN_PARAMETERS = {
   maxParallelStringsWithoutFuse: 'Strings em paralelo sem fusível',
   /** Corrente mínima do fusível de string = fator × Isc do módulo (e no máximo o fusível máximo da ficha). */
   fuseMinFactor: 'Fator mínimo do fusível sobre a Isc',
+  /** Opcional. Corrente máxima do fusível de string = fator × Isc do módulo (limita o fusível máximo da ficha). */
+  fuseMaxFactor: 'Fator máximo do fusível sobre a Isc',
   /** Corrente mínima da seccionadora CC = fator × Isc × strings em paralelo do MPPT. */
   dcSwitchCurrentFactor: 'Fator da seccionadora CC sobre a Isc',
   /** Corrente mínima do disjuntor CA = fator × corrente CA do inversor. */

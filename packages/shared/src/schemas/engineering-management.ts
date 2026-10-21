@@ -56,6 +56,26 @@ export const reassignRequestSchema = z.object({ userId: z.uuid() });
 // ---------------------------------------------------------------------------------------------------------
 
 export const ART_TYPES = ['ART', 'TRT', 'RRT'] as const;
+export const COUNCIL_TYPES = ['CREA', 'CFT', 'CAU'] as const;
+
+/** Campos que identificam quem assina o projeto; sem todos eles a versão não pode ser aprovada. */
+export const SIGNATORY_FIELD_LABELS = {
+  signatoryName: 'nome do profissional',
+  councilType: 'conselho (CREA/CFT/CAU)',
+  councilRegistration: 'registro no conselho',
+  councilState: 'UF do registro',
+  artType: 'tipo da responsabilidade técnica (ART/TRT/RRT)',
+  artNumber: 'número da ART/TRT/RRT',
+} as const;
+export type SignatoryField = keyof typeof SIGNATORY_FIELD_LABELS;
+
+/** Lista (em ordem) o que falta para o signatário estar completo. */
+export const signatoryMissing = (
+  profile: Partial<Record<SignatoryField, string | null | undefined>>,
+): SignatoryField[] =>
+  (Object.keys(SIGNATORY_FIELD_LABELS) as SignatoryField[]).filter(
+    (field) => !profile[field]?.toString().trim(),
+  );
 
 export const updateProjectProfileSchema = z.object({
   name: z.string().trim().min(2).max(160).optional(),
@@ -66,7 +86,16 @@ export const updateProjectProfileSchema = z.object({
   artType: z.enum(ART_TYPES).nullable().optional(),
   artNumber: z.string().trim().min(3).max(60).nullable().optional(),
   councilRegistration: z.string().trim().min(3).max(60).nullable().optional(),
+  signatoryName: z.string().trim().min(3).max(160).nullable().optional(),
+  councilType: z.enum(COUNCIL_TYPES).nullable().optional(),
+  councilState: z.string().trim().length(2).toUpperCase().nullable().optional(),
+  artIssuedAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   responsibleId: z.uuid().nullable().optional(),
+  requireSecondReview: z.boolean().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 export type UpdateProjectProfileInput = z.infer<typeof updateProjectProfileSchema>;

@@ -1,0 +1,22 @@
+{
+  "proposta": {
+    "status": "ESQUELETO — as regras condicionais saem das normas de cada distribuidora",
+    "confianca": "n/a: nenhuma exigência foi transcrita ainda",
+    "quemConfirma": "Engenheiro responsável técnico",
+    "naoPreenchidos": {
+      "rules": "uma regra por exigência, sempre com source (norma, versão, seção); campos permitidos na condição: os do contexto de engine/connection.ts"
+    }
+  },
+  "rule": {
+    "key": "engine.connection",
+    "definition": { "parameters": {}, "tables": {}, "rules": [] },
+    "sources": [
+      {
+        "type": "REGULATION",
+        "reference": "ANEEL REN 1.000/2021 e REN 1.059/2023; PRODIST Módulo 3",
+        "notes": "Pontos específicos (proteção, anti-ilhamento) ainda não extraídos do texto oficial."
+      }
+    ],
+    "notes": "Ver o roteiro por distribuidora em docs/governanca/roteiro-governanca-mvp2.md."
+  }
+}

@@ -1,0 +1,75 @@
+PVObject_=pvGInverter
+  Comment=Fabricante Teste	FT-3.6K Inverter with 2 mppt	Manufacturer 2024
+  Version=8.0
+  Flags=$00030071
+
+  PVObject_Commercial=pvCommercial
+    Flags=$0041
+    Manufacturer=Fabricante Teste
+    Model=FT-3.6K Inverter with 2 mppt
+    DataSource=Manufacturer 2024
+    Width=0.355
+    Height=0.430
+    Depth=0.152
+    Weight=11.000
+    NPieces=100
+    PriceDate=11/04/25 17:43
+    Remarks, Count=1
+      Str_1=AFCI
+    End of Remarks=AFCI
+  End of PVObject pvCommercial
+
+  Converter=TConverter
+    PNomConv=3.600
+    PMaxOUT=3.960
+    VOutConv=230.0
+    VMppMin=80
+    VMPPMax=520
+    VAbsMax=550
+    PSeuil=18.00
+    EfficMax=97.50
+    EfficEuro=97.00
+    FResNorm=3.00
+    ModeOper=MPPT
+    CompPMax=Lim
+    CompVMax=Lim
+    MonoTri=Mono
+    ModeAffEnum=Efficf_PIn
+    UnitAffEnum=kW
+    PNomDC=3.960
+    PMaxDC=16.400
+    IDCMax=0.000
+    IMaxDC=18.000
+    INomAC=16.400
+    IMaxAC=18.000
+    TPNom=50.0
+    TPMax=25.0
+    TPLim1=60.0
+    PInEffMax =2160.000
+    PThreshEff=14.14
+    HasdefaultPThresh=True
+
+    ProfilPIO=TCubicProfile
+      NPtsMax=11
+      NPtsEff=8
+      LastCompile=$008D
+      Mode=1
+      Point_1=18.0,0.0
+      Point_2=108.0,92.9
+      Point_3=180.0,164.1
+      Point_4=360.0,342.0
+      Point_5=720.0,697.0
+      Point_6=1080.0,1050.9
+      Point_7=2160.0,2106.0
+      Point_8=3600.0,3497.7
+      Point_9=0.0,0.0
+      Point_10=0.0,0.0
+      Point_11=0.0,0.0
+    End of TCubicProfile
+  End of TConverter
+  NbInputs=1
+  NbMPPT=1
+  NbMSInterne=2
+  MasterSlave=No_M_S
+  MS_Thresh=0.8
+End of PVObject pvGInverter

@@ -1,0 +1,37 @@
+{
+  "proposta": {
+    "status": "RASCUNHO PARA CONFERÊNCIA — não ativar sem o engenheiro revisor",
+    "confianca": "média para os fatores; baixa para queda de tensão (sem valor proposto)",
+    "quemConfirma": "Engenheiro responsável técnico",
+    "naoPreenchidos": {
+      "maxVoltageDropDcPct": "a decisão é do engenheiro com a NBR 16690 e a NBR 5410 (6.2.7.1); só o limite de 7% a partir do transformador MT/BT foi confirmado",
+      "maxVoltageDropAcPct": "idem",
+      "tables.ampacity": "preencher a planilha-modelo (seção;método;ampacidade) com a NBR 16612 Anexo C e a NBR 5410 Tabela 36"
+    }
+  },
+  "rule": {
+    "key": "engine.cables",
+    "definition": {
+      "parameters": {
+        "cableCurrentFactorDc": 1.25,
+        "cableCurrentFactorAc": 1.0,
+        "conductorTempC": 90
+      },
+      "tables": {},
+      "rules": []
+    },
+    "sources": [
+      {
+        "type": "STANDARD",
+        "reference": "ABNT NBR 16690, Tabela 5 (cabo sem proteção de sobrecorrente: ≥ 1,25 × Isc do arranjo)",
+        "notes": "Fonte secundária (Canal Solar). Conferir na norma."
+      },
+      {
+        "type": "STANDARD",
+        "reference": "ABNT NBR 16612, Anexo C (referência de 30 °C ambiente e 90 °C no condutor)",
+        "notes": "Conferir na norma."
+      }
+    ],
+    "notes": "Proposta de governança MVP2 (pesquisa de 20/10/2026). Sem queda de tensão e sem tabela de ampacidade: o cálculo de cabos continua pendente até o engenheiro completar."
+  }
+}

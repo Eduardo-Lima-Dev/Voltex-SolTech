@@ -20,9 +20,9 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     label: 'NASA POWER',
     baseUrl: 'https://power.larc.nasa.gov/api',
     license:
-      'Dados científicos da NASA são CC0 salvo aviso restritivo no conjunto; atribuição à NASA POWER é recomendada. Conferido em 20/10/2026.',
+      'A página de citação do NASA POWER exige citar o projeto e a referência dos dados (versão e data de acesso); a licença formal não é declarada nela. Pedido de confirmação escrita pendente. Conferido em 20/10/2026.',
     attribution:
-      'Dados do projeto NASA POWER (Langley Research Center), financiado pela NASA Earth Science Directorate Applied Science Program.',
+      'NASA POWER: these data were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.',
     licenseStatus: 'CLEARED',
     notes:
       'Série horária em hora solar local (LST). A temperatura mínima mensal da climatologia não é a temperatura de projeto.',
@@ -32,8 +32,9 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     label: 'PVGIS (Comissão Europeia, JRC)',
     baseUrl: 'https://re.jrc.ec.europa.eu/api/v5_3',
     license:
-      'PVGIS: informação gratuita, sem restrições de uso; a atribuição ao JRC/Comissão Europeia é preservada. Conferido em 20/10/2026.',
-    attribution: 'Fonte: PVGIS, Comissão Europeia, Centro Comum de Pesquisa (JRC).',
+      'PVGIS: dados gratuitos para uso público desde que a fonte seja citada; conjunto PVGIS 5.3 sob CC BY 4.0. As bases de radiação originais têm termos próprios. Conferido em 20/10/2026.',
+    attribution:
+      'PVGIS © European Communities, 2001-2026 (Comissão Europeia, Centro Comum de Pesquisa).',
     licenseStatus: 'CLEARED',
     notes:
       'API: máximo de 30 requisições por segundo por IP; use cache, retentativas e atribuição.',
@@ -43,12 +44,12 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     label: 'Biblioteca CEC/SAM (NREL): módulos e inversores de referência',
     baseUrl: 'https://github.com/NREL/SAM',
     license:
-      'Dados da California Energy Commission reunidos pelo NREL no SAM. Licença dos arquivos de biblioteca NÃO confirmada.',
+      'Dados da California Energy Commission reunidos pelo NREL no SAM (o código do SAM é BSD-3-Clause). Licença dos arquivos de biblioteca NÃO confirmada: esclarecimento pendente com NREL e CEC.',
     attribution:
       'Biblioteca de equipamentos CEC/SAM (NREL, dados da California Energy Commission).',
     licenseStatus: 'PENDING_REVIEW',
     notes:
-      'Bloqueada até a leitura da licença. Equipamentos do mercado norte-americano: confira registro e venda no Brasil.',
+      'Pendente de licença: use só para copiar a ficha ao catálogo da própria empresa, sem redistribuir. Equipamentos do mercado norte-americano: confira registro e venda no Brasil.',
   },
   {
     key: 'techlux',

@@ -106,7 +106,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'calculator.snapshot.create': 'Salvar versões do cálculo',
   'engine.project.read': 'Ver projetos técnicos',
   'engine.project.write': 'Criar e editar projetos técnicos',
-  'engine.project.approve': 'Aprovar e congelar projetos técnicos',
+  'engine.project.approve': 'Aprovar equipamentos do catálogo e congelar projetos técnicos',
+  'engine.version.approve': 'Revisar, aprovar e recusar versões de projeto técnico',
   'engine.survey.read': 'Ver o levantamento do local (visita técnica)',
   'engine.survey.write': 'Preencher e concluir o levantamento do local',
   'engine.request.manage':

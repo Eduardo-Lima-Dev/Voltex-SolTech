@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { EngineeringProjectDetailDto } from '@voltex/shared';
-import { ART_TYPES, generationClassOf } from '@voltex/shared';
+import {
+  ART_TYPES,
+  COUNCIL_TYPES,
+  generationClassOf,
+  SIGNATORY_FIELD_LABELS,
+  signatoryMissing,
+} from '@voltex/shared';
 import {
   Badge,
   Button,
@@ -38,6 +44,11 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
   const [artType, setArtType] = useState(p.artType ?? '');
   const [artNumber, setArtNumber] = useState(p.artNumber ?? '');
   const [council, setCouncil] = useState(p.councilRegistration ?? '');
+  const [signatoryName, setSignatoryName] = useState(p.signatoryName ?? '');
+  const [councilType, setCouncilType] = useState<string>(p.councilType ?? '');
+  const [councilState, setCouncilState] = useState(p.councilState ?? '');
+  const [artIssuedAt, setArtIssuedAt] = useState(p.artIssuedAt ?? '');
+  const [secondReview, setSecondReview] = useState(p.requireSecondReview);
   const [notes, setNotes] = useState(p.notes ?? '');
   useEffect(() => {
     setName(project.name);
@@ -46,6 +57,11 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
     setArtType(p.artType ?? '');
     setArtNumber(p.artNumber ?? '');
     setCouncil(p.councilRegistration ?? '');
+    setSignatoryName(p.signatoryName ?? '');
+    setCouncilType(p.councilType ?? '');
+    setCouncilState(p.councilState ?? '');
+    setArtIssuedAt(p.artIssuedAt ?? '');
+    setSecondReview(p.requireSecondReview);
     setNotes(p.notes ?? '');
   }, [project, p]);
 
@@ -62,6 +78,11 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
         artType: (artType || null) as never,
         artNumber: artNumber.trim() || null,
         councilRegistration: council.trim() || null,
+        signatoryName: signatoryName.trim() || null,
+        councilType: (councilType || null) as never,
+        councilState: councilState.trim().toUpperCase() || null,
+        artIssuedAt: artIssuedAt || null,
+        requireSecondReview: secondReview,
         notes: notes.trim() || null,
       }),
     onSuccess: async () => {
@@ -73,6 +94,7 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
   });
   const cls = targetKwp ? generationClassOf(targetKwp) : null;
   const editable = project.status === 'IN_PROGRESS';
+  const missing = signatoryMissing(p);
   return (
     <Card>
       <CardHeader>
@@ -80,7 +102,8 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
         <CardDescription>
           A potência-alvo define a classe (micro ou mini) e, com a distribuidora, o pacote de
           documentos da solicitação de acesso. O responsável técnico assina o projeto de execução
-          com ART ou TRT (EnergIF EF-R10).
+          com ART, TRT ou RRT (EnergIF EF-R10). Quem assina é o profissional deste projeto, com o
+          registro dele; a aprovação da versão exige esses dados.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -154,6 +177,31 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
             />
           </div>
           <div className="grid gap-1">
+            <Label htmlFor="pf-signatory">Profissional que assina</Label>
+            <Input
+              id="pf-signatory"
+              value={signatoryName}
+              disabled={!editable}
+              onChange={(e) => setSignatoryName(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="pf-council-type">Conselho</Label>
+            <NativeSelect
+              id="pf-council-type"
+              value={councilType}
+              disabled={!editable}
+              onChange={(e) => setCouncilType(e.target.value)}
+            >
+              <option value="">Não informado</option>
+              {COUNCIL_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="grid gap-1">
             <Label htmlFor="pf-council">Registro no conselho (CREA/CFT/CAU)</Label>
             <Input
               id="pf-council"
@@ -162,7 +210,42 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
               onChange={(e) => setCouncil(e.target.value)}
             />
           </div>
+          <div className="grid gap-1">
+            <Label htmlFor="pf-council-state">UF do registro</Label>
+            <Input
+              id="pf-council-state"
+              maxLength={2}
+              value={councilState}
+              disabled={!editable}
+              onChange={(e) => setCouncilState(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="pf-art-date">Data da {artType || 'ART/TRT/RRT'}</Label>
+            <Input
+              id="pf-art-date"
+              type="date"
+              value={artIssuedAt}
+              disabled={!editable}
+              onChange={(e) => setArtIssuedAt(e.target.value)}
+            />
+          </div>
         </div>
+        <label className="flex items-start gap-2 text-sm" htmlFor="pf-second-review">
+          <input
+            id="pf-second-review"
+            type="checkbox"
+            className="mt-1"
+            checked={secondReview}
+            disabled={!editable}
+            onChange={(e) => setSecondReview(e.target.checked)}
+          />
+          <span>
+            Exigir segunda revisão: quem enviar a versão não poderá aprová-la, e outro engenheiro
+            precisa fazê-lo (como a revisão obrigatória de um PR). Sem isso, o engenheiro pode
+            aprovar o próprio trabalho ou pedir a revisão de alguém.
+          </span>
+        </label>
         <div className="grid gap-1">
           <Label htmlFor="pf-notes">Observações</Label>
           <Input
@@ -172,6 +255,12 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+        {missing.length ? (
+          <p className="text-sm text-amber-700 dark:text-amber-400" role="status">
+            Para aprovar uma versão falta informar:{' '}
+            {missing.map((f) => SIGNATORY_FIELD_LABELS[f]).join(', ')}.
+          </p>
+        ) : null}
         <Can permission="engine.project.write">
           {editable ? (
             <Button

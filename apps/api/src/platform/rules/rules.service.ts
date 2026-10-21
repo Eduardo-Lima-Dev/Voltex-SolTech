@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   CALCULATOR_RULESET_KEY,
@@ -188,6 +189,10 @@ export class RulesService {
   async activate(id: string, input: ActivateRuleSetInput) {
     const draft = await this.get(id);
     if (draft.status !== 'DRAFT') throw new ConflictException('Só rascunhos podem ser ativados');
+    if (draft.key.startsWith('engine.') && !input.reviewedByRegistration)
+      throw new UnprocessableEntityException(
+        'Informe o registro no conselho (CREA/CFT/CAU) de quem revisou a regra do Engine.',
+      );
     const now = new Date();
     if (draft.validFrom && draft.validFrom.getTime() > now.getTime()) {
       throw new BadRequestException(
@@ -209,6 +214,7 @@ export class RulesService {
           status: 'ACTIVE',
           validFrom: draft.validFrom ?? now,
           reviewedBy: input.reviewedBy,
+          reviewedByRegistration: input.reviewedByRegistration ?? null,
           reviewedAt: now,
         },
       });
@@ -223,6 +229,7 @@ export class RulesService {
             scope: draft.scope,
             version: activated.version,
             reviewedBy: input.reviewedBy,
+            reviewedByRegistration: input.reviewedByRegistration ?? null,
           },
         },
         tx,
@@ -238,6 +245,7 @@ export class RulesService {
             ref: `${activated.id}@${activated.version}`,
             previousRef: current ? `${current.id}@${current.version}` : null,
             reviewedBy: input.reviewedBy,
+            reviewedByRegistration: input.reviewedByRegistration ?? null,
           },
         },
         tx,
