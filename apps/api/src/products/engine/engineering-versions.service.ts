@@ -599,6 +599,7 @@ export class EngineeringVersionsService {
         scope: row?.scope ?? null,
         sources: row?.sources ?? [],
         reviewedBy: row?.reviewedBy ?? null,
+        reviewedByRegistration: row?.reviewedByRegistration ?? null,
         reviewedAt: row?.reviewedAt?.toISOString() ?? null,
       };
     });

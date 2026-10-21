@@ -230,6 +230,7 @@ model EngineeringSurvey {
   tenant  Tenant             @relation(fields: [tenantId], references: [id])
   project EngineeringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("engineering_surveys")
 }
 
@@ -254,5 +255,6 @@ model EngineeringDocumentItem {
   project EngineeringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, code])
+  @@index([tenantId])
   @@map("engineering_document_items")
 }

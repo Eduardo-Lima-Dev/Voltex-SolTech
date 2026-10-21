@@ -291,6 +291,20 @@ describe('sem item que atenda, sem regra e sem dado', () => {
     expect(r.status).toBe('INCOMPLETE');
   });
 
+  it('o fator máximo da regra limita o fusível máximo da ficha (fuseMaxFactor × Isc)', () => {
+    const r = evaluateProtections(
+      input(design([entry(3)]), { parameters: { ...rules, fuseMaxFactor: 1.4 } }),
+    );
+    const [fuse] = find(r, 'STRING_FUSE');
+    expect(fuse?.currentMaxA).toBeCloseTo(1.4 * (17.475 / 1.25), 3);
+    // 20 A passa de 1,4 × Isc (19,57 A): o catálogo de teste não tem fusível na faixa.
+    expect(fuse?.outcome).toBe('NONE_AVAILABLE');
+    // Sem o fator máximo, vale só o fusível máximo da ficha.
+    expect(
+      find(evaluateProtections(input(design([entry(3)]))), 'STRING_FUSE')[0]?.currentMaxA,
+    ).toBe(25);
+  });
+
   it('fusível máximo da ficha menor que o mínimo calculado: faixa vazia, nenhum item serve', () => {
     const r = evaluateProtections(
       input(design([entry(3)]), { modules: { [M1]: { ...mod, maxSeriesFuseA: 15 } } }),

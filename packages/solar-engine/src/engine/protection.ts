@@ -315,7 +315,10 @@ export function evaluateProtections(input: ProtectionInput): ProtectionResult {
               },
               {
                 currentMinA: factor * module.iscA,
-                currentMaxA: module.maxSeriesFuseA,
+                currentMaxA:
+                  parameters.fuseMaxFactor === undefined
+                    ? module.maxSeriesFuseA
+                    : Math.min(module.maxSeriesFuseA, parameters.fuseMaxFactor * module.iscA),
                 voltageMinV: vocString,
               },
               null,

@@ -449,6 +449,64 @@ describe('Administração → Regras', () => {
     ).toBeInTheDocument();
   });
 
+  it('importa uma proposta como rascunho e ativa a regra do Engine com o registro do revisor', async () => {
+    let created: { key?: string } | null = null;
+    let activated: { reviewedBy?: string; reviewedByRegistration?: string } | null = null;
+    server.use(
+      effective(),
+      http.get(`${API}/rules`, () =>
+        HttpResponse.json([
+          ruleSet({
+            id: 'rs-eng',
+            key: 'engine.design',
+            version: 1,
+            status: 'DRAFT',
+            validFrom: null,
+            reviewedBy: null,
+          }),
+        ]),
+      ),
+      http.post(`${API}/rules`, async ({ request }) => {
+        created = (await request.json()) as { key?: string };
+        return HttpResponse.json(ruleSet({ id: 'rs-new', key: 'engine.cables', status: 'DRAFT' }), {
+          status: 201,
+        });
+      }),
+      http.post(`${API}/rules/rs-eng/activate`, async ({ request }) => {
+        activated = (await request.json()) as typeof activated;
+        return HttpResponse.json(ruleSet({ id: 'rs-eng', key: 'engine.design' }));
+      }),
+    );
+    renderApp('/admin/regras');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Importar proposta (JSON)' }));
+    await user.click(screen.getByLabelText('JSON da proposta'));
+    await user.paste(
+      JSON.stringify({
+        rule: {
+          key: 'engine.cables',
+          definition: { parameters: { cableCurrentFactorDc: 1.25 } },
+          sources: [{ type: 'STANDARD', reference: 'NBR 16690, Tabela 5' }],
+        },
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Criar rascunho' }));
+    await waitFor(() => expect(created?.key).toBe('engine.cables'));
+
+    await user.click(await screen.findByRole('button', { name: 'Ativar' }));
+    await user.type(screen.getByLabelText('Quem revisou (nome)'), 'Maria Souza');
+    const submit = screen.getByRole('button', { name: 'Ativar regra' });
+    expect(submit).toBeDisabled();
+    await user.type(screen.getByLabelText(/Registro no conselho/), 'CREA-SP 123456');
+    await user.click(submit);
+    await waitFor(() =>
+      expect(activated).toEqual({
+        reviewedBy: 'Maria Souza',
+        reviewedByRegistration: 'CREA-SP 123456',
+      }),
+    );
+  });
+
   it('engenharia (só leitura de regras) acessa Regras, mas não Tarifas nem Irradiação', async () => {
     server.use(
       effective(),

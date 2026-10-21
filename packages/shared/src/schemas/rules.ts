@@ -239,6 +239,8 @@ export type CreateRuleSetData = z.output<typeof createRuleSetSchema>;
 export const activateRuleSetSchema = z.object({
   /** Responsável técnico pela revisão da regra (obrigatório para ativar). */
   reviewedBy: z.string().trim().min(3).max(160),
+  /** Registro no conselho (CREA/CFT/CAU) de quem revisou. Obrigatório nas regras do Engine (`engine.*`). */
+  reviewedByRegistration: z.string().trim().min(3).max(60).optional(),
 });
 export type ActivateRuleSetInput = z.infer<typeof activateRuleSetSchema>;
 

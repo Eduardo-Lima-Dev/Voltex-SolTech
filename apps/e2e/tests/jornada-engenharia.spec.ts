@@ -222,7 +222,10 @@ test('do pedido amarelo ao projeto técnico aprovado e à cotação', async ({ p
         },
       });
       await api(`/rules/${created.id}/activate`, owner, {
-        body: { reviewedBy: 'Eng. Responsável (teste)' },
+        body: {
+          reviewedBy: 'Eng. Responsável (teste)',
+          reviewedByRegistration: 'CREA-SP 123456',
+        },
       });
     };
     // Valores de TESTE (não são regra de nenhuma norma).

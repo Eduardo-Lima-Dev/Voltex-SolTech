@@ -282,11 +282,22 @@ describe('Rules Engine e dados de referência (e2e)', () => {
         definition: { parameters: { demoFactor: 1.5 } },
         sources: source,
       });
-      await post(`/rules/${general.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
-      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+      await post(`/rules/${general.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
+      // Regra do Engine sem o registro no conselho de quem revisou não é ativada.
+      const noRegistry = await post(`/rules/${mg.body.id}/activate`, admin, {
         reviewedBy: 'Eng. Teste',
       });
+      expect(noRegistry.status).toBe(422);
+      expect(noRegistry.body.message).toMatch(/registro no conselho/);
+      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-MG 654321',
+      });
       expect(mgActive.status).toBe(200);
+      expect(mgActive.body.reviewedByRegistration).toBe('CREA-MG 654321');
 
       // Ativar a regra de MG não aposentou a geral.
       const inMg = await effective(admin, 'key=engine.design&state=MG');
@@ -302,7 +313,10 @@ describe('Rules Engine e dados de referência (e2e)', () => {
         definition: {},
         sources: source,
       });
-      await post(`/rules/${general2.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
+      await post(`/rules/${general2.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
       const status = async (id: string) =>
         (await t.prisma.system.ruleSet.findUniqueOrThrow({ where: { id } })).status;
       expect(await status(general.body.id)).toBe('RETIRED');

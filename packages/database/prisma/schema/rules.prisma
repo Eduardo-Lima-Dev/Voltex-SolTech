@@ -26,6 +26,8 @@ model RuleSet {
   /// Lista de fontes: `[{ type, reference, url?, notes? }]`.
   sources     Json
   reviewedBy  String?       @map("reviewed_by")
+  /// Registro no conselho (CREA/CFT/CAU) de quem revisou: obrigatório nas regras do Engine.
+  reviewedByRegistration String? @map("reviewed_by_registration")
   reviewedAt  DateTime?     @map("reviewed_at")
   notes       String?
   createdById String?       @map("created_by_id") @db.Uuid

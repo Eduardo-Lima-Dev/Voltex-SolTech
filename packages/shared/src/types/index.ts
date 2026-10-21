@@ -172,6 +172,7 @@ export interface RuleSetDto {
   definition: Record<string, unknown>;
   sources: { type: string; reference: string; url?: string; notes?: string }[];
   reviewedBy: string | null;
+  reviewedByRegistration: string | null;
   reviewedAt: string | null;
   notes: string | null;
   createdAt: string;

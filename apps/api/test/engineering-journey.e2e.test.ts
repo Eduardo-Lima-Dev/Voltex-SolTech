@@ -90,7 +90,12 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
       expect.anything(),
     ]);
     expect(
-      (await post(`/rules/${created.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+      (
+        await post(`/rules/${created.body.id}/activate`, lead, {
+          reviewedBy: 'Eng. Teste',
+          reviewedByRegistration: 'CREA-SP 123456',
+        })
+      ).status,
     ).toBe(200);
   };
   const design = () => ({
