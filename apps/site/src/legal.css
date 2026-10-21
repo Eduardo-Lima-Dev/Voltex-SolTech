@@ -1,0 +1,91 @@
+/* Páginas de privacidade e termos: texto corrido legível, no mesmo visual do site. */
+.legal-header {
+  background: var(--navy-deep);
+  padding: 1rem 0;
+}
+.legal-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.legal-header img {
+  height: 2.2rem;
+  width: auto;
+}
+.legal-header a {
+  color: var(--ice);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.legal-header a:hover {
+  color: var(--cyan);
+}
+.legal {
+  background: var(--paper);
+  color: var(--ink);
+  padding: clamp(2rem, 6vw, 4rem) 0;
+}
+.legal .wrap {
+  max-width: 50rem;
+}
+.legal h1 {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -0.03em;
+  margin: 0 0 0.5rem;
+  color: var(--navy);
+}
+.legal h2 {
+  font-size: 1.2rem;
+  margin: 2.2rem 0 0.6rem;
+  color: var(--navy);
+}
+.legal p,
+.legal li {
+  line-height: 1.7;
+  color: var(--ink);
+}
+.legal ul {
+  padding-left: 1.4rem;
+  list-style: disc;
+}
+.legal__meta {
+  margin: 0 0 1.5rem;
+}
+.legal__meta {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.legal__note {
+  border-left: 3px solid var(--cyan-strong);
+  background: #fff;
+  padding: 0.8rem 1rem;
+  margin: 1.2rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.legal__todo {
+  background: #fff3cd;
+  color: #7a5a00;
+  padding: 0 0.3em;
+  border-radius: 0.25rem;
+}
+.legal table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  margin: 0.8rem 0;
+}
+.legal th,
+.legal td {
+  border: 1px solid var(--line-light);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+  background: #fff;
+}
+.legal th {
+  background: var(--ice);
+}
+.legal a {
+  color: var(--cyan-strong);
+}
