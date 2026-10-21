@@ -1,5 +1,6 @@
 import { type PrismaClient, type Prisma } from '@voltex/database';
 import { INTERNAL_TEST_RULE_MARK, isInternalTestRule } from '@voltex/shared';
+import { OFFGRID_PROVISIONAL_PARAMETERS } from '@voltex/solar-engine';
 
 /** Quem consta como revisor das regras de teste interno: deixa claro que NÃO é revisão de engenheiro. */
 export const INTERNAL_TEST_REVIEWER =
@@ -14,7 +15,8 @@ const SOURCE = {
 };
 
 export interface InternalTestRule {
-  key: 'engine.design' | 'engine.cables' | 'engine.connection' | 'engine.economics';
+  key:
+    'engine.design' | 'engine.cables' | 'engine.connection' | 'engine.economics' | 'offgrid.design';
   definition: Record<string, unknown>;
   sources: (typeof SOURCE)[];
   notes: string;
@@ -80,6 +82,12 @@ export const INTERNAL_TEST_RULES: InternalTestRule[] = [
   {
     key: 'engine.economics',
     definition: { parameters: { compensationFactor: 1 } },
+  },
+  {
+    key: 'offgrid.design',
+    // Os 17 valores provisórios do Manual CRESESB 2014 que o motor já usa quando não há regra: aqui viram regra ativa
+    // de TESTE (continuam sem valor normativo).
+    definition: { parameters: { ...OFFGRID_PROVISIONAL_PARAMETERS } },
   },
 ].map((rule) => ({
   ...rule,

@@ -126,6 +126,13 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL }}
           LEAD_KEY: ${{ vars.LEAD_KEY }}
+          # Dados da empresa nas páginas /privacidade e /termos (variáveis do ambiente "demo"; vazias = "a informar").
+          LEGAL_COMPANY: ${{ vars.LEGAL_COMPANY }}
+          LEGAL_CNPJ: ${{ vars.LEGAL_CNPJ }}
+          LEGAL_ADDRESS: ${{ vars.LEGAL_ADDRESS }}
+          LEGAL_PRIVACY_EMAIL: ${{ vars.LEGAL_PRIVACY_EMAIL }}
+          LEGAL_DPO: ${{ vars.LEGAL_DPO }}
+          LEGAL_FORUM: ${{ vars.LEGAL_FORUM }}
 
   verificar:
     name: Conferir a demonstração no ar

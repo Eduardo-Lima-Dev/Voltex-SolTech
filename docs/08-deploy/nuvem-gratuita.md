@@ -168,6 +168,13 @@ No repositório: _Settings → Environments → New environment_ chamado **`demo
 | Variável | `SITE_URL`          | `https://voltex-site-one.vercel.app`                                                  |
 | Variável | `LEAD_KEY`          | chave de captação do formulário do site (não é segredo: fica visível no site)         |
 | Variável | `VERCEL_SCOPE`      | a equipe/conta da Vercel (ex.: `luizeduardobls-projects`)                             |
+| Variável | `LEGAL_*`           | dados da empresa nas páginas `/privacidade` e `/termos` (opcionais; veja abaixo)      |
+
+**Páginas legais.** Defina, como variáveis do ambiente `demo`, `LEGAL_COMPANY`, `LEGAL_CNPJ`, `LEGAL_ADDRESS`, `LEGAL_PRIVACY_EMAIL`, `LEGAL_DPO` e `LEGAL_FORUM` (razão social, CNPJ, endereço, e-mail de privacidade, encarregado e comarca do foro). Elas são gravadas **na compilação do site**; vazias, as páginas mostram "a informar" em destaque. Depois de mudar, publique de novo o site. Veja [páginas legais](paginas-legais.md).
+
+```bash
+gh variable set LEGAL_COMPANY --env demo --body "Razão social Ltda"   # idem para as demais
+```
 
 Com a CLI do GitHub, a partir de `~/.voltex-deploy` (os segredos não passam pela tela):
 
