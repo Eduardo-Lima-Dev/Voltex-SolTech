@@ -130,6 +130,10 @@ export class EngineeringProjectsService {
         artType: row.artType as 'ART' | 'TRT' | 'RRT' | null,
         artNumber: row.artNumber,
         councilRegistration: row.councilRegistration,
+        signatoryName: row.signatoryName,
+        councilType: row.councilType as 'CREA' | 'CFT' | 'CAU' | null,
+        councilState: row.councilState,
+        artIssuedAt: row.artIssuedAt?.toISOString().slice(0, 10) ?? null,
         notes: row.notes,
       },
       versions: versions.map((v) => ({

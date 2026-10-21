@@ -24,6 +24,15 @@ export interface EngineeringReportInput {
   status: EngineeringVersionStatus;
   design: EngineeringDesign;
   results: EngineeringResults;
+  /** Profissional que assina o projeto (ficha do projeto); ausente = ainda não informado. */
+  signatory?: {
+    name: string | null;
+    councilType: string | null;
+    councilRegistration: string | null;
+    councilState: string | null;
+    artType: string | null;
+    artNumber: string | null;
+  };
 }
 
 /**
@@ -163,6 +172,15 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
     );
 
     heading('Rastreabilidade');
+    {
+      const sig = input.signatory;
+      line(
+        'Responsável técnico',
+        sig?.name
+          ? `${sig.name} · ${sig.councilType ?? 'conselho'} ${sig.councilRegistration ?? '—'}/${sig.councilState ?? '—'} · ${sig.artType ?? 'ART'} ${sig.artNumber ?? 'não informada'}`
+          : 'Não informado na ficha do projeto',
+      );
+    }
     line(
       'Algoritmos',
       Object.entries(input.results.algorithmVersions)
@@ -181,7 +199,7 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
       .fontSize(8)
       .fillColor('#555')
       .text(
-        'Memorial gerado a partir da versão persistida do Solar Engine Studio. Fontes, regras e equipamentos usados permanecem registrados no snapshot aprovado.',
+        'Memorial gerado a partir da versão persistida do Solar Engine Studio. Fontes, regras, equipamentos e o responsável técnico permanecem registrados no snapshot aprovado. Este documento não substitui a ART/TRT/RRT.',
         { width },
       );
     doc.end();

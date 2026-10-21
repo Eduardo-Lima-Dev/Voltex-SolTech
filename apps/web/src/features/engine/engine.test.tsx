@@ -153,6 +153,10 @@ const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjec
     artType: null,
     artNumber: null,
     councilRegistration: null,
+    signatoryName: null,
+    councilType: null,
+    councilState: null,
+    artIssuedAt: null,
     notes: null,
   },
   versions: [

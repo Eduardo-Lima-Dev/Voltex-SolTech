@@ -410,6 +410,25 @@ test('do pedido amarelo ao projeto técnico aprovado e à cotação', async ({ p
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Resolver' }).click();
     await expect(page.getByText('resolvido')).toBeVisible();
+    // Quem assina é o engenheiro do local: sem os dados dele na ficha, a aprovação é recusada.
+    const owner = await apiToken(USERS.owner);
+    const approvedVersionId = versionUrl.split('/versoes/')[1] ?? '';
+    const versao = await api<{ projectId: string }>(
+      `/engineering/versions/${approvedVersionId}`,
+      owner,
+    );
+    await api(`/engineering/projects/${versao.projectId}`, owner, {
+      method: 'PATCH',
+      body: {
+        signatoryName: 'Maria Souza Engenheira',
+        councilType: 'CREA',
+        councilRegistration: 'SP-123456',
+        councilState: 'SP',
+        artType: 'ART',
+        artNumber: '2026123456789',
+        artIssuedAt: '2026-10-20',
+      },
+    });
     await page.getByRole('button', { name: 'Aprovar' }).click();
     await page.getByLabel('Justificativa').fill('Aprovado após conferência do desenho.');
     await page.getByRole('dialog').getByRole('button', { name: 'Confirmar' }).click();

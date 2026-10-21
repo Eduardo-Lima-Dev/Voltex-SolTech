@@ -95,3 +95,12 @@ Motor: `pnpm --filter @voltex/solar-engine test` (cobertura ≥ 90%; casos de ou
 ## Limites da 9D e 9E
 
 Superfícies retangulares; sem editor interativo de telhado; sombreamento estimado pela radiação direta com céu claro (ver [memorial](../06-calculos/engine-posicao-solar-sombreamento.md)); proteções, simulação, conexão, economia e a revisão/aprovação chegam nas fases 9F a 9I. Na 9E: um inversor por entrada (sem agrupar), uma superfície por configuração gerada, sem fator de segurança normativo embutido nas correntes.
+
+## Quem assina o projeto (governança do MVP2)
+
+Quem assina é o **engenheiro de cada local**, não a empresa que usa o sistema. A ficha do projeto guarda o profissional (nome, conselho CREA/CFT/CAU, registro, UF) e a responsabilidade técnica (ART, TRT ou RRT, número e data).
+
+- **Aprovar uma versão exige a ficha completa**: sem ela a API responde 422 "Informe na ficha do projeto quem assina…" (`signatoryMissing`, em `@voltex/shared`).
+- O **snapshot aprovado** grava `signatory`, `rulesApplied` (regra, versão, escopo, fontes, revisor e data), `declaration` (o profissional conferiu as regras e assume a responsabilidade técnica), `approvedBy` e entra no hash.
+- O memorial em PDF mostra o responsável técnico e a fonte do clima e do horizonte, e diz que não substitui a ART/TRT/RRT.
+- Os valores das regras e as licenças das fontes estão em [`docs/governanca/`](../governanca/roteiro-governanca-mvp2.md).

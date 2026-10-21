@@ -47,6 +47,11 @@ model EngineeringProject {
   artType             String?                  @map("art_type")
   artNumber           String?                  @map("art_number")
   councilRegistration String?                  @map("council_registration")
+  /// Profissional que assina o projeto (cada projeto tem o seu): nome, conselho (`CREA`, `CFT`, `CAU`), UF do registro e data da ART/TRT/RRT.
+  signatoryName       String?                  @map("signatory_name")
+  councilType         String?                  @map("council_type")
+  councilState        String?                  @map("council_state")
+  artIssuedAt         DateTime?                @map("art_issued_at") @db.Date
   notes               String?
   createdById         String?                  @map("created_by_id") @db.Uuid
   createdAt           DateTime                 @default(now()) @map("created_at")

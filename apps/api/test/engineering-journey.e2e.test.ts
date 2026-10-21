@@ -401,6 +401,25 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
       (await post(`/engineering/versions/${versionId}/comments/${open.id}/resolve`, engineer))
         .status,
     ).toBeLessThan(300);
+    const noSignatory = await post(`/engineering/versions/${versionId}/approve`, lead, {
+      note: 'Aprovado após conferência',
+    });
+    expect(noSignatory.status).toBe(422);
+    expect(noSignatory.body.message).toMatch(/quem assina/);
+    const profile = await t.http
+      .patch(`${API}/engineering/projects/${projectId}`)
+      .set(bearer(engineer))
+      .send({
+        signatoryName: 'Maria Souza Engenheira',
+        councilType: 'CREA',
+        councilRegistration: 'SP-123456',
+        councilState: 'sp',
+        artType: 'ART',
+        artNumber: '2026123456789',
+        artIssuedAt: '2026-10-20',
+      });
+    expect(profile.status).toBe(200);
+    expect(profile.body.profile.councilState).toBe('SP');
     const approved = await post(`/engineering/versions/${versionId}/approve`, lead, {
       note: 'Aprovado após conferência',
     });
@@ -418,6 +437,15 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
     expect(snapshot.body.hash).toMatch(/^[0-9a-f]{64}$/);
     expect(snapshot.body.content.version.results.simulation.energyKwh).toBeGreaterThan(5000);
     expect(snapshot.body.content.version.ruleRefs).toHaveLength(4);
+    expect(snapshot.body.content.signatory).toMatchObject({
+      name: 'Maria Souza Engenheira',
+      councilType: 'CREA',
+      councilRegistration: 'SP-123456',
+      artNumber: '2026123456789',
+    });
+    expect(snapshot.body.content.rulesApplied).toHaveLength(4);
+    expect(snapshot.body.content.declaration).toMatch(/assume a responsabilidade técnica/);
+    expect(snapshot.body.content.approvedBy.name).toEqual(expect.any(String));
     expect((await get(`/engineering/versions/${versionId}/report.pdf`, engineer)).status).toBe(200);
     expect((await get(`/engineering/versions/${versionId}/single-line.dxf`, engineer)).status).toBe(
       200,

@@ -84,10 +84,15 @@ export class EngineeringManagementService {
       'artType',
       'artNumber',
       'councilRegistration',
+      'signatoryName',
+      'councilType',
+      'councilState',
       'responsibleId',
       'notes',
     ] as const)
       if (input[key] !== undefined) (data as Record<string, unknown>)[key] = input[key];
+    if (input.artIssuedAt !== undefined)
+      data.artIssuedAt = input.artIssuedAt === null ? null : new Date(input.artIssuedAt);
     if (input.targetKwp !== undefined) {
       data.targetKwp = input.targetKwp;
       data.generationClass = input.targetKwp === null ? null : generationClassOf(input.targetKwp);

@@ -7,6 +7,8 @@ import {
 import { Prisma } from '@voltex/database';
 import {
   engineRulesDefinitionSchema,
+  SIGNATORY_FIELD_LABELS,
+  signatoryMissing,
   type EngineeringDesign,
   type EngineeringResults,
   type EngineeringVersionComparisonDto,
@@ -572,6 +574,43 @@ export class EngineeringVersionsService {
     const project = await this.prisma.db.engineeringProject.findFirstOrThrow({
       where: { id: version.projectId },
     });
+    const missingSignatory = signatoryMissing(project as never);
+    if (missingSignatory.length)
+      throw new UnprocessableEntityException(
+        `Informe na ficha do projeto quem assina: ${missingSignatory.map((f) => SIGNATORY_FIELD_LABELS[f]).join(', ')}.`,
+      );
+    const [ruleRows, approver] = await Promise.all([
+      this.prisma.db.ruleSet.findMany({
+        where: { id: { in: (version.ruleRefs as string[]).map((ref) => ref.split('@')[0]!) } },
+      }),
+      this.context.userId
+        ? this.prisma.db.user.findFirst({
+            where: { id: this.context.userId },
+            select: { id: true, name: true, role: true },
+          })
+        : null,
+    ]);
+    const rulesApplied = (version.ruleRefs as string[]).map((ref) => {
+      const row = ruleRows.find((r) => r.id === ref.split('@')[0]);
+      return {
+        ref,
+        key: row?.key ?? null,
+        version: row?.version ?? null,
+        scope: row?.scope ?? null,
+        sources: row?.sources ?? [],
+        reviewedBy: row?.reviewedBy ?? null,
+        reviewedAt: row?.reviewedAt?.toISOString() ?? null,
+      };
+    });
+    const signatory = {
+      name: project.signatoryName,
+      councilType: project.councilType,
+      councilRegistration: project.councilRegistration,
+      councilState: project.councilState,
+      artType: project.artType,
+      artNumber: project.artNumber,
+      artIssuedAt: project.artIssuedAt?.toISOString().slice(0, 10) ?? null,
+    };
     const equipment = await this.prisma.db.equipmentItem.findMany({
       where: {
         id: {
@@ -601,6 +640,10 @@ export class EngineeringVersionsService {
         revision: item.revision,
         spec: item.spec,
       })),
+      signatory,
+      rulesApplied,
+      declaration: `${signatory.name} (${signatory.councilType} ${signatory.councilRegistration}/${signatory.councilState}) conferiu as regras aplicadas e assume a responsabilidade técnica por este projeto, conforme ${signatory.artType} ${signatory.artNumber}. A aprovação não substitui a ART/TRT/RRT.`,
+      approvedBy: approver ? { id: approver.id, name: approver.name } : null,
       approvedAt: new Date().toISOString(),
       approvalNote: note,
     };
@@ -836,6 +879,14 @@ export class EngineeringVersionsService {
       status: version.status,
       design: version.design as unknown as EngineeringDesign,
       results,
+      signatory: {
+        name: project.signatoryName,
+        councilType: project.councilType,
+        councilRegistration: project.councilRegistration,
+        councilState: project.councilState,
+        artType: project.artType,
+        artNumber: project.artNumber,
+      },
     });
     return { buffer, filename: `memorial-${project.code}-v${version.number}.pdf` };
   }

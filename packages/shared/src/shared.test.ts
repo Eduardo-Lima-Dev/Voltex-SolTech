@@ -144,3 +144,28 @@ describe('política de perfis', () => {
     expect(canManageRole(Role.ADMIN, Role.OWNER)).toBe(false);
   });
 });
+
+describe('signatário do projeto de engenharia', () => {
+  it('lista, em ordem, o que falta para quem assina estar completo', async () => {
+    const { signatoryMissing } = await import('./schemas/engineering-management.js');
+    expect(signatoryMissing({})).toEqual([
+      'signatoryName',
+      'councilType',
+      'councilRegistration',
+      'councilState',
+      'artType',
+      'artNumber',
+    ]);
+    expect(
+      signatoryMissing({
+        signatoryName: 'Maria Souza',
+        councilType: 'CREA',
+        councilRegistration: 'SP-123456',
+        councilState: 'SP',
+        artType: 'ART',
+        artNumber: '123',
+      }),
+    ).toEqual([]);
+    expect(signatoryMissing({ signatoryName: '  ' })).toContain('signatoryName');
+  });
+});

@@ -369,6 +369,11 @@ export interface EngineeringProjectProfileDto {
   artType: 'ART' | 'TRT' | 'RRT' | null;
   artNumber: string | null;
   councilRegistration: string | null;
+  signatoryName: string | null;
+  councilType: 'CREA' | 'CFT' | 'CAU' | null;
+  councilState: string | null;
+  /** Data (AAAA-MM-DD) da ART/TRT/RRT. */
+  artIssuedAt: string | null;
   notes: string | null;
 }
 
