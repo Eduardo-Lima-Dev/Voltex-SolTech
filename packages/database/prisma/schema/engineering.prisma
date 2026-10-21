@@ -47,6 +47,13 @@ model EngineeringProject {
   artType             String?                  @map("art_type")
   artNumber           String?                  @map("art_number")
   councilRegistration String?                  @map("council_registration")
+  /// Profissional que assina o projeto (cada projeto tem o seu): nome, conselho (`CREA`, `CFT`, `CAU`), UF do registro e data da ART/TRT/RRT.
+  signatoryName       String?                  @map("signatory_name")
+  councilType         String?                  @map("council_type")
+  councilState        String?                  @map("council_state")
+  artIssuedAt         DateTime?                @map("art_issued_at") @db.Date
+  /// Exige que outro engenheiro (não quem enviou a versão) a aprove, como a revisão obrigatória de um PR.
+  requireSecondReview Boolean                  @default(false) @map("require_second_review")
   notes               String?
   createdById         String?                  @map("created_by_id") @db.Uuid
   createdAt           DateTime                 @default(now()) @map("created_at")
@@ -87,6 +94,8 @@ model EngineeringVersion {
   dataRefs      Json                     @default("[]") @map("data_refs")
   submittedAt   DateTime?                @map("submitted_at")
   submittedById String?                  @map("submitted_by_id") @db.Uuid
+  /// Engenheiro a quem a revisão foi pedida ao enviar (opcional).
+  reviewerId    String?                  @map("reviewer_id") @db.Uuid
   decidedAt     DateTime?                @map("decided_at")
   decidedById   String?                  @map("decided_by_id") @db.Uuid
   decisionNote  String?                  @map("decision_note")
@@ -225,6 +234,7 @@ model EngineeringSurvey {
   tenant  Tenant             @relation(fields: [tenantId], references: [id])
   project EngineeringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("engineering_surveys")
 }
 
@@ -249,5 +259,6 @@ model EngineeringDocumentItem {
   project EngineeringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, code])
+  @@index([tenantId])
   @@map("engineering_document_items")
 }

@@ -55,6 +55,8 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
   let requestId = '';
   let projectId = '';
   let versionId = '';
+  let leadId = '';
+  let reviewerEngineer = '';
   const ids: Record<string, string> = {};
 
   const get = (path: string, token: string) => t.http.get(`${API}${path}`).set(bearer(token));
@@ -82,7 +84,16 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
     const created = await post('/rules', lead, {
       key,
       definition,
-      sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste do roteiro' }],
+      sources: [
+        {
+          type: 'INTERNAL_POLICY',
+          // Uma das regras é de teste interno: o projeto inteiro passa a carregar o aviso.
+          reference:
+            key === 'engine.economics'
+              ? 'TESTE INTERNO: valores de exemplo'
+              : 'Regra de teste do roteiro',
+        },
+      ],
     });
     expect([key, created.status, JSON.stringify(created.body)]).toEqual([
       key,
@@ -90,7 +101,12 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
       expect.anything(),
     ]);
     expect(
-      (await post(`/rules/${created.body.id}/activate`, lead, { reviewedBy: 'Eng. Teste' })).status,
+      (
+        await post(`/rules/${created.body.id}/activate`, lead, {
+          reviewedBy: 'Eng. Teste',
+          reviewedByRegistration: 'CREA-SP 123456',
+        })
+      ).status,
     ).toBe(200);
   };
   const design = () => ({
@@ -164,7 +180,11 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
     manager = await tokenFor(t.http, a.manager);
     seller = await tokenFor(t.http, a.salesperson);
     engineer = (await tokenWithRole(t, a, 'ENGINEERING')).token;
-    lead = (await tokenWithRole(t, a, 'TECHNICAL_LEAD')).token;
+    const leadUser = await tokenWithRole(t, a, 'TECHNICAL_LEAD');
+    lead = leadUser.token;
+    leadId = leadUser.id;
+    const engineerUser = await tokenWithRole(t, a, 'ENGINEERING');
+    reviewerEngineer = engineerUser.token;
     flow = { t, tenant: a, seller, admin };
     await ensureMarginPolicy(flow, manager);
   });
@@ -383,9 +403,33 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
   });
 
   it('envia, o responsável técnico comenta; comentário aberto bloqueia; resolvido, ele aprova', async () => {
-    expect((await post(`/engineering/versions/${versionId}/submit`, engineer)).body.status).toBe(
-      'SUBMITTED',
-    );
+    // Segunda revisão obrigatória, como a revisão exigida em um PR: o projeto não aceita auto-aprovação.
+    const policy = await t.http
+      .patch(`${API}/engineering/projects/${projectId}`)
+      .set(bearer(engineer))
+      .send({ requireSecondReview: true });
+    expect(policy.status).toBe(200);
+    expect(policy.body.profile.requireSecondReview).toBe(true);
+    const reviewers = await get('/engineering/reviewers', engineer);
+    expect(reviewers.status).toBe(200);
+    expect(reviewers.body.map((x: { id: string }) => x.id)).toContain(leadId);
+    // Pedir a revisão a um usuário sem permissão de aprovar é recusado.
+    expect(
+      (
+        await post(`/engineering/versions/${versionId}/submit`, engineer, {
+          reviewerId: a.salesperson.id,
+        })
+      ).status,
+    ).toBe(422);
+    const submitted = await post(`/engineering/versions/${versionId}/submit`, engineer, {
+      reviewerId: leadId,
+    });
+    expect(submitted.body.status).toBe('SUBMITTED');
+    expect(submitted.body.review).toMatchObject({
+      requireSecondReview: true,
+      reviewerId: leadId,
+    });
+    expect(submitted.body.review.submittedByName).toEqual(expect.any(String));
     const comment = await post(`/engineering/versions/${versionId}/comments`, lead, {
       section: 'strings',
       text: 'Confirmar a distância dos módulos ao inversor.',
@@ -401,6 +445,38 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
       (await post(`/engineering/versions/${versionId}/comments/${open.id}/resolve`, engineer))
         .status,
     ).toBeLessThan(300);
+    // Quem enviou não aprova a própria versão; outro engenheiro que não foi chamado também não.
+    const selfApproval = await post(`/engineering/versions/${versionId}/approve`, engineer, {
+      note: 'Aprovando o que eu mesmo enviei',
+    });
+    expect(selfApproval.status).toBe(422);
+    expect(selfApproval.body.message).toMatch(/segunda revisão/);
+    const notRequested = await post(
+      `/engineering/versions/${versionId}/approve`,
+      reviewerEngineer,
+      { note: 'Não fui chamado' },
+    );
+    expect(notRequested.status).toBe(422);
+    expect(notRequested.body.message).toMatch(/outro engenheiro/);
+    const noSignatory = await post(`/engineering/versions/${versionId}/approve`, lead, {
+      note: 'Aprovado após conferência',
+    });
+    expect(noSignatory.status).toBe(422);
+    expect(noSignatory.body.message).toMatch(/quem assina/);
+    const profile = await t.http
+      .patch(`${API}/engineering/projects/${projectId}`)
+      .set(bearer(engineer))
+      .send({
+        signatoryName: 'Maria Souza Engenheira',
+        councilType: 'CREA',
+        councilRegistration: 'SP-123456',
+        councilState: 'sp',
+        artType: 'ART',
+        artNumber: '2026123456789',
+        artIssuedAt: '2026-10-20',
+      });
+    expect(profile.status).toBe(200);
+    expect(profile.body.profile.councilState).toBe('SP');
     const approved = await post(`/engineering/versions/${versionId}/approve`, lead, {
       note: 'Aprovado após conferência',
     });
@@ -418,6 +494,27 @@ describe('Jornada de engenharia: pedido amarelo → projeto aprovado → cotaç�
     expect(snapshot.body.hash).toMatch(/^[0-9a-f]{64}$/);
     expect(snapshot.body.content.version.results.simulation.energyKwh).toBeGreaterThan(5000);
     expect(snapshot.body.content.version.ruleRefs).toHaveLength(4);
+    expect(snapshot.body.content.signatory).toMatchObject({
+      name: 'Maria Souza Engenheira',
+      councilType: 'CREA',
+      councilRegistration: 'SP-123456',
+      artNumber: '2026123456789',
+    });
+    expect(snapshot.body.content.rulesApplied).toHaveLength(4);
+    expect(snapshot.body.content.review).toMatchObject({
+      requireSecondReview: true,
+      selfApproved: false,
+      requestedReviewer: { id: leadId },
+    });
+    expect(snapshot.body.content.internalTestRules).toBe(true);
+    expect(
+      snapshot.body.content.rulesApplied.filter((r: { internalTest: boolean }) => r.internalTest),
+    ).toHaveLength(1);
+    expect(snapshot.body.content.declaration).toMatch(/TESTE INTERNO/);
+    const detail = await get(`/engineering/versions/${versionId}`, engineer);
+    expect(detail.body.internalTestRules).toBe(true);
+    expect(snapshot.body.content.declaration).toMatch(/assume a responsabilidade técnica/);
+    expect(snapshot.body.content.approvedBy.name).toEqual(expect.any(String));
     expect((await get(`/engineering/versions/${versionId}/report.pdf`, engineer)).status).toBe(200);
     expect((await get(`/engineering/versions/${versionId}/single-line.dxf`, engineer)).status).toBe(
       200,

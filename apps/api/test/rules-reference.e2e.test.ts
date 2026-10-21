@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { isInternalTestRule } from '@voltex/shared';
+import { seedInternalTestRules } from '../src/cli/internal-test-rules';
 import {
   API,
   bearer,
@@ -282,11 +284,22 @@ describe('Rules Engine e dados de referência (e2e)', () => {
         definition: { parameters: { demoFactor: 1.5 } },
         sources: source,
       });
-      await post(`/rules/${general.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
-      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+      await post(`/rules/${general.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
+      // Regra do Engine sem o registro no conselho de quem revisou não é ativada.
+      const noRegistry = await post(`/rules/${mg.body.id}/activate`, admin, {
         reviewedBy: 'Eng. Teste',
       });
+      expect(noRegistry.status).toBe(422);
+      expect(noRegistry.body.message).toMatch(/registro no conselho/);
+      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-MG 654321',
+      });
       expect(mgActive.status).toBe(200);
+      expect(mgActive.body.reviewedByRegistration).toBe('CREA-MG 654321');
 
       // Ativar a regra de MG não aposentou a geral.
       const inMg = await effective(admin, 'key=engine.design&state=MG');
@@ -302,7 +315,10 @@ describe('Rules Engine e dados de referência (e2e)', () => {
         definition: {},
         sources: source,
       });
-      await post(`/rules/${general2.body.id}/activate`, admin, { reviewedBy: 'Eng. Teste' });
+      await post(`/rules/${general2.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
       const status = async (id: string) =>
         (await t.prisma.system.ruleSet.findUniqueOrThrow({ where: { id } })).status;
       expect(await status(general.body.id)).toBe('RETIRED');
@@ -578,6 +594,38 @@ describe('Rules Engine e dados de referência (e2e)', () => {
       expect(
         (await t.http.delete(`${API}/solar-resources/${one.body.id}`).set(bearer(seller))).status,
       ).toBe(403);
+    });
+  });
+
+  describe('regras de teste interno', () => {
+    it('ativa as quatro regras do Engine marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
+      const other = await seedTenant(t.prisma, 'rulestest');
+      const owner = await tokenFor(t.http, other.admin);
+      const first = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(first).toHaveLength(4);
+      expect(first.every((line) => /ativada como TESTE INTERNO/.test(line))).toBe(true);
+
+      const list = await t.http.get(`${API}/rules`).set(bearer(owner));
+      const engine = list.body.filter((x: { key: string }) => x.key.startsWith('engine.'));
+      expect(engine).toHaveLength(4);
+      for (const rule of engine) {
+        expect(rule.status).toBe('ACTIVE');
+        expect(isInternalTestRule(rule)).toBe(true);
+        expect(rule.reviewedBy).toMatch(/TESTE INTERNO/);
+        expect(rule.reviewedByRegistration).toMatch(/SEM REGISTRO/);
+      }
+      const cables = await t.http
+        .get(`${API}/rules/effective?key=engine.cables`)
+        .set(bearer(owner));
+      expect(cables.body.definition.tables.ampacity.length).toBeGreaterThan(3);
+
+      // Segunda rodada: nada muda (idempotente, não cria outra versão).
+      const again = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(again.every((line) => /nada foi alterado/.test(line))).toBe(true);
+      const after = await t.http.get(`${API}/rules`).set(bearer(owner));
+      expect(after.body.filter((x: { key: string }) => x.key.startsWith('engine.'))).toHaveLength(
+        4,
+      );
     });
   });
 });

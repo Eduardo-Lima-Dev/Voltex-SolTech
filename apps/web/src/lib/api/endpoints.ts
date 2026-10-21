@@ -143,7 +143,9 @@ import {
   type EngineeringVersionComparisonDto,
   type EngineeringShareLinkDto,
   type PublicEngineeringReportDto,
+  type EngineeringReviewerDto,
   type EngineeringVersionDetailDto,
+  type SubmitEngineeringVersionInput,
   type EngineeringDecisionInput,
   type EngineeringReviewCommentInput,
   type HorizonResultDto,
@@ -386,8 +388,9 @@ export function createEndpoints(client: ApiClient) {
         ),
       recalculate: (id: string) =>
         client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/recalculate`),
-      submit: (id: string) =>
-        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/submit`),
+      submit: (id: string, input: SubmitEngineeringVersionInput = {}) =>
+        client.post<EngineeringVersionDetailDto>(`/engineering/versions/${id}/submit`, input),
+      reviewers: () => client.get<EngineeringReviewerDto[]>('/engineering/reviewers'),
       comments: (id: string) =>
         client.get<
           {

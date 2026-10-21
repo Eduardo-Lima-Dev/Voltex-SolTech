@@ -25,6 +25,7 @@ import {
   isOffgridKind,
   type PdfTextItem,
   parseEquipmentCsv,
+  decodePvsystBytes,
   parsePvsystFile,
   validateSpec,
   type ParsedEquipment,
@@ -77,7 +78,7 @@ export class CatalogImportService {
             `Colunas ignoradas (o modelo não as conhece): ${result.ignoredColumns.join(', ')}.`,
           );
       } else if (format === 'pan' || format === 'ond') {
-        const item = parsePvsystFile(file.buffer.toString('utf8'));
+        const item = parsePvsystFile(decodePvsystBytes(file.buffer));
         const expected = format === 'pan' ? 'MODULE' : 'INVERTER';
         if (item.kind !== expected)
           throw new ImportParseError(

@@ -54,7 +54,10 @@ describe('permissões', () => {
     expect(hasPermission(Role.SALES_MANAGER, 'crm.margin.approve')).toBe(true);
     expect(hasPermission(Role.INSTALLER, 'crm.lead.read')).toBe(false);
     expect(hasPermission(Role.TECHNICAL_LEAD, 'engine.project.approve')).toBe(true);
+    // O engenheiro aprova versões de projeto, mas só o responsável técnico aprova equipamento do catálogo.
+    expect(hasPermission(Role.ENGINEERING, 'engine.version.approve')).toBe(true);
     expect(hasPermission(Role.ENGINEERING, 'engine.project.approve')).toBe(false);
+    expect(hasPermission(Role.SALESPERSON, 'engine.version.approve')).toBe(false);
     expect(ROLE_PERMISSIONS[Role.CUSTOMER]).toEqual([]);
   });
 });
@@ -142,5 +145,30 @@ describe('política de perfis', () => {
     expect(assignableRoles(Role.ADMIN)).toHaveLength(Object.values(Role).length - 1);
     expect(assignableRoles(Role.SALES_MANAGER)).toEqual([]);
     expect(canManageRole(Role.ADMIN, Role.OWNER)).toBe(false);
+  });
+});
+
+describe('signatário do projeto de engenharia', () => {
+  it('lista, em ordem, o que falta para quem assina estar completo', async () => {
+    const { signatoryMissing } = await import('./schemas/engineering-management.js');
+    expect(signatoryMissing({})).toEqual([
+      'signatoryName',
+      'councilType',
+      'councilRegistration',
+      'councilState',
+      'artType',
+      'artNumber',
+    ]);
+    expect(
+      signatoryMissing({
+        signatoryName: 'Maria Souza',
+        councilType: 'CREA',
+        councilRegistration: 'SP-123456',
+        councilState: 'SP',
+        artType: 'ART',
+        artNumber: '123',
+      }),
+    ).toEqual([]);
+    expect(signatoryMissing({ signatoryName: '  ' })).toContain('signatoryName');
   });
 });

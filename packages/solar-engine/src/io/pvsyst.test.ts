@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ImportParseError } from './import-types.js';
 import {
+  decodePvsystBytes,
   flattenPvsyst,
   parseOndInverter,
   parsePanModule,
@@ -11,6 +12,48 @@ import {
 } from './pvsyst.js';
 
 const read = (name: string) => readFileSync(resolve(__dirname, 'fixtures', name), 'utf8');
+
+describe('arquivos reais de fabricantes (derivados, nomes trocados)', () => {
+  it('Voc com sinal positivo no arquivo vira coeficiente negativo, com aviso', () => {
+    const r = parsePvsystFile(read('voc-positivo.pan'));
+    // muVocSpec +145,5 mV/°C ÷ (49,95 V × 10) = 0,2913 %/°C: o sinal é invertido.
+    expect(r.spec.betaVocPctPerC).toBeCloseTo(-0.2913, 4);
+    expect(r.fieldConfidence.betaVocPctPerC).toBe('LOW');
+    expect(r.notes.join(' ')).toMatch(/sinal positivo/);
+    expect(r.spec).toMatchObject({ pmaxWp: 555, technology: 'MONO_SI', maxSystemVoltageV: 1500 });
+    expect(r.missing).toEqual([]);
+  });
+
+  it('lê arquivo com BOM e quebra de linha do Windows (o cabeçalho continua reconhecido)', () => {
+    const text = read('sem-corrente-por-mppt.ond');
+    expect(text.charCodeAt(0)).toBe(0xfeff);
+    const r = parsePvsystFile(text);
+    expect(r.spec).toMatchObject({ pAcNomW: 100000, phases: 3, mpptCount: 4, inputsPerMppt: 5 });
+  });
+
+  it('sem a corrente CC máxima o campo por MPPT fica faltando, nunca inventado', () => {
+    const r = parsePvsystFile(read('sem-corrente-por-mppt.ond'));
+    expect(r.missing).toEqual(['iMaxPerMpptA']);
+    expect(r.spec.iMaxPerMpptA).toBeUndefined();
+  });
+
+  it('avisa quando o nome do modelo cita mais MPPT do que o arquivo declara', () => {
+    const r = parsePvsystFile(read('nome-com-2-mppt.ond'));
+    expect(r.spec.mpptCount).toBe(1);
+    expect(r.notes.join(' ')).toMatch(/cita 2 MPPT.*NbMPPT=1/);
+  });
+
+  it('avisa quando Pmax difere de Vmp × Imp em mais de 2%', () => {
+    const bad = read('voc-positivo.pan').replace('Imp=13.190', 'Imp=11.000');
+    expect(parsePvsystFile(bad).notes.join(' ')).toMatch(/difere de Vmp × Imp/);
+    expect(parsePvsystFile(read('voc-positivo.pan')).notes.join(' ')).not.toMatch(/difere de Vmp/);
+  });
+
+  it('decodifica UTF-8 e, com byte inválido, Windows-1252 sem trocar os acentos', () => {
+    expect(decodePvsystBytes(new TextEncoder().encode('Módulo'))).toBe('Módulo');
+    expect(decodePvsystBytes(new Uint8Array([0x4d, 0xf3, 0x64]))).toBe('Mód');
+  });
+});
 
 describe('.PAN (módulo)', () => {
   const pan = read('exemplo.pan');

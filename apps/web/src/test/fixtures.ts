@@ -200,6 +200,7 @@ export const ruleSet = (overrides: Partial<RuleSetDto> = {}): RuleSetDto => ({
   definition: {},
   sources: [{ type: 'INTERNAL_POLICY', reference: 'Política interna' }],
   reviewedBy: 'Eng. Maria Souza',
+  reviewedByRegistration: null,
   reviewedAt: '2026-02-01T00:00:00.000Z',
   notes: null,
   createdAt: now,

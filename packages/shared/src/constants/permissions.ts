@@ -54,6 +54,8 @@ export const PERMISSIONS = [
   'engine.project.read',
   'engine.project.write',
   'engine.project.approve',
+  /** Aprovar, recusar e comentar a revisão de uma versão do projeto (engenheiro). */
+  'engine.version.approve',
   /** Levantamento do local (visita técnica): engenharia e campo. */
   'engine.survey.read',
   'engine.survey.write',
@@ -137,6 +139,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     ...startsWith(
       'engine.project.read',
       'engine.project.write',
+      'engine.version.approve',
       'engine.survey',
       'offgrid.project',
     ),

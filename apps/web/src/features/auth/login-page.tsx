@@ -33,6 +33,8 @@ function loginErrorMessage(error: unknown): string {
   return 'Não foi possível entrar. Tente novamente.';
 }
 
+const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || null)?.replace(/\/+$/, '') ?? null;
+
 export function LoginPage() {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -143,6 +145,19 @@ export function LoginPage() {
           O acesso é por convite. Se você ainda não tem uma conta, peça ao administrador da sua
           empresa.
         </p>
+        {SITE_URL ? (
+          <p className="text-center text-xs text-muted-foreground">
+            Ao entrar, você concorda com os{' '}
+            <a className="underline underline-offset-2" href={`${SITE_URL}/termos`}>
+              Termos de Uso
+            </a>{' '}
+            e com a{' '}
+            <a className="underline underline-offset-2" href={`${SITE_URL}/privacidade`}>
+              Política de Privacidade
+            </a>
+            .
+          </p>
+        ) : null}
       </div>
     </AuthLayout>
   );
