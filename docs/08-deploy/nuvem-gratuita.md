@@ -137,6 +137,10 @@ Segredos ficam em `~/.voltex-deploy/` (fora do repositório, permissão 600). Sc
 
 Para **atualizar a API**: `./scripts/publicar-api.sh ghcr.io/eduardo-lima-dev/voltex-api`, depois `node scripts/render-api.mjs ghcr.io/eduardo-lima-dev/voltex-api:latest https://voltex-app-rho.vercel.app` (atualiza as variáveis e pede nova publicação). Para **atualizar o front**: rode de novo o `publicar-front.sh`.
 
+## Fontes externas na demonstração
+
+A API só consulta fontes externas listadas em `DATA_HUB_ENABLED_SOURCES` (padrão vazio = tudo desligado). A publicação automática **define essa variável na Render a cada deploy**: `nasa-power,pvgis,aneel-tariffs,techlux,cec-library` (clima, tarifas e as fontes de equipamentos). Para mudar sem tocar no código, crie a variável `DATA_HUB_ENABLED_SOURCES` no ambiente `demo` do GitHub. Se a etapa falhar, ela só avisa no log e a publicação segue. O `render.yaml` e o `scripts/render-api.mjs` trazem o mesmo valor para quem criar o serviço do zero.
+
 ## Publicação automática (GitHub Actions)
 
 Hoje a publicação é feita à mão, pelos scripts. O workflow `.github/workflows/deploy-demo.yml` faz **tudo sozinho, somente quando algo é mesclado na `main`**, seguindo o fluxo `develop → homolog → main`. Enquanto o trabalho estiver em `develop` ou `homolog`, **nenhuma Action roda em push**; os testes (CI) rodam quando você abre um pull request para `homolog` ou `main`, e de novo na `main`, dentro da publicação.

@@ -99,6 +99,9 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
           API_URL: https://${{ vars.API_HOST }}
+          # Fontes externas ligadas na demonstração: clima, tarifas e as fontes de equipamentos (Techlux e CEC/SAM).
+          # Para mudar sem alterar o código, defina a variável DATA_HUB_ENABLED_SOURCES no ambiente "demo".
+          DATA_HUB_ENABLED_SOURCES: ${{ vars.DATA_HUB_ENABLED_SOURCES || 'nasa-power,pvgis,aneel-tariffs,techlux,cec-library' }}
 
   front:
     name: Site e aplicação (Vercel)
