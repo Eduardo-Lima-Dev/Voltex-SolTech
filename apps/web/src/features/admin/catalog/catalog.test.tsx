@@ -703,9 +703,10 @@ describe('Administração → Catálogo técnico', () => {
       const dialog = await screen.findByRole('dialog');
       await user.click(within(dialog).getByLabelText(/Buscar para preencher/));
       await user.click(await within(dialog).findByRole('option', { name: /FT-550M/ }));
-      expect(await within(dialog).findByLabelText('Fabricante')).toHaveValue('Jinko');
+      // O campo já existe antes da leitura da ficha terminar: espera o preenchimento, não só o campo.
+      await waitFor(() => expect(within(dialog).getByLabelText('Fabricante')).toHaveValue('Jinko'));
+      expect(await within(dialog).findByText(/Preenchido a partir de Techlux/)).toBeInTheDocument();
       expect(within(dialog).getByLabelText('Modelo')).toHaveValue('JKM550M');
-      expect(within(dialog).getByText(/Preenchido a partir de Techlux/)).toBeInTheDocument();
       expect(within(dialog).getByLabelText(/Potência máxima/)).toHaveValue('550');
       await user.click(within(dialog).getByRole('button', { name: 'Salvar rascunho' }));
       await waitFor(() => expect(body).toBeDefined());
