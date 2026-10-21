@@ -48,6 +48,7 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
   const [councilType, setCouncilType] = useState<string>(p.councilType ?? '');
   const [councilState, setCouncilState] = useState(p.councilState ?? '');
   const [artIssuedAt, setArtIssuedAt] = useState(p.artIssuedAt ?? '');
+  const [secondReview, setSecondReview] = useState(p.requireSecondReview);
   const [notes, setNotes] = useState(p.notes ?? '');
   useEffect(() => {
     setName(project.name);
@@ -60,6 +61,7 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
     setCouncilType(p.councilType ?? '');
     setCouncilState(p.councilState ?? '');
     setArtIssuedAt(p.artIssuedAt ?? '');
+    setSecondReview(p.requireSecondReview);
     setNotes(p.notes ?? '');
   }, [project, p]);
 
@@ -80,6 +82,7 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
         councilType: (councilType || null) as never,
         councilState: councilState.trim().toUpperCase() || null,
         artIssuedAt: artIssuedAt || null,
+        requireSecondReview: secondReview,
         notes: notes.trim() || null,
       }),
     onSuccess: async () => {
@@ -228,6 +231,21 @@ export function ProfilePanel({ project }: { project: EngineeringProjectDetailDto
             />
           </div>
         </div>
+        <label className="flex items-start gap-2 text-sm" htmlFor="pf-second-review">
+          <input
+            id="pf-second-review"
+            type="checkbox"
+            className="mt-1"
+            checked={secondReview}
+            disabled={!editable}
+            onChange={(e) => setSecondReview(e.target.checked)}
+          />
+          <span>
+            Exigir segunda revisão: quem enviar a versão não poderá aprová-la, e outro engenheiro
+            precisa fazê-lo (como a revisão obrigatória de um PR). Sem isso, o engenheiro pode
+            aprovar o próprio trabalho ou pedir a revisão de alguém.
+          </span>
+        </label>
         <div className="grid gap-1">
           <Label htmlFor="pf-notes">Observações</Label>
           <Input

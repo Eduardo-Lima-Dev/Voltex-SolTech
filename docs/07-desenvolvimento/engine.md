@@ -102,5 +102,8 @@ Quem assina é o **engenheiro de cada local**, não a empresa que usa o sistema.
 
 - **Aprovar uma versão exige a ficha completa**: sem ela a API responde 422 "Informe na ficha do projeto quem assina…" (`signatoryMissing`, em `@voltex/shared`).
 - O **snapshot aprovado** grava `signatory`, `rulesApplied` (regra, versão, escopo, fontes, revisor e data), `declaration` (o profissional conferiu as regras e assume a responsabilidade técnica), `approvedBy` e entra no hash.
+- **Quem aprova:** o engenheiro (permissão `engine.version.approve`, de ENGINEERING e do responsável técnico). Por padrão ele pode aprovar o próprio trabalho. Ao enviar, pode **pedir a revisão de outro engenheiro** (`reviewerId`, lista em `GET /engineering/reviewers`).
+- **Segunda revisão obrigatória** (ficha do projeto, `requireSecondReview`), como a revisão exigida em um PR: quem enviou a versão não a aprova, e, se a revisão foi pedida a alguém, só essa pessoa aprova. O snapshot registra `review` (quem enviou, quem foi chamado, se houve auto-aprovação).
+- `engine.project.approve` continua sendo do responsável técnico e vale para aprovar equipamento no catálogo; engenheiro não aprova catálogo.
 - O memorial em PDF mostra o responsável técnico e a fonte do clima e do horizonte, e diz que não substitui a ART/TRT/RRT.
 - Os valores das regras e as licenças das fontes estão em [`docs/governanca/`](../governanca/roteiro-governanca-mvp2.md).

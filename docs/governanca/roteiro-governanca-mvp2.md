@@ -41,6 +41,7 @@ O código do Engine (9A–9L) está pronto. O MVP2 só fecha quando as pendênci
 - [ ] O snapshot grava o signatário, as regras aplicadas (chave, versão, escopo, fontes, revisor) e a declaração do engenheiro, dentro do conteúdo que gera o hash.
 - [ ] Memorial e relatório mostram o signatário e o aviso de que o documento não substitui a ART.
 - [ ] Ativar regra exige nome e registro do revisor.
+- [ ] Aprovação: o engenheiro aprova; a segunda revisão por outro engenheiro é opcional por projeto (como a revisão obrigatória de um PR) e o envio pode pedir a revisão de alguém.
 
 **Aceite:** versão aprovada sem signatário é recusada; o snapshot aprovado mostra quem assinou e com quais regras.
 

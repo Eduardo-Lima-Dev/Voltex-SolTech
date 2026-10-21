@@ -28,6 +28,7 @@ import {
   updateRequestPlanSchema,
   createEngineeringShareLinkSchema,
   engineeringDecisionSchema,
+  submitEngineeringVersionSchema,
   engineeringReviewCommentSchema,
   createEngineeringProjectSchema,
   listEngineeringProjectsQuerySchema,
@@ -63,6 +64,7 @@ class SurveyDto extends createZodDto(saveSurveySchema) {}
 class DocumentItemDto extends createZodDto(updateDocumentItemSchema) {}
 class ShareLinkDto extends createZodDto(createEngineeringShareLinkSchema) {}
 class DecisionDto extends createZodDto(engineeringDecisionSchema) {}
+class SubmitDto extends createZodDto(submitEngineeringVersionSchema) {}
 class FromRequestDto extends createZodDto(
   z.object({
     latitude: z.number().min(-90).max(90).optional(),
@@ -72,7 +74,7 @@ class FromRequestDto extends createZodDto(
 
 /**
  * Solar Engine Studio: fila de pedidos, projetos e versões. Ler: `engine.project.read`. Criar, editar e enviar:
- * `engine.project.write`. Aprovar e recusar: `engine.project.approve` (responsável técnico, a partir da 9I).
+ * `engine.project.write`. Aprovar e recusar: `engine.project.approve` (engenheiro; `engine.version.approve`).
  */
 @ApiTags('Engenharia')
 @ApiBearerAuth()
@@ -360,8 +362,15 @@ export class EngineeringController {
   @Post('versions/:id/submit')
   @HttpCode(200)
   @RequirePermissions('engine.project.write')
-  submit(@Param('id', ParseUUIDPipe) id: string) {
-    return this.versions.submit(id);
+  submit(@Param('id', ParseUUIDPipe) id: string, @Body() body: SubmitDto) {
+    return this.versions.submit(id, body);
+  }
+
+  /** Engenheiros que podem revisar e aprovar, para pedir a revisão ao enviar a versão. */
+  @Get('reviewers')
+  @RequirePermissions('engine.project.write')
+  reviewers() {
+    return this.versions.reviewers();
   }
 
   @Get('versions/:id/comments')
@@ -371,7 +380,7 @@ export class EngineeringController {
   }
 
   @Post('versions/:id/comments')
-  @RequirePermissions('engine.project.approve')
+  @RequirePermissions('engine.version.approve')
   comment(@Param('id', ParseUUIDPipe) id: string, @Body() body: ReviewCommentDto) {
     return this.versions.addComment(id, body);
   }
@@ -388,14 +397,14 @@ export class EngineeringController {
 
   @Post('versions/:id/approve')
   @HttpCode(200)
-  @RequirePermissions('engine.project.approve')
+  @RequirePermissions('engine.version.approve')
   approve(@Param('id', ParseUUIDPipe) id: string, @Body() body: DecisionDto) {
     return this.versions.approve(id, body.note);
   }
 
   @Post('versions/:id/reject')
   @HttpCode(200)
-  @RequirePermissions('engine.project.approve')
+  @RequirePermissions('engine.version.approve')
   reject(@Param('id', ParseUUIDPipe) id: string, @Body() body: DecisionDto) {
     return this.versions.reject(id, body.note);
   }

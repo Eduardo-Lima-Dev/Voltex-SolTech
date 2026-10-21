@@ -54,7 +54,10 @@ describe('permissões', () => {
     expect(hasPermission(Role.SALES_MANAGER, 'crm.margin.approve')).toBe(true);
     expect(hasPermission(Role.INSTALLER, 'crm.lead.read')).toBe(false);
     expect(hasPermission(Role.TECHNICAL_LEAD, 'engine.project.approve')).toBe(true);
+    // O engenheiro aprova versões de projeto, mas só o responsável técnico aprova equipamento do catálogo.
+    expect(hasPermission(Role.ENGINEERING, 'engine.version.approve')).toBe(true);
     expect(hasPermission(Role.ENGINEERING, 'engine.project.approve')).toBe(false);
+    expect(hasPermission(Role.SALESPERSON, 'engine.version.approve')).toBe(false);
     expect(ROLE_PERMISSIONS[Role.CUSTOMER]).toEqual([]);
   });
 });

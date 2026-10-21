@@ -391,6 +391,7 @@ test('do pedido amarelo ao projeto técnico aprovado e à cotação', async ({ p
 
   await test.step('3. O engenheiro envia a versão para revisão', async () => {
     await page.getByRole('button', { name: 'Enviar para revisão' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Enviar', exact: true }).click();
     await expect(page.getByText('Enviada', { exact: false }).first()).toBeVisible();
     await snap(page, info, 'Versão enviada');
   });

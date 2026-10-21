@@ -369,6 +369,7 @@ export interface EngineeringProjectProfileDto {
   artType: 'ART' | 'TRT' | 'RRT' | null;
   artNumber: string | null;
   councilRegistration: string | null;
+  requireSecondReview: boolean;
   signatoryName: string | null;
   councilType: 'CREA' | 'CFT' | 'CAU' | null;
   councilState: string | null;
@@ -399,8 +400,24 @@ export interface EngineeringProjectDetailDto extends EngineeringProjectDto {
   } | null;
 }
 
+/** Engenheiro que pode revisar e aprovar (tem `engine.project.approve`). */
+export interface EngineeringReviewerDto {
+  id: string;
+  name: string;
+}
+
+/** Situação da revisão da versão: quem enviou, quem foi chamado e se a segunda revisão é obrigatória. */
+export interface EngineeringReviewInfoDto {
+  requireSecondReview: boolean;
+  submittedById: string | null;
+  submittedByName: string | null;
+  reviewerId: string | null;
+  reviewerName: string | null;
+}
+
 export interface EngineeringVersionDetailDto extends EngineeringVersionDto {
   project: EngineeringProjectDto;
+  review: EngineeringReviewInfoDto;
   /** Regras em vigor que o cálculo usa (o navegador recalcula com os mesmos parâmetros). */
   rules: {
     engineDesign: { ref: string | null; parameters: Record<string, number> };

@@ -120,6 +120,13 @@ const version = (o: Partial<EngineeringVersionDetailDto> = {}): EngineeringVersi
     createdAt: now,
     updatedAt: now,
     project: project(),
+    review: {
+      requireSecondReview: false,
+      submittedById: null,
+      submittedByName: null,
+      reviewerId: null,
+      reviewerName: null,
+    },
     rules: {
       engineDesign: { ref: null, parameters: {} },
       engineCables: { ref: null, parameters: {}, tables: {} },
@@ -153,6 +160,7 @@ const detail = (o: Partial<EngineeringProjectDetailDto> = {}): EngineeringProjec
     artType: null,
     artNumber: null,
     councilRegistration: null,
+    requireSecondReview: false,
     signatoryName: null,
     councilType: null,
     councilState: null,
@@ -612,6 +620,60 @@ describe('Engine: editor da versão', () => {
       .setup()
       .click(screen.getByRole('button', { name: /Criar nova versão a partir desta/ }));
     expect(await screen.findByRole('heading', { name: /Versão 2/ })).toBeInTheDocument();
+  });
+
+  it('pede a revisão a um engenheiro ao enviar, e a segunda revisão obrigatória bloqueia a auto-aprovação', async () => {
+    let body: { reviewerId?: string | null } | null = null;
+    mount(
+      version({
+        status: 'DRAFT',
+        review: {
+          requireSecondReview: true,
+          submittedById: null,
+          submittedByName: null,
+          reviewerId: null,
+          reviewerName: null,
+        },
+      }),
+      [
+        http.get(`${API}/engineering/reviewers`, () =>
+          HttpResponse.json([
+            { id: 'user-engineering', name: 'Eu mesmo' },
+            { id: 'u-lead', name: 'Lia Responsável' },
+          ]),
+        ),
+        http.post(`${API}/engineering/versions/v-1/submit`, async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return HttpResponse.json(version({ status: 'SUBMITTED' }));
+        }),
+      ],
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Enviar para revisão' }));
+    const select = await screen.findByLabelText('Pedir revisão a');
+    // Com segunda revisão obrigatória a pessoa não aparece como revisora de si mesma.
+    expect(within(select).queryByRole('option', { name: 'Eu mesmo' })).not.toBeInTheDocument();
+    await user.selectOptions(select, 'Lia Responsável');
+    await user.click(screen.getByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(body).toEqual({ reviewerId: 'u-lead' }));
+  });
+
+  it('versão enviada por mim em projeto com segunda revisão: Aprovar fica desabilitado', async () => {
+    mount(
+      version({
+        status: 'SUBMITTED',
+        review: {
+          requireSecondReview: true,
+          submittedById: 'user-engineering',
+          submittedByName: 'Eu mesmo',
+          reviewerId: 'u-lead',
+          reviewerName: 'Lia Responsável',
+        },
+      }),
+    );
+    expect(await screen.findByText(/revisão pedida a Lia Responsável/)).toBeInTheDocument();
+    expect(screen.getByText(/segunda revisão obrigatória/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled();
   });
 
   it('rascunho aberto por quem pode escrever tem os campos habilitados', async () => {

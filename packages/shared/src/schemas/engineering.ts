@@ -356,6 +356,12 @@ export const engineeringReviewCommentSchema = z.object({
 });
 export type EngineeringReviewCommentInput = z.input<typeof engineeringReviewCommentSchema>;
 
+/** Envio para revisão: opcionalmente pede a revisão de um engenheiro específico. */
+export const submitEngineeringVersionSchema = z.object({
+  reviewerId: z.uuid().nullable().optional(),
+});
+export type SubmitEngineeringVersionInput = z.infer<typeof submitEngineeringVersionSchema>;
+
 export const engineeringDecisionSchema = z.object({
   note: z.string().trim().min(3).max(2_000),
 });

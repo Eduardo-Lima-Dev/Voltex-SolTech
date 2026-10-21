@@ -88,6 +88,7 @@ export class EngineeringManagementService {
       'councilType',
       'councilState',
       'responsibleId',
+      'requireSecondReview',
       'notes',
     ] as const)
       if (input[key] !== undefined) (data as Record<string, unknown>)[key] = input[key];

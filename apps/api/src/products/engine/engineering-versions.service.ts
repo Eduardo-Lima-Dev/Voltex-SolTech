@@ -7,6 +7,9 @@ import {
 import { Prisma } from '@voltex/database';
 import {
   engineRulesDefinitionSchema,
+  hasPermission,
+  type EngineeringReviewerDto,
+  type SubmitEngineeringVersionInput,
   SIGNATORY_FIELD_LABELS,
   signatoryMissing,
   type EngineeringDesign,
@@ -449,7 +452,22 @@ export class EngineeringVersionsService {
     }
   }
 
-  async submit(id: string): Promise<EngineeringVersionDetailDto> {
+  /** Engenheiros que podem revisar e aprovar (têm `engine.project.approve`), para pedir a revisão ao enviar. */
+  async reviewers(): Promise<EngineeringReviewerDto[]> {
+    const users = await this.prisma.db.user.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    });
+    return users
+      .filter((u) => hasPermission(u.role, 'engine.version.approve'))
+      .map((u) => ({ id: u.id, name: u.name }));
+  }
+
+  async submit(
+    id: string,
+    input: SubmitEngineeringVersionInput = {},
+  ): Promise<EngineeringVersionDetailDto> {
     const version = await this.require(id);
     if (version.status !== 'DRAFT')
       throw new ConflictException('Só rascunhos podem ser enviados para revisão.');
@@ -457,6 +475,22 @@ export class EngineeringVersionsService {
       throw new UnprocessableEntityException('Salve e calcule a versão antes de enviá-la.');
     const results = version.results as unknown as EngineeringResults;
     this.assertResultsReady(results);
+    const project = await this.prisma.db.engineeringProject.findFirstOrThrow({
+      where: { id: version.projectId },
+    });
+    let reviewerName: string | null = null;
+    if (input.reviewerId) {
+      const reviewer = (await this.reviewers()).find((r) => r.id === input.reviewerId);
+      if (!reviewer)
+        throw new UnprocessableEntityException(
+          'O revisor precisa ser um usuário ativo com permissão de aprovar projetos.',
+        );
+      if (project.requireSecondReview && reviewer.id === this.context.userId)
+        throw new UnprocessableEntityException(
+          'Este projeto exige segunda revisão: peça a revisão de outro engenheiro.',
+        );
+      reviewerName = reviewer.name;
+    }
     await this.prisma.db.$transaction(async (tx) => {
       await tx.engineeringVersion.update({
         where: { id },
@@ -464,6 +498,7 @@ export class EngineeringVersionsService {
           status: 'SUBMITTED',
           submittedAt: new Date(),
           submittedById: this.context.userId ?? null,
+          reviewerId: input.reviewerId ?? null,
         },
       });
       // Enviar para revisão põe o pedido em revisão e registra na linha do tempo do projeto.
@@ -475,8 +510,8 @@ export class EngineeringVersionsService {
         {
           type: 'STATUS',
           projectId: version.projectId,
-          text: `Versão ${version.number} enviada para revisão`,
-          data: { versionId: id },
+          text: `Versão ${version.number} enviada para revisão${reviewerName ? ` (revisão pedida a ${reviewerName})` : ''}`,
+          data: { versionId: id, reviewerId: input.reviewerId ?? null },
         },
         tx,
       );
@@ -574,12 +609,22 @@ export class EngineeringVersionsService {
     const project = await this.prisma.db.engineeringProject.findFirstOrThrow({
       where: { id: version.projectId },
     });
+    if (project.requireSecondReview) {
+      if (version.submittedById && version.submittedById === this.context.userId)
+        throw new UnprocessableEntityException(
+          'Este projeto exige segunda revisão: quem enviou a versão não pode aprová-la. Peça a outro engenheiro.',
+        );
+      if (version.reviewerId && version.reviewerId !== this.context.userId)
+        throw new UnprocessableEntityException(
+          'A revisão foi pedida a outro engenheiro: só ele pode aprovar esta versão.',
+        );
+    }
     const missingSignatory = signatoryMissing(project as never);
     if (missingSignatory.length)
       throw new UnprocessableEntityException(
         `Informe na ficha do projeto quem assina: ${missingSignatory.map((f) => SIGNATORY_FIELD_LABELS[f]).join(', ')}.`,
       );
-    const [ruleRows, approver] = await Promise.all([
+    const [ruleRows, approver, submitter, requested] = await Promise.all([
       this.prisma.db.ruleSet.findMany({
         where: { id: { in: (version.ruleRefs as string[]).map((ref) => ref.split('@')[0]!) } },
       }),
@@ -587,6 +632,18 @@ export class EngineeringVersionsService {
         ? this.prisma.db.user.findFirst({
             where: { id: this.context.userId },
             select: { id: true, name: true, role: true },
+          })
+        : null,
+      version.submittedById
+        ? this.prisma.db.user.findFirst({
+            where: { id: version.submittedById },
+            select: { id: true, name: true },
+          })
+        : null,
+      version.reviewerId
+        ? this.prisma.db.user.findFirst({
+            where: { id: version.reviewerId },
+            select: { id: true, name: true },
           })
         : null,
     ]);
@@ -645,6 +702,12 @@ export class EngineeringVersionsService {
       rulesApplied,
       declaration: `${signatory.name} (${signatory.councilType} ${signatory.councilRegistration}/${signatory.councilState}) conferiu as regras aplicadas e assume a responsabilidade técnica por este projeto, conforme ${signatory.artType} ${signatory.artNumber}. A aprovação não substitui a ART/TRT/RRT.`,
       approvedBy: approver ? { id: approver.id, name: approver.name } : null,
+      review: {
+        requireSecondReview: project.requireSecondReview,
+        submittedBy: submitter,
+        requestedReviewer: requested,
+        selfApproved: !!approver && approver.id === version.submittedById,
+      },
       approvedAt: new Date().toISOString(),
       approvalNote: note,
     };
@@ -830,8 +893,20 @@ export class EngineeringVersionsService {
       this.catalogExtras(design, items),
     ]);
     for (const item of items) extras.labels[item.id] ??= `${item.manufacturer} ${item.model}`;
+    const people = await this.prisma.db.user.findMany({
+      where: { id: { in: [row.submittedById, row.reviewerId].filter((v): v is string => !!v) } },
+      select: { id: true, name: true },
+    });
+    const personName = (userId: string | null) => people.find((p) => p.id === userId)?.name ?? null;
     return {
       ...toVersionDto(row),
+      review: {
+        requireSecondReview: project.requireSecondReview,
+        submittedById: row.submittedById,
+        submittedByName: personName(row.submittedById),
+        reviewerId: row.reviewerId,
+        reviewerName: personName(row.reviewerId),
+      },
       project: toProjectDto(project, {
         requestId: request?.id ?? null,
         responsibleName: null,

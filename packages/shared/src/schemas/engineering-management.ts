@@ -95,6 +95,7 @@ export const updateProjectProfileSchema = z.object({
     .nullable()
     .optional(),
   responsibleId: z.uuid().nullable().optional(),
+  requireSecondReview: z.boolean().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 export type UpdateProjectProfileInput = z.infer<typeof updateProjectProfileSchema>;

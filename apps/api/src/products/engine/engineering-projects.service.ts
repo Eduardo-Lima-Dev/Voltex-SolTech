@@ -130,6 +130,7 @@ export class EngineeringProjectsService {
         artType: row.artType as 'ART' | 'TRT' | 'RRT' | null,
         artNumber: row.artNumber,
         councilRegistration: row.councilRegistration,
+        requireSecondReview: row.requireSecondReview,
         signatoryName: row.signatoryName,
         councilType: row.councilType as 'CREA' | 'CFT' | 'CAU' | null,
         councilState: row.councilState,

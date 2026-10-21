@@ -20,6 +20,7 @@ import {
   DialogTitle,
   Input,
   Label,
+  NativeSelect,
   Skeleton,
   Spinner,
   toast,
@@ -56,7 +57,9 @@ export function VersionEditorPage() {
   const { id: projectId = '', versionId = '' } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const [reviewerId, setReviewerId] = useState('');
+  const [submitOpen, setSubmitOpen] = useState(false);
   const [stepId, setStepId] = useState<(typeof EDITOR_STEPS)[number]['id']>('local');
   const [design, setDesign] = useState<EngineeringDesign | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -173,10 +176,16 @@ export function VersionEditorPage() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.engineeringVersion(versionId) });
     await queryClient.invalidateQueries({ queryKey: queryKeys.engineeringProject(projectId) });
   };
+  const reviewers = useQuery({
+    queryKey: ['engineering', 'reviewers'],
+    queryFn: () => endpoints.engineering.reviewers(),
+    enabled: submitOpen,
+  });
   const submit = useMutation({
-    mutationFn: () => endpoints.engineering.submit(versionId),
+    mutationFn: () => endpoints.engineering.submit(versionId, { reviewerId: reviewerId || null }),
     onSuccess: async () => {
       toast.success('Versão enviada para revisão técnica.');
+      setSubmitOpen(false);
       await refreshVersion();
     },
     onError: (error) =>
@@ -224,6 +233,8 @@ export function VersionEditorPage() {
   if (version.isError)
     return <p className="text-sm text-destructive">Não foi possível carregar a versão.</p>;
   const v = version.data;
+  const selfApprovalBlocked =
+    !!v && v.review.requireSecondReview && v.review.submittedById === user?.id;
   // A série compactada só é lida pelo servidor. Após salvar, mostra o resultado oficial; durante edição,
   // a prévia local continua útil para layout, strings e materiais.
   const effectiveResults = dirty ? results : (v.results ?? results);
@@ -264,6 +275,13 @@ export function VersionEditorPage() {
               {v.stale ? <Badge variant="yellow">desatualizada</Badge> : null}
               {dirty ? <Badge variant="outline">alterações não salvas</Badge> : null}
             </h2>
+            {v.status === 'SUBMITTED' ? (
+              <p className="text-sm text-muted-foreground">
+                Enviada por {v.review.submittedByName ?? 'usuário'}
+                {v.review.reviewerName ? ` · revisão pedida a ${v.review.reviewerName}` : ''}
+                {v.review.requireSecondReview ? ' · segunda revisão obrigatória' : ''}
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             {v.status !== 'DRAFT' &&
@@ -283,16 +301,26 @@ export function VersionEditorPage() {
               </Button>
             ) : null}
             {v.status === 'DRAFT' && !dirty && can('engine.project.write') ? (
-              <Button variant="outline" disabled={submit.isPending} onClick={() => submit.mutate()}>
-                {submit.isPending ? <Spinner /> : null} Enviar para revisão
+              <Button variant="outline" onClick={() => setSubmitOpen(true)}>
+                Enviar para revisão
               </Button>
             ) : null}
-            {v.status === 'SUBMITTED' && can('engine.project.approve') ? (
+            {v.status === 'SUBMITTED' && can('engine.version.approve') ? (
               <>
                 <Button variant="outline" onClick={() => setDecision('reject')}>
                   Recusar
                 </Button>
-                <Button onClick={() => setDecision('approve')}>Aprovar</Button>
+                <Button
+                  disabled={selfApprovalBlocked}
+                  title={
+                    selfApprovalBlocked
+                      ? 'Este projeto exige segunda revisão: outro engenheiro precisa aprovar.'
+                      : undefined
+                  }
+                  onClick={() => setDecision('approve')}
+                >
+                  Aprovar
+                </Button>
               </>
             ) : null}
           </div>
@@ -343,7 +371,7 @@ export function VersionEditorPage() {
                 Comentários abertos bloqueiam a aprovação da versão.
               </p>
             </div>
-            {can('engine.project.approve') ? (
+            {can('engine.version.approve') ? (
               <div className="grid gap-2 sm:grid-cols-[10rem_1fr_auto]">
                 <Input
                   aria-label="Seção do comentário"
@@ -397,6 +425,44 @@ export function VersionEditorPage() {
             </div>
           </section>
         ) : null}
+
+        <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enviar para revisão</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-1">
+              <Label htmlFor="reviewer">Pedir revisão a</Label>
+              <NativeSelect
+                id="reviewer"
+                value={reviewerId}
+                onChange={(e) => setReviewerId(e.target.value)}
+              >
+                <option value="">Qualquer engenheiro</option>
+                {(reviewers.data ?? [])
+                  .filter((r) => !v.review.requireSecondReview || r.id !== user?.id)
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+              </NativeSelect>
+              <p className="text-sm text-muted-foreground">
+                {v.review.requireSecondReview
+                  ? 'Este projeto exige segunda revisão: outro engenheiro precisa aprovar.'
+                  : 'Você pode aprovar o seu próprio trabalho ou pedir a revisão de outro engenheiro.'}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSubmitOpen(false)}>
+                Cancelar
+              </Button>
+              <Button disabled={submit.isPending} onClick={() => submit.mutate()}>
+                {submit.isPending ? <Spinner /> : null} Enviar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={decision !== null} onOpenChange={(open) => !open && setDecision(null)}>
           <DialogContent>
