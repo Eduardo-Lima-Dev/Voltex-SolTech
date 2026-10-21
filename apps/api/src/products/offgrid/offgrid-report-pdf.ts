@@ -1,5 +1,10 @@
 import PDFDocument from 'pdfkit';
-import type { EngineeringVersionStatus, OffgridDesign, OffgridResults } from '@voltex/shared';
+import {
+  INTERNAL_TEST_RULE_WARNING,
+  type EngineeringVersionStatus,
+  type OffgridDesign,
+  type OffgridResults,
+} from '@voltex/shared';
 
 const n = (value: number | null | undefined, digits = 0) =>
   value === null || value === undefined
@@ -21,6 +26,8 @@ export interface OffgridReportInput {
   status: EngineeringVersionStatus;
   design: OffgridDesign;
   results: OffgridResults;
+  /** Alguma regra usada é de teste interno: o memorial leva o aviso em destaque. */
+  internalTestRules?: boolean;
 }
 
 /**
@@ -90,6 +97,14 @@ export function buildOffgridReportPdf(input: OffgridReportInput): Promise<Buffer
         .font('Helvetica-Bold')
         .fontSize(10)
         .text('RASCUNHO PARA REVISÃO — não substitui projeto elétrico assinado.')
+        .fillColor('#111');
+    if (input.internalTestRules)
+      doc
+        .moveDown(0.5)
+        .fillColor('#a82020')
+        .font('Helvetica-Bold')
+        .fontSize(10)
+        .text(INTERNAL_TEST_RULE_WARNING, { width })
         .fillColor('#111');
     if (r.pending.length > 0)
       for (const p of r.pending) bullet(`Pendência: ${p.message}`, '#a82020');

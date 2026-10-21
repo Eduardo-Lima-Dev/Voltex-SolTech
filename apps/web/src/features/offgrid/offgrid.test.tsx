@@ -236,6 +236,7 @@ const version = (o: Partial<OffgridVersionDetailDto> = {}): OffgridVersionDetail
   },
   project: { id: 'pj-1', code: 'OFG-2026-0001', name: 'Chalé do Vale', systemType: 'OFFGRID' },
   openComments: 0,
+  internalTestRules: false,
   canApprove: false,
   ...o,
 });
@@ -684,6 +685,18 @@ describe('Off-Grid Designer: diagrama e terreno 2D/3D', () => {
     expect(scene.getAttribute('viewBox')).not.toBe(zoomed);
     expect(scene.querySelectorAll('polygon').length).toBeGreaterThan(20);
     await user.click(screen.getByLabelText('Mostrar sombras'));
+  });
+
+  it('projeto com regras de teste interno mostra o aviso em destaque; sem elas não há aviso', async () => {
+    server.use(
+      http.get(`${API}/offgrid/versions/v-1`, () =>
+        HttpResponse.json(version({ internalTestRules: true })),
+      ),
+    );
+    renderApp('/offgrid/projetos/pj-1/versoes/v-1', { session: makeSession('TECHNICAL_LEAD') });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/Teste interno/);
+    expect(alert).toHaveTextContent(/Não use em proposta, projeto ou obra reais/);
   });
 
   it('versão congelada: só visualização, sem botões de adicionar', async () => {

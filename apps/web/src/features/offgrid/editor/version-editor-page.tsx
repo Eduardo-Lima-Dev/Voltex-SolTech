@@ -2,7 +2,12 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { ArrowLeft, ArrowRight, FileDown, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { offgridDesignSchema, type EquipmentDto, type OffgridDesign } from '@voltex/shared';
+import {
+  INTERNAL_TEST_RULE_WARNING,
+  offgridDesignSchema,
+  type EquipmentDto,
+  type OffgridDesign,
+} from '@voltex/shared';
 import { computeOffgridResults, type OffgridContext } from '@voltex/solar-engine';
 import {
   Badge,
@@ -347,6 +352,15 @@ export function OffgridVersionEditorPage() {
             editada. Para mudar algo, crie uma nova versão.
           </p>
         ) : null}
+        {v.internalTestRules ? (
+          <div
+            role="alert"
+            className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <strong>Teste interno.</strong> {INTERNAL_TEST_RULE_WARNING}
+          </div>
+        ) : null}
+
         <StepNav current={stepId} states={states} onSelect={(id) => setStepId(id)} />
 
         <PendingPanel results={results} onGo={(id) => setStepId(id)} />
