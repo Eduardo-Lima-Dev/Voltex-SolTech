@@ -20,6 +20,8 @@ import {
   extractInverterDatasheet,
   extractModuleDatasheet,
   extractOffgridDatasheet,
+  extractProtectionDatasheet,
+  isProtectionKind,
   isOffgridKind,
   type PdfTextItem,
   parseEquipmentCsv,
@@ -116,6 +118,9 @@ export class CatalogImportService {
         if (isOffgridKind(kind)) {
           // Bateria, controlador, inversor off-grid e gerador: leitor por rótulos e título.
           parsed = [extractOffgridDatasheet(kind, text, modelHint)];
+        } else if (isProtectionKind(kind)) {
+          // Disjuntor, DPS, fusível, seccionadora, DR, string box e cabos.
+          parsed = [extractProtectionDatasheet(kind, text, modelHint)];
         } else {
           // Sem tipo informado, tenta como ficha de inversor (tabela com colunas por modelo) e depois como módulo.
           const inverters =

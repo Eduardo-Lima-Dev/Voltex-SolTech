@@ -18,6 +18,19 @@ const KIND_LABEL: Record<string, string> = {
 
 /** Palavras que identificam o tipo no título quando a fonte não classificou o documento. */
 const KIND_WORDS: Record<string, string[]> = {
+  PROTECTION: [
+    'disjuntor',
+    'dps',
+    'fusivel',
+    'fusível',
+    'seccionador',
+    'seccionadora',
+    'string box',
+    'diferencial',
+    'protetor',
+    'minidisjuntor',
+  ],
+  CABLE: ['cabo', 'cable', 'condutor', 'pv1-f', 'h1z2z2'],
   BATTERY: ['bateria', 'battery', 'lifepo4', 'estacionaria', 'estacionária', 'litio', 'lítio'],
   CHARGE_CONTROLLER: ['controlador', 'controller', 'mppt', 'pwm', 'regulador de carga'],
   GENERATOR: ['gerador', 'generator'],

@@ -698,6 +698,42 @@ describe('Catálogo técnico (e2e)', () => {
       expect(none.body).toEqual([]);
     });
 
+    it('documentos de proteção e cabo sem tipo são classificados pelas palavras do título', async () => {
+      const link = await t.prisma.system.catalogSourceLink.create({
+        data: {
+          tenantId: a.id,
+          url: `https://exemplo.test/prot-${suffix}`,
+          label: 'Fonte de proteções',
+        },
+      });
+      for (const title of [`Disjuntor 2P 32A curva C ${suffix}`, `Cabo solar 6mm² ${suffix}`]) {
+        await t.prisma.system.catalogSourceDocument.create({
+          data: {
+            tenantId: a.id,
+            linkId: link.id,
+            url: `https://exemplo.test/prot-${suffix}/${encodeURIComponent(title)}.pdf`,
+            title,
+            brand: 'Marca',
+            fileType: 'pdf',
+            docType: 'DATASHEET',
+            equipmentHint: 'OTHER',
+            pageUrl: `https://exemplo.test/prot-${suffix}`,
+            confidence: 'LOW',
+          },
+        });
+      }
+      const prot = await t.http
+        .get(`${API}/catalog/search?kind=PROTECTION&q=${suffix}`)
+        .set(bearer(engineer));
+      expect((prot.body as { model: string }[]).map((r) => r.model)).toEqual([
+        `Disjuntor 2P 32A curva C ${suffix}`,
+      ]);
+      const cable = await t.http.get(`${API}/catalog/search?kind=CABLE`).set(bearer(engineer));
+      expect(
+        (cable.body as { model: string }[]).some((r) => r.model.startsWith('Cabo solar')),
+      ).toBe(true);
+    });
+
     it('sincroniza a biblioteca CEC/SAM pela internet (resposta gravada) e a busca a encontra', async () => {
       const on = await createTestApp({ DATA_HUB_ENABLED_SOURCES: 'cec-library' });
       try {
