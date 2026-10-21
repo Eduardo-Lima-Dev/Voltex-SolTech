@@ -78,7 +78,7 @@ function EquipmentList({ kind }: { kind: EquipmentKind }) {
 
   const create = useMutation({
     mutationFn: (values: EquipmentFormValues) =>
-      endpoints.catalog.create({ kind, ...values, origin: 'MANUAL' } as never),
+      endpoints.catalog.create({ kind, ...values, origin: values.origin ?? 'MANUAL' } as never),
     onSuccess: async (created) => {
       toast.success('Rascunho criado. O responsável técnico precisa aprová-lo para uso.');
       setCreating(false);

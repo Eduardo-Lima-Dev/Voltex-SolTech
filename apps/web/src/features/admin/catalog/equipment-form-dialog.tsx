@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { EquipmentKind, FieldConfidence } from '@voltex/shared';
+import type {
+  CatalogSearchResultDto,
+  EquipmentKind,
+  EquipmentOrigin,
+  FieldConfidence,
+} from '@voltex/shared';
 import {
   Badge,
   Button,
@@ -13,14 +18,21 @@ import {
   Label,
   NativeSelect,
   Spinner,
+  toast,
 } from '@voltex/ui';
 import { parseDecimal } from '@/features/calculator/form';
+import { endpoints } from '@/lib/api/endpoints';
+import { errorMessage } from '@/lib/api/errors';
+import { EquipmentSearchBox, fetchPreview } from './equipment-search-box';
 import { CATALOG_FIELDS, CONFIDENCE_LABELS, type CatalogField } from './catalog-fields';
 
 export interface EquipmentFormValues {
   manufacturer: string;
   model: string;
   spec: Record<string, unknown>;
+  /** Preenchidos quando a ficha veio de uma busca (fonte, biblioteca ou PDF). */
+  origin?: EquipmentOrigin;
+  fieldConfidence?: Record<string, FieldConfidence>;
 }
 
 interface Initial {
@@ -42,6 +54,8 @@ interface Props {
   /** Fabricante e modelo não mudam (ex.: adoção de referência). */
   lockIdentity?: boolean;
   submitLabel?: string;
+  /** Mostra a busca no topo (padrão: sim, exceto quando fabricante e modelo estão travados). */
+  searchable?: boolean;
   pending?: boolean;
   /** Erros do servidor por campo (`spec.pmaxWp`, `manufacturer`...). */
   serverErrors?: Record<string, string>;
@@ -67,6 +81,7 @@ export function EquipmentFormDialog({
   initial,
   lockIdentity,
   submitLabel = 'Salvar rascunho',
+  searchable = !lockIdentity,
   pending,
   serverErrors = {},
   onSubmit,
@@ -76,16 +91,76 @@ export function EquipmentFormDialog({
   const [model, setModel] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /** Ficha trazida pela busca: substitui o que a tela de origem passou. */
+  const [filled, setFilled] = useState<
+    (Initial & { origin: EquipmentOrigin; notes: string[] }) | null
+  >(null);
+  const [searching, setSearching] = useState(false);
+  const current: Initial | undefined = filled ?? initial;
 
   useEffect(() => {
-    if (!open) return;
-    setManufacturer(initial?.manufacturer ?? '');
-    setModel(initial?.model ?? '');
-    setValues(Object.fromEntries(fields.map((f) => [f.key, toText(f, initial?.spec?.[f.key])])));
+    if (!open) {
+      setFilled(null);
+      return;
+    }
+    setManufacturer(current?.manufacturer ?? '');
+    setModel(current?.model ?? '');
+    setValues(Object.fromEntries(fields.map((f) => [f.key, toText(f, current?.spec?.[f.key])])));
     setErrors({});
-    // O formulário reinicia só quando abre ou muda o registro de origem.
+    // O formulário reinicia só quando abre, muda o registro de origem ou chega uma ficha da busca.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial]);
+  }, [open, initial, filled]);
+
+  /** Preenche o formulário com o resultado escolhido (ficha existente, fonte, biblioteca ou PDF). */
+  const fillFrom = async (item: CatalogSearchResultDto) => {
+    setSearching(true);
+    try {
+      if (item.origin === 'CATALOG') {
+        const found = await endpoints.catalog.get(item.id);
+        if (found.kind !== kind) {
+          toast.warning(`Este item é de outro tipo (${found.kind}).`);
+          return;
+        }
+        setFilled({
+          manufacturer: found.manufacturer,
+          model: found.model,
+          spec: found.spec as Record<string, unknown>,
+          fieldConfidence: {},
+          missing: [],
+          origin: 'MANUAL',
+          notes: [`Copiado da ficha “${found.manufacturer} ${found.model}” do seu catálogo.`],
+        });
+        return;
+      }
+      const preview = await fetchPreview(item, kind);
+      const candidate = preview.candidates.find((c) => c.kind === kind);
+      if (!candidate) {
+        toast.error(preview.errors[0]?.message ?? 'Não consegui ler esta ficha: preencha à mão.');
+        return;
+      }
+      setFilled({
+        manufacturer: candidate.manufacturer || item.manufacturer,
+        model: candidate.model || item.model,
+        spec: candidate.spec,
+        fieldConfidence: candidate.fieldConfidence,
+        missing: candidate.missing,
+        origin: candidate.origin,
+        notes: [
+          `Preenchido a partir de ${item.sourceLabel}.`,
+          ...(preview.candidates.length > 1
+            ? [
+                `O arquivo traz ${preview.candidates.length} modelos: usei o primeiro. Para vários, use Importar.`,
+              ]
+            : []),
+          ...preview.notes.slice(0, 2),
+        ],
+      });
+    } catch (error) {
+      toast.error(errorMessage(error, 'Não foi possível buscar esta ficha.'));
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const submit = () => {
     const next: Record<string, string> = {};
@@ -110,7 +185,12 @@ export function EquipmentFormDialog({
     }
     setErrors(next);
     if (Object.keys(next).length === 0)
-      onSubmit({ manufacturer: manufacturer.trim(), model: model.trim(), spec });
+      onSubmit({
+        manufacturer: manufacturer.trim(),
+        model: model.trim(),
+        spec,
+        ...(filled ? { origin: filled.origin, fieldConfidence: filled.fieldConfidence } : {}),
+      });
   };
 
   const errorOf = (key: string) => errors[key] ?? serverErrors[`spec.${key}`] ?? serverErrors[key];
@@ -130,6 +210,26 @@ export function EquipmentFormDialog({
             submit();
           }}
         >
+          {searchable ? (
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+              <EquipmentSearchBox
+                kind={kind}
+                label="Buscar para preencher (suas fichas, bibliotecas e fontes)"
+                idPrefix="form-search"
+                busy={searching}
+                onChoose={(item) => void fillFrom(item)}
+              />
+              {filled ? (
+                <p className="text-xs text-muted-foreground" role="status">
+                  {filled.notes.join(' ')} Confira os campos marcados antes de salvar.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Escolha um resultado para preencher o formulário; ou preencha tudo à mão abaixo.
+                </p>
+              )}
+            </div>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="eq-manufacturer">Fabricante</Label>
@@ -159,8 +259,8 @@ export function EquipmentFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             {fields.map((field) => {
               const id = `eq-${field.key}`;
-              const confidence = initial?.fieldConfidence?.[field.key];
-              const missing = initial?.missing?.includes(field.key) && !(values[field.key] ?? '');
+              const confidence = current?.fieldConfidence?.[field.key];
+              const missing = current?.missing?.includes(field.key) && !(values[field.key] ?? '');
               return (
                 <div key={field.key} className="grid gap-1.5">
                   <Label htmlFor={id} className="flex flex-wrap items-center gap-2">

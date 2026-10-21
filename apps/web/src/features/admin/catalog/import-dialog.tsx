@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileUp } from 'lucide-react';
 import { useState } from 'react';
 import type {
+  CatalogSearchResultDto,
   EquipmentDto,
   EquipmentKind,
   ImportCandidateDto,
@@ -30,6 +31,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, fieldErrors } from '@/lib/api/errors';
 import { queryKeys } from '../query-keys';
 import { KIND_LABELS, ORIGIN_LABELS } from './catalog-fields';
+import { EquipmentSearchBox, fetchPreview } from './equipment-search-box';
 import { EquipmentFormDialog, type EquipmentFormValues } from './equipment-form-dialog';
 
 const FORMATS: { value: ImportFormat; label: string; accept: string }[] = [
@@ -87,6 +89,7 @@ export function ImportDialog({
 }) {
   const queryClient = useQueryClient();
   const { can } = useAuth();
+  const [searching, setSearching] = useState(false);
   const [format, setFormat] = useState<ImportFormat>('csv');
   const [kind, setKind] = useState<EquipmentKind>(defaultKind);
   const [file, setFile] = useState<File | null>(null);
@@ -150,6 +153,24 @@ export function ImportDialog({
     },
   });
 
+  /** Escolher um resultado da busca abre a conferência dele, como se o arquivo tivesse sido lido. */
+  const pickFromSearch = async (item: CatalogSearchResultDto) => {
+    if (item.origin === 'CATALOG') {
+      toast.info('Este item já está no seu catálogo: abra-o na lista.');
+      return;
+    }
+    setSearching(true);
+    try {
+      const result = await fetchPreview(item, kind);
+      setPreview(result);
+      setRows(result.candidates.map((c) => ({ ...c, selected: ready({ ...c, selected: false }) })));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Não foi possível ler a ficha.'));
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const reset = () => {
     setFile(null);
     setPreview(null);
@@ -207,6 +228,30 @@ export function ImportDialog({
 
         {!preview ? (
           <div className="grid gap-4">
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="imp-kind-search">Tipo de equipamento a buscar</Label>
+                <NativeSelect
+                  id="imp-kind-search"
+                  value={kind}
+                  onChange={(e) => setKind(e.target.value as EquipmentKind)}
+                >
+                  {(Object.keys(KIND_LABELS) as EquipmentKind[]).map((k) => (
+                    <option key={k} value={k}>
+                      {KIND_LABELS[k]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <EquipmentSearchBox
+                kind={kind}
+                label="Buscar uma ficha (bibliotecas e fontes) em vez de enviar um arquivo"
+                idPrefix="import-search"
+                busy={searching}
+                onChoose={(item) => void pickFromSearch(item)}
+              />
+              <p className="text-xs text-muted-foreground">Ou envie um arquivo abaixo.</p>
+            </div>
             <div className="grid gap-1.5">
               <Label htmlFor="imp-format">Tipo de arquivo</Label>
               <NativeSelect
@@ -396,6 +441,7 @@ export function ImportDialog({
             fieldConfidence: editingRow.fieldConfidence,
             missing: editingRow.missing,
           }}
+          searchable={false}
           submitLabel={
             rows.length === 1
               ? approveNow
