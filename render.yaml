@@ -19,6 +19,9 @@ services:
       # Varredura das automações a cada 15 min (padrão: 1 min): poupa os comandos do Redis gratuito.
       - key: AUTOMATION_SCAN_INTERVAL_MS
         value: '900000'
+      # Fontes externas ligadas (clima, tarifas e fontes de equipamentos). Vazio = nada é buscado.
+      - key: DATA_HUB_ENABLED_SOURCES
+        value: nasa-power,pvgis,aneel-tariffs,techlux,cec-library
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

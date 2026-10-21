@@ -49,6 +49,8 @@ const variaveis = [
   ['NODE_ENV', 'production'],
   ['TRUST_PROXY', '2'],
   ['AUTOMATION_SCAN_INTERVAL_MS', '900000'],
+  // Fontes externas ligadas (clima, tarifas e fontes de equipamentos). Vazio = nada é buscado.
+  ['DATA_HUB_ENABLED_SOURCES', 'nasa-power,pvgis,aneel-tariffs,techlux,cec-library'],
   ['WEB_URL', webUrl],
   ['CORS_ORIGIN', webUrl],
   ['DATABASE_URL', lerSegredo('supabase-db-url')],
