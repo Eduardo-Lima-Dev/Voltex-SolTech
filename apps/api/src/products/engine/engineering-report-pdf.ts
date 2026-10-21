@@ -95,6 +95,19 @@ export function buildEngineeringReportPdf(input: EngineeringReportInput): Promis
       `${n(input.design.site.designTminC, 1)} °C · ${input.design.site.designTemperatureSource ?? 'fonte não informada'}`,
     );
     line('Superfícies', `${input.design.surfaces.length}`);
+    const { climate, horizon } = input.design.site;
+    if (climate) {
+      line(
+        'Fonte do clima',
+        `${climate.source === 'pvgis' ? 'PVGIS' : 'NASA POWER'} · ${climate.period} · coletado em ${climate.fetchedAt.slice(0, 10)}${climate.attribution ? ` · ${climate.attribution}` : ''}`,
+      );
+    }
+    if (horizon) {
+      line(
+        'Fonte do horizonte',
+        `PVGIS · coletado em ${horizon.fetchedAt.slice(0, 10)} · PVGIS © European Communities, 2001-2026`,
+      );
+    }
 
     heading('Compatibilidade e proteções');
     line('Compatibilidade', input.results.compatibility.status);
