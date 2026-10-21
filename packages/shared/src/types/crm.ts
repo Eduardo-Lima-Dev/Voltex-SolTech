@@ -246,6 +246,10 @@ export interface EngineeringRequestDto {
   calculationSessionId: string | null;
   reason: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+  /** Projeto aberto no Solar Engine Studio para este pedido, quando já existe. */
+  projectId: string | null;
+  assigneeId: string | null;
+  resolution: string | null;
   createdAt: string;
 }
 

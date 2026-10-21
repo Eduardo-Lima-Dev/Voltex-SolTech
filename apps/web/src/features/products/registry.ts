@@ -60,7 +60,7 @@ export const PRODUCTS: readonly ProductDef[] = [
     icon: CircuitBoard,
     tagline: 'Projeto e validação técnica fotovoltaica.',
     permission: 'engine.project.read',
-    availability: { status: 'soon', phase: 'Fase 9' },
+    availability: { status: 'available' },
     highlights: [
       'Catálogo de módulos e inversores',
       'Strings, MPPT e compatibilidade',
@@ -75,12 +75,12 @@ export const PRODUCTS: readonly ProductDef[] = [
     icon: BatteryCharging,
     tagline: 'Sistemas isolados e com armazenamento.',
     permission: 'offgrid.project.read',
-    availability: { status: 'soon', phase: 'Fase 10' },
+    availability: { status: 'available' },
     highlights: [
-      'Cadastro de cargas e perfil de consumo',
-      'Autonomia e banco de baterias',
-      'Inversor, controlador e gerador',
-      'Comparação de cenários',
+      'Cargas, perfil de consumo e partida de motores',
+      'Autonomia, banco de baterias e simulação horária',
+      'Controlador, inversor, gerador e rede (híbrido sem injeção)',
+      'Cenários, custo e aprovação técnica',
     ],
   },
 ];

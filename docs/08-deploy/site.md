@@ -19,13 +19,14 @@ O site chama a API **na mesma origem**: em desenvolvimento o Vite encaminha `/ap
 
 ## Variáveis (`.env` da raiz; veja também [variáveis de ambiente](variaveis-de-ambiente.md))
 
-| Variável        | Onde vale | Para quê                                                                                             |
-| --------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `VITE_APP_URL`  | site      | Endereço da aplicação. Padrão em dev: `http://localhost:5173`. Gravado na **compilação**.            |
-| `VITE_SITE_URL` | web       | Endereço do site, para o "Voltar ao site". Opcional.                                                 |
-| `VITE_LEAD_KEY` | site      | Chave de captação da empresa que recebe os contatos. Sem ela o formulário avisa que não pôde enviar. |
-| `SITE_PORT`     | compose   | Porta do host do site em produção (padrão 8081).                                                     |
-| `SITE_LEAD_KEY` | compose   | Valor de `VITE_LEAD_KEY` na imagem de produção.                                                      |
+| Variável        | Onde vale | Para quê                                                                                                                                                                                      |
+| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_APP_URL`  | site      | Endereço da aplicação. Padrão em dev: `http://localhost:5173`. Gravado na **compilação**.                                                                                                     |
+| `VITE_SITE_URL` | web       | Endereço do site, para o "Voltar ao site". Opcional.                                                                                                                                          |
+| `VITE_LEAD_KEY` | site      | Chave de captação da empresa que recebe os contatos. Sem ela o formulário avisa que não pôde enviar.                                                                                          |
+| `VITE_LEGAL_*`  | site      | Dados da empresa nas páginas `/privacidade` e `/termos` (`COMPANY`, `CNPJ`, `ADDRESS`, `PRIVACY_EMAIL`, `DPO`, `FORUM`). Gravados na **compilação**; sem valor, a página mostra "a informar". |
+| `SITE_PORT`     | compose   | Porta do host do site em produção (padrão 8081).                                                                                                                                              |
+| `SITE_LEAD_KEY` | compose   | Valor de `VITE_LEAD_KEY` na imagem de produção.                                                                                                                                               |
 
 Para receber os contatos: crie a empresa dona da plataforma (`create-owner`), entre no CRM Solar → Leads, copie a chave de captação e coloque em `VITE_LEAD_KEY` (dev) ou `SITE_LEAD_KEY` (produção). Como `VITE_*` é gravada na compilação, **gere a imagem de novo** ao trocar um endereço ou a chave.
 

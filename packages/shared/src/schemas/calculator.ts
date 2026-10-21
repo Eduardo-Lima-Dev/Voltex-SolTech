@@ -61,23 +61,6 @@ export const calculatorRulesDefinitionSchema = z.object({
 });
 export type CalculatorRulesDefinition = z.input<typeof calculatorRulesDefinitionSchema>;
 
-export const createRuleSetSchema = z.object({
-  key: z.literal(CALCULATOR_RULESET_KEY).default(CALCULATOR_RULESET_KEY),
-  definition: calculatorRulesDefinitionSchema,
-  sources: z.array(ruleSourceSchema).min(1, 'Informe ao menos uma fonte'),
-  validFrom: isoDateTimeSchema.optional(),
-  notes: z.string().trim().max(500).optional(),
-});
-export type CreateRuleSetInput = z.input<typeof createRuleSetSchema>;
-/** Corpo já validado (datas convertidas em `Date`). */
-export type CreateRuleSetData = z.output<typeof createRuleSetSchema>;
-
-export const activateRuleSetSchema = z.object({
-  /** Responsável técnico pela revisão da regra (obrigatório para ativar). */
-  reviewedBy: z.string().trim().min(3).max(160),
-});
-export type ActivateRuleSetInput = z.infer<typeof activateRuleSetSchema>;
-
 /** Valores que vêm do EnergIF e do produto, usados enquanto o tenant não ativa uma versão própria. */
 export const DEFAULT_CALCULATOR_RULE_SOURCES: RuleSource[] = [
   {

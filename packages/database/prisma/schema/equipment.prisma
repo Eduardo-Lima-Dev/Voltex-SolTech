@@ -1,0 +1,171 @@
+// Catálogo técnico por empresa (Fase 9C, ADR-0017): módulos, inversores, proteções e cabos, com governança
+// (rascunho → aprovado → aposentado), revisões, proveniência e registro INMETRO. Preços com vigência.
+
+enum EquipmentKind {
+  MODULE
+  INVERTER
+  PROTECTION
+  CABLE
+  BATTERY
+  CHARGE_CONTROLLER
+  OFFGRID_INVERTER
+  GENERATOR
+
+  @@map("equipment_kind")
+}
+
+enum EquipmentStatus {
+  DRAFT
+  APPROVED
+  RETIRED
+
+  @@map("equipment_status")
+}
+
+enum EquipmentOrigin {
+  MANUAL
+  CSV
+  PAN
+  OND
+  DATASHEET_PDF
+  CEC
+
+  @@map("equipment_origin")
+}
+
+/// Um item do catálogo de uma empresa. A ficha técnica fica em `spec` (validada por tipo na API). Depois de
+/// aprovado, `manufacturer`, `model`, `spec`, `kind` e `revision` são imutáveis (gatilho no banco): corrigir
+/// = nova revisão. A conferência do INMETRO e o anexo da ficha podem mudar a qualquer momento.
+model EquipmentItem {
+  id                  String          @id @default(uuid(7)) @db.Uuid
+  tenantId            String          @map("tenant_id") @db.Uuid
+  kind                EquipmentKind
+  manufacturer        String
+  model               String
+  spec                Json
+  origin              EquipmentOrigin @default(MANUAL)
+  /// Registro de referência da biblioteca pública de onde o item foi adotado (tabela global).
+  externalRecordId    String?         @map("external_record_id") @db.Uuid
+  /// Confiança de cada campo lido de arquivo: `{ campo: HIGH | MEDIUM | LOW }`.
+  fieldConfidence     Json            @default("{}") @map("field_confidence")
+  /// Custo de referência em centavos (quando não há tabela de preços vigente).
+  referenceCostCents  Int?            @map("reference_cost_cents")
+  datasheetDocumentId String?         @map("datasheet_document_id") @db.Uuid
+  inmetroRegistration String?         @map("inmetro_registration")
+  /// `NOT_VERIFIED`, `VERIFIED`, `NOT_FOUND` ou `NOT_APPLICABLE`.
+  inmetroStatus       String          @default("NOT_VERIFIED") @map("inmetro_status")
+  inmetroCheckedAt    DateTime?       @map("inmetro_checked_at")
+  inmetroCheckedBy    String?         @map("inmetro_checked_by")
+  status              EquipmentStatus @default(DRAFT)
+  revision            Int             @default(1)
+  /// Revisão anterior do mesmo modelo.
+  supersedesId        String?         @map("supersedes_id") @db.Uuid
+  approvedById        String?         @map("approved_by_id") @db.Uuid
+  approvedAt          DateTime?       @map("approved_at")
+  retiredAt           DateTime?       @map("retired_at")
+  notes               String?
+  createdById         String?         @map("created_by_id") @db.Uuid
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  priceItems PriceListItem[]
+
+  @@unique([tenantId, kind, manufacturer, model, revision])
+  @@index([tenantId, kind, status])
+  @@index([tenantId, manufacturer, model])
+  @@map("equipment_items")
+}
+
+/// Preço de um fornecedor com vigência. Item sem equipamento (`equipmentId` nulo) é um insumo avulso.
+model PriceListItem {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  equipmentId String?   @map("equipment_id") @db.Uuid
+  description String
+  supplier    String
+  sku         String?
+  priceCents  Int       @map("price_cents")
+  validFrom   DateTime  @map("valid_from")
+  validTo     DateTime? @map("valid_to")
+  /// Arquivo ou origem da tabela (ex.: nome da planilha).
+  source      String
+  createdById String?   @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  equipment EquipmentItem? @relation(fields: [equipmentId], references: [id])
+
+  @@index([tenantId, equipmentId, validFrom])
+  @@index([tenantId, supplier])
+  @@map("price_list_items")
+}
+
+/// Equipamento de uma biblioteca pública (ex.: CEC/SAM), GLOBAL: sem dado de empresa. Cada empresa "adota" um
+/// registro, que vira rascunho no catálogo dela. A fonte só é lida com a licença conferida.
+model ExternalRecord {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  sourceId        String   @map("source_id") @db.Uuid
+  /// `CEC_MODULE` ou `CEC_INVERTER`.
+  kind            String
+  manufacturer    String
+  model           String
+  /// Ficha já no formato do catálogo (parte pode faltar) e a confiança de cada campo.
+  spec            Json
+  fieldConfidence Json     @default("{}") @map("field_confidence")
+  contentHash     String   @map("content_hash")
+  collectedAt     DateTime @default(now()) @map("collected_at")
+
+  source DataSource @relation(fields: [sourceId], references: [id])
+
+  @@unique([sourceId, kind, manufacturer, model])
+  @@index([kind, manufacturer])
+  @@map("external_records")
+}
+
+/// Fonte de equipamentos cadastrada pela empresa por link (página de downloads ou arquivo). O sistema analisa a página e
+/// cataloga os arquivos que sabe ler (PDF, CSV, PAN, OND); a pessoa decide o que importar.
+model CatalogSourceLink {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  url            String
+  label          String
+  /// `ACTIVE` ou `ERROR` (última análise falhou; veja `lastError`).
+  status         String    @default("ACTIVE")
+  lastAnalyzedAt DateTime? @map("last_analyzed_at")
+  lastError      String?   @map("last_error")
+  pagesRead      Int       @default(0) @map("pages_read")
+  createdById    String?   @map("created_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  tenant    Tenant                  @relation(fields: [tenantId], references: [id])
+  documents CatalogSourceDocument[]
+
+  @@unique([tenantId, url])
+  @@map("catalog_source_links")
+}
+
+/// Arquivo encontrado numa fonte por link, com a classificação do analisador e os motivos.
+model CatalogSourceDocument {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  linkId        String   @map("link_id") @db.Uuid
+  url           String
+  fileType      String   @map("file_type")
+  title         String
+  brand         String   @default("")
+  docType       String   @map("doc_type")
+  equipmentHint String   @map("equipment_hint")
+  productUrl    String?  @map("product_url")
+  pageUrl       String   @map("page_url")
+  confidence    String
+  reasons       Json     @default("[]")
+  collectedAt   DateTime @default(now()) @map("collected_at")
+
+  tenant Tenant            @relation(fields: [tenantId], references: [id])
+  link   CatalogSourceLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@unique([linkId, url])
+  @@index([tenantId, equipmentHint])
+  @@map("catalog_source_documents")
+}

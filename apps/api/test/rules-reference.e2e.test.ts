@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { isInternalTestRule } from '@voltex/shared';
+import { seedInternalTestRules } from '../src/cli/internal-test-rules';
 import {
   API,
   bearer,
@@ -208,6 +210,148 @@ describe('Rules Engine e dados de referência (e2e)', () => {
       expect((await post('/rules', engToken, { definition: {}, sources: source })).status).toBe(
         403,
       );
+    });
+  });
+
+  describe('regras do Engine por chave e escopo', () => {
+    const connectionRule = {
+      id: 'sem-limite-de-exportacao',
+      when: { field: 'plant.exportLimited', op: '=', value: false },
+      then: {
+        severity: 'WARNING',
+        code: 'CONN_NO_EXPORT_LIMIT',
+        message: 'A distribuidora exige limitação de exportação',
+        source: 'Norma de teste, item 4.2',
+      },
+    };
+    const definition = { parameters: { demoFactor: 1.25 }, rules: [connectionRule] };
+    const effective = (token: string, query: string) =>
+      t.http.get(`${API}/rules/effective?${query}`).set(bearer(token));
+
+    it('valida a definição pela chave e o escopo permitido', async () => {
+      const ok = await post('/rules', admin, {
+        key: 'engine.connection',
+        scope: { state: 'mg' },
+        definition,
+        sources: source,
+      });
+      expect(ok.status).toBe(201);
+      expect(ok.body).toMatchObject({ key: 'engine.connection', scopeKey: 'state=MG' });
+
+      const badRule = await post('/rules', admin, {
+        key: 'engine.connection',
+        definition: {
+          rules: [{ ...connectionRule, when: { field: 'x', op: 'between', value: ['a', 'b'] } }],
+        },
+        sources: source,
+      });
+      expect(badRule.status).toBe(422);
+
+      const noSource = await post('/rules', admin, {
+        key: 'engine.design',
+        definition: {
+          rules: [{ ...connectionRule, then: { ...connectionRule.then, source: '' } }],
+        },
+        sources: source,
+      });
+      expect(noSource.status).toBe(422);
+
+      const scoped = await post('/rules', admin, {
+        key: 'engine.transposition',
+        scope: { state: 'MG' },
+        definition: {},
+        sources: source,
+      });
+      expect(scoped.status).toBe(422);
+    });
+
+    it('sem regra ativa o Engine não tem padrão (a aprovação trava)', async () => {
+      const res = await effective(admin, 'key=engine.economics');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ref: null, key: 'engine.economics', definition: null });
+      expect((await effective(admin, 'key=engine.inexistente')).status).toBe(400);
+    });
+
+    it('a regra mais específica vence e cada escopo tem a sua ativa; ativar publica o evento', async () => {
+      const general = await post('/rules', admin, {
+        key: 'engine.design',
+        definition,
+        sources: source,
+      });
+      const mg = await post('/rules', admin, {
+        key: 'engine.design',
+        scope: { state: 'MG' },
+        definition: { parameters: { demoFactor: 1.5 } },
+        sources: source,
+      });
+      await post(`/rules/${general.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
+      // Regra do Engine sem o registro no conselho de quem revisou não é ativada.
+      const noRegistry = await post(`/rules/${mg.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+      });
+      expect(noRegistry.status).toBe(422);
+      expect(noRegistry.body.message).toMatch(/registro no conselho/);
+      const mgActive = await post(`/rules/${mg.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-MG 654321',
+      });
+      expect(mgActive.status).toBe(200);
+      expect(mgActive.body.reviewedByRegistration).toBe('CREA-MG 654321');
+
+      // Ativar a regra de MG não aposentou a geral.
+      const inMg = await effective(admin, 'key=engine.design&state=MG');
+      expect(inMg.body.ref).toBe(`${mg.body.id}@${mg.body.version}`);
+      expect(inMg.body.definition.parameters.demoFactor).toBe(1.5);
+      const inSp = await effective(admin, 'key=engine.design&state=SP');
+      expect(inSp.body.ref).toBe(`${general.body.id}@${general.body.version}`);
+      expect(inSp.body.reviewedBy).toBe('Eng. Teste');
+
+      // Nova versão geral aposenta só a geral anterior.
+      const general2 = await post('/rules', admin, {
+        key: 'engine.design',
+        definition: {},
+        sources: source,
+      });
+      await post(`/rules/${general2.body.id}/activate`, admin, {
+        reviewedBy: 'Eng. Teste',
+        reviewedByRegistration: 'CREA-SP 123456',
+      });
+      const status = async (id: string) =>
+        (await t.prisma.system.ruleSet.findUniqueOrThrow({ where: { id } })).status;
+      expect(await status(general.body.id)).toBe('RETIRED');
+      expect(await status(mg.body.id)).toBe('ACTIVE');
+      expect(await status(general2.body.id)).toBe('ACTIVE');
+
+      const event = await t.prisma.system.outboxEvent.findFirstOrThrow({
+        where: { tenantId: tenant.id, type: 'RuleSetActivated' },
+        orderBy: { occurredAt: 'desc' },
+      });
+      expect(event.payload).toMatchObject({
+        key: 'engine.design',
+        ref: `${general2.body.id}@${general2.body.version}`,
+        previousRef: `${general.body.id}@${general.body.version}`,
+        reviewedBy: 'Eng. Teste',
+      });
+    });
+
+    it('o escopo também é imutável depois de ativada a versão (banco)', async () => {
+      const active = await t.prisma.system.ruleSet.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          key: 'engine.design',
+          status: 'ACTIVE',
+          scopeKey: 'state=MG',
+        },
+      });
+      await expect(
+        t.prisma.system.ruleSet.update({
+          where: { id: active.id },
+          data: { scopeKey: 'state=SP', scope: { state: 'SP' } },
+        }),
+      ).rejects.toThrow();
     });
   });
 
@@ -450,6 +594,38 @@ describe('Rules Engine e dados de referência (e2e)', () => {
       expect(
         (await t.http.delete(`${API}/solar-resources/${one.body.id}`).set(bearer(seller))).status,
       ).toBe(403);
+    });
+  });
+
+  describe('regras de teste interno', () => {
+    it('ativa as quatro regras do Engine marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
+      const other = await seedTenant(t.prisma, 'rulestest');
+      const owner = await tokenFor(t.http, other.admin);
+      const first = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(first).toHaveLength(4);
+      expect(first.every((line) => /ativada como TESTE INTERNO/.test(line))).toBe(true);
+
+      const list = await t.http.get(`${API}/rules`).set(bearer(owner));
+      const engine = list.body.filter((x: { key: string }) => x.key.startsWith('engine.'));
+      expect(engine).toHaveLength(4);
+      for (const rule of engine) {
+        expect(rule.status).toBe('ACTIVE');
+        expect(isInternalTestRule(rule)).toBe(true);
+        expect(rule.reviewedBy).toMatch(/TESTE INTERNO/);
+        expect(rule.reviewedByRegistration).toMatch(/SEM REGISTRO/);
+      }
+      const cables = await t.http
+        .get(`${API}/rules/effective?key=engine.cables`)
+        .set(bearer(owner));
+      expect(cables.body.definition.tables.ampacity.length).toBeGreaterThan(3);
+
+      // Segunda rodada: nada muda (idempotente, não cria outra versão).
+      const again = await seedInternalTestRules(t.prisma.system, other.id);
+      expect(again.every((line) => /nada foi alterado/.test(line))).toBe(true);
+      const after = await t.http.get(`${API}/rules`).set(bearer(owner));
+      expect(after.body.filter((x: { key: string }) => x.key.startsWith('engine.'))).toHaveLength(
+        4,
+      );
     });
   });
 });

@@ -13,6 +13,12 @@ Eventos publicados pelos módulos (seção 37 da modelagem). Os nomes e payloads
 
 `UserInvited` · `UserActivated` · `DocumentUploaded`
 
+Regras e Central de Dados (Fase 9):
+
+- `RuleSetActivated`: uma versão de regra de qualquer chave passou a valer (`key`, `version`, `scope`, `ref`, `previousRef`, `reviewedBy`). Serve para revalidar projetos que usam a regra.
+- `ExternalSourceChanged`: uma fonte vigiada mudou (`watchId`, `label`, `url`, `addedLines`, `removedLines`). Avisa o responsável técnico; não altera regra.
+- `UpdateProposalDecided`: uma proposta da caixa de atualizações foi aprovada ou descartada (`proposalId`, `type`, `decision`, `origin`).
+
 ## Project Guard (planejados, Fase 7B)
 
 `ProjectGuardEvaluated` · `ProjectGuardOverridden`

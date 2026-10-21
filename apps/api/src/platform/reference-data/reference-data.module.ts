@@ -11,6 +11,6 @@ import { ReferenceDataService } from './reference-data.service';
     AneelImportService,
     { provide: AneelSource, useClass: HttpAneelSource },
   ],
-  exports: [ReferenceDataService],
+  exports: [ReferenceDataService, AneelSource],
 })
 export class ReferenceDataModule {}

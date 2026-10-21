@@ -19,6 +19,7 @@ export const ROUTES = {
   tariffs: '/tariffs',
   solarResources: '/solar-resources',
   rules: '/rules',
+  dataHub: '/data-hub',
   documents: '/documents',
   leads: '/leads',
   publicLeads: '/public/leads',

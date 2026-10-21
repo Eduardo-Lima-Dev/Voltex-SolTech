@@ -63,3 +63,36 @@ Continue da proposta aceita pelo cliente (a oportunidade vai para **Contrato**).
 5. **Painel** — `CRM → Painel`: leads por origem, funil, propostas, ticket médio e previsão (sem total ponderado até definir pesos).
 6. **Automações** — deixe um lead sem contato além do prazo, ou uma oportunidade em "Fatura pendente" por mais de 24 h: em até 1 minuto nasce a tarefa (veja em **Tarefas**). Abra o link de uma proposta enviada: o responsável recebe a tarefa de follow-up.
 7. **Perfis** — o vendedor lê contratos e projetos mas não gera nem assina; o financeiro vê o painel; operação e engenharia atualizam o projeto.
+
+## Fase 9 — Solar Engine Studio
+
+Pré-requisitos: um módulo e um inversor **aprovados** no catálogo (Engine → Catálogo), regras `engine.design`, `engine.cables`, `engine.connection` e `engine.economics` **ativadas por quem revisa** (use valores reais do responsável técnico; os dos testes são de exemplo) e a série horária do local em cache (Administração → Fontes de dados, com a fonte ligada em `DATA_HUB_ENABLED_SOURCES` depois da conferência de licença).
+
+1. **Engenheiro** — `Engine → Pedidos`: pegue o pedido amarelo e abra o projeto (informe latitude e longitude se faltarem). Em cada etapa confira o resultado: compatibilidade com a fórmula de cada verificação; proteções e cabos com a justificativa; simulação (gráficos mensal, dia típico e cascata de perdas, comparação com PVGIS/Calculator); conexão (regras da distribuidora); economia (financiamento, cenários, tornado).
+2. **Pendências** — remova uma regra ou deixe um campo vazio: a etapa mostra "pendente" e **Enviar para revisão** é recusado. Nada é presumido.
+3. **Enviar** — **Enviar para revisão** congela a versão.
+4. **Responsável técnico** — comente por seção; **Aprovar** é recusado enquanto houver comentário aberto; resolva e aprove com justificativa. A versão fica congelada e nasce o snapshot.
+5. **Entregáveis** — baixe memorial e unifilar (PDF/SVG/DXF). **Comparar com outra versão** mostra o que mudou.
+6. **Cliente** — **Gerar link** e abra em janela anônima: nenhum custo ou margem aparece. **Revogar** derruba o link.
+7. **CRM** — a linha do tempo da oportunidade registra a aprovação, o pedido vai para "Concluído" e a cotação pode **importar a lista de materiais** do snapshot. **Anexar à homologação** coloca memorial e unifilar no checklist do projeto (depois do contrato).
+
+### Fase 9K — gestão do pedido e do projeto
+
+1. **Pedido** — `Engine → Pedidos → Ver pedido`: confira o contexto do CRM; mude para **Aguardando visita** (pede motivo); use **Pedir informação ao vendedor** (o vendedor recebe uma tarefa no CRM); como coordenador, defina **Prioridade e prazo** e veja o atraso na lista.
+2. **Projeto** — abra o projeto: preencha a **Ficha** (potência-alvo muda a classe; informe a ART) e veja o pacote em **Documentos** mudar entre micro e mini.
+3. **Levantamento** — preencha em **Levantamento**; **Concluir** só é aceito com os dados mínimos; ao concluir, o pedido volta a "Em andamento". Entre como instalador: ele acessa só o levantamento.
+4. **Carga** e **Histórico** — conferir consumo, cargas e a linha do tempo do pedido e do projeto. **Painel** (coordenador): totais e carga por engenheiro.
+
+## Fase 10 — Off-Grid Designer
+
+Pré-requisitos: bateria, controlador, inversor off-grid e módulo **aprovados** no catálogo (Off-Grid → Catálogo; use o botão de modelo de planilha de cada tipo) e a regra `offgrid.design` **ativada pelo responsável técnico** (sem ela o projeto fica "Incompleto" e não pode ser enviado).
+
+1. **Pedido** — `Off-Grid → Pedidos → Novo pedido` (tipo isolado ou híbrido). Mude para **Em andamento**, comente, defina a prioridade; **Criar projeto** informa latitude e longitude.
+2. **Local e cargas** — busque o clima do local; cadastre as cargas (use os botões de cargas comuns) e confira pico, partida e a curva de carga. Marque uma carga como crítica e veja a energia crítica.
+3. **Premissas** — veja o mês de projeto, a potência FV, o banco e o inversor mínimos; **Sugerir configurações do catálogo** e **Usar esta**.
+4. **Equipamentos** — em Arranjo, Baterias e Controlador/Inversor, as verificações mostram o valor × limite (Voc a frio, corrente, tensão do banco, autonomia, pico e partida). Troque a quantidade de baterias em série e veja o erro de tensão.
+5. **Gerador e rede** — ative o gerador; em sistema **híbrido**, escolha reserva ou autoconsumo e uma queda diária. A rede nunca injeta.
+6. **Simulação** — perda de carga, SOC mínimo, ciclos e vida do banco, gráficos; rode o **estresse** com mais dias nublados e veja o banco esgotar.
+7. **Cenários e custo** — crie até três cenários (banco maior, mais FV, com gerador) e compare perda de carga, CAPEX e custo nivelado. Item sem preço aparece como "sem preço".
+8. **Revisão** — salve, **Enviar para revisão**; como responsável técnico comente, resolva e **Aprove**; a versão congela e o pedido vira Concluído. Baixe o **Memorial (PDF)**.
+9. **Terreno 2D/3D** — em **Diagrama do sistema** confira as cores dos blocos (troque o banco para 2 em série e veja o erro de tensão). Em **Terreno 2D/3D** adicione a casa de máquinas, a casa e o gerador, arraste os arranjos e as construções (ou use as setas), veja os trajetos de cabo e a tabela de seções; ponha a casa ao norte do arranjo e veja a sombra crescer; **Usar como perda por sombra**; alterne para **Cena 3D**, gire e mude a data do sol.

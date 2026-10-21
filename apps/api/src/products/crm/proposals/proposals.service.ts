@@ -22,6 +22,7 @@ import {
   type ProposalDto,
   type ProposalScenarioDto,
   type PublicProposalDto,
+  type EngineeringResults,
 } from '@voltex/shared';
 import { repriceCashFlow, type QuickCalculationResult } from '@voltex/solar-engine';
 import { RequestContext } from '../../../common/context/request-context';
@@ -507,6 +508,23 @@ export class ProposalsService implements OnModuleInit {
       }),
     ]);
 
+    // A proposta preserva o cálculo preliminar como fallback. Quando a cotação veio de
+    // engenharia, usa exclusivamente o resultado que já está congelado no snapshot aprovado.
+    const snapshotIds = quotes.flatMap((quote) =>
+      quote.engineeringSnapshotId ? [quote.engineeringSnapshotId] : [],
+    );
+    const engineeringSnapshots = snapshotIds.length
+      ? await this.prisma.db.engineeringSnapshot.findMany({
+          where: { id: { in: snapshotIds }, project: { opportunityId: opportunity.id } },
+          select: { id: true, content: true },
+        })
+      : [];
+    const engineeringById = new Map(
+      engineeringSnapshots.map((snapshot) => [
+        snapshot.id,
+        (snapshot.content as { version?: { results?: EngineeringResults } }).version?.results,
+      ]),
+    );
     const scenarios: ProposalScenarioContent[] = [];
     for (const [index, quote] of quotes.entries()) {
       if (!quote.calculationSessionId)
@@ -522,21 +540,39 @@ export class ProposalsService implements OnModuleInit {
         );
       const result = session.result as unknown as QuickCalculationResult;
       const repriced = repriceCashFlow(result.cashFlow, quote.priceCents);
+      const engineering = quote.engineeringSnapshotId
+        ? engineeringById.get(quote.engineeringSnapshotId)
+        : undefined;
+      const engineeringSimulation = engineering?.simulation;
+      const engineeringEconomics = engineering?.economics;
+      const hasEngineeringGeneration =
+        engineeringSimulation?.energyKwh !== null && engineeringSimulation?.energyKwh !== undefined;
+      const hasEngineeringEconomics = engineeringEconomics?.status === 'VALID';
       scenarios.push({
         label:
           data.labels?.[index]?.trim() || (quotes.length > 1 ? `Cenário ${index + 1}` : 'Proposta'),
-        installedPowerKwp: result.installedPowerKwp,
-        moduleCount: result.moduleCount,
+        installedPowerKwp: engineering?.totals.powerKwp ?? result.installedPowerKwp,
+        moduleCount: engineering?.totals.moduleCount ?? result.moduleCount,
         estimatedAreaM2: result.estimatedAreaM2,
-        annualGenerationKwh: result.annualGenerationKwh,
+        annualGenerationKwh: hasEngineeringGeneration
+          ? (engineeringSimulation.energyKwh as number)
+          : result.annualGenerationKwh,
         monthlyGenerationKwh: result.monthlyGenerationKwh,
         averageMonthlyConsumptionKwh: result.averageMonthlyConsumptionKwh,
         compensationRatio: result.compensationRatio,
         priceCents: quote.priceCents,
-        firstYearSavingsCents: repriced.firstYearSavingsCents,
-        accumulatedSavingsCents: repriced.accumulatedSavingsCents,
-        simplePaybackYears: repriced.simplePaybackYears,
-        horizonYears: result.assumptions.horizonYears,
+        firstYearSavingsCents: hasEngineeringEconomics
+          ? (engineeringEconomics.firstYearSavingsCents ?? repriced.firstYearSavingsCents)
+          : repriced.firstYearSavingsCents,
+        accumulatedSavingsCents: hasEngineeringEconomics
+          ? (engineeringEconomics.accumulatedSavingsCents ?? repriced.accumulatedSavingsCents)
+          : repriced.accumulatedSavingsCents,
+        simplePaybackYears: hasEngineeringEconomics
+          ? (engineeringEconomics.simplePaybackYears ?? repriced.simplePaybackYears)
+          : repriced.simplePaybackYears,
+        horizonYears: hasEngineeringEconomics
+          ? (engineeringEconomics.horizonYears ?? result.assumptions.horizonYears)
+          : result.assumptions.horizonYears,
         cashFlow: [
           { year: 0, cumulativeCents: -quote.priceCents },
           ...repriced.cashFlow.map((r) => ({ year: r.year, cumulativeCents: r.cumulativeCents })),
@@ -546,6 +582,7 @@ export class ProposalsService implements OnModuleInit {
         calculationSessionId: session.id,
         ruleSetRef: session.ruleSetRef,
         algorithmVersion: session.algorithmVersion,
+        engineeringSnapshotId: hasEngineeringGeneration ? quote.engineeringSnapshotId : null,
       });
     }
 

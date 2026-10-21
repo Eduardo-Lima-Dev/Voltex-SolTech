@@ -7,6 +7,13 @@ export type Kwh = number;
 export type Kwp = number;
 export type Wp = number;
 export type Cents = number;
+export type Volt = number;
+export type Ampere = number;
+export type Watt = number;
+export type Celsius = number;
+export type Meter = number;
+export type SquareMm = number;
+export type Degrees = number;
 /** Fração (0,25 = 25%). */
 export type Ratio = number;
 
@@ -30,3 +37,6 @@ export const mean = (values: readonly number[]): number => {
   if (values.length === 0) throw new RangeError('mean: lista vazia');
   return sum(values) / values.length;
 };
+
+export const degToRad = (degrees: Degrees): number => (degrees * Math.PI) / 180;
+export const radToDeg = (radians: number): Degrees => (radians * 180) / Math.PI;

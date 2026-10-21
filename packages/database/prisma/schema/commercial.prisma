@@ -107,35 +107,39 @@ model MarginPolicy {
 
 /// Cotação (um cenário de preço). Versionada por oportunidade; trava quando entra numa proposta.
 model Quote {
-  id                   String              @id @default(uuid(7)) @db.Uuid
-  tenantId             String              @map("tenant_id") @db.Uuid
-  opportunityId        String              @map("opportunity_id") @db.Uuid
-  version              Int
-  title                String?
-  calculationSessionId String?             @map("calculation_session_id") @db.Uuid
+  id                    String              @id @default(uuid(7)) @db.Uuid
+  tenantId              String              @map("tenant_id") @db.Uuid
+  opportunityId         String              @map("opportunity_id") @db.Uuid
+  version               Int
+  title                 String?
+  calculationSessionId  String?             @map("calculation_session_id") @db.Uuid
+  /// Snapshot técnico aprovado que forneceu os materiais; nunca aponta para rascunho.
+  engineeringSnapshotId String?             @map("engineering_snapshot_id") @db.Uuid
   /// Lista de materiais: `[{ category, description, quantity, unitCostCents }]`.
-  items                Json
+  items                 Json
   /// Frete, instalação, deslocamento, outros e taxas (comissão, impostos, custo financeiro, contingência).
-  costs                Json
-  priceCents           Int                 @map("price_cents")
+  costs                 Json
+  priceCents            Int                 @map("price_cents")
   /// Detalhamento da margem calculado pelo servidor no momento do salvamento.
-  margin               Json
-  marginStatus         MarginStatus        @map("margin_status")
-  minMarginRate        Float?              @map("min_margin_rate")
-  policyId             String?             @map("policy_id") @db.Uuid
-  approvalStatus       QuoteApprovalStatus @default(NONE) @map("approval_status")
-  lockedAt             DateTime?           @map("locked_at")
-  createdById          String?             @map("created_by_id") @db.Uuid
-  createdAt            DateTime            @default(now()) @map("created_at")
-  updatedAt            DateTime            @updatedAt @map("updated_at")
-  deletedAt            DateTime?           @map("deleted_at")
+  margin                Json
+  marginStatus          MarginStatus        @map("margin_status")
+  minMarginRate         Float?              @map("min_margin_rate")
+  policyId              String?             @map("policy_id") @db.Uuid
+  approvalStatus        QuoteApprovalStatus @default(NONE) @map("approval_status")
+  lockedAt              DateTime?           @map("locked_at")
+  createdById           String?             @map("created_by_id") @db.Uuid
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  deletedAt             DateTime?           @map("deleted_at")
 
-  tenant      Tenant            @relation(fields: [tenantId], references: [id])
-  opportunity Opportunity       @relation(fields: [opportunityId], references: [id])
-  approvals   ApprovalRequest[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  opportunity         Opportunity          @relation(fields: [opportunityId], references: [id])
+  engineeringSnapshot EngineeringSnapshot? @relation(fields: [engineeringSnapshotId], references: [id], onDelete: Restrict)
+  approvals           ApprovalRequest[]
 
   @@unique([opportunityId, version])
   @@index([tenantId, opportunityId])
+  @@index([tenantId, engineeringSnapshotId])
   @@map("quotes")
 }
 

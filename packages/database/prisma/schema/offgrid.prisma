@@ -1,0 +1,155 @@
+// Off-Grid Designer (Fase 10): pedidos e projetos próprios para sistemas isolados e híbridos (rede + bateria, sem
+// injeção). Mesma mecânica do Engine: o desenho é um documento JSON versionado, os resultados são recalculados, a versão
+// enviada é congelada (gatilho) e o snapshot da versão aprovada é imutável. Reaproveita os estados do Engine.
+
+model OffgridRequest {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  opportunityId String?                  @map("opportunity_id") @db.Uuid
+  title         String
+  description   String?
+  /// `OFFGRID` (isolado) ou `HYBRID` (rede + bateria, sem injeção).
+  systemType    String                   @default("OFFGRID") @map("system_type")
+  status        EngineeringRequestStatus @default(PENDING)
+  /// `LOW`, `NORMAL`, `HIGH` ou `URGENT`.
+  priority      String                   @default("NORMAL")
+  dueAt         DateTime?                @map("due_at")
+  assigneeId    String?                  @map("assignee_id") @db.Uuid
+  projectId     String?                  @map("project_id") @db.Uuid
+  resolution    String?
+  resolvedAt    DateTime?                @map("resolved_at")
+  createdById   String?                  @map("created_by_id") @db.Uuid
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity?    @relation(fields: [opportunityId], references: [id])
+  project     OffgridProject? @relation(fields: [projectId], references: [id])
+  events      OffgridEvent[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, assigneeId])
+  @@map("offgrid_requests")
+}
+
+model OffgridProject {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  /// `OFG-AAAA-NNNN`, gerado pela empresa.
+  code          String
+  name          String
+  systemType    String                   @default("OFFGRID") @map("system_type")
+  status        EngineeringProjectStatus @default(IN_PROGRESS)
+  opportunityId String?                  @map("opportunity_id") @db.Uuid
+  siteId        String?                  @map("site_id") @db.Uuid
+  responsibleId String?                  @map("responsible_id") @db.Uuid
+  artType       String?                  @map("art_type")
+  artNumber     String?                  @map("art_number")
+  notes         String?
+  createdById   String?                  @map("created_by_id") @db.Uuid
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity?      @relation(fields: [opportunityId], references: [id])
+  versions    OffgridVersion[]
+  snapshots   OffgridSnapshot[]
+  requests    OffgridRequest[]
+  events      OffgridEvent[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("offgrid_projects")
+}
+
+model OffgridVersion {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  projectId     String                   @map("project_id") @db.Uuid
+  number        Int
+  status        EngineeringVersionStatus @default(DRAFT)
+  /// Documento do desenho (`offgridDesignSchema`).
+  design        Json
+  results       Json?
+  fingerprint   String?
+  stale         Boolean                  @default(false)
+  staleReasons  Json                     @default("[]") @map("stale_reasons")
+  ruleRefs      Json                     @default("[]") @map("rule_refs")
+  dataRefs      Json                     @default("[]") @map("data_refs")
+  submittedAt   DateTime?                @map("submitted_at")
+  submittedById String?                  @map("submitted_by_id") @db.Uuid
+  decidedAt     DateTime?                @map("decided_at")
+  decidedById   String?                  @map("decided_by_id") @db.Uuid
+  decisionNote  String?                  @map("decision_note")
+  createdById   String?                  @map("created_by_id") @db.Uuid
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant   Tenant                 @relation(fields: [tenantId], references: [id])
+  project  OffgridProject         @relation(fields: [projectId], references: [id])
+  comments OffgridReviewComment[]
+  snapshot OffgridSnapshot?
+
+  @@unique([projectId, number])
+  @@index([tenantId, projectId])
+  @@index([tenantId, status])
+  @@map("offgrid_versions")
+}
+
+model OffgridReviewComment {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  tenantId     String              @map("tenant_id") @db.Uuid
+  versionId    String              @map("version_id") @db.Uuid
+  section      String
+  authorId     String?             @map("author_id") @db.Uuid
+  text         String
+  status       ReviewCommentStatus @default(OPEN)
+  resolvedById String?             @map("resolved_by_id") @db.Uuid
+  resolvedAt   DateTime?           @map("resolved_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  version OffgridVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, versionId, status])
+  @@map("offgrid_review_comments")
+}
+
+model OffgridSnapshot {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  versionId    String   @unique @map("version_id") @db.Uuid
+  content      Json
+  hash         String
+  approvedById String?  @map("approved_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  project OffgridProject @relation(fields: [projectId], references: [id])
+  version OffgridVersion @relation(fields: [versionId], references: [id])
+
+  @@index([tenantId, projectId])
+  @@map("offgrid_snapshots")
+}
+
+/// Linha do tempo do pedido e do projeto: comentários, estados, atribuição, prioridade, decisões.
+model OffgridEvent {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  projectId String?  @map("project_id") @db.Uuid
+  requestId String?  @map("request_id") @db.Uuid
+  type      String
+  text      String?
+  data      Json     @default("{}")
+  actorId   String?  @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id])
+  project OffgridProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  request OffgridRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, projectId, createdAt])
+  @@index([tenantId, requestId, createdAt])
+  @@map("offgrid_events")
+}

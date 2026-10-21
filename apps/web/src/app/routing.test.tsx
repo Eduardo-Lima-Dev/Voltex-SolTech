@@ -97,13 +97,21 @@ describe('permissões nas rotas', () => {
     ).toBeInTheDocument();
   });
 
-  it('a página de um produto indica a fase em que ele chega', async () => {
-    renderApp('/engine');
-    expect(
-      await screen.findByRole('heading', { name: 'Solar Engine Studio', level: 1 }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Fase 9')).toBeInTheDocument();
-    expect(screen.getByText('Em desenvolvimento')).toBeInTheDocument();
+  it('o Off-Grid Designer abre o painel e aparece no menu de quem tem permissão', async () => {
+    server.use(
+      http.get(`${API}/offgrid/dashboard`, () =>
+        HttpResponse.json({
+          requests: {},
+          projects: {},
+          versionsAwaitingReview: 2,
+          overdueRequests: 0,
+        }),
+      ),
+    );
+    renderApp('/offgrid');
+    expect(await screen.findByText('Aguardando revisão')).toBeInTheDocument();
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    expect(within(nav).getByRole('button', { name: /Off-Grid/ })).toBeInTheDocument();
   });
 
   it('o menu só lista os produtos e áreas permitidos ao perfil', async () => {

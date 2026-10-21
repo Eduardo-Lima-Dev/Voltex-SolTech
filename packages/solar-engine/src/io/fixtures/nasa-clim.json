@@ -1,0 +1,89 @@
+{
+  "type": "Feature",
+  "geometry": { "type": "Point", "coordinates": [-47.93, -15.78, 984.96] },
+  "properties": {
+    "parameter": {
+      "ALLSKY_SFC_SW_DWN": {
+        "JAN": 5.8658,
+        "FEB": 5.9239,
+        "MAR": 5.4953,
+        "APR": 5.3362,
+        "MAY": 4.9582,
+        "JUN": 4.8341,
+        "JUL": 5.1427,
+        "AUG": 5.8092,
+        "SEP": 6.1442,
+        "OCT": 5.9578,
+        "NOV": 5.423,
+        "DEC": 5.6546,
+        "ANN": 5.5438
+      },
+      "T2M": {
+        "JAN": 22.39,
+        "FEB": 22.34,
+        "MAR": 22.11,
+        "APR": 21.48,
+        "MAY": 20.21,
+        "JUN": 19.67,
+        "JUL": 20.16,
+        "AUG": 22.27,
+        "SEP": 24.85,
+        "OCT": 25.18,
+        "NOV": 23.21,
+        "DEC": 22.6,
+        "ANN": 22.2
+      },
+      "T2M_MAX": {
+        "JAN": 34.53,
+        "FEB": 33.22,
+        "MAR": 30.16,
+        "APR": 31.26,
+        "MAY": 32.85,
+        "JUN": 33.57,
+        "JUL": 32.89,
+        "AUG": 35.39,
+        "SEP": 38.27,
+        "OCT": 39.94,
+        "NOV": 36.71,
+        "DEC": 35.34,
+        "ANN": 39.94
+      },
+      "T2M_MIN": {
+        "JAN": 13.96,
+        "FEB": 14.13,
+        "MAR": 14.47,
+        "APR": 10.11,
+        "MAY": 7.63,
+        "JUN": 8.63,
+        "JUL": 7.69,
+        "AUG": 9.37,
+        "SEP": 11.45,
+        "OCT": 14.05,
+        "NOV": 14.28,
+        "DEC": 14.22,
+        "ANN": 7.63
+      }
+    }
+  },
+  "header": {
+    "title": "NASA/POWER Source Native Resolution Climatology Climatologies",
+    "api": { "version": "v2.10.1", "name": "POWER Climatology API" },
+    "sources": ["SYN1DEG", "MERRA2", "POWER"],
+    "fill_value": -999.0,
+    "time_standard": "LST",
+    "range": "25-year Meteorological and Solar Monthly & Annual Climatologies (January 2001 - December 2025)"
+  },
+  "messages": [
+    "The requested parameters are retrieved from a pre-computed climatological period (January 2001 - December 2025)"
+  ],
+  "parameters": {
+    "ALLSKY_SFC_SW_DWN": {
+      "units": "kW-hr/m^2/day",
+      "longname": "All Sky Surface Shortwave Downward Irradiance"
+    },
+    "T2M": { "units": "C", "longname": "Temperature at 2 Meters" },
+    "T2M_MAX": { "units": "C", "longname": "Temperature at 2 Meters Maximum" },
+    "T2M_MIN": { "units": "C", "longname": "Temperature at 2 Meters Minimum" }
+  },
+  "times": { "data": 0.138, "process": 0.03 }
+}

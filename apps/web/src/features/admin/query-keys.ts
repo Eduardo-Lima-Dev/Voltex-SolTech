@@ -59,6 +59,43 @@ export const queryKeys = {
     filters === undefined ? (['tasks'] as const) : (['tasks', filters] as const),
   energyBill: (id: string) => ['energy-bill', id] as const,
   effectiveRules: ['rules', 'effective'] as const,
+  dataSources: ['data-hub', 'sources'] as const,
+  catalog: (filters?: unknown) =>
+    filters === undefined ? (['catalog'] as const) : (['catalog', filters] as const),
+  catalogItem: (id: string) => ['catalog', 'item', id] as const,
+  catalogSources: ['catalog', 'sources'] as const,
+  catalogSourceLinks: ['catalog', 'source-links'] as const,
+  catalogLinkDocuments: (id: string, filters?: unknown) =>
+    ['catalog', 'source-links', id, 'documents', filters ?? {}] as const,
+  catalogSourceDocuments: (key: string, filters?: unknown) =>
+    ['catalog', 'sources', key, 'documents', filters ?? {}] as const,
+  catalogReferences: (filters?: unknown) => ['catalog', 'references', filters ?? {}] as const,
+  engineeringRequests: (filters?: unknown) =>
+    filters === undefined
+      ? (['engineering', 'requests'] as const)
+      : (['engineering', 'requests', filters] as const),
+  engineeringProjects: (filters?: unknown) =>
+    filters === undefined
+      ? (['engineering', 'projects'] as const)
+      : (['engineering', 'projects', filters] as const),
+  engineeringRequest: (id: string) => ['engineering', 'request', id] as const,
+  engineeringDashboard: ['engineering', 'dashboard'] as const,
+  engineeringProject: (id: string) => ['engineering', 'project', id] as const,
+  engineeringVersion: (id: string) => ['engineering', 'version', id] as const,
+  offgridRequests: (filters?: object) =>
+    filters ? (['offgrid', 'requests', filters] as const) : (['offgrid', 'requests'] as const),
+  offgridRequest: (id: string) => ['offgrid', 'request', id] as const,
+  offgridProjects: (filters?: object) =>
+    filters ? (['offgrid', 'projects', filters] as const) : (['offgrid', 'projects'] as const),
+  offgridProject: (id: string) => ['offgrid', 'project', id] as const,
+  offgridVersion: (id: string) => ['offgrid', 'version', id] as const,
+  offgridDashboard: ['offgrid', 'dashboard'] as const,
+  catalogPrices: ['catalog', 'prices'] as const,
+  sourceWatches: ['data-hub', 'watches'] as const,
+  updateProposals: (filters?: unknown) =>
+    filters === undefined
+      ? (['data-hub', 'updates'] as const)
+      : (['data-hub', 'updates', filters] as const),
   audit: (filters?: unknown) =>
     filters === undefined ? (['audit'] as const) : (['audit', filters] as const),
 };

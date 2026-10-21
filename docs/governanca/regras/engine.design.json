@@ -1,0 +1,44 @@
+{
+  "proposta": {
+    "status": "RASCUNHO PARA CONFERÊNCIA — não ativar sem o engenheiro revisor",
+    "confianca": "média: valores vêm de artigo técnico (Canal Solar) que cita NBR 16690/5410 e do CRESESB 2014; texto das normas ABNT não foi lido",
+    "quemConfirma": "Engenheiro responsável técnico",
+    "naoPreenchidos": {
+      "maxParallelStringsWithoutFuse": "depende da corrente reversa máxima da ficha do módulo; será calculada (ver matriz-regras.md)",
+      "acBreakerFactor": "faixa 1,0 a 1,25 sobre a corrente CA do inversor: o engenheiro escolhe"
+    }
+  },
+  "rule": {
+    "key": "engine.design",
+    "definition": {
+      "parameters": {
+        "dcAcRatioMin": 0.95,
+        "dcAcRatioMax": 1.33,
+        "hotCellIrradianceWm2": 1000,
+        "fuseMinFactor": 1.5,
+        "dcSwitchCurrentFactor": 1.25,
+        "rcdSensitivityMa": 30
+      },
+      "tables": {},
+      "rules": []
+    },
+    "sources": [
+      {
+        "type": "STANDARD",
+        "reference": "ABNT NBR 16690 (proteção de string: 1,5·Isc < In < 2,4·Isc; sub-arranjo/arranjo: 1,25·Isc < In < 2,4·Isc), conforme resumo em Canal Solar",
+        "notes": "Fonte secundária. Conferir o item e a tabela na norma."
+      },
+      {
+        "type": "BOOK",
+        "reference": "CRESESB, Manual de Engenharia para Sistemas Fotovoltaicos (2014): FDI do inversor 0,75–0,85 a 1,05, ou seja, CC/CA entre 0,95 e 1,33",
+        "notes": "Faixa de política da empresa; ajustar conforme o inversor."
+      },
+      {
+        "type": "STANDARD",
+        "reference": "ABNT NBR 5410 (DR de alta sensibilidade, 30 mA)",
+        "notes": "Conferir o item aplicável na norma."
+      }
+    ],
+    "notes": "Proposta de governança MVP2 (pesquisa de 20/10/2026). Revisão obrigatória pelo engenheiro."
+  }
+}

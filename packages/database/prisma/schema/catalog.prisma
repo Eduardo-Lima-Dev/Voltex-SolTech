@@ -53,19 +53,22 @@ model Tariff {
 
 /// HSP mensal de um local, com a origem declarada. Nenhum dado entra sem `source` (RN-017).
 model SolarResource {
-  id         String    @id @default(uuid(7)) @db.Uuid
-  tenantId   String    @map("tenant_id") @db.Uuid
-  name       String
-  state      String?
-  latitude   Float?
-  longitude  Float?
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  name         String
+  state        String?
+  latitude     Float?
+  longitude    Float?
   /// 12 valores (jan a dez) em kWh/m²·dia.
-  hspMonthly Json      @map("hsp_monthly")
-  source     String
-  plane      String    @default("Plano horizontal")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
+  hspMonthly   Json      @map("hsp_monthly")
+  source       String
+  plane        String    @default("Plano horizontal")
+  /// Temperaturas mensais do local, quando vierem da Central de Dados: `{ meanC[12], minC[12], maxC[12], source, note }`.
+  /// NÃO é a temperatura de projeto (essa é definida pelo responsável técnico).
+  temperatures Json?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 

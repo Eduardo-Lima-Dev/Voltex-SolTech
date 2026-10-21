@@ -89,6 +89,7 @@ import { TasksService } from './tasks.service';
     GuardService,
     QuotesService,
     ProposalsService,
+    HomologationRulesService,
   ],
 })
 export class CrmModule {}
