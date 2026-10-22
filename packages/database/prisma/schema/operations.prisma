@@ -1,0 +1,233 @@
+// Operação (Fase 11B, ADR-0020): instalação do sistema depois da homologação, com materiais, equipes e ordens de
+// serviço. O projeto (`Project`) continua sendo o fio do lead ao O&M; a `Installation` é a execução dele em campo.
+
+enum InstallationStatus {
+  AWAITING_ENGINEERING
+  AWAITING_MATERIAL
+  MATERIAL_READY
+  SCHEDULING
+  CREW_ASSIGNED
+  IN_PROGRESS
+  FIELD_ISSUE
+  INSTALLED
+  COMMISSIONING
+  CUSTOMER_ACCEPTANCE
+  DONE
+  CANCELLED
+
+  @@map("installation_status")
+}
+
+enum MaterialItemStatus {
+  PENDING
+  ORDERED
+  RECEIVED
+  SEPARATED
+  CANCELLED
+
+  @@map("material_item_status")
+}
+
+enum WorkOrderType {
+  VISIT
+  SURVEY
+  INSTALLATION
+  COMMISSIONING
+  MAINTENANCE
+  CLEANING
+
+  @@map("work_order_type")
+}
+
+enum WorkOrderStatus {
+  /// Criada, ainda sem data.
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+
+  @@map("work_order_status")
+}
+
+enum FieldIssueStatus {
+  OPEN
+  RESOLVED
+
+  @@map("field_issue_status")
+}
+
+/// Execução em campo de um projeto homologado (1:1 com o `Project`).
+model Installation {
+  id                    String             @id @default(uuid(7)) @db.Uuid
+  tenantId              String             @map("tenant_id") @db.Uuid
+  projectId             String             @unique @map("project_id") @db.Uuid
+  opportunityId         String             @map("opportunity_id") @db.Uuid
+  projectCode           String             @map("project_code")
+  accountId             String             @map("account_id") @db.Uuid
+  siteId                String?            @map("site_id") @db.Uuid
+  /// Snapshot técnico aprovado de onde vieram os materiais (da cotação do contrato). Nulo = sem projeto técnico.
+  engineeringSnapshotId String?            @map("engineering_snapshot_id") @db.Uuid
+  status                InstallationStatus @default(AWAITING_ENGINEERING)
+  responsibleId         String?            @map("responsible_id") @db.Uuid
+  materialsGeneratedAt  DateTime?          @map("materials_generated_at")
+  materialsReadyAt      DateTime?          @map("materials_ready_at")
+  installedAt           DateTime?          @map("installed_at")
+  doneAt                DateTime?          @map("done_at")
+  cancelledAt           DateTime?          @map("cancelled_at")
+  cancelReason          String?            @map("cancel_reason")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  project    Project               @relation(fields: [projectId], references: [id])
+  materials  MaterialItem[]
+  workOrders WorkOrder[]
+  issues     FieldIssue[]
+  history    InstallationHistory[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, accountId])
+  @@map("installations")
+}
+
+/// Histórico imutável das mudanças de situação da instalação.
+model InstallationHistory {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  installationId String              @map("installation_id") @db.Uuid
+  fromStatus     InstallationStatus? @map("from_status")
+  toStatus       InstallationStatus  @map("to_status")
+  reason         String?
+  actorId        String?             @map("actor_id") @db.Uuid
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, installationId, createdAt])
+  @@map("installation_history")
+}
+
+/// Linha da lista de materiais da instalação (gerada do snapshot técnico aprovado, ou lançada à mão).
+model MaterialItem {
+  id             String             @id @default(uuid(7)) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  installationId String             @map("installation_id") @db.Uuid
+  category       String
+  equipmentId    String?            @map("equipment_id") @db.Uuid
+  description    String
+  quantity       Float
+  unit           String
+  /// Custo unitário previsto (da lista de materiais do snapshot), em centavos.
+  unitCostCents  Int?               @map("unit_cost_cents")
+  status         MaterialItemStatus @default(PENDING)
+  supplier       String?
+  purchaseOrder  String?            @map("purchase_order")
+  /// Valor realmente pago no pedido, em centavos (alimenta o realizado do financeiro do projeto).
+  orderedCents   Int?               @map("ordered_cents")
+  expectedAt     DateTime?          @map("expected_at")
+  receivedAt     DateTime?          @map("received_at")
+  separatedAt    DateTime?          @map("separated_at")
+  note           String?
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, installationId, status])
+  @@map("material_items")
+}
+
+model Crew {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant     Tenant       @relation(fields: [tenantId], references: [id])
+  members    CrewMember[]
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, name])
+  @@map("crews")
+}
+
+model CrewMember {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  crewId   String @map("crew_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  crew   Crew   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([crewId, userId])
+  @@index([tenantId, userId])
+  @@map("crew_members")
+}
+
+/// Visita, instalação, ensaio, manutenção ou limpeza. Nasce da instalação (ou, nas fases seguintes, da planta).
+model WorkOrder {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  installationId String?         @map("installation_id") @db.Uuid
+  projectCode    String?         @map("project_code")
+  accountId      String?         @map("account_id") @db.Uuid
+  siteId         String?         @map("site_id") @db.Uuid
+  type           WorkOrderType
+  status         WorkOrderStatus @default(PENDING)
+  title          String
+  notes          String?
+  crewId         String?         @map("crew_id") @db.Uuid
+  /// Técnico responsável pela execução (além da equipe).
+  assigneeId     String?         @map("assignee_id") @db.Uuid
+  scheduledStart DateTime?       @map("scheduled_start")
+  scheduledEnd   DateTime?       @map("scheduled_end")
+  startedAt      DateTime?       @map("started_at")
+  completedAt    DateTime?       @map("completed_at")
+  cancelReason   String?         @map("cancel_reason")
+  createdById    String?         @map("created_by_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  installation Installation? @relation(fields: [installationId], references: [id])
+  crew         Crew?         @relation(fields: [crewId], references: [id])
+  issues       FieldIssue[]
+
+  @@index([tenantId, status, scheduledStart])
+  @@index([tenantId, installationId])
+  @@index([tenantId, assigneeId, status])
+  @@index([tenantId, crewId, scheduledStart])
+  @@map("work_orders")
+}
+
+/// Pendência de campo (impedimento, falta de material, acesso, segurança). Uma pendência que bloqueia pára a instalação.
+model FieldIssue {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  installationId String           @map("installation_id") @db.Uuid
+  workOrderId    String?          @map("work_order_id") @db.Uuid
+  type           String
+  description    String
+  blocking       Boolean          @default(true)
+  status         FieldIssueStatus @default(OPEN)
+  resolution     String?
+  reportedById   String?          @map("reported_by_id") @db.Uuid
+  resolvedById   String?          @map("resolved_by_id") @db.Uuid
+  resolvedAt     DateTime?        @map("resolved_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id])
+
+  @@index([tenantId, installationId, status])
+  @@map("field_issues")
+}

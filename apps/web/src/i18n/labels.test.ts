@@ -188,7 +188,7 @@ describe('rótulos em pt-BR (a interface nunca mostra códigos crus)', () => {
   });
 
   it('produtos exigem permissões que existem e que ao menos um perfil possui', () => {
-    expect(PRODUCTS).toHaveLength(4);
+    expect(PRODUCTS).toHaveLength(5);
     for (const product of PRODUCTS) {
       expect(PERMISSIONS).toContain(product.permission);
       expect(

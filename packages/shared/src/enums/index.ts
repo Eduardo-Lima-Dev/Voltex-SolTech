@@ -39,6 +39,7 @@ export const Product = {
   CALCULATOR: 'CALCULATOR',
   ENGINE: 'ENGINE',
   OFFGRID: 'OFFGRID',
+  OPERATIONS: 'OPERATIONS',
 } as const;
 export type Product = (typeof Product)[keyof typeof Product];
 
@@ -154,19 +155,20 @@ export const ApprovalStatus = {
 } as const;
 export type ApprovalStatus = (typeof ApprovalStatus)[keyof typeof ApprovalStatus];
 
-/** Etapas da instalação (seção 8.15). */
+/** Etapas da instalação (seção 8.15 da modelagem; máquina de estados em docs/03-diagramas/estados/instalacao.md). */
 export const InstallationStatus = {
   AWAITING_ENGINEERING: 'AWAITING_ENGINEERING',
   AWAITING_MATERIAL: 'AWAITING_MATERIAL',
-  MATERIAL_SEPARATED: 'MATERIAL_SEPARATED',
+  MATERIAL_READY: 'MATERIAL_READY',
   SCHEDULING: 'SCHEDULING',
   CREW_ASSIGNED: 'CREW_ASSIGNED',
-  IN_INSTALLATION: 'IN_INSTALLATION',
+  IN_PROGRESS: 'IN_PROGRESS',
   FIELD_ISSUE: 'FIELD_ISSUE',
-  INSTALLATION_DONE: 'INSTALLATION_DONE',
+  INSTALLED: 'INSTALLED',
   COMMISSIONING: 'COMMISSIONING',
   CUSTOMER_ACCEPTANCE: 'CUSTOMER_ACCEPTANCE',
-  FINISHED: 'FINISHED',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED',
 } as const;
 export type InstallationStatus = (typeof InstallationStatus)[keyof typeof InstallationStatus];
 
@@ -247,6 +249,7 @@ export const TimelineEventType = {
   CONTRACT_SIGNED: 'CONTRACT_SIGNED',
   PROJECT_CREATED: 'PROJECT_CREATED',
   PROJECT_STATUS_CHANGED: 'PROJECT_STATUS_CHANGED',
+  INSTALLATION_STATUS_CHANGED: 'INSTALLATION_STATUS_CHANGED',
 } as const;
 export type TimelineEventType = (typeof TimelineEventType)[keyof typeof TimelineEventType];
 

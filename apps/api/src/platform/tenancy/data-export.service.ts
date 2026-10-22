@@ -58,6 +58,12 @@ export class DataExportService {
       db.integrationConnection.findMany({ omit: { credentials: true } }),
       db.integrationRun.findMany(),
       db.communicationLog.findMany(),
+      db.installation.findMany(),
+      db.installationHistory.findMany(),
+      db.materialItem.findMany(),
+      db.crew.findMany({ include: { members: true } }),
+      db.workOrder.findMany(),
+      db.fieldIssue.findMany(),
     ]);
     const [
       branches,
@@ -91,6 +97,12 @@ export class DataExportService {
       integrationConnections,
       integrationRuns,
       communicationLogs,
+      installations,
+      installationHistory,
+      materialItems,
+      crews,
+      workOrders,
+      fieldIssues,
     ] = rest;
 
     await this.audit.record({
@@ -145,6 +157,12 @@ export class DataExportService {
       integrationConnections,
       integrationRuns,
       communicationLogs,
+      installations,
+      installationHistory,
+      materialItems,
+      crews,
+      workOrders,
+      fieldIssues,
     };
   }
 }

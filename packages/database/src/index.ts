@@ -43,6 +43,17 @@ export type {
   Project,
   ProjectChecklistItem,
   PrivacyRequest,
+  IntegrationConnection,
+  IntegrationRun,
+  IntegrationDeadLetter,
+  CommunicationLog,
+  Installation,
+  InstallationHistory,
+  MaterialItem,
+  Crew,
+  CrewMember,
+  WorkOrder,
+  FieldIssue,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

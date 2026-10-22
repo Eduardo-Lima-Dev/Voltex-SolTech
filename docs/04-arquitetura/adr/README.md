@@ -25,6 +25,7 @@ Status possíveis: `Proposta` · `Aceita` · `Substituída` · `Rejeitada`.
 | [0017](0017-catalogo-por-empresa.md)                | Catálogo de equipamentos por empresa, com governança           | Aceita |
 | [0018](0018-central-de-dados-externos.md)           | Central de Dados Externos (proveniência e revisão humana)      | Aceita |
 | [0019](0019-integration-hub.md)                     | Integration Hub (credenciais cifradas, adaptadores desligados) | Aceita |
+| [0020](0020-modulo-operacao-e-instalacao.md)        | Módulo Operação e máquina de estados da instalação             | Aceita |
 
 ## Modelo
 

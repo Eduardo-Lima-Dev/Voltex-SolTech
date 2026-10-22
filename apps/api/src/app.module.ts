@@ -26,6 +26,7 @@ import { PrismaModule } from './platform/prisma/prisma.module';
 import { CatalogModule } from './platform/catalog/catalog.module';
 import { EngineeringModule } from './products/engine/engineering.module';
 import { OffgridModule } from './products/offgrid/offgrid.module';
+import { OperationsModule } from './products/operations/operations.module';
 import { DataHubModule } from './platform/data-hub/data-hub.module';
 import { IntegrationsModule } from './platform/integrations/integrations.module';
 import { NotificationsModule } from './platform/notifications/notifications.module';
@@ -117,6 +118,7 @@ import { UsersModule } from './platform/users/users.module';
     CatalogModule,
     EngineeringModule,
     OffgridModule,
+    OperationsModule,
     CalculatorModule,
     CrmModule,
     HealthModule,

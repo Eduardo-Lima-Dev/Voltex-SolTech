@@ -377,6 +377,96 @@ const pageRoutes: RouteObject[] = [
             ],
           },
           {
+            path: 'operations',
+            handle: { title: 'Operação' },
+            lazy: async () => {
+              const { OperationsLayout } = await import('@/features/operations/layout');
+              return { Component: OperationsLayout };
+            },
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { OperationsIndexRedirect } = await import('@/features/operations/layout');
+                  return { Component: OperationsIndexRedirect };
+                },
+              },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { OperationsDashboardPage } =
+                    await import('@/features/operations/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <OperationsDashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel da Operação' },
+                  };
+                },
+              },
+              {
+                path: 'instalacoes',
+                lazy: async () => {
+                  const { InstallationsPage } =
+                    await import('@/features/operations/installations-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <InstallationsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Instalações' },
+                  };
+                },
+              },
+              {
+                path: 'instalacoes/:id',
+                lazy: async () => {
+                  const { InstallationPage } =
+                    await import('@/features/operations/installation-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <InstallationPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Instalação' },
+                  };
+                },
+              },
+              {
+                path: 'agenda',
+                lazy: async () => {
+                  const { AgendaPage } = await import('@/features/operations/agenda-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.workorder.read">
+                        <AgendaPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Agenda' },
+                  };
+                },
+              },
+              {
+                path: 'equipes',
+                lazy: async () => {
+                  const { CrewsPage } = await import('@/features/operations/crews-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <CrewsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Equipes' },
+                  };
+                },
+              },
+            ],
+          },
+          {
             path: 'offgrid',
             handle: { title: 'Off-Grid Designer' },
             lazy: async () => {

@@ -69,6 +69,13 @@ export const TENANT_SCOPED_MODELS = [
   'IntegrationRun',
   'IntegrationDeadLetter',
   'CommunicationLog',
+  'Installation',
+  'InstallationHistory',
+  'MaterialItem',
+  'Crew',
+  'CrewMember',
+  'WorkOrder',
+  'FieldIssue',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

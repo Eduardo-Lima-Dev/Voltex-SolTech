@@ -9,6 +9,29 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type AgendaDto,
+  type CancelWorkOrderInput,
+  type ChangeInstallationStatusInput,
+  type CompleteWorkOrderInput,
+  type CreateCrewInput,
+  type CreateFieldIssueInput,
+  type CreateMaterialItemInput,
+  type CreateWorkOrderInput,
+  type CrewDto,
+  type FieldIssueDto,
+  type InstallationDetailDto,
+  type InstallationSummaryDto,
+  type ListInstallationsQuery,
+  type MaterialItemDto,
+  type MaterialQuoteDto,
+  type OperationsDashboardDto,
+  type OrderMaterialItemInput,
+  type ResolveFieldIssueInput,
+  type UpdateCrewInput,
+  type UpdateInstallationInput,
+  type UpdateMaterialItemInput,
+  type UpdateWorkOrderInput,
+  type WorkOrderDto,
   type ActivateIntegrationConnectionInput,
   type CommunicationLogDto,
   type CommunicationTemplateDto,
@@ -612,6 +635,81 @@ export function createEndpoints(client: ApiClient) {
           client.post<{ resolved: boolean }>(`${ROUTES.integrations}/dead-letters/${id}/retry`),
         dismiss: (id: string) =>
           client.post<{ id: string }>(`${ROUTES.integrations}/dead-letters/${id}/dismiss`),
+      },
+    },
+    operations: {
+      dashboard: () => client.get<OperationsDashboardDto>(`${ROUTES.operations}/dashboard`),
+      installations: {
+        list: (query: Partial<ListInstallationsQuery> = {}) =>
+          client.get<Paginated<InstallationSummaryDto>>(`${ROUTES.operations}/installations`, {
+            query: query as QueryParams,
+          }),
+        get: (id: string) =>
+          client.get<InstallationDetailDto>(`${ROUTES.operations}/installations/${id}`),
+        update: (id: string, input: UpdateInstallationInput) =>
+          client.patch<InstallationDetailDto>(`${ROUTES.operations}/installations/${id}`, input),
+        changeStatus: (id: string, input: ChangeInstallationStatusInput) =>
+          client.post<InstallationDetailDto>(
+            `${ROUTES.operations}/installations/${id}/status`,
+            input,
+          ),
+        reconcile: () =>
+          client.post<{ created: number }>(`${ROUTES.operations}/installations/reconcile`),
+      },
+      materials: {
+        add: (installationId: string, input: CreateMaterialItemInput) =>
+          client.post<MaterialItemDto>(
+            `${ROUTES.operations}/installations/${installationId}/materials`,
+            input,
+          ),
+        generate: (installationId: string) =>
+          client.post<{ created: number }>(
+            `${ROUTES.operations}/installations/${installationId}/materials/generate`,
+          ),
+        quotes: (installationId: string) =>
+          client.get<MaterialQuoteDto[]>(
+            `${ROUTES.operations}/installations/${installationId}/materials/quotes`,
+          ),
+        update: (id: string, input: UpdateMaterialItemInput) =>
+          client.patch<MaterialItemDto>(`${ROUTES.operations}/materials/${id}`, input),
+        order: (id: string, input: OrderMaterialItemInput) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/order`, input),
+        receive: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/receive`),
+        separate: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/separate`),
+        cancel: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/cancel`),
+      },
+      crews: {
+        list: () => client.get<CrewDto[]>(`${ROUTES.operations}/crews`),
+        create: (input: CreateCrewInput) =>
+          client.post<CrewDto>(`${ROUTES.operations}/crews`, input),
+        update: (id: string, input: UpdateCrewInput) =>
+          client.patch<CrewDto>(`${ROUTES.operations}/crews/${id}`, input),
+      },
+      workOrders: {
+        create: (input: CreateWorkOrderInput) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders`, input),
+        update: (id: string, input: UpdateWorkOrderInput) =>
+          client.patch<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}`, input),
+        cancel: (id: string, input: CancelWorkOrderInput) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/cancel`, input),
+        start: (id: string) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/start`),
+        complete: (id: string, input: CompleteWorkOrderInput = {}) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/complete`, input),
+      },
+      agenda: (query: { from: string; to: string; crewId?: string }) =>
+        client.get<AgendaDto>(`${ROUTES.operations}/agenda`, { query: query as QueryParams }),
+      issues: {
+        create: (installationId: string, input: CreateFieldIssueInput) =>
+          client.post<FieldIssueDto>(
+            `${ROUTES.operations}/installations/${installationId}/issues`,
+            input,
+          ),
+        resolve: (id: string, input: ResolveFieldIssueInput) =>
+          client.post<FieldIssueDto>(`${ROUTES.operations}/issues/${id}/resolve`, input),
       },
     },
     communications: {

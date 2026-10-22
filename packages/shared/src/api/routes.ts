@@ -22,6 +22,7 @@ export const ROUTES = {
   dataHub: '/data-hub',
   integrations: '/integrations',
   communications: '/communications',
+  operations: '/operations',
   documents: '/documents',
   leads: '/leads',
   publicLeads: '/public/leads',
