@@ -348,6 +348,8 @@ export interface OffgridVersionDetailDto extends OffgridVersionDto {
   };
   project: { id: string; code: string; name: string; systemType: OffgridSystemType };
   openComments: number;
+  /** Alguma regra usada é de teste interno (valores de exemplo): o projeto não vale para obra. */
+  internalTestRules: boolean;
   /** Quem pode agir agora: a versão enviada aguarda o responsável técnico. */
   canApprove: boolean;
 }

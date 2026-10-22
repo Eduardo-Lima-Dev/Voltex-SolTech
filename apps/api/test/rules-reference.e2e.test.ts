@@ -598,16 +598,18 @@ describe('Rules Engine e dados de referência (e2e)', () => {
   });
 
   describe('regras de teste interno', () => {
-    it('ativa as quatro regras do Engine marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
+    it('ativa as cinco regras (Engine e Off-Grid) marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
       const other = await seedTenant(t.prisma, 'rulestest');
       const owner = await tokenFor(t.http, other.admin);
       const first = await seedInternalTestRules(t.prisma.system, other.id);
-      expect(first).toHaveLength(4);
+      expect(first).toHaveLength(5);
       expect(first.every((line) => /ativada como TESTE INTERNO/.test(line))).toBe(true);
 
       const list = await t.http.get(`${API}/rules`).set(bearer(owner));
-      const engine = list.body.filter((x: { key: string }) => x.key.startsWith('engine.'));
-      expect(engine).toHaveLength(4);
+      const engine = list.body.filter(
+        (x: { key: string }) => x.key.startsWith('engine.') || x.key.startsWith('offgrid.'),
+      );
+      expect(engine).toHaveLength(5);
       for (const rule of engine) {
         expect(rule.status).toBe('ACTIVE');
         expect(isInternalTestRule(rule)).toBe(true);
@@ -618,14 +620,20 @@ describe('Rules Engine e dados de referência (e2e)', () => {
         .get(`${API}/rules/effective?key=engine.cables`)
         .set(bearer(owner));
       expect(cables.body.definition.tables.ampacity.length).toBeGreaterThan(3);
+      const offgrid = await t.http
+        .get(`${API}/rules/effective?key=offgrid.design`)
+        .set(bearer(owner));
+      expect(Object.keys(offgrid.body.definition.parameters)).toHaveLength(17);
 
       // Segunda rodada: nada muda (idempotente, não cria outra versão).
       const again = await seedInternalTestRules(t.prisma.system, other.id);
       expect(again.every((line) => /nada foi alterado/.test(line))).toBe(true);
       const after = await t.http.get(`${API}/rules`).set(bearer(owner));
-      expect(after.body.filter((x: { key: string }) => x.key.startsWith('engine.'))).toHaveLength(
-        4,
-      );
+      expect(
+        after.body.filter(
+          (x: { key: string }) => x.key.startsWith('engine.') || x.key.startsWith('offgrid.'),
+        ),
+      ).toHaveLength(5);
     });
   });
 });

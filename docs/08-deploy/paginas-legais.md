@@ -20,6 +20,10 @@ Os campos abaixo vêm do ambiente na compilação do site. Enquanto faltarem, a 
 | `VITE_LEGAL_DPO`           | Nome do encarregado (DPO)         |
 | `VITE_LEGAL_FORUM`         | Comarca do foro                   |
 
+## Na publicação automática
+
+O workflow `deploy-demo.yml` repassa `LEGAL_COMPANY`, `LEGAL_CNPJ`, `LEGAL_ADDRESS`, `LEGAL_PRIVACY_EMAIL`, `LEGAL_DPO` e `LEGAL_FORUM` (variáveis do ambiente `demo` do GitHub) para `scripts/publicar-front.sh site`, que as grava como `VITE_LEGAL_*` na compilação. Sem valor, a página mostra "a informar". Para publicar à mão: `LEGAL_COMPANY=... APP_URL=... ./scripts/publicar-front.sh site <host-da-api>`.
+
 ## Limites
 
 - Estes textos foram escritos a partir da legislação e do que o sistema faz hoje. **Não são parecer jurídico e não garantem, sozinhos, proteção contra qualquer reclamação.** Peça a um advogado que revise antes de usar com clientes reais, em especial: bases legais, cláusula de limitação de responsabilidade, foro, relação de consumo (CDC) quando o contratante for pessoa física, e contrato de operador entre a plataforma e cada empresa.

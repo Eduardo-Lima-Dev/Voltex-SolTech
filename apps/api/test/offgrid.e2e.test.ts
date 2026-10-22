@@ -164,7 +164,8 @@ describe('Off-Grid Designer (e2e)', () => {
           pvOtherLossFactor: 0.95,
         },
       },
-      sources: [{ type: 'INTERNAL_POLICY', reference: 'Regra de teste off-grid' }],
+      // Regra de teste interno: a versão passa a carregar o aviso (detalhe, snapshot e memorial).
+      sources: [{ type: 'INTERNAL_POLICY', reference: 'TESTE INTERNO: regra de teste off-grid' }],
     });
     expect([created.status, JSON.stringify(created.body)]).toEqual([201, expect.anything()]);
     expect(
@@ -357,6 +358,13 @@ describe('Off-Grid Designer (e2e)', () => {
         where: { versionId },
       });
       expect(snapshot.hash).toHaveLength(64);
+      expect(snapshot.content).toMatchObject({
+        internalTestRules: true,
+        warning: expect.stringMatching(/TESTE INTERNO/),
+      });
+      expect((await get(`/offgrid/versions/${versionId}`, engineer)).body.internalTestRules).toBe(
+        true,
+      );
       expect(
         (await t.prisma.system.offgridRequest.findUniqueOrThrow({ where: { id: requestId } }))
           .status,
