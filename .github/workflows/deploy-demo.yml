@@ -99,6 +99,9 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
           API_URL: https://${{ vars.API_HOST }}
+          # Fontes externas ligadas na demonstração: clima, tarifas e as fontes de equipamentos (Techlux e CEC/SAM).
+          # Para mudar sem alterar o código, defina a variável DATA_HUB_ENABLED_SOURCES no ambiente "demo".
+          DATA_HUB_ENABLED_SOURCES: ${{ vars.DATA_HUB_ENABLED_SOURCES || 'nasa-power,pvgis,aneel-tariffs,techlux,cec-library' }}
 
   front:
     name: Site e aplicação (Vercel)
@@ -126,6 +129,13 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL }}
           LEAD_KEY: ${{ vars.LEAD_KEY }}
+          # Dados da empresa nas páginas /privacidade e /termos (variáveis do ambiente "demo"; vazias = "a informar").
+          LEGAL_COMPANY: ${{ vars.LEGAL_COMPANY }}
+          LEGAL_CNPJ: ${{ vars.LEGAL_CNPJ }}
+          LEGAL_ADDRESS: ${{ vars.LEGAL_ADDRESS }}
+          LEGAL_PRIVACY_EMAIL: ${{ vars.LEGAL_PRIVACY_EMAIL }}
+          LEGAL_DPO: ${{ vars.LEGAL_DPO }}
+          LEGAL_FORUM: ${{ vars.LEGAL_FORUM }}
 
   verificar:
     name: Conferir a demonstração no ar

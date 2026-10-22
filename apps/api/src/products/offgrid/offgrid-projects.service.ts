@@ -21,6 +21,8 @@ import {
   type OffgridCommentDto,
   type OffgridDesign,
   type OffgridInverterSpec,
+  INTERNAL_TEST_RULE_WARNING,
+  isInternalTestRule,
   type OffgridProjectDetailDto,
   type OffgridProjectDto,
   type OffgridResults,
@@ -344,6 +346,7 @@ export class OffgridProjectsService {
     const priceMap = await this.prices.currentPrices(items.map((i) => i.id));
     return {
       ...toVersionDto(row),
+      internalTestRules: await this.usesInternalTestRules(row.ruleRefs as string[]),
       catalog: {
         ruleRef: rules.ref,
         parameters: rules.parameters,
@@ -669,6 +672,16 @@ export class OffgridProjectsService {
     return (await this.comments(versionId)).find((c) => c.id === commentId);
   }
 
+  /** Alguma das regras usadas pela versão é de teste interno (valores de exemplo). */
+  async usesInternalTestRules(ruleRefs: string[]): Promise<boolean> {
+    if (ruleRefs.length === 0) return false;
+    const rows = await this.prisma.db.ruleSet.findMany({
+      where: { id: { in: ruleRefs.map((ref) => ref.split('@')[0]!) } },
+      select: { sources: true },
+    });
+    return rows.some((row) => isInternalTestRule(row));
+  }
+
   async approve(
     id: string,
     note: EngineeringDecisionInput['note'],
@@ -695,6 +708,7 @@ export class OffgridProjectsService {
     const equipment = ids.length
       ? await this.prisma.db.equipmentItem.findMany({ where: { id: { in: ids } } })
       : [];
+    const internalTestRules = await this.usesInternalTestRules(version.ruleRefs as string[]);
     const content = {
       version: {
         number: version.number,
@@ -711,6 +725,8 @@ export class OffgridProjectsService {
         revision: item.revision,
         spec: item.spec,
       })),
+      internalTestRules,
+      ...(internalTestRules ? { warning: INTERNAL_TEST_RULE_WARNING } : {}),
       approvedAt: new Date().toISOString(),
       approvalNote: note,
     };
@@ -887,6 +903,7 @@ export class OffgridProjectsService {
       status: version.status,
       design: version.design as unknown as OffgridDesign,
       results: version.results as unknown as OffgridResults,
+      internalTestRules: await this.usesInternalTestRules(version.ruleRefs as string[]),
     });
     return { buffer, filename: `${project.code}-v${version.number}-offgrid.pdf` };
   }

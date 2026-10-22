@@ -1,5 +1,6 @@
 /**
- * Cria e ATIVA, para uma empresa, as regras do Engine como TESTE INTERNO (valores de exemplo).
+ * Cria e ATIVA, para uma empresa, as regras do Engine e do Off-Grid (`offgrid.design`) como TESTE INTERNO (valores de
+ * exemplo).
  *
  *   TENANT_SLUG=sol-do-nordeste node dist/cli/seed-internal-test-rules.js
  *

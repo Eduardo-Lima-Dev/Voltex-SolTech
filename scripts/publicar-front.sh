@@ -10,6 +10,8 @@
 #   APP_URL         (site) endereço público da aplicação, ex.: https://voltex-app.vercel.app   (botão "Entrar")
 #   SITE_URL        (app)  endereço público do site, ex.: https://voltex-site.vercel.app       ("Voltar ao site")
 #   LEAD_KEY        (site) chave de captação de leads (CRM → Leads → "Receber contatos do seu site")
+#   LEGAL_COMPANY, LEGAL_CNPJ, LEGAL_ADDRESS, LEGAL_PRIVACY_EMAIL, LEGAL_DPO, LEGAL_FORUM
+#                   (site) dados da empresa nas páginas /privacidade e /termos; vazios = "a informar" em destaque
 #   VERCEL_TOKEN    (opcional) token da Vercel, no lugar do login interativo (`npx vercel login`)
 #   VERCEL_SCOPE    (opcional) equipe/conta da Vercel (ex.: luizeduardobls-projects)
 # --so-preparar    compila e monta a pasta (em /tmp/voltex-deploy/...), mas NÃO envia nada: para conferir antes.
@@ -31,7 +33,11 @@ if [[ "$alvo" == "app" ]]; then
   cp -r apps/web/dist/. "$pasta/"
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-app.json.template > "$pasta/vercel.json"
 else
+  # As páginas legais leem VITE_LEGAL_* na compilação; sem valor, mostram "a informar" (nada é inventado).
   VITE_APP_URL="${APP_URL:?defina APP_URL (endereço público da aplicação)}" VITE_LEAD_KEY="${LEAD_KEY:-}" \
+    VITE_LEGAL_COMPANY="${LEGAL_COMPANY:-}" VITE_LEGAL_CNPJ="${LEGAL_CNPJ:-}" \
+    VITE_LEGAL_ADDRESS="${LEGAL_ADDRESS:-}" VITE_LEGAL_PRIVACY_EMAIL="${LEGAL_PRIVACY_EMAIL:-}" \
+    VITE_LEGAL_DPO="${LEGAL_DPO:-}" VITE_LEGAL_FORUM="${LEGAL_FORUM:-}" \
     pnpm turbo run build --filter=@voltex/site
   cp -r apps/site/dist/. "$pasta/"
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-site.json.template > "$pasta/vercel.json"
