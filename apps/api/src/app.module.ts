@@ -27,10 +27,13 @@ import { CatalogModule } from './platform/catalog/catalog.module';
 import { EngineeringModule } from './products/engine/engineering.module';
 import { OffgridModule } from './products/offgrid/offgrid.module';
 import { DataHubModule } from './platform/data-hub/data-hub.module';
+import { IntegrationsModule } from './platform/integrations/integrations.module';
+import { NotificationsModule } from './platform/notifications/notifications.module';
 import { ReferenceDataModule } from './platform/reference-data/reference-data.module';
 import { RulesModule } from './platform/rules/rules.module';
 import { CalculatorModule } from './products/calculator/calculator.module';
 import { CrmModule } from './products/crm/crm.module';
+import { FeatureGuard } from './platform/tenancy/feature.guard';
 import { TenancyModule } from './platform/tenancy/tenancy.module';
 import { UsersModule } from './platform/users/users.module';
 
@@ -109,6 +112,8 @@ import { UsersModule } from './platform/users/users.module';
     RulesModule,
     ReferenceDataModule,
     DataHubModule,
+    IntegrationsModule,
+    NotificationsModule,
     CatalogModule,
     EngineeringModule,
     OffgridModule,
@@ -118,10 +123,11 @@ import { UsersModule } from './platform/users/users.module';
     MetricsModule,
   ],
   providers: [
-    // A ordem importa: limite de requisições → autenticação → autorização.
+    // A ordem importa: limite de requisições → autenticação → autorização → plano da empresa.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: FeatureGuard },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },

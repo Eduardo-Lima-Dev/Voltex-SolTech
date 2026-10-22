@@ -655,6 +655,21 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'integracoes',
+                lazy: async () => {
+                  const { IntegrationsPage } =
+                    await import('@/features/admin/integrations/integrations-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('integracoes').anyOf}>
+                        <IntegrationsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Integrações' },
+                  };
+                },
+              },
+              {
                 path: 'atualizacoes',
                 lazy: async () => {
                   const { UpdatesPage } = await import('@/features/admin/data-hub/updates-page');

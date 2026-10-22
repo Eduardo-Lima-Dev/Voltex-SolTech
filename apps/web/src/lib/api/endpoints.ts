@@ -9,6 +9,19 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type ActivateIntegrationConnectionInput,
+  type CommunicationLogDto,
+  type CommunicationTemplateDto,
+  type CreateIntegrationConnectionInput,
+  type IntegrationConnectionDto,
+  type IntegrationDeadLetterDto,
+  type IntegrationProviderDto,
+  type IntegrationRunDto,
+  type LogCopiedLinkInput,
+  type SendEmailInput,
+  type UpdateIntegrationConnectionInput,
+  type WhatsAppLinkDto,
+  type WhatsAppLinkInput,
   type ChangeOffgridRequestInput,
   type CreateOffgridProjectInput,
   type CreateOffgridRequestInput,
@@ -562,6 +575,55 @@ export function createEndpoints(client: ApiClient) {
           query: { dryRun: String(dryRun) },
         });
       },
+    },
+    integrations: {
+      providers: () => client.get<IntegrationProviderDto[]>(`${ROUTES.integrations}/providers`),
+      connections: {
+        list: () => client.get<IntegrationConnectionDto[]>(`${ROUTES.integrations}/connections`),
+        create: (input: CreateIntegrationConnectionInput) =>
+          client.post<IntegrationConnectionDto>(`${ROUTES.integrations}/connections`, input),
+        update: (id: string, input: UpdateIntegrationConnectionInput) =>
+          client.patch<IntegrationConnectionDto>(`${ROUTES.integrations}/connections/${id}`, input),
+        activate: (id: string, input: ActivateIntegrationConnectionInput) =>
+          client.post<IntegrationConnectionDto>(
+            `${ROUTES.integrations}/connections/${id}/activate`,
+            input,
+          ),
+        pause: (id: string) =>
+          client.post<IntegrationConnectionDto>(`${ROUTES.integrations}/connections/${id}/pause`),
+        test: (id: string) =>
+          client.post<{ ok: boolean; message: string; run: IntegrationRunDto }>(
+            `${ROUTES.integrations}/connections/${id}/test`,
+          ),
+        sync: (id: string) =>
+          client.post<{ status: 'SUCCEEDED' | 'FAILED' | 'SKIPPED'; error?: string }>(
+            `${ROUTES.integrations}/connections/${id}/sync`,
+          ),
+        remove: (id: string) =>
+          client.delete<{ id: string }>(`${ROUTES.integrations}/connections/${id}`),
+      },
+      runs: (connectionId?: string) =>
+        client.get<IntegrationRunDto[]>(`${ROUTES.integrations}/runs`, {
+          query: (connectionId ? { connectionId, limit: '30' } : { limit: '30' }) as QueryParams,
+        }),
+      deadLetters: {
+        list: () => client.get<IntegrationDeadLetterDto[]>(`${ROUTES.integrations}/dead-letters`),
+        retry: (id: string) =>
+          client.post<{ resolved: boolean }>(`${ROUTES.integrations}/dead-letters/${id}/retry`),
+        dismiss: (id: string) =>
+          client.post<{ id: string }>(`${ROUTES.integrations}/dead-letters/${id}/dismiss`),
+      },
+    },
+    communications: {
+      templates: () => client.get<CommunicationTemplateDto[]>(`${ROUTES.communications}/templates`),
+      list: (query: { entityType?: string; entityId?: string; accountId?: string } = {}) =>
+        client.get<CommunicationLogDto[]>(ROUTES.communications, { query: query as QueryParams }),
+      email: (input: SendEmailInput) =>
+        client.post<CommunicationLogDto>(`${ROUTES.communications}/email`, input),
+      whatsAppLink: (input: WhatsAppLinkInput) =>
+        client.post<WhatsAppLinkDto>(`${ROUTES.communications}/whatsapp-link`, input),
+      copiedLink: (input: LogCopiedLinkInput) =>
+        client.post<CommunicationLogDto>(`${ROUTES.communications}/copied-link`, input),
     },
     dataHub: {
       weather: (query: {

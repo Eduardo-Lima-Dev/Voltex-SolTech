@@ -102,6 +102,10 @@ model Tenant {
   projects                    Project[]
   projectChecklistItems       ProjectChecklistItem[]
   privacyRequests             PrivacyRequest[]
+  integrationConnections      IntegrationConnection[]
+  integrationRuns             IntegrationRun[]
+  integrationDeadLetters      IntegrationDeadLetter[]
+  communicationLogs           CommunicationLog[]
 
   @@map("tenants")
 }
