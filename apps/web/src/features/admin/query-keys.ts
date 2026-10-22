@@ -64,6 +64,8 @@ export const queryKeys = {
   installations: (filters?: unknown) => ['operations', 'installations', filters ?? {}] as const,
   installation: (id: string) => ['operations', 'installation', id] as const,
   installationQuotes: (id: string) => ['operations', 'installation', id, 'quotes'] as const,
+  commissioning: (installationId: string) =>
+    ['operations', 'installation', installationId, 'commissioning'] as const,
   crews: ['operations', 'crews'] as const,
   agenda: (filters?: unknown) => ['operations', 'agenda', filters ?? {}] as const,
   integrationProviders: ['integrations', 'providers'] as const,

@@ -16,7 +16,7 @@ flowchart LR
     I -->|concluir a ordem| D[Instalação concluída]
 ```
 
-O restante (comissionamento, aceite do cliente, finalizado) está no [diagrama de estados](../03-diagramas/estados/instalacao.md); na 11D ele passa a depender da aprovação do ensaio e do aceite registrado.
+O restante (comissionamento, aceite do cliente, finalizado) está no [diagrama de estados](../03-diagramas/estados/instalacao.md) e no [guia do comissionamento](comissionamento.md): depende da aprovação do ensaio pelo responsável técnico e do aceite registrado.
 
 ## O que acontece sozinho
 
@@ -66,7 +66,7 @@ Instalações por situação, aguardando material, com equipe designada, ordens 
 ## Limites desta fase
 
 - Sem o app de campo (11C): iniciar e concluir é feito pela API ou por quem gerencia ordens na tela; fotos, geolocalização e modo offline vêm na 11C.
-- Comissionamento e aceite do cliente são mudanças manuais de situação até a 11D.
+- O comissionamento e o aceite do cliente têm fluxo próprio desde a 11D ([guia](comissionamento.md)): a mudança manual para "aceite do cliente" exige o comissionamento aprovado e a para "finalizado", o aceite registrado.
 - O aviso ao cliente é uma tarefa; o botão de e-mail e de link do WhatsApp na ficha entra com o portal (11H) e a comunicação (11I).
 - A cotação a partir do snapshot só existe para o Engine: projetos do Off-Grid ou de cotação direta têm lista de materiais manual.
 - Projetos criados antes da fase ganham instalação por **Criar as que faltam** (Operação → Instalações).

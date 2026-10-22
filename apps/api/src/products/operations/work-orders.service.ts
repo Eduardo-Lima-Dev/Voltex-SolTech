@@ -22,6 +22,7 @@ import { AuditService } from '../../platform/audit/audit.service';
 import { PrismaService } from '../../platform/prisma/prisma.service';
 import { UserDirectory } from '../crm/support/user-directory.service';
 import { checklistFromLabels } from './operations.mapper';
+import { CommissioningService } from './commissioning.service';
 import { InstallationsService } from './installations.service';
 import { WorkOrderPresenter } from './work-order-presenter.service';
 
@@ -37,6 +38,7 @@ export class WorkOrdersService {
     private readonly directory: UserDirectory,
     private readonly installations: InstallationsService,
     private readonly presenter: WorkOrderPresenter,
+    private readonly commissioning: CommissioningService,
   ) {}
 
   async requireRow(id: string): Promise<WorkOrder> {
@@ -348,6 +350,9 @@ export class WorkOrdersService {
         code: 'INSTALLATION_NOT_INSTALLED',
         message: 'O comissionamento só começa depois da instalação concluída.',
       });
+    // O registro do comissionamento (nova tentativa, se a anterior foi reprovada) nasce ao começar a ordem.
+    if (inst && order.type === 'COMMISSIONING')
+      await this.commissioning.ensureRecord(inst.id, { newAttemptIfRejected: true });
     await this.prisma.db.$transaction(async (tx) => {
       await tx.workOrder.update({
         where: { id },
@@ -392,6 +397,16 @@ export class WorkOrdersService {
             ? 'Resolva as pendências de campo que bloqueiam a instalação antes de concluir.'
             : 'A instalação não está em execução.',
       });
+    // Concluir o comissionamento exige todos os ensaios obrigatórios registrados e envia o registro para revisão.
+    const commissioning =
+      inst && order.type === 'COMMISSIONING'
+        ? await this.commissioning.missingRequired(inst.id)
+        : null;
+    if (commissioning && commissioning.record.status === 'IN_PROGRESS' && commissioning.missing > 0)
+      throw new UnprocessableEntityException({
+        code: 'REQUIRED_TESTS_PENDING',
+        message: `Faltam ${commissioning.missing} ensaio(s) obrigatório(s) sem registro.`,
+      });
     await this.prisma.db.$transaction(async (tx) => {
       await tx.workOrder.update({
         where: { id },
@@ -401,6 +416,8 @@ export class WorkOrdersService {
           ...(input.notes ? { notes: input.notes } : {}),
         },
       });
+      if (commissioning && commissioning.record.status === 'IN_PROGRESS')
+        await this.commissioning.submit(commissioning.record.id, actor, tx);
       if (inst && order.type === 'INSTALLATION')
         await this.installations.transition(inst, 'INSTALLED', { tx });
       await this.audit.record(

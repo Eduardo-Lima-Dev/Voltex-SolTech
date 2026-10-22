@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  UnprocessableEntityException,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,11 +17,13 @@ import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { createZodDto } from 'nestjs-zod';
 import {
+  addCommissioningStringsSchema,
   agendaQuerySchema,
   cancelWorkOrderSchema,
   changeInstallationStatusSchema,
   completeWorkOrderSchema,
   createCrewSchema,
+  decideCommissioningSchema,
   createFieldIssueSchema,
   createMaterialItemSchema,
   createWorkOrderSchema,
@@ -31,7 +34,10 @@ import {
   listInstallationsQuerySchema,
   listWorkOrdersQuerySchema,
   orderMaterialItemSchema,
+  recordMeasurementSchema,
+  registerAcceptanceSchema,
   resolveFieldIssueSchema,
+  updateCommissioningSchema,
   updateCrewSchema,
   updateInstallationSchema,
   updateMaterialItemSchema,
@@ -40,6 +46,7 @@ import {
 import { Authenticated, CurrentUser, RequirePermissions } from '../../common/decorators';
 import type { RequestUser } from '../../common/context/request-user';
 import type { UploadedFile as UploadedFileType } from '../../platform/documents/documents.service';
+import { CommissioningService } from './commissioning.service';
 import { CrewsService } from './crews.service';
 import { FieldService } from './field.service';
 import { FieldIssuesService } from './field-issues.service';
@@ -67,6 +74,11 @@ class FieldSyncDto extends createZodDto(fieldSyncSchema) {}
 class UploadFieldPhotoDto extends createZodDto(uploadFieldPhotoSchema) {}
 class UpdateFieldPhotoDto extends createZodDto(updateFieldPhotoSchema) {}
 class SaveFieldSignatureDto extends createZodDto(saveFieldSignatureSchema) {}
+class UpdateCommissioningDto extends createZodDto(updateCommissioningSchema) {}
+class RecordMeasurementDto extends createZodDto(recordMeasurementSchema) {}
+class AddCommissioningStringsDto extends createZodDto(addCommissioningStringsSchema) {}
+class DecideCommissioningDto extends createZodDto(decideCommissioningSchema) {}
+class RegisterAcceptanceDto extends createZodDto(registerAcceptanceSchema) {}
 
 /**
  * Operação (Fase 11B, ADR-0020). Instalações, materiais, equipes e agenda: `ops.installation.*` e `ops.workorder.*`.
@@ -84,6 +96,7 @@ export class OperationsController {
     private readonly workOrders: WorkOrdersService,
     private readonly issues: FieldIssuesService,
     private readonly field: FieldService,
+    private readonly commissioning: CommissioningService,
   ) {}
 
   // --- instalações ------------------------------------------------------------------------------------------
@@ -361,5 +374,96 @@ export class OperationsController {
   @RequirePermissions('ops.workorder.write')
   updatePhoto(@Param('photoId', ParseUUIDPipe) photoId: string, @Body() body: UpdateFieldPhotoDto) {
     return this.field.updatePhoto(photoId, body);
+  }
+  // --- comissionamento e aceite (11D) -----------------------------------------------------------------------
+
+  /** O comissionamento mais recente da instalação e o histórico das tentativas. */
+  @Get('installations/:id/commissioning')
+  @RequirePermissions('ops.commissioning.read')
+  installationCommissioning(@Param('id', ParseUUIDPipe) id: string) {
+    return this.commissioning.forInstallation(id);
+  }
+
+  /** Abre o comissionamento (ou uma nova tentativa, se a anterior foi reprovada) com os ensaios da regra em vigor. */
+  @Post('installations/:id/commissioning')
+  @RequirePermissions('ops.commissioning.write')
+  async openCommissioning(@Param('id', ParseUUIDPipe) id: string) {
+    const inst = await this.installations.require(id);
+    if (!['INSTALLED', 'COMMISSIONING'].includes(inst.status))
+      throw new UnprocessableEntityException({
+        code: 'INSTALLATION_NOT_INSTALLED',
+        message: 'O comissionamento só abre depois da instalação concluída.',
+      });
+    const record = await this.commissioning.ensureRecord(id, { newAttemptIfRejected: true });
+    return this.commissioning.get(record.id);
+  }
+
+  @Get('commissioning/:id')
+  @RequirePermissions('ops.commissioning.read')
+  getCommissioning(@Param('id', ParseUUIDPipe) id: string) {
+    return this.commissioning.get(id);
+  }
+
+  @Patch('commissioning/:id')
+  @RequirePermissions('ops.commissioning.write')
+  updateCommissioning(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: UpdateCommissioningDto,
+  ) {
+    return this.commissioning.update(id, body);
+  }
+
+  @Post('commissioning/:id/strings')
+  @HttpCode(200)
+  @RequirePermissions('ops.commissioning.write')
+  addCommissioningStrings(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AddCommissioningStringsDto,
+  ) {
+    return this.commissioning.addStrings(id, body);
+  }
+
+  /** O escritório registra um ensaio (o técnico faz o mesmo pelo app de campo). */
+  @Patch('commissioning/tests/:testId')
+  @RequirePermissions('ops.commissioning.write')
+  recordTest(
+    @Param('testId', ParseUUIDPipe) testId: string,
+    @Body() body: RecordMeasurementDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.commissioning.recordMeasurement(testId, body, user);
+  }
+
+  @Post('commissioning/:id/submit')
+  @HttpCode(200)
+  @RequirePermissions('ops.commissioning.write')
+  submitCommissioning(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: RequestUser) {
+    return this.commissioning.submit(id, user);
+  }
+
+  /** Aprovar ou reprovar (responsável técnico). */
+  @Post('commissioning/:id/decision')
+  @HttpCode(200)
+  @RequirePermissions('ops.commissioning.approve')
+  decideCommissioning(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: DecideCommissioningDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.commissioning.decide(id, body, user);
+  }
+
+  @Get('commissioning/:id/report')
+  @RequirePermissions('ops.commissioning.read')
+  commissioningReport(@Param('id', ParseUUIDPipe) id: string) {
+    return this.commissioning.reportUrl(id);
+  }
+
+  /** Registra o aceite do cliente (assinatura de campo ou registro do escritório) e finaliza a instalação. */
+  @Post('installations/:id/acceptance')
+  @HttpCode(200)
+  @RequirePermissions('ops.installation.write')
+  registerAcceptance(@Param('id', ParseUUIDPipe) id: string, @Body() body: RegisterAcceptanceDto) {
+    return this.installations.registerAcceptance(id, body);
   }
 }

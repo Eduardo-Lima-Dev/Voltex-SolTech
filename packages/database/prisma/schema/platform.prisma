@@ -115,6 +115,8 @@ model Tenant {
   fieldIssues                 FieldIssue[]
   workOrderPhotos             WorkOrderPhoto[]
   fieldActions                FieldAction[]
+  commissioningRecords        CommissioningRecord[]
+  commissioningTests          CommissioningTest[]
 
   @@map("tenants")
 }

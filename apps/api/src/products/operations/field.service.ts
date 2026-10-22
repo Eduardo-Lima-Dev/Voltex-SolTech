@@ -22,6 +22,7 @@ import { AuditService } from '../../platform/audit/audit.service';
 import { DocumentsService, type UploadedFile } from '../../platform/documents/documents.service';
 import { S3Service } from '../../platform/documents/s3.service';
 import { PrismaService } from '../../platform/prisma/prisma.service';
+import { CommissioningService } from './commissioning.service';
 import { FieldIssuesService } from './field-issues.service';
 import { parseChecklist, toFieldIssueDto } from './operations.mapper';
 import { WorkOrderPresenter } from './work-order-presenter.service';
@@ -57,6 +58,7 @@ export class FieldService {
     private readonly documents: DocumentsService,
     private readonly s3: S3Service,
     private readonly presenter: WorkOrderPresenter,
+    private readonly commissioning: CommissioningService,
   ) {}
 
   /** Só quem executa em campo ou gerencia ordens usa o app de campo. */
@@ -119,6 +121,12 @@ export class FieldService {
         await this.s3.presignedDownloadUrl(doc.storageKey, doc.filename, PHOTO_URL_TTL_SECONDS),
       );
 
+    // Ensaios das ordens de comissionamento (o registro nasce ao primeiro acesso, se ainda não existe).
+    const commissioningOf = new Map<string, FieldWorkOrderDto['commissioning']>();
+    for (const row of rows)
+      if (row.type === 'COMMISSIONING' && row.installationId)
+        commissioningOf.set(row.id, await this.commissioning.fieldView(row.installationId));
+
     return dtos.map((dto, index) => {
       const row = rows[index]!;
       const site = sites.find((s) => s.id === row.siteId);
@@ -158,6 +166,7 @@ export class FieldService {
             visibleToCustomer: p.visibleToCustomer,
             url: urls.get(p.documentId) ?? '',
           })),
+        commissioning: commissioningOf.get(row.id) ?? null,
         fetchedAt: new Date().toISOString(),
       };
     });
@@ -258,6 +267,36 @@ export class FieldService {
       case 'NOTE':
         await this.addNote(order.id, action.text, action.capturedAt, actor);
         return null;
+      case 'MEASURE': {
+        if (order.type !== 'COMMISSIONING')
+          throw new UnprocessableEntityException('Esta ordem não é de comissionamento.');
+        await this.commissioning.assertTestOfInstallation(action.testId, order.installationId);
+        await this.commissioning.recordMeasurement(
+          action.testId,
+          {
+            ...(action.value !== undefined ? { value: action.value } : {}),
+            ...(action.passed !== undefined ? { passed: action.passed } : {}),
+            ...(action.note !== undefined ? { note: action.note } : {}),
+            ...(action.irradianceWm2 !== undefined ? { irradianceWm2: action.irradianceWm2 } : {}),
+            ...(action.moduleTempC !== undefined ? { moduleTempC: action.moduleTempC } : {}),
+          },
+          actor,
+        );
+        return null;
+      }
+      case 'CONDITIONS': {
+        if (order.type !== 'COMMISSIONING' || !order.installationId)
+          throw new UnprocessableEntityException('Esta ordem não é de comissionamento.');
+        const record = await this.commissioning.ensureRecord(order.installationId);
+        const current = (await this.commissioning.get(record.id)).conditions;
+        await this.commissioning.setConditions(record.id, {
+          ...current,
+          ...Object.fromEntries(
+            Object.entries(action.conditions).filter(([, v]) => v !== null && v !== undefined),
+          ),
+        });
+        return null;
+      }
       case 'ISSUE': {
         if (!order.installationId)
           throw new UnprocessableEntityException('Esta ordem não é de uma instalação.');

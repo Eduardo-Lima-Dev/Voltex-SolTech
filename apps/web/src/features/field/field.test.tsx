@@ -4,7 +4,13 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FieldActionInput, FieldSyncResultDto, FieldWorkOrderDto } from '@voltex/shared';
+import type {
+  CommissioningTestDto,
+  FieldActionInput,
+  FieldCommissioningDto,
+  FieldSyncResultDto,
+  FieldWorkOrderDto,
+} from '@voltex/shared';
 import { API, makeSession } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
@@ -278,5 +284,166 @@ describe('App de campo', () => {
     expect(
       await screen.findByRole('heading', { name: 'Sem acesso a esta área' }),
     ).toBeInTheDocument();
+  });
+  describe('ensaios do comissionamento', () => {
+    const base = (o: Partial<CommissioningTestDto> = {}): CommissioningTestDto => ({
+      id: 'c-1',
+      position: 0,
+      code: 'GROUND_CONTINUITY',
+      label: 'Continuidade do aterramento',
+      group: 'Categoria 1',
+      kind: 'CHECK',
+      level: 'STANDARD',
+      scope: 'SYSTEM',
+      unit: null,
+      expectedKind: 'NONE',
+      tolerancePct: null,
+      min: null,
+      max: null,
+      required: true,
+      source: 'Regra',
+      subjectKey: 'system',
+      subjectLabel: 'Sistema',
+      electrical: null,
+      result: 'PENDING',
+      measuredValue: null,
+      passed: null,
+      expectedValue: null,
+      deviationPct: null,
+      basis: null,
+      reason: null,
+      note: null,
+      conditions: null,
+      measuredAt: null,
+      measuredById: null,
+      evidencePhotoIds: [],
+      ...o,
+    });
+    const iscTest = (o: Partial<CommissioningTestDto> = {}) =>
+      base({
+        id: 'c-2',
+        position: 1,
+        code: 'STRING_ISC',
+        label: 'Isc da string',
+        kind: 'MEASURE',
+        scope: 'STRING',
+        unit: 'A',
+        expectedKind: 'ISC_STRING',
+        tolerancePct: 5,
+        subjectKey: 'str:1',
+        subjectLabel: 'Inversor 1 · string 1',
+        electrical: {
+          modulesInSeries: 10,
+          vocStcV: 40,
+          iscStcA: 10,
+          betaVocPctPerC: -0.3,
+          alphaIscPctPerC: 0.05,
+        },
+        ...o,
+      });
+    const commissioningOrder = (c: Partial<FieldCommissioningDto> = {}) =>
+      fieldOrder({
+        type: 'COMMISSIONING',
+        status: 'IN_PROGRESS',
+        title: 'Comissionamento',
+        checklist: [],
+        commissioning: {
+          recordId: 'r-1',
+          status: 'IN_PROGRESS',
+          level: 'STANDARD',
+          provisional: false,
+          ruleNote: null,
+          conditions: {},
+          tests: [base(), iscTest()],
+          ...c,
+        },
+      });
+
+    it('mostra os ensaios por grupo; conferência e medição viram ações, com a prévia do julgamento na hora', async () => {
+      const calls = mockField([commissioningOrder()]);
+      renderApp('/campo/w-1', { session: OPS() });
+      const user = userEvent.setup();
+      const group = await screen.findByRole('list', { name: 'Categoria 1' });
+      expect(within(group).getByText('Continuidade do aterramento')).toBeInTheDocument();
+      expect(within(group).getByText('Inversor 1 · string 1')).toBeInTheDocument();
+
+      // Conferência.
+      await user.click(within(group).getByRole('button', { name: 'Conforme' }));
+      await waitFor(() =>
+        expect(
+          calls.syncBodies
+            .flat()
+            .some((a) => a.type === 'MEASURE' && 'passed' in a && a.passed === true),
+        ).toBe(true),
+      );
+
+      // Condições do local: o esperado passa a existir e a medição é julgada com a mesma conta do servidor.
+      await user.type(screen.getByLabelText('Irradiância (W/m²)'), '800');
+      await user.type(screen.getByLabelText('Temp. do módulo (°C)'), '25');
+      await user.click(screen.getByRole('button', { name: 'Salvar condições' }));
+      await waitFor(() =>
+        expect(calls.syncBodies.flat().some((a) => a.type === 'CONDITIONS')).toBe(true),
+      );
+      await user.type(screen.getByLabelText(/Valor medido/), '7,9');
+      await user.click(screen.getByRole('button', { name: /Registrar medição: Isc da string/ }));
+      await waitFor(() =>
+        expect(
+          calls.syncBodies
+            .flat()
+            .some((a) => a.type === 'MEASURE' && 'value' in a && a.value === 7.9),
+        ).toBe(true),
+      );
+      // 7,9 A contra 8 A esperados (−1,25 %), tolerância de 5 %: conforme.
+      const isc = (await screen.findByText('Isc da string')).closest('li') as HTMLElement;
+      expect(await within(isc).findByText('Conforme')).toBeInTheDocument();
+      expect(within(isc).getByText(/Esperado: 8 A/)).toBeInTheDocument();
+      expect(within(isc).getByText(/tolerância 5 %/)).toBeInTheDocument();
+    });
+
+    it('medição fora da tolerância aparece como reprovada; sem tolerância, "sem regra para julgar"', async () => {
+      mockField([
+        commissioningOrder({
+          conditions: { irradianceWm2: 800, moduleTempC: 25 },
+          tests: [
+            iscTest({ measuredValue: 7.0, result: 'FAIL' }),
+            iscTest({
+              id: 'c-3',
+              subjectLabel: 'Inversor 1 · string 2',
+              tolerancePct: null,
+              measuredValue: 8,
+              result: 'PENDING_RULE',
+              reason: 'A regra em vigor não define tolerância nem limite para este ensaio.',
+            }),
+          ],
+        }),
+      ]);
+      renderApp('/campo/w-1', { session: OPS() });
+      expect(await screen.findByText('Reprovado')).toBeInTheDocument();
+      expect(screen.getByText('Sem regra para julgar')).toBeInTheDocument();
+      expect(screen.getByText(/não define tolerância/)).toBeInTheDocument();
+    });
+
+    it('modelo provisório avisa; depois de enviado para revisão os campos ficam travados', async () => {
+      mockField([
+        commissioningOrder({
+          provisional: true,
+          status: 'SUBMITTED',
+          ruleNote: 'Modelo-base provisório.',
+        }),
+      ]);
+      renderApp('/campo/w-1', { session: OPS() });
+      expect(await screen.findByRole('note')).toHaveTextContent(/Modelo provisório/);
+      expect(screen.getByText(/enviado para revisão do responsável técnico/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Conforme' })).toBeDisabled();
+      expect(screen.getByLabelText(/Valor medido/)).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Salvar condições' })).toBeDisabled();
+    });
+
+    it('ordem que não é de comissionamento não mostra a seção de ensaios', async () => {
+      mockField([fieldOrder({ status: 'IN_PROGRESS' })]);
+      renderApp('/campo/w-1', { session: OPS() });
+      await screen.findByRole('list', { name: 'Checklist' });
+      expect(screen.queryByText('Ensaios do comissionamento')).not.toBeInTheDocument();
+    });
   });
 });

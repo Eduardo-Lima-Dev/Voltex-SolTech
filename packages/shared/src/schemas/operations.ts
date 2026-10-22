@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { InstallationStatus } from '../enums/index.js';
+import { measurementConditionsSchema } from './commissioning.js';
 
 /** Operação (Fase 11B, ADR-0020): instalação, materiais, equipes e ordens de serviço. */
 
@@ -202,7 +203,15 @@ const fieldActionBase = {
   capturedAt: isoDateTime,
 };
 
-export const FIELD_ACTION_TYPES = ['START', 'COMPLETE', 'CHECK', 'NOTE', 'ISSUE'] as const;
+export const FIELD_ACTION_TYPES = [
+  'START',
+  'COMPLETE',
+  'CHECK',
+  'NOTE',
+  'ISSUE',
+  'MEASURE',
+  'CONDITIONS',
+] as const;
 export type FieldActionType = (typeof FIELD_ACTION_TYPES)[number];
 
 export const fieldActionSchema = z.discriminatedUnion('type', [
@@ -231,6 +240,23 @@ export const fieldActionSchema = z.discriminatedUnion('type', [
     issueType: z.enum(FIELD_ISSUE_TYPES),
     description: z.string().trim().min(3).max(1000),
     blocking: z.boolean().default(true),
+  }),
+  /** Medição ou conferência de um ensaio do comissionamento. */
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('MEASURE'),
+    testId: z.uuid(),
+    value: z.number().finite().nullable().optional(),
+    passed: z.boolean().nullable().optional(),
+    note: z.string().trim().max(500).optional(),
+    irradianceWm2: z.number().min(0).max(2000).optional(),
+    moduleTempC: z.number().min(-40).max(130).optional(),
+  }),
+  /** Condições medidas no local (irradiância e temperaturas) para o cálculo do esperado. */
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('CONDITIONS'),
+    conditions: measurementConditionsSchema,
   }),
 ]);
 export type FieldActionInput = z.infer<typeof fieldActionSchema>;

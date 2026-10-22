@@ -1,4 +1,41 @@
-import type { FieldActionInput, FieldWorkOrderDto } from '@voltex/shared';
+import type {
+  CommissioningTestDto,
+  FieldActionInput,
+  FieldCommissioningDto,
+  FieldWorkOrderDto,
+} from '@voltex/shared';
+import { evaluateTest } from '@voltex/solar-engine';
+
+/**
+ * Prévia do julgamento de um ensaio no aparelho, com a mesma função do servidor (a tolerância vem da regra, junto
+ * com o ensaio). O servidor refaz o julgamento ao receber; esta prévia só mostra o resultado esperado na hora.
+ */
+export function previewTest(
+  test: CommissioningTestDto,
+  recordConditions: FieldCommissioningDto['conditions'],
+): CommissioningTestDto {
+  const evaluation = evaluateTest(
+    {
+      kind: test.kind,
+      expected: test.expectedKind,
+      tolerancePct: test.tolerancePct,
+      min: test.min,
+      max: test.max,
+      electrical: test.electrical,
+      unit: test.unit,
+    },
+    { value: test.measuredValue, passed: test.passed },
+    { ...recordConditions, ...(test.conditions ?? {}) },
+  );
+  return {
+    ...test,
+    result: evaluation.result,
+    expectedValue: evaluation.expectedValue,
+    deviationPct: evaluation.deviationPct,
+    basis: evaluation.basis,
+    reason: evaluation.reason,
+  };
+}
 
 /**
  * Aplica uma ação à cópia local da ordem, como o servidor fará quando ela chegar. Assim o técnico vê o resultado na
@@ -34,6 +71,62 @@ export function applyLocal(order: FieldWorkOrderDto, action: FieldActionInput): 
     case 'NOTE': {
       const line = `[${new Date(action.capturedAt).toLocaleString('pt-BR')}] ${action.text}`;
       return { ...order, notes: order.notes ? `${order.notes}\n${line}` : line };
+    }
+    case 'MEASURE': {
+      const commissioning = order.commissioning;
+      if (!commissioning) return order;
+      return {
+        ...order,
+        commissioning: {
+          ...commissioning,
+          tests: commissioning.tests.map((test) => {
+            if (test.id !== action.testId) return test;
+            const touches = action.value !== undefined || action.passed !== undefined;
+            const own =
+              action.irradianceWm2 !== undefined || action.moduleTempC !== undefined
+                ? {
+                    ...(test.conditions ?? {}),
+                    ...(action.irradianceWm2 !== undefined
+                      ? { irradianceWm2: action.irradianceWm2 }
+                      : {}),
+                    ...(action.moduleTempC !== undefined
+                      ? { moduleTempC: action.moduleTempC }
+                      : {}),
+                  }
+                : test.conditions;
+            const next: CommissioningTestDto = {
+              ...test,
+              conditions: own,
+              measuredValue: action.value === undefined ? test.measuredValue : action.value,
+              passed: action.passed === undefined ? test.passed : action.passed,
+              note: action.note ?? test.note,
+            };
+            return touches || own !== test.conditions
+              ? previewTest(next, commissioning.conditions)
+              : next;
+          }),
+        },
+      };
+    }
+    case 'CONDITIONS': {
+      const commissioning = order.commissioning;
+      if (!commissioning) return order;
+      const conditions = {
+        ...commissioning.conditions,
+        ...Object.fromEntries(
+          Object.entries(action.conditions).filter(([, v]) => v !== null && v !== undefined),
+        ),
+      };
+      return {
+        ...order,
+        commissioning: {
+          ...commissioning,
+          conditions,
+          tests: commissioning.tests.map((t) =>
+            t.kind === 'MEASURE' && t.measuredValue !== null ? previewTest(t, conditions) : t,
+          ),
+        },
+      };
     }
     case 'ISSUE':
       return {

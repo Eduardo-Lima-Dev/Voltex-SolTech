@@ -1,4 +1,5 @@
 import type { InstallationStatus } from '../enums/index.js';
+import type { AcceptanceDto, FieldCommissioningDto } from './commissioning.js';
 import type {
   FieldIssueType,
   MaterialItemStatus,
@@ -111,6 +112,8 @@ export interface InstallationDetailDto extends InstallationSummaryDto {
   installedAt: string | null;
   doneAt: string | null;
   cancelReason: string | null;
+  /** Aceite do cliente, quando registrado. */
+  acceptance: AcceptanceDto | null;
   /** Próximos estados permitidos a partir do atual (a regra fica no servidor). */
   allowedTransitions: InstallationStatus[];
   materials: MaterialItemDto[];
@@ -182,6 +185,8 @@ export interface FieldWorkOrderDto extends WorkOrderDto {
   contactPhone: string | null;
   openIssues: FieldIssueDto[];
   photos: WorkOrderPhotoDto[];
+  /** Ensaios do comissionamento, quando a ordem é de comissionamento. */
+  commissioning: FieldCommissioningDto | null;
   /** Quando o servidor montou esta cópia: o app a guarda para uso sem internet. */
   fetchedAt: string;
 }

@@ -43,6 +43,7 @@ export const fieldOrder = (o: Partial<FieldWorkOrderDto> = {}): FieldWorkOrderDt
   contactPhone: '(61) 99999-8888',
   openIssues: [],
   photos: [],
+  commissioning: null,
   fetchedAt: NOW,
   ...o,
 });

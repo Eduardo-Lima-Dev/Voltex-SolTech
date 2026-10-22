@@ -27,6 +27,7 @@ import {
   WORK_ORDER_TYPE_LABELS,
 } from '../operations/labels';
 import { fileOf } from './field-db';
+import { FieldCommissioning } from './field-commissioning';
 import type { FieldViewOrder } from './field-engine';
 import { useField } from './field-provider';
 import { compressImage, mapsUrl } from './media';
@@ -267,6 +268,8 @@ export function FieldOrderPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      {order.type === 'COMMISSIONING' ? <FieldCommissioning order={order} /> : null}
 
       {order.checklist.length > 0 ? (
         <Card>

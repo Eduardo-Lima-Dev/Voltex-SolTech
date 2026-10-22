@@ -25,6 +25,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { formatDateTime } from '@/lib/format';
 import { queryKeys } from '../admin/query-keys';
+import { AcceptanceSection, CommissioningSection } from './commissioning-section';
 import { IssuesSection } from './issues-section';
 import { INSTALLATION_STATUS_LABELS, needsReason } from './labels';
 import { MaterialsSection } from './materials-section';
@@ -37,6 +38,9 @@ const MANUAL_HIDDEN: readonly InstallationStatus[] = [
   'SCHEDULING',
   'CREW_ASSIGNED',
   'FIELD_ISSUE',
+  // O aceite abre com a aprovação do comissionamento e a instalação é finalizada pelo registro do aceite.
+  'CUSTOMER_ACCEPTANCE',
+  'DONE',
 ];
 
 function StatusDialog({
@@ -169,6 +173,10 @@ export function InstallationPage() {
       <MaterialsSection installation={inst} />
       <WorkOrdersSection installation={inst} />
       <IssuesSection installation={inst} />
+      <Can permission="ops.commissioning.read">
+        <CommissioningSection installation={inst} />
+      </Can>
+      <AcceptanceSection installation={inst} />
 
       <Card>
         <CardHeader>

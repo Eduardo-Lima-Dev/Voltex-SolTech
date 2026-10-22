@@ -36,6 +36,9 @@ Cada função do pacote `@voltex/solar-engine` tem um memorial aqui, com: fórmu
   - [Custo](offgrid-economia.md)
   - [Projeto visual do terreno e cabos](offgrid-layout.md)
 
+- Operação (Fase 11):
+  - [Comissionamento: valor esperado e julgamento dos ensaios](comissionamento.md)
+
 ## Fontes
 
 - [Manual CRESESB 2014: extração com página](../referencias/cresesb-2014/README.md) (temperatura, strings, cabos, PR).

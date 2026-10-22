@@ -980,7 +980,7 @@ describe('Operação · instalação, materiais, equipes e agenda (e2e)', () => 
       ).toBe(true);
     });
 
-    it('percorre o fim do fluxo: comissionamento → aceite do cliente → finalizado, e permite voltar com motivo', async () => {
+    it('percorre o começo do fim do fluxo: comissionamento, voltar com motivo e a trava do aceite', async () => {
       const { id, orderId } = await crewAssigned();
       await post(`/operations/work-orders/${orderId}/start`, installer.token);
       await post(`/operations/work-orders/${orderId}/complete`, installer.token);
@@ -997,17 +997,15 @@ describe('Operação · instalação, materiais, equipes e agenda (e2e)', () => 
         reason: 'Reprovado no ensaio de isolamento',
       });
       expect(reproved.body.status).toBe('IN_PROGRESS');
-      // Reinstala e segue.
+      // Reinstala e volta ao comissionamento.
       await post(`/operations/installations/${id}/status`, operations, { status: 'INSTALLED' });
       await post(`/operations/installations/${id}/status`, operations, { status: 'COMMISSIONING' });
-      await post(`/operations/installations/${id}/status`, operations, {
+      // Sem o comissionamento aprovado pelo responsável técnico, o aceite não abre (ver o e2e do comissionamento).
+      const skipped = await post(`/operations/installations/${id}/status`, operations, {
         status: 'CUSTOMER_ACCEPTANCE',
       });
-      const done = await post(`/operations/installations/${id}/status`, operations, {
-        status: 'DONE',
-      });
-      expect(done.body).toMatchObject({ status: 'DONE', allowedTransitions: [] });
-      expect(done.body.doneAt).not.toBeNull();
+      expect(skipped.status).toBe(422);
+      expect(skipped.body.code).toBe('COMMISSIONING_NOT_APPROVED');
     });
 
     it('altera o responsável (que precisa existir) e audita', async () => {
