@@ -54,6 +54,10 @@ export class DataExportService {
       db.projectChecklistItem.findMany(),
       db.document.findMany(),
       db.privacyRequest.findMany(),
+      // Credenciais dos provedores são segredo: ficam de fora, só o cadastro da conexão vai.
+      db.integrationConnection.findMany({ omit: { credentials: true } }),
+      db.integrationRun.findMany(),
+      db.communicationLog.findMany(),
     ]);
     const [
       branches,
@@ -84,6 +88,9 @@ export class DataExportService {
       projectChecklistItems,
       documents,
       privacyRequests,
+      integrationConnections,
+      integrationRuns,
+      communicationLogs,
     ] = rest;
 
     await this.audit.record({
@@ -135,6 +142,9 @@ export class DataExportService {
       projectChecklistItems,
       documents,
       privacyRequests,
+      integrationConnections,
+      integrationRuns,
+      communicationLogs,
     };
   }
 }

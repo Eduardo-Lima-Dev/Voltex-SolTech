@@ -18,6 +18,12 @@ export const PERMISSIONS = [
   'platform.rule.manage',
   'platform.catalog.read',
   'platform.catalog.manage',
+  /** Integration Hub: ver conexões, execuções e falhas. */
+  'platform.integration.read',
+  /** Integration Hub: cadastrar credenciais, ligar, testar e reprocessar. */
+  'platform.integration.manage',
+  /** Registrar o envio de uma comunicação (e-mail, link do WhatsApp, link copiado). */
+  'platform.communication.send',
   // CRM
   'crm.lead.read',
   'crm.lead.write',
@@ -81,6 +87,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   [Role.OWNER]: ALL,
   [Role.ADMIN]: ALL.filter((p) => p !== 'crm.margin.approve'),
   [Role.SALES_MANAGER]: [
+    'platform.communication.send',
     ...startsWith('crm.lead', 'crm.account', 'crm.opportunity', 'crm.task', 'crm.energy-bill'),
     ...startsWith(
       'crm.quote',
@@ -112,6 +119,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.SALESPERSON]: [
+    'platform.communication.send',
     'crm.lead.read',
     'crm.lead.write',
     'crm.account.read',
@@ -170,6 +178,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.OPERATIONS]: [
+    'platform.communication.send',
     'crm.account.read',
     'crm.opportunity.read',
     'crm.project.read',
@@ -189,6 +198,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.FINANCE]: [
+    'platform.communication.send',
     'crm.finance.read',
     'crm.margin.read',
     'crm.guard.read',
@@ -199,6 +209,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.read',
   ],
   [Role.OM]: [
+    'platform.communication.send',
     'crm.account.read',
     'crm.project.read',
     'crm.task.read',

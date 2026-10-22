@@ -20,6 +20,8 @@ export const ROUTES = {
   solarResources: '/solar-resources',
   rules: '/rules',
   dataHub: '/data-hub',
+  integrations: '/integrations',
+  communications: '/communications',
   documents: '/documents',
   leads: '/leads',
   publicLeads: '/public/leads',

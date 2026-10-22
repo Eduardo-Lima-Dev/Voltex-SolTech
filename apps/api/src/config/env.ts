@@ -96,6 +96,15 @@ export const envSchema = z
     DATA_HUB_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(604_800_000),
     /** Intervalo da busca de tarifas novas na ANEEL (ms). Padrão: mensal. 0 desliga o agendamento. */
     DATA_HUB_TARIFF_INTERVAL_MS: z.coerce.number().int().min(0).default(2_592_000_000),
+    /**
+     * Provedores do Integration Hub que podem consultar a internet, separados por vírgula (ex.: `solaredge,docuseal`).
+     * Vazio = nenhum. É a decisão explícita de ligar um provedor, depois de conferidos os termos de uso.
+     */
+    INTEGRATIONS_ENABLED_PROVIDERS: z.string().default(''),
+    /** Intervalo da varredura que agenda as sincronizações (ms). Padrão: 15 min. 0 desliga o agendamento. */
+    INTEGRATIONS_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).default(900_000),
+    /** Libera provedores em rede privada (ex.: assinatura eletrônica auto-hospedada no mesmo Docker). */
+    INTEGRATIONS_ALLOW_PRIVATE_HOSTS: booleanFromString.default(false),
   })
   .superRefine((env, ctx) => {
     const previous = env.DATA_ENCRYPTION_KEY_PREVIOUS.split(',')
