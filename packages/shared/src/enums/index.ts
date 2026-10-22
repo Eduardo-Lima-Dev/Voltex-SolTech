@@ -250,6 +250,7 @@ export const TimelineEventType = {
   PROJECT_CREATED: 'PROJECT_CREATED',
   PROJECT_STATUS_CHANGED: 'PROJECT_STATUS_CHANGED',
   INSTALLATION_STATUS_CHANGED: 'INSTALLATION_STATUS_CHANGED',
+  PLANT_ACTIVATED: 'PLANT_ACTIVATED',
 } as const;
 export type TimelineEventType = (typeof TimelineEventType)[keyof typeof TimelineEventType];
 

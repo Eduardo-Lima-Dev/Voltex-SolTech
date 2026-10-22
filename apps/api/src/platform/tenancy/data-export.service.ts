@@ -67,6 +67,14 @@ export class DataExportService {
       db.workOrderPhoto.findMany(),
       db.commissioningRecord.findMany(),
       db.commissioningTest.findMany(),
+      db.plant.findMany(),
+      db.plantAsset.findMany(),
+      db.plantEvent.findMany(),
+      db.manufacturerWarrantyTerm.findMany(),
+      db.assetWarranty.findMany(),
+      db.ticket.findMany({ include: { comments: true } }),
+      db.maintenancePlan.findMany(),
+      db.omContract.findMany(),
     ]);
     const [
       branches,
@@ -109,6 +117,14 @@ export class DataExportService {
       workOrderPhotos,
       commissioningRecords,
       commissioningTests,
+      plants,
+      plantAssets,
+      plantEvents,
+      warrantyTerms,
+      assetWarranties,
+      tickets,
+      maintenancePlans,
+      omContracts,
     ] = rest;
 
     await this.audit.record({
@@ -172,6 +188,14 @@ export class DataExportService {
       workOrderPhotos,
       commissioningRecords,
       commissioningTests,
+      plants,
+      plantAssets,
+      plantEvents,
+      warrantyTerms,
+      assetWarranties,
+      tickets,
+      maintenancePlans,
+      omContracts,
     };
   }
 }

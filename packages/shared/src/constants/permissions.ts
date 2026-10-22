@@ -77,6 +77,15 @@ export const PERMISSIONS = [
   'ops.commissioning.write',
   /** Aprovar ou reprovar o comissionamento (responsável técnico). */
   'ops.commissioning.approve',
+  // Pós-venda e O&M
+  'ops.plant.read',
+  'ops.plant.write',
+  'ops.ticket.read',
+  'ops.ticket.write',
+  /** Termos de garantia por fabricante e garantias dos ativos. */
+  'ops.warranty.manage',
+  /** Contratos de O&M, planos de manutenção e configurações do pós-venda. */
+  'ops.om.manage',
   /** App de campo: iniciar, concluir e registrar pendência nas ordens em que o usuário está escalado. */
   'ops.field.execute',
   // Off-Grid Designer
@@ -99,6 +108,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   [Role.OWNER]: ALL,
   [Role.ADMIN]: ALL.filter((p) => p !== 'crm.margin.approve'),
   [Role.SALES_MANAGER]: [
+    'ops.plant.read',
+    'ops.ticket.read',
     'ops.installation.read',
     'platform.communication.send',
     ...startsWith('crm.lead', 'crm.account', 'crm.opportunity', 'crm.task', 'crm.energy-bill'),
@@ -157,6 +168,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.ENGINEERING]: [
+    'ops.plant.read',
+    'ops.ticket.read',
     'ops.commissioning.read',
     'ops.installation.read',
     ...startsWith(
@@ -178,6 +191,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.TECHNICAL_LEAD]: [
+    'ops.plant.read',
+    'ops.ticket.read',
     'ops.commissioning.read',
     'ops.commissioning.approve',
     'ops.installation.read',
@@ -196,6 +211,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.OPERATIONS]: [
+    'ops.plant.read',
+    'ops.ticket.read',
+    'ops.ticket.write',
     'ops.commissioning.read',
     'ops.commissioning.write',
     'ops.installation.read',
@@ -223,6 +241,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.FINANCE]: [
+    'ops.plant.read',
     'platform.communication.send',
     'crm.finance.read',
     'crm.margin.read',
@@ -234,6 +253,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.read',
   ],
   [Role.OM]: [
+    'ops.plant.read',
+    'ops.plant.write',
+    'ops.ticket.read',
+    'ops.ticket.write',
+    'ops.warranty.manage',
+    'ops.om.manage',
     'ops.commissioning.read',
     'ops.installation.read',
     'ops.workorder.read',

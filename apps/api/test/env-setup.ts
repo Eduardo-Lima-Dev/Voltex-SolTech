@@ -35,6 +35,7 @@ Object.assign(process.env, {
   DATA_HUB_WATCH_INTERVAL_MS: '0',
   DATA_HUB_TARIFF_INTERVAL_MS: '0',
   INTEGRATIONS_SYNC_INTERVAL_MS: '0',
+  AFTERSALES_SCAN_INTERVAL_MS: '0',
   // Ligado nos testes: os adaptadores usados são falsos, registrados pelo próprio teste.
   INTEGRATIONS_ENABLED_PROVIDERS: 'fake-monitor,fake-unofficial',
   DATA_HUB_ENABLED_SOURCES: 'nasa-power,pvgis,aneel-tariffs',

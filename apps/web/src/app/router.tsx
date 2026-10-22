@@ -490,6 +490,76 @@ const pageRoutes: RouteObject[] = [
                   };
                 },
               },
+              {
+                path: 'plantas',
+                lazy: async () => {
+                  const { PlantsPage } = await import('@/features/operations/plants-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <PlantsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Plantas' },
+                  };
+                },
+              },
+              {
+                path: 'plantas/:id',
+                lazy: async () => {
+                  const { PlantPage } = await import('@/features/operations/plant-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <PlantPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Planta' },
+                  };
+                },
+              },
+              {
+                path: 'chamados',
+                lazy: async () => {
+                  const { TicketsPage } = await import('@/features/operations/tickets-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.ticket.read">
+                        <TicketsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Chamados' },
+                  };
+                },
+              },
+              {
+                path: 'garantias',
+                lazy: async () => {
+                  const { WarrantiesPage } = await import('@/features/operations/warranties-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <WarrantiesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Garantias' },
+                  };
+                },
+              },
+              {
+                path: 'contratos',
+                lazy: async () => {
+                  const { ContractsPage } = await import('@/features/operations/contracts-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <ContractsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'O&M e manutenção' },
+                  };
+                },
+              },
             ],
           },
           {

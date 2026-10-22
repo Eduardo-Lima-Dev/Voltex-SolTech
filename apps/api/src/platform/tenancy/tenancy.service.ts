@@ -42,14 +42,14 @@ export class TenancyService {
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.document !== undefined ? { document: input.document } : {}),
-        // O plano (`settings.plan`) é do operador da plataforma: a empresa não o altera nem o apaga.
+        // `settings.plan` é do operador da plataforma e `settings.operations` tem endpoint próprio (prazos do
+        // pós-venda): a edição geral das configurações não os altera nem os apaga.
         ...(input.settings !== undefined
           ? {
               settings: {
                 ...input.settings,
-                ...((before.settings as Record<string, unknown> | null)?.plan !== undefined
-                  ? { plan: (before.settings as Record<string, unknown>).plan }
-                  : { plan: undefined }),
+                plan: (before.settings as Record<string, unknown> | null)?.plan,
+                operations: (before.settings as Record<string, unknown> | null)?.operations,
               } as object,
             }
           : {}),

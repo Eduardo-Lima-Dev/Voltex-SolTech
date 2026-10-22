@@ -1,5 +1,9 @@
 import {
   CalendarDays,
+  FileText,
+  LifeBuoy,
+  ShieldCheck,
+  Sun,
   HardHat,
   LayoutDashboard,
   Smartphone,
@@ -9,7 +13,16 @@ import {
 import type { Permission } from '@voltex/shared';
 
 export interface OperationsTab {
-  path: 'painel' | 'instalacoes' | 'agenda' | 'equipes' | 'campo';
+  path:
+    | 'painel'
+    | 'instalacoes'
+    | 'agenda'
+    | 'equipes'
+    | 'plantas'
+    | 'chamados'
+    | 'garantias'
+    | 'contratos'
+    | 'campo';
   label: string;
   icon: LucideIcon;
   permission: Permission;
@@ -21,6 +34,10 @@ export const OPERATIONS_TABS: readonly OperationsTab[] = [
   { path: 'instalacoes', label: 'Instalações', icon: HardHat, permission: 'ops.installation.read' },
   { path: 'agenda', label: 'Agenda', icon: CalendarDays, permission: 'ops.workorder.read' },
   { path: 'equipes', label: 'Equipes', icon: Users, permission: 'ops.installation.read' },
+  { path: 'plantas', label: 'Plantas', icon: Sun, permission: 'ops.plant.read' },
+  { path: 'chamados', label: 'Chamados', icon: LifeBuoy, permission: 'ops.ticket.read' },
+  { path: 'garantias', label: 'Garantias', icon: ShieldCheck, permission: 'ops.plant.read' },
+  { path: 'contratos', label: 'O&M e manutenção', icon: FileText, permission: 'ops.plant.read' },
   { path: 'campo', label: 'App de campo', icon: Smartphone, permission: 'ops.field.execute' },
 ];
 

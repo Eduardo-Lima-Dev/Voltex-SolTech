@@ -102,6 +102,8 @@ export const envSchema = z
      */
     INTEGRATIONS_ENABLED_PROVIDERS: z.string().default(''),
     /** Intervalo da varredura que agenda as sincronizações (ms). Padrão: 15 min. 0 desliga o agendamento. */
+    /** Rotina do pós-venda (garantias, contratos, manutenção, expansão), em ms. 0 desliga. */
+    AFTERSALES_SCAN_INTERVAL_MS: z.coerce.number().int().min(0).default(3_600_000),
     INTEGRATIONS_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).default(900_000),
     /** Libera provedores em rede privada (ex.: assinatura eletrônica auto-hospedada no mesmo Docker). */
     INTEGRATIONS_ALLOW_PRIVATE_HOSTS: booleanFromString.default(false),

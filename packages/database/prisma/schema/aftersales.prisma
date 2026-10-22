@@ -1,0 +1,315 @@
+// Pós-venda e O&M (Fase 11E, ADR-0023): planta instalada, ativos com serial, garantias por fabricante, chamados,
+// manutenção preventiva e contratos de O&M. Nasce do aceite do cliente (`CustomerAccepted`).
+
+enum PlantStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("plant_status")
+}
+
+enum AssetStatus {
+  ACTIVE
+  REPLACED
+  REMOVED
+
+  @@map("asset_status")
+}
+
+enum WarrantyKind {
+  /// Defeito de fabricação do produto.
+  PRODUCT
+  /// Desempenho (ex.: potência mínima depois de N anos).
+  PERFORMANCE
+
+  @@map("warranty_kind")
+}
+
+enum TicketType {
+  CORRECTIVE
+  PREVENTIVE
+  REQUEST
+  PERFORMANCE_ALERT
+
+  @@map("ticket_type")
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+
+  @@map("ticket_priority")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+
+  @@map("ticket_status")
+}
+
+enum TicketOrigin {
+  USER
+  CUSTOMER
+  SYSTEM
+
+  @@map("ticket_origin")
+}
+
+enum MaintenanceKind {
+  PREVENTIVE
+  CLEANING
+  INSPECTION
+
+  @@map("maintenance_kind")
+}
+
+enum OmContractStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+
+  @@map("om_contract_status")
+}
+
+/// Sistema instalado e em operação (1:1 com a instalação). Guarda a geração esperada do projeto para comparar com a real.
+model Plant {
+  id                    String      @id @default(uuid(7)) @db.Uuid
+  tenantId              String      @map("tenant_id") @db.Uuid
+  installationId        String      @unique @map("installation_id") @db.Uuid
+  projectId             String      @map("project_id") @db.Uuid
+  opportunityId         String      @map("opportunity_id") @db.Uuid
+  projectCode           String      @map("project_code")
+  accountId             String      @map("account_id") @db.Uuid
+  siteId                String?     @map("site_id") @db.Uuid
+  name                  String
+  status                PlantStatus @default(ACTIVE)
+  powerKwp              Float?      @map("power_kwp")
+  /// Geração esperada por mês (12 valores, kWh) e no ano, do projeto técnico aprovado; vazios quando não há projeto.
+  expectedMonthlyKwh    Json        @default("[]") @map("expected_monthly_kwh")
+  expectedAnnualKwh     Float?      @map("expected_annual_kwh")
+  expectedSource        String?     @map("expected_source")
+  engineeringSnapshotId String?     @map("engineering_snapshot_id") @db.Uuid
+  activatedAt           DateTime    @map("activated_at")
+  notes                 String?
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  assets      PlantAsset[]
+  events      PlantEvent[]
+  tickets     Ticket[]
+  plans       MaintenancePlan[]
+  omContracts OmContract[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, accountId])
+  @@map("plants")
+}
+
+/// Equipamento instalado (um grupo de unidades iguais), com os números de série.
+model PlantAsset {
+  id           String      @id @default(uuid(7)) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  plantId      String      @map("plant_id") @db.Uuid
+  equipmentId  String?     @map("equipment_id") @db.Uuid
+  /// `MODULE`, `INVERTER`, `BATTERY`, `PROTECTION`, `CABLE` ou `OTHER`.
+  category     String
+  manufacturer String
+  model        String
+  quantity     Int         @default(1)
+  serials      Json        @default("[]")
+  installedAt  DateTime    @map("installed_at")
+  status       AssetStatus @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  plant      Plant           @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  warranties AssetWarranty[]
+
+  @@index([tenantId, plantId])
+  @@map("plant_assets")
+}
+
+model PlantEvent {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  plantId   String   @map("plant_id") @db.Uuid
+  type      String
+  text      String
+  data      Json     @default("{}")
+  actorId   String?  @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, plantId, createdAt])
+  @@map("plant_events")
+}
+
+/// Termo de garantia padrão de um fabricante, cadastrado pela empresa com o documento do fabricante. O sistema NÃO traz
+/// termos prontos: sem termo, o ativo fica "garantia não cadastrada".
+model ManufacturerWarrantyTerm {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  manufacturer      String
+  category          String
+  productYears      Float?    @map("product_years")
+  performanceYears  Float?    @map("performance_years")
+  /// Desempenho garantido ao fim do prazo, em % da potência original (ex.: 80).
+  performanceEndPct Float?    @map("performance_end_pct")
+  conditions        String?
+  /// PDF do termo do fabricante (Document) e a fonte citada (obrigatória).
+  documentId        String?   @map("document_id") @db.Uuid
+  source            String
+  reviewedBy        String?   @map("reviewed_by")
+  validFrom         DateTime  @map("valid_from") @db.Date
+  supersededAt      DateTime? @map("superseded_at")
+  createdById       String?   @map("created_by_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  warranties AssetWarranty[]
+
+  @@index([tenantId, manufacturer, category])
+  @@map("manufacturer_warranty_terms")
+}
+
+model AssetWarranty {
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  tenantId           String       @map("tenant_id") @db.Uuid
+  assetId            String       @map("asset_id") @db.Uuid
+  termId             String?      @map("term_id") @db.Uuid
+  kind               WarrantyKind
+  startsOn           DateTime     @map("starts_on") @db.Date
+  endsOn             DateTime     @map("ends_on") @db.Date
+  performanceEndPct  Float?       @map("performance_end_pct")
+  /// `TERM` (termo do fabricante), `SPEC` (ficha técnica aprovada no catálogo) ou `MANUAL`.
+  origin             String
+  note               String?
+  /// Quando o aviso de vencimento foi gerado (uma vez por garantia).
+  expiringNotifiedAt DateTime?    @map("expiring_notified_at")
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  tenant Tenant                    @relation(fields: [tenantId], references: [id])
+  asset  PlantAsset                @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  term   ManufacturerWarrantyTerm? @relation(fields: [termId], references: [id])
+
+  @@index([tenantId, endsOn])
+  @@index([tenantId, assetId])
+  @@map("asset_warranties")
+}
+
+model Ticket {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  plantId       String         @map("plant_id") @db.Uuid
+  /// Número sequencial por empresa (TKT-0001).
+  number        Int
+  type          TicketType
+  priority      TicketPriority @default(NORMAL)
+  status        TicketStatus   @default(OPEN)
+  title         String
+  description   String?
+  origin        TicketOrigin   @default(USER)
+  openedById    String?        @map("opened_by_id") @db.Uuid
+  assigneeId    String?        @map("assignee_id") @db.Uuid
+  assetId       String?        @map("asset_id") @db.Uuid
+  workOrderId   String?        @map("work_order_id") @db.Uuid
+  /// Prazo da política de SLA da empresa; nulo se a empresa não definiu prazo para a prioridade.
+  slaDueAt      DateTime?      @map("sla_due_at")
+  resolution    String?
+  resolvedAt    DateTime?      @map("resolved_at")
+  closedAt      DateTime?      @map("closed_at")
+  /// Chave de idempotência dos chamados criados pelo sistema.
+  automationKey String?        @map("automation_key")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  plant    Plant           @relation(fields: [plantId], references: [id])
+  comments TicketComment[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, automationKey])
+  @@index([tenantId, status, priority])
+  @@index([tenantId, plantId])
+  @@map("tickets")
+}
+
+model TicketComment {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  ticketId   String   @map("ticket_id") @db.Uuid
+  authorId   String?  @map("author_id") @db.Uuid
+  authorName String   @map("author_name")
+  /// Comentário interno não aparece para o cliente (portal).
+  internal   Boolean  @default(true)
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, ticketId, createdAt])
+  @@map("ticket_comments")
+}
+
+/// Plano de manutenção recorrente. A periodicidade é da empresa (o sistema não presume nenhuma).
+model MaintenancePlan {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  plantId     String          @map("plant_id") @db.Uuid
+  title       String
+  kind        MaintenanceKind @default(PREVENTIVE)
+  everyMonths Int             @map("every_months")
+  lastDoneAt  DateTime?       @map("last_done_at")
+  nextDueAt   DateTime        @map("next_due_at") @db.Date
+  active      Boolean         @default(true)
+  notes       String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, active, nextDueAt])
+  @@map("maintenance_plans")
+}
+
+/// Contrato de O&M da planta. Valores são informados à mão (não há cobrança integrada).
+model OmContract {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  tenantId             String           @map("tenant_id") @db.Uuid
+  plantId              String           @map("plant_id") @db.Uuid
+  accountId            String           @map("account_id") @db.Uuid
+  title                String
+  status               OmContractStatus @default(ACTIVE)
+  startsOn             DateTime         @map("starts_on") @db.Date
+  endsOn               DateTime         @map("ends_on") @db.Date
+  /// Valor mensal equivalente, em centavos (base do MRR informado).
+  monthlyCents         Int              @map("monthly_cents")
+  /// Descrição de como é cobrado (mensal, anual, por visita...): só informativo.
+  billing              String?
+  autoRenew            Boolean          @default(false) @map("auto_renew")
+  notes                String?
+  documentId           String?          @map("document_id") @db.Uuid
+  renewalNotifiedAt    DateTime?        @map("renewal_notified_at")
+  renewalOpportunityId String?          @map("renewal_opportunity_id") @db.Uuid
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id])
+
+  @@index([tenantId, status, endsOn])
+  @@map("om_contracts")
+}
