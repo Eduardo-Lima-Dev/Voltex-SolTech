@@ -52,7 +52,7 @@ export class WorkOrderPresenter {
     const from = slots.length ? new Date(Math.min(...slots.map((s) => s.start)) - 24 * HOUR) : null;
     const to = slots.length ? new Date(Math.max(...slots.map((s) => s.end)) + 24 * HOUR) : null;
 
-    const [crews, accounts, sites, neighbours] = await Promise.all([
+    const [crews, accounts, sites, neighbours, photoCounts] = await Promise.all([
       crewIds.length ? db.crew.findMany({ where: { id: { in: crewIds } } }) : [],
       accountIds.length
         ? db.account.findMany({
@@ -74,7 +74,13 @@ export class WorkOrderPresenter {
             },
           })
         : [],
+      db.workOrderPhoto.groupBy({
+        by: ['workOrderId'],
+        where: { workOrderId: { in: rows.map((r) => r.id) } },
+        _count: { _all: true },
+      }),
     ]);
+    const photosOf = new Map(photoCounts.map((p) => [p.workOrderId, p._count._all]));
     const crewName = new Map(crews.map((c) => [c.id, c.name]));
     const accountName = new Map(accounts.map((a) => [a.id, a.name]));
     const siteById = new Map(sites.map((s) => [s.id, s]));
@@ -87,6 +93,7 @@ export class WorkOrderPresenter {
           ? neighbourSlots.filter((other) => collides(mine, other)).map((o) => o.id)
           : [];
       return toWorkOrderDto(row, {
+        photoCount: photosOf.get(row.id) ?? 0,
         crewName: row.crewId ? (crewName.get(row.crewId) ?? null) : null,
         accountName: row.accountId ? (accountName.get(row.accountId) ?? null) : null,
         siteLabel: siteLabelOf(row.siteId ? siteById.get(row.siteId) : null),

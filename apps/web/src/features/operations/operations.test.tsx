@@ -71,6 +71,10 @@ const order = (o: Partial<WorkOrderDto> = {}): WorkOrderDto => ({
   startedAt: null,
   completedAt: null,
   cancelReason: null,
+  checklist: [],
+  signedByName: null,
+  signedAt: null,
+  photoCount: 0,
   conflictsWith: [],
   ...o,
 });

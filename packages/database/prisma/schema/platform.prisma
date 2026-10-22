@@ -113,6 +113,8 @@ model Tenant {
   crewMembers                 CrewMember[]
   workOrders                  WorkOrder[]
   fieldIssues                 FieldIssue[]
+  workOrderPhotos             WorkOrderPhoto[]
+  fieldActions                FieldAction[]
 
   @@map("tenants")
 }

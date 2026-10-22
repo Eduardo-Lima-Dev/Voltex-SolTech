@@ -21,6 +21,7 @@ import { RequestContext } from '../../common/context/request-context';
 import { AuditService } from '../../platform/audit/audit.service';
 import { PrismaService } from '../../platform/prisma/prisma.service';
 import { UserDirectory } from '../crm/support/user-directory.service';
+import { checklistFromLabels } from './operations.mapper';
 import { InstallationsService } from './installations.service';
 import { WorkOrderPresenter } from './work-order-presenter.service';
 
@@ -38,7 +39,7 @@ export class WorkOrdersService {
     private readonly presenter: WorkOrderPresenter,
   ) {}
 
-  private async requireRow(id: string): Promise<WorkOrder> {
+  async requireRow(id: string): Promise<WorkOrder> {
     const row = await this.prisma.db.workOrder.findFirst({ where: { id } });
     if (!row) throw new NotFoundException('Ordem de serviço não encontrada');
     return row;
@@ -65,12 +66,12 @@ export class WorkOrdersService {
   }
 
   /** Ordens em aberto de quem está escalado: direto ou pela equipe. */
-  async mine(userId: string): Promise<WorkOrderDto[]> {
+  async mineRows(userId: string): Promise<WorkOrder[]> {
     const memberships = await this.prisma.db.crewMember.findMany({
       where: { userId },
       select: { crewId: true },
     });
-    const rows = await this.prisma.db.workOrder.findMany({
+    return this.prisma.db.workOrder.findMany({
       where: {
         status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
         OR: [{ assigneeId: userId }, { crewId: { in: memberships.map((m) => m.crewId) } }],
@@ -78,7 +79,10 @@ export class WorkOrdersService {
       orderBy: { scheduledStart: 'asc' },
       take: 100,
     });
-    return this.presenter.present(rows);
+  }
+
+  async mine(userId: string): Promise<WorkOrderDto[]> {
+    return this.presenter.present(await this.mineRows(userId));
   }
 
   async agenda(query: AgendaQuery): Promise<AgendaDto> {
@@ -97,7 +101,7 @@ export class WorkOrdersService {
   // --- permissão de execução --------------------------------------------------------------------------------
 
   /** Quem gerencia ordens age em qualquer uma; o técnico de campo só nas ordens em que está escalado. */
-  private async assertCanAct(order: WorkOrder, actor: RequestUser): Promise<void> {
+  async assertCanAct(order: WorkOrder, actor: RequestUser): Promise<void> {
     if (actor.permissions.includes('ops.workorder.write')) return;
     if (actor.permissions.includes('ops.field.execute')) {
       if (order.assigneeId === actor.id) return;
@@ -191,6 +195,7 @@ export class WorkOrdersService {
           assigneeId: input.assigneeId ?? null,
           scheduledStart: input.scheduledStart ? new Date(input.scheduledStart) : null,
           scheduledEnd: input.scheduledEnd ? new Date(input.scheduledEnd) : null,
+          checklist: checklistFromLabels(input.checklist ?? [], []) as object[],
           createdById: this.context.userId ?? null,
         },
       });
@@ -253,6 +258,9 @@ export class WorkOrdersService {
         data: {
           ...(input.title !== undefined ? { title: input.title } : {}),
           ...(input.notes !== undefined ? { notes: input.notes } : {}),
+          ...(input.checklist !== undefined
+            ? { checklist: checklistFromLabels(input.checklist, order.checklist) as object[] }
+            : {}),
           ...(input.crewId !== undefined ? { crewId: input.crewId } : {}),
           ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId } : {}),
           ...(input.scheduledStart !== undefined ? { scheduledStart: start } : {}),

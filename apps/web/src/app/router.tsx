@@ -35,6 +35,31 @@ const pageRoutes: RouteObject[] = [
     },
   },
   {
+    // App de campo: fora da casca da suíte, funciona sem internet e abre com o perfil guardado no aparelho.
+    path: '/campo',
+    handle: { title: 'App de campo' },
+    lazy: async () => {
+      const { FieldLayout } = await import('@/features/field/field-layout');
+      return { Component: FieldLayout };
+    },
+    children: [
+      {
+        index: true,
+        lazy: async () => {
+          const { FieldHomePage } = await import('@/features/field/field-home-page');
+          return { Component: FieldHomePage, handle: { title: 'Ordens de campo' } };
+        },
+      },
+      {
+        path: ':id',
+        lazy: async () => {
+          const { FieldOrderPage } = await import('@/features/field/field-order-page');
+          return { Component: FieldOrderPage, handle: { title: 'Ordem de campo' } };
+        },
+      },
+    ],
+  },
+  {
     // Proposta do cliente: link com token, sem login e fora da casca da suíte.
     path: '/p/:token',
     lazy: async () => {
@@ -391,6 +416,7 @@ const pageRoutes: RouteObject[] = [
                   return { Component: OperationsIndexRedirect };
                 },
               },
+              { path: 'campo', element: <Navigate to="/campo" replace /> },
               {
                 path: 'painel',
                 lazy: async () => {

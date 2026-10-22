@@ -9,6 +9,10 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type FieldActionInput,
+  type FieldSyncResultDto,
+  type FieldWorkOrderDto,
+  type WorkOrderPhotoDto,
   type AgendaDto,
   type CancelWorkOrderInput,
   type ChangeInstallationStatusInput,
@@ -711,6 +715,21 @@ export function createEndpoints(client: ApiClient) {
         resolve: (id: string, input: ResolveFieldIssueInput) =>
           client.post<FieldIssueDto>(`${ROUTES.operations}/issues/${id}/resolve`, input),
       },
+    },
+    field: {
+      orders: () => client.get<FieldWorkOrderDto[]>(`${ROUTES.operations}/field/work-orders`),
+      sync: (actions: FieldActionInput[]) =>
+        client.post<FieldSyncResultDto[]>(`${ROUTES.operations}/field/sync`, { actions }),
+      uploadPhoto: (workOrderId: string, form: FormData) =>
+        client.upload<WorkOrderPhotoDto>(
+          `${ROUTES.operations}/field/work-orders/${workOrderId}/photos`,
+          form,
+        ),
+      saveSignature: (workOrderId: string, form: FormData) =>
+        client.upload<{ signedByName: string; signedAt: string }>(
+          `${ROUTES.operations}/field/work-orders/${workOrderId}/signature`,
+          form,
+        ),
     },
     communications: {
       templates: () => client.get<CommunicationTemplateDto[]>(`${ROUTES.communications}/templates`),

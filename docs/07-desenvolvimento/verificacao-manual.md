@@ -96,3 +96,28 @@ Pré-requisitos: bateria, controlador, inversor off-grid e módulo **aprovados**
 7. **Cenários e custo** — crie até três cenários (banco maior, mais FV, com gerador) e compare perda de carga, CAPEX e custo nivelado. Item sem preço aparece como "sem preço".
 8. **Revisão** — salve, **Enviar para revisão**; como responsável técnico comente, resolva e **Aprove**; a versão congela e o pedido vira Concluído. Baixe o **Memorial (PDF)**.
 9. **Terreno 2D/3D** — em **Diagrama do sistema** confira as cores dos blocos (troque o banco para 2 em série e veja o erro de tensão). Em **Terreno 2D/3D** adicione a casa de máquinas, a casa e o gerador, arraste os arranjos e as construções (ou use as setas), veja os trajetos de cabo e a tabela de seções; ponha a casa ao norte do arranjo e veja a sombra crescer; **Usar como perda por sombra**; alterne para **Cena 3D**, gire e mude a data do sol.
+
+## Fase 11 — Operação, campo e integrações
+
+Pré-requisitos: um contrato assinado (projeto criado) e um usuário com perfil **Operação**; um **Instalador** (e uma equipe com ele); no celular, o navegador com a aplicação publicada em HTTPS (câmera, GPS e instalação como app só funcionam assim).
+
+**11A — Integrações e comunicações**
+
+1. `Administração → Integrações`: a lista de provedores vem vazia até a 11F/11I; as conexões e a fila de falhas aparecem vazias. Sem `INTEGRATIONS_ENABLED_PROVIDERS` nada consulta a internet.
+2. Em uma proposta ou projeto, `POST /communications/whatsapp-link` (ou a tela, quando existir) devolve o link `wa.me` com o texto pronto: ele abre o WhatsApp do usuário; o servidor não envia nada. Confira o registro no histórico.
+
+**11B — Instalação**
+
+1. Assine o contrato e, em `Operação → Instalações`, veja a instalação "Aguardando engenharia". Aprove a homologação do projeto: ela vira "Aguardando material" e surge a tarefa **Comprar o material**.
+2. Na ficha: **Gerar do projeto técnico** (se houver) ou **Item**; **Pedir** (só registra), **Receber** todos: a instalação vira "Material separado" sozinha e surge a tarefa **Agendar a instalação**.
+3. `Equipes`: crie uma equipe com o instalador. Na ficha, **Ordem** de instalação com equipe e horário: a instalação vira "Equipe designada". Crie outra ordem no mesmo horário e equipe: o aviso **Choque de horário** aparece (na ficha e na `Agenda`).
+4. `Painel`: confira as contagens.
+
+**11C — App de campo**
+
+1. No celular, entre como o instalador e abra `/campo` (ou **Operação → App de campo**): as ordens aparecem com endereço, mapa e telefone. **Instale o app** pelo navegador ("Adicionar à tela inicial").
+2. Abra uma ordem **com internet** e depois ponha o celular em **modo avião**: o cabeçalho mostra "Sem internet".
+3. **Iniciar**, marque o checklist, tire **fotos** (a câmera abre), registre uma **anotação** e uma **pendência** que bloqueia: tudo responde na hora e o cabeçalho conta os itens "p/ enviar".
+4. Feche e reabra o app ainda em modo avião: as ordens e o que foi feito continuam lá.
+5. Desligue o modo avião: os itens sobem sozinhos. No escritório, a ficha da instalação mostra "Pendência de campo" e as fotos; resolva a pendência e **Concluir** em campo (peça a **assinatura do cliente** antes).
+6. Teste a recusa: cancele a ordem no escritório com o celular offline, faça uma ação em campo e volte à rede: aparece **O sistema recusou algo** com a mensagem.

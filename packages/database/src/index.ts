@@ -54,6 +54,8 @@ export type {
   CrewMember,
   WorkOrder,
   FieldIssue,
+  WorkOrderPhoto,
+  FieldAction,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';
