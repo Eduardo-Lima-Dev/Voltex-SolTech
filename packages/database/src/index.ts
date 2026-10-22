@@ -58,6 +58,15 @@ export type {
   FieldAction,
   CommissioningRecord,
   CommissioningTest,
+  Plant,
+  PlantAsset,
+  PlantEvent,
+  ManufacturerWarrantyTerm,
+  AssetWarranty,
+  Ticket,
+  TicketComment,
+  MaintenancePlan,
+  OmContract,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

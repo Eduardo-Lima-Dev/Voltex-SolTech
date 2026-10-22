@@ -3,6 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { DomainEvent, type DomainEventEnvelope } from '@voltex/shared';
 import { RequestContext } from '../../common/context/request-context';
 import { PrismaService } from '../../platform/prisma/prisma.service';
+import { PlantsService } from './aftersales/plants.service';
 import { CommissioningService } from './commissioning.service';
 import { InstallationsService } from './installations.service';
 import { MaterialsService } from './materials.service';
@@ -23,6 +24,7 @@ export class OperationsAutomationsService {
     private readonly installations: InstallationsService,
     private readonly materials: MaterialsService,
     private readonly commissioning: CommissioningService,
+    private readonly plants: PlantsService,
   ) {}
 
   /** Contrato assinado → projeto criado → nasce a instalação, aguardando a engenharia. */
@@ -72,6 +74,16 @@ export class OperationsAutomationsService {
     if (!installationId) return;
     await this.context.run({ tenantId: event.tenantId }, () =>
       this.commissioning.ensureRecord(installationId, { newAttemptIfRejected: true }),
+    );
+  }
+
+  /** Aceite do cliente → a planta nasce, com os ativos, as garantias e a geração esperada. */
+  @OnEvent(DomainEvent.CUSTOMER_ACCEPTED, { suppressErrors: false })
+  async onCustomerAccepted(event: DomainEventEnvelope): Promise<void> {
+    const installationId = String(event.payload.installationId ?? '');
+    if (!installationId) return;
+    await this.context.run({ tenantId: event.tenantId }, () =>
+      this.plants.activateFromInstallation(installationId),
     );
   }
 }

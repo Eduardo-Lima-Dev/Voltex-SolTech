@@ -85,6 +85,12 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'ops.commissioning.read': 'Ver o comissionamento',
   'ops.commissioning.write': 'Preparar e registrar o comissionamento',
   'ops.commissioning.approve': 'Aprovar o comissionamento',
+  'ops.plant.read': 'Ver plantas instaladas',
+  'ops.plant.write': 'Editar plantas e ativos',
+  'ops.ticket.read': 'Ver chamados',
+  'ops.ticket.write': 'Abrir e atender chamados',
+  'ops.warranty.manage': 'Gerenciar termos e garantias',
+  'ops.om.manage': 'Gerenciar contratos de O&M e manutenção',
   'ops.field.execute': 'Executar ordens de serviço em campo',
   'crm.lead.read': 'Ver leads',
   'crm.lead.write': 'Criar e editar leads',
@@ -511,6 +517,7 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   PROJECT_CREATED: 'Projeto criado',
   PROJECT_STATUS_CHANGED: 'Homologação',
   INSTALLATION_STATUS_CHANGED: 'Instalação',
+  PLANT_ACTIVATED: 'Planta ativada',
 };
 
 export const ROOF_TYPE_LABELS: Record<RoofType, string> = {

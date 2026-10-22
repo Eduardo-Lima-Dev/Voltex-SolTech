@@ -80,6 +80,15 @@ export const TENANT_SCOPED_MODELS = [
   'FieldAction',
   'CommissioningRecord',
   'CommissioningTest',
+  'Plant',
+  'PlantAsset',
+  'PlantEvent',
+  'ManufacturerWarrantyTerm',
+  'AssetWarranty',
+  'Ticket',
+  'TicketComment',
+  'MaintenancePlan',
+  'OmContract',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

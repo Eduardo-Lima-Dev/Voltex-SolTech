@@ -26,6 +26,9 @@ Status possíveis: `Proposta` · `Aceita` · `Substituída` · `Rejeitada`.
 | [0018](0018-central-de-dados-externos.md)           | Central de Dados Externos (proveniência e revisão humana)      | Aceita |
 | [0019](0019-integration-hub.md)                     | Integration Hub (credenciais cifradas, adaptadores desligados) | Aceita |
 | [0020](0020-modulo-operacao-e-instalacao.md)        | Módulo Operação e máquina de estados da instalação             | Aceita |
+| [0021](0021-campo-offline-pwa.md)                   | Campo offline (PWA) e sincronização idempotente                | Aceita |
+| [0022](0022-comissionamento-regra-e-travas.md)      | Comissionamento com regra versionada e aprovação travada       | Aceita |
+| [0023](0023-pos-venda-planta-garantia-e-rotina.md)  | Pós-venda: planta, garantia por termo e rotina configurada     | Aceita |
 
 ## Modelo
 

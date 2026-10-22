@@ -227,6 +227,10 @@ model WorkOrder {
   checklist           Json            @default("[]")
   /// Pontos de geolocalização registrados pelo app de campo: `[{ kind, latitude, longitude, accuracy, at, userId }]`.
   geo                 Json            @default("[]")
+  /// Ordens de pós-venda: a planta, o chamado e o plano de manutenção de onde nasceram.
+  plantId             String?         @map("plant_id") @db.Uuid
+  ticketId            String?         @map("ticket_id") @db.Uuid
+  maintenancePlanId   String?         @map("maintenance_plan_id") @db.Uuid
   /// Assinatura do cliente (imagem) e quem assinou.
   signatureDocumentId String?         @map("signature_document_id") @db.Uuid
   signedByName        String?         @map("signed_by_name")
@@ -245,6 +249,7 @@ model WorkOrder {
   @@index([tenantId, installationId])
   @@index([tenantId, assigneeId, status])
   @@index([tenantId, crewId, scheduledStart])
+  @@index([tenantId, plantId])
   @@map("work_orders")
 }
 

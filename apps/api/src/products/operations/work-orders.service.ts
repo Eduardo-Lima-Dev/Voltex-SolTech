@@ -22,6 +22,7 @@ import { AuditService } from '../../platform/audit/audit.service';
 import { PrismaService } from '../../platform/prisma/prisma.service';
 import { UserDirectory } from '../crm/support/user-directory.service';
 import { checklistFromLabels } from './operations.mapper';
+import { addMonths } from './aftersales/dates';
 import { CommissioningService } from './commissioning.service';
 import { InstallationsService } from './installations.service';
 import { WorkOrderPresenter } from './work-order-presenter.service';
@@ -213,6 +214,57 @@ export class WorkOrdersService {
       return row;
     });
     if (inst && created.type === 'INSTALLATION') await this.installations.syncSchedule(inst.id);
+    return this.get(created.id);
+  }
+
+  /** Ordem de pós-venda (manutenção, limpeza, visita) ligada a uma planta, a um chamado e/ou a um plano de manutenção. */
+  async createForPlant(input: {
+    plantId: string;
+    ticketId?: string | null;
+    maintenancePlanId?: string | null;
+    type: 'MAINTENANCE' | 'CLEANING' | 'VISIT';
+    title: string;
+    notes?: string | null;
+    crewId?: string | null;
+    assigneeId?: string | null;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+  }): Promise<WorkOrderDto> {
+    await this.validateTargets(input);
+    const plant = await this.prisma.db.plant.findFirst({ where: { id: input.plantId } });
+    if (!plant) throw new NotFoundException('Planta não encontrada');
+    const created = await this.prisma.db.$transaction(async (tx) => {
+      const row = await tx.workOrder.create({
+        data: {
+          tenantId: this.context.requireTenantId(),
+          plantId: plant.id,
+          ticketId: input.ticketId ?? null,
+          maintenancePlanId: input.maintenancePlanId ?? null,
+          projectCode: plant.projectCode,
+          accountId: plant.accountId,
+          siteId: plant.siteId,
+          type: input.type,
+          status: input.scheduledStart ? 'SCHEDULED' : 'PENDING',
+          title: input.title,
+          notes: input.notes ?? null,
+          crewId: input.crewId ?? null,
+          assigneeId: input.assigneeId ?? null,
+          scheduledStart: input.scheduledStart ? new Date(input.scheduledStart) : null,
+          scheduledEnd: input.scheduledEnd ? new Date(input.scheduledEnd) : null,
+          createdById: this.context.userId ?? null,
+        },
+      });
+      await this.audit.record(
+        {
+          action: 'work_order.created',
+          entity: 'WorkOrder',
+          entityId: row.id,
+          after: { type: row.type, plantId: plant.id, ticketId: input.ticketId ?? null },
+        },
+        tx,
+      );
+      return row;
+    });
     return this.get(created.id);
   }
 
@@ -418,6 +470,7 @@ export class WorkOrdersService {
       });
       if (commissioning && commissioning.record.status === 'IN_PROGRESS')
         await this.commissioning.submit(commissioning.record.id, actor, tx);
+      await this.afterAftersalesOrder(tx, order, actor);
       if (inst && order.type === 'INSTALLATION')
         await this.installations.transition(inst, 'INSTALLED', { tx });
       await this.audit.record(
@@ -426,5 +479,42 @@ export class WorkOrdersService {
       );
     });
     return this.get(id);
+  }
+  /**
+   * Ordem de pós-venda concluída: o plano de manutenção de onde ela nasceu avança (`última` = agora; `próxima` =
+   * a data vencida + a periodicidade da empresa) e o chamado ligado ganha um comentário. A resolução do chamado
+   * continua sendo uma decisão de quem atende.
+   */
+  private async afterAftersalesOrder(
+    tx: Parameters<Parameters<PrismaService['db']['$transaction']>[0]>[0],
+    order: WorkOrder,
+    actor: RequestUser,
+  ): Promise<void> {
+    if (order.maintenancePlanId) {
+      const plan = await tx.maintenancePlan.findFirst({ where: { id: order.maintenancePlanId } });
+      if (plan) {
+        const now = new Date();
+        // Se a ordem veio atrasada, a próxima conta a partir de hoje para não gerar uma sequência de vencidas.
+        const base = plan.nextDueAt.getTime() < now.getTime() ? now : plan.nextDueAt;
+        await tx.maintenancePlan.update({
+          where: { id: plan.id },
+          data: { lastDoneAt: now, nextDueAt: addMonths(base, plan.everyMonths) },
+        });
+      }
+    }
+    if (order.ticketId) {
+      const ticket = await tx.ticket.findFirst({ where: { id: order.ticketId } });
+      if (ticket)
+        await tx.ticketComment.create({
+          data: {
+            tenantId: order.tenantId,
+            ticketId: ticket.id,
+            authorId: actor.id,
+            authorName: actor.name,
+            internal: true,
+            body: `Ordem de serviço concluída: ${order.title}`,
+          },
+        });
+    }
   }
 }

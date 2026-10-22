@@ -21,6 +21,35 @@ import {
   type FieldSyncResultDto,
   type FieldWorkOrderDto,
   type WorkOrderPhotoDto,
+  type AddTicketCommentInput,
+  type AftersalesDashboardDto,
+  type ChangeTicketStatusInput,
+  type CreateAssetInput,
+  type CreateMaintenancePlanInput,
+  type CreateManualWarrantyInput,
+  type CreateOmContractInput,
+  type CreateTicketInput,
+  type CreateTicketWorkOrderInput,
+  type CreateWarrantyTermInput,
+  type ListPlantsQuery,
+  type ListTicketsQuery,
+  type ListWarrantiesQuery,
+  type MaintenancePlanDto,
+  type OmContractDto,
+  type OperationsSettingsDto,
+  type OperationsSettingsInput,
+  type PlantDetailDto,
+  type PlantSummaryDto,
+  type ReplaceAssetInput,
+  type TicketDetailDto,
+  type TicketSummaryDto,
+  type UpdateAssetInput,
+  type UpdateMaintenancePlanInput,
+  type UpdateOmContractInput,
+  type UpdatePlantInput,
+  type UpdateTicketInput,
+  type WarrantyRowDto,
+  type WarrantyTermDto,
   type AgendaDto,
   type CancelWorkOrderInput,
   type ChangeInstallationStatusInput,
@@ -767,6 +796,88 @@ export function createEndpoints(client: ApiClient) {
           ),
         resolve: (id: string, input: ResolveFieldIssueInput) =>
           client.post<FieldIssueDto>(`${ROUTES.operations}/issues/${id}/resolve`, input),
+      },
+      aftersales: {
+        dashboard: () =>
+          client.get<AftersalesDashboardDto>(`${ROUTES.operations}/aftersales/dashboard`),
+        settings: () =>
+          client.get<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`),
+        updateSettings: (input: OperationsSettingsInput) =>
+          client.put<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`, input),
+        scan: () => client.post<unknown>(`${ROUTES.operations}/aftersales/scan`),
+        plants: {
+          list: (query: Partial<ListPlantsQuery> = {}) =>
+            client.get<Paginated<PlantSummaryDto>>(`${ROUTES.operations}/plants`, {
+              query: query as QueryParams,
+            }),
+          get: (id: string) => client.get<PlantDetailDto>(`${ROUTES.operations}/plants/${id}`),
+          update: (id: string, input: UpdatePlantInput) =>
+            client.patch<PlantDetailDto>(`${ROUTES.operations}/plants/${id}`, input),
+          reconcile: () =>
+            client.post<{ created: number }>(`${ROUTES.operations}/plants/reconcile`),
+          addAsset: (id: string, input: CreateAssetInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/plants/${id}/assets`, input),
+        },
+        assets: {
+          update: (id: string, input: UpdateAssetInput) =>
+            client.patch<PlantDetailDto>(`${ROUTES.operations}/assets/${id}`, input),
+          replace: (id: string, input: ReplaceAssetInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/assets/${id}/replace`, input),
+          addWarranty: (id: string, input: CreateManualWarrantyInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/assets/${id}/warranties`, input),
+        },
+        warranties: {
+          list: (query: Partial<ListWarrantiesQuery> = {}) =>
+            client.get<WarrantyRowDto[]>(`${ROUTES.operations}/warranties`, {
+              query: query as QueryParams,
+            }),
+          remove: (id: string) => client.delete<unknown>(`${ROUTES.operations}/warranties/${id}`),
+          terms: (all = false) =>
+            client.get<WarrantyTermDto[]>(`${ROUTES.operations}/warranty-terms`, {
+              query: { all: String(all) } as QueryParams,
+            }),
+          createTerm: (input: CreateWarrantyTermInput) =>
+            client.post<WarrantyTermDto>(`${ROUTES.operations}/warranty-terms`, input),
+          retireTerm: (id: string) =>
+            client.post<WarrantyTermDto>(`${ROUTES.operations}/warranty-terms/${id}/retire`),
+        },
+        tickets: {
+          list: (query: Partial<ListTicketsQuery> = {}) =>
+            client.get<Paginated<TicketSummaryDto>>(`${ROUTES.operations}/tickets`, {
+              query: query as QueryParams,
+            }),
+          get: (id: string) => client.get<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}`),
+          create: (input: CreateTicketInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets`, input),
+          update: (id: string, input: UpdateTicketInput) =>
+            client.patch<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}`, input),
+          changeStatus: (id: string, input: ChangeTicketStatusInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/status`, input),
+          comment: (id: string, input: AddTicketCommentInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/comments`, input),
+          workOrder: (id: string, input: CreateTicketWorkOrderInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/work-order`, input),
+        },
+        plans: {
+          list: (plantId?: string) =>
+            client.get<MaintenancePlanDto[]>(`${ROUTES.operations}/maintenance-plans`, {
+              query: (plantId ? { plantId } : {}) as QueryParams,
+            }),
+          create: (input: CreateMaintenancePlanInput) =>
+            client.post<MaintenancePlanDto>(`${ROUTES.operations}/maintenance-plans`, input),
+          update: (id: string, input: UpdateMaintenancePlanInput) =>
+            client.patch<MaintenancePlanDto>(`${ROUTES.operations}/maintenance-plans/${id}`, input),
+        },
+        contracts: {
+          list: (status?: 'ACTIVE' | 'EXPIRED' | 'CANCELLED') =>
+            client.get<OmContractDto[]>(`${ROUTES.operations}/om-contracts`, {
+              query: (status ? { status } : {}) as QueryParams,
+            }),
+          create: (input: CreateOmContractInput) =>
+            client.post<OmContractDto>(`${ROUTES.operations}/om-contracts`, input),
+          update: (id: string, input: UpdateOmContractInput) =>
+            client.patch<OmContractDto>(`${ROUTES.operations}/om-contracts/${id}`, input),
+        },
       },
     },
     field: {
