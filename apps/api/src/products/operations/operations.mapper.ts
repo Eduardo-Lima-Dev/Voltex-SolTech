@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import type {
+  ChecklistItemDto,
   CrewDto,
   FieldIssueDto,
   FieldIssueType,
@@ -35,7 +37,59 @@ export const toMaterialDto = (m: MaterialItem): MaterialItemDto => ({
   note: m.note,
 });
 
+/** Lê o checklist guardado em JSON, descartando o que não tem o formato esperado. */
+export function parseChecklist(value: unknown): ChecklistItemDto[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (i): i is ChecklistItemDto =>
+        typeof i === 'object' &&
+        i !== null &&
+        typeof (i as ChecklistItemDto).id === 'string' &&
+        typeof (i as ChecklistItemDto).label === 'string',
+    )
+    .map((i) => ({
+      id: i.id,
+      label: i.label,
+      done: i.done === true,
+      note: typeof i.note === 'string' ? i.note : null,
+      doneAt: typeof i.doneAt === 'string' ? i.doneAt : null,
+      doneById: typeof i.doneById === 'string' ? i.doneById : null,
+    }));
+}
+
+/**
+ * Monta o checklist a partir dos rótulos enviados: item que já existe (mesmo texto) mantém o estado; os novos entram
+ * pendentes; o que saiu da lista sai do checklist.
+ */
+export function checklistFromLabels(
+  labels: readonly string[],
+  existing: unknown,
+): ChecklistItemDto[] {
+  const current = parseChecklist(existing);
+  const seen = new Set<string>();
+  const items: ChecklistItemDto[] = [];
+  for (const raw of labels) {
+    const label = raw.trim();
+    const key = label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    items.push(
+      current.find((c) => c.label.toLowerCase() === key) ?? {
+        id: randomUUID(),
+        label,
+        done: false,
+        note: null,
+        doneAt: null,
+        doneById: null,
+      },
+    );
+  }
+  return items;
+}
+
 export interface WorkOrderContext {
+  photoCount: number;
   crewName: string | null;
   accountName: string | null;
   siteLabel: string | null;
@@ -61,6 +115,10 @@ export const toWorkOrderDto = (w: WorkOrder, ctx: WorkOrderContext): WorkOrderDt
   startedAt: iso(w.startedAt),
   completedAt: iso(w.completedAt),
   cancelReason: w.cancelReason,
+  checklist: parseChecklist(w.checklist),
+  signedByName: w.signedByName,
+  signedAt: iso(w.signedAt),
+  photoCount: ctx.photoCount,
   conflictsWith: ctx.conflictsWith,
 });
 

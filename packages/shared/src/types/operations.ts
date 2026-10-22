@@ -43,6 +43,15 @@ export interface MaterialItemDto {
   note: string | null;
 }
 
+export interface ChecklistItemDto {
+  id: string;
+  label: string;
+  done: boolean;
+  note: string | null;
+  doneAt: string | null;
+  doneById: string | null;
+}
+
 export interface WorkOrderDto {
   id: string;
   installationId: string | null;
@@ -62,6 +71,10 @@ export interface WorkOrderDto {
   startedAt: string | null;
   completedAt: string | null;
   cancelReason: string | null;
+  checklist: ChecklistItemDto[];
+  signedByName: string | null;
+  signedAt: string | null;
+  photoCount: number;
   /** Outras ordens da mesma equipe ou do mesmo técnico no mesmo horário (aviso, não bloqueio). */
   conflictsWith: string[];
 }
@@ -146,4 +159,36 @@ export interface OperationsDashboardDto {
   crews: { crewId: string; crewName: string; doneLast30Days: number }[];
   /** Instalações com mais de uma ordem de instalação ou com pendência de campo (retrabalho de campo). */
   reworkCount: number;
+}
+
+export interface WorkOrderPhotoDto {
+  id: string;
+  workOrderId: string;
+  caption: string | null;
+  takenAt: string;
+  latitude: number | null;
+  longitude: number | null;
+  visibleToCustomer: boolean;
+  /** Link temporário de leitura (alguns minutos). */
+  url: string;
+}
+
+/** O que o técnico precisa em campo: a ordem, o local, o contato, as pendências abertas e as fotos. */
+export interface FieldWorkOrderDto extends WorkOrderDto {
+  address: string | null;
+  siteLatitude: number | null;
+  siteLongitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  openIssues: FieldIssueDto[];
+  photos: WorkOrderPhotoDto[];
+  /** Quando o servidor montou esta cópia: o app a guarda para uso sem internet. */
+  fetchedAt: string;
+}
+
+export interface FieldSyncResultDto {
+  clientActionId: string;
+  /** `APPLIED`: aplicada; `DUPLICATE`: já tinha sido recebida; `REJECTED`: o servidor recusou (ver a mensagem). */
+  status: 'APPLIED' | 'DUPLICATE' | 'REJECTED';
+  message: string | null;
 }

@@ -174,32 +174,41 @@ model CrewMember {
 
 /// Visita, instalação, ensaio, manutenção ou limpeza. Nasce da instalação (ou, nas fases seguintes, da planta).
 model WorkOrder {
-  id             String          @id @default(uuid(7)) @db.Uuid
-  tenantId       String          @map("tenant_id") @db.Uuid
-  installationId String?         @map("installation_id") @db.Uuid
-  projectCode    String?         @map("project_code")
-  accountId      String?         @map("account_id") @db.Uuid
-  siteId         String?         @map("site_id") @db.Uuid
-  type           WorkOrderType
-  status         WorkOrderStatus @default(PENDING)
-  title          String
-  notes          String?
-  crewId         String?         @map("crew_id") @db.Uuid
+  id                  String          @id @default(uuid(7)) @db.Uuid
+  tenantId            String          @map("tenant_id") @db.Uuid
+  installationId      String?         @map("installation_id") @db.Uuid
+  projectCode         String?         @map("project_code")
+  accountId           String?         @map("account_id") @db.Uuid
+  siteId              String?         @map("site_id") @db.Uuid
+  type                WorkOrderType
+  status              WorkOrderStatus @default(PENDING)
+  title               String
+  notes               String?
+  crewId              String?         @map("crew_id") @db.Uuid
   /// Técnico responsável pela execução (além da equipe).
-  assigneeId     String?         @map("assignee_id") @db.Uuid
-  scheduledStart DateTime?       @map("scheduled_start")
-  scheduledEnd   DateTime?       @map("scheduled_end")
-  startedAt      DateTime?       @map("started_at")
-  completedAt    DateTime?       @map("completed_at")
-  cancelReason   String?         @map("cancel_reason")
-  createdById    String?         @map("created_by_id") @db.Uuid
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  assigneeId          String?         @map("assignee_id") @db.Uuid
+  scheduledStart      DateTime?       @map("scheduled_start")
+  scheduledEnd        DateTime?       @map("scheduled_end")
+  startedAt           DateTime?       @map("started_at")
+  completedAt         DateTime?       @map("completed_at")
+  cancelReason        String?         @map("cancel_reason")
+  /// Itens a conferir em campo: `[{ id, label, done, note, doneAt, doneById }]`. Definidos por quem cria a ordem.
+  checklist           Json            @default("[]")
+  /// Pontos de geolocalização registrados pelo app de campo: `[{ kind, latitude, longitude, accuracy, at, userId }]`.
+  geo                 Json            @default("[]")
+  /// Assinatura do cliente (imagem) e quem assinou.
+  signatureDocumentId String?         @map("signature_document_id") @db.Uuid
+  signedByName        String?         @map("signed_by_name")
+  signedAt            DateTime?       @map("signed_at")
+  createdById         String?         @map("created_by_id") @db.Uuid
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id])
-  installation Installation? @relation(fields: [installationId], references: [id])
-  crew         Crew?         @relation(fields: [crewId], references: [id])
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  installation Installation?    @relation(fields: [installationId], references: [id])
+  crew         Crew?            @relation(fields: [crewId], references: [id])
   issues       FieldIssue[]
+  photos       WorkOrderPhoto[]
 
   @@index([tenantId, status, scheduledStart])
   @@index([tenantId, installationId])
@@ -230,4 +239,51 @@ model FieldIssue {
 
   @@index([tenantId, installationId, status])
   @@map("field_issues")
+}
+
+/// Foto de campo de uma ordem de serviço. O arquivo fica em `Document`; aqui ficam a legenda, o momento, o local e se o
+/// cliente pode vê-la no portal. `clientActionId` torna o envio idempotente (reenviar a mesma foto não duplica).
+model WorkOrderPhoto {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  workOrderId       String   @map("work_order_id") @db.Uuid
+  documentId        String   @unique @map("document_id") @db.Uuid
+  clientActionId    String   @map("client_action_id")
+  caption           String?
+  takenAt           DateTime @map("taken_at")
+  latitude          Float?
+  longitude         Float?
+  accuracy          Float?
+  visibleToCustomer Boolean  @default(false) @map("visible_to_customer")
+  uploadedById      String?  @map("uploaded_by_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, clientActionId])
+  @@index([tenantId, workOrderId])
+  @@map("work_order_photos")
+}
+
+/// Ação enviada pelo app de campo (que pode ter ficado horas offline). A chave do cliente torna a sincronização
+/// idempotente: reenviar um lote não repete nada. Guarda o resultado para devolver o mesmo na repetição.
+model FieldAction {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  clientActionId String   @map("client_action_id")
+  userId         String   @map("user_id") @db.Uuid
+  workOrderId    String?  @map("work_order_id") @db.Uuid
+  type           String
+  capturedAt     DateTime @map("captured_at")
+  receivedAt     DateTime @default(now()) @map("received_at")
+  /// `APPLIED` ou `REJECTED`.
+  status         String
+  message        String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, clientActionId])
+  @@index([tenantId, workOrderId])
+  @@map("field_actions")
 }

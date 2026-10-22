@@ -8,8 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { createZodDto } from 'nestjs-zod';
 import {
   agendaQuerySchema,
@@ -20,6 +24,10 @@ import {
   createFieldIssueSchema,
   createMaterialItemSchema,
   createWorkOrderSchema,
+  fieldSyncSchema,
+  saveFieldSignatureSchema,
+  updateFieldPhotoSchema,
+  uploadFieldPhotoSchema,
   listInstallationsQuerySchema,
   listWorkOrdersQuerySchema,
   orderMaterialItemSchema,
@@ -31,7 +39,9 @@ import {
 } from '@voltex/shared';
 import { Authenticated, CurrentUser, RequirePermissions } from '../../common/decorators';
 import type { RequestUser } from '../../common/context/request-user';
+import type { UploadedFile as UploadedFileType } from '../../platform/documents/documents.service';
 import { CrewsService } from './crews.service';
+import { FieldService } from './field.service';
 import { FieldIssuesService } from './field-issues.service';
 import { InstallationsService } from './installations.service';
 import { MaterialsService } from './materials.service';
@@ -53,6 +63,10 @@ class ListWorkOrdersDto extends createZodDto(listWorkOrdersQuerySchema) {}
 class AgendaDto extends createZodDto(agendaQuerySchema) {}
 class CreateFieldIssueDto extends createZodDto(createFieldIssueSchema) {}
 class ResolveFieldIssueDto extends createZodDto(resolveFieldIssueSchema) {}
+class FieldSyncDto extends createZodDto(fieldSyncSchema) {}
+class UploadFieldPhotoDto extends createZodDto(uploadFieldPhotoSchema) {}
+class UpdateFieldPhotoDto extends createZodDto(updateFieldPhotoSchema) {}
+class SaveFieldSignatureDto extends createZodDto(saveFieldSignatureSchema) {}
 
 /**
  * Operação (Fase 11B, ADR-0020). Instalações, materiais, equipes e agenda: `ops.installation.*` e `ops.workorder.*`.
@@ -69,6 +83,7 @@ export class OperationsController {
     private readonly crews: CrewsService,
     private readonly workOrders: WorkOrdersService,
     private readonly issues: FieldIssuesService,
+    private readonly field: FieldService,
   ) {}
 
   // --- instalações ------------------------------------------------------------------------------------------
@@ -284,5 +299,67 @@ export class OperationsController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.issues.resolve(issueId, body, user);
+  }
+  // --- app de campo (11C) -----------------------------------------------------------------------------------
+
+  /** As ordens do técnico com local, contato, pendências e fotos: o app guarda esta cópia para usar sem internet. */
+  @Get('field/work-orders')
+  @Authenticated()
+  fieldOrders(@CurrentUser() user: RequestUser) {
+    this.field.assertFieldAccess(user);
+    return this.field.listMine(user);
+  }
+
+  /** Recebe o lote de ações feitas no aparelho (idempotente por `clientActionId`). */
+  @Post('field/sync')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Authenticated()
+  fieldSync(@Body() body: FieldSyncDto, @CurrentUser() user: RequestUser) {
+    this.field.assertFieldAccess(user);
+    return this.field.sync(body.actions, user);
+  }
+
+  @Post('field/work-orders/:id/photos')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Authenticated()
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  fieldPhoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: UploadedFileType | undefined,
+    @Body() body: UploadFieldPhotoDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    this.field.assertFieldAccess(user);
+    return this.field.uploadPhoto(id, file, body, user);
+  }
+
+  @Post('field/work-orders/:id/signature')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Authenticated()
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  fieldSignature(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: UploadedFileType | undefined,
+    @Body() body: SaveFieldSignatureDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    this.field.assertFieldAccess(user);
+    return this.field.saveSignature(id, file, body, user);
+  }
+
+  @Get('work-orders/:id/photos')
+  @RequirePermissions('ops.workorder.read')
+  listPhotos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.field.listPhotos(id);
+  }
+
+  @Patch('photos/:photoId')
+  @RequirePermissions('ops.workorder.write')
+  updatePhoto(@Param('photoId', ParseUUIDPipe) photoId: string, @Body() body: UpdateFieldPhotoDto) {
+    return this.field.updatePhoto(photoId, body);
   }
 }

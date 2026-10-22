@@ -10,6 +10,7 @@ import { createAppRouter } from './app/router';
 import { api } from './lib/api';
 import { endpoints } from './lib/api/endpoints';
 import { createQueryClient } from './lib/query-client';
+import { registerServiceWorker } from './lib/register-sw';
 
 const queryClient = createQueryClient();
 const router = createAppRouter();
@@ -21,3 +22,5 @@ createRoot(document.getElementById('root') as HTMLElement).render(
     </AppProviders>
   </StrictMode>,
 );
+
+registerServiceWorker();

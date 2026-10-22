@@ -76,6 +76,8 @@ export const TENANT_SCOPED_MODELS = [
   'CrewMember',
   'WorkOrder',
   'FieldIssue',
+  'WorkOrderPhoto',
+  'FieldAction',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

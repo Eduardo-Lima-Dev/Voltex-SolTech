@@ -118,6 +118,9 @@ export const updateCrewSchema = z.object({
 });
 export type UpdateCrewInput = z.infer<typeof updateCrewSchema>;
 
+/** Itens a conferir em campo (um rótulo por item). Não há lista técnica padrão: quem cria a ordem define. */
+export const checklistLabelsSchema = z.array(z.string().trim().min(2).max(160)).max(40);
+
 export const createWorkOrderSchema = z.object({
   installationId: z.uuid().optional(),
   type: z.enum(WORK_ORDER_TYPES),
@@ -127,6 +130,7 @@ export const createWorkOrderSchema = z.object({
   assigneeId: z.uuid().nullable().optional(),
   scheduledStart: isoDateTime.nullable().optional(),
   scheduledEnd: isoDateTime.nullable().optional(),
+  checklist: checklistLabelsSchema.optional(),
 });
 export type CreateWorkOrderInput = z.infer<typeof createWorkOrderSchema>;
 
@@ -137,6 +141,8 @@ export const updateWorkOrderSchema = z.object({
   assigneeId: z.uuid().nullable().optional(),
   scheduledStart: isoDateTime.nullable().optional(),
   scheduledEnd: isoDateTime.nullable().optional(),
+  /** Troca a lista de itens: os que já existem (mesmo texto) mantêm o estado; os novos entram pendentes. */
+  checklist: checklistLabelsSchema.optional(),
 });
 export type UpdateWorkOrderInput = z.infer<typeof updateWorkOrderSchema>;
 
@@ -178,3 +184,82 @@ export const resolveFieldIssueSchema = z.object({
   resolution: z.string().trim().min(3).max(1000),
 });
 export type ResolveFieldIssueInput = z.infer<typeof resolveFieldIssueSchema>;
+
+// ---- App de campo (Fase 11C, ADR-0021) ----
+
+export const fieldGeoSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracy: z.number().min(0).max(100_000).optional(),
+});
+export type FieldGeoInput = z.infer<typeof fieldGeoSchema>;
+
+const fieldActionBase = {
+  /** Gerado no aparelho: torna o envio idempotente (reenviar o lote não repete a ação). */
+  clientActionId: z.uuid(),
+  workOrderId: z.uuid(),
+  /** Quando a ação aconteceu no aparelho (pode ser horas antes do envio). */
+  capturedAt: isoDateTime,
+};
+
+export const FIELD_ACTION_TYPES = ['START', 'COMPLETE', 'CHECK', 'NOTE', 'ISSUE'] as const;
+export type FieldActionType = (typeof FIELD_ACTION_TYPES)[number];
+
+export const fieldActionSchema = z.discriminatedUnion('type', [
+  z.object({ ...fieldActionBase, type: z.literal('START'), geo: fieldGeoSchema.optional() }),
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('COMPLETE'),
+    notes: z.string().trim().max(2000).optional(),
+    geo: fieldGeoSchema.optional(),
+  }),
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('CHECK'),
+    itemId: z.uuid(),
+    done: z.boolean(),
+    note: z.string().trim().max(500).optional(),
+  }),
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('NOTE'),
+    text: z.string().trim().min(1).max(1000),
+  }),
+  z.object({
+    ...fieldActionBase,
+    type: z.literal('ISSUE'),
+    issueType: z.enum(FIELD_ISSUE_TYPES),
+    description: z.string().trim().min(3).max(1000),
+    blocking: z.boolean().default(true),
+  }),
+]);
+export type FieldActionInput = z.infer<typeof fieldActionSchema>;
+
+export const fieldSyncSchema = z.object({
+  actions: z.array(fieldActionSchema).min(1).max(100),
+});
+export type FieldSyncInput = z.infer<typeof fieldSyncSchema>;
+
+/** Campos de texto do envio de foto (multipart: tudo chega como texto). */
+export const uploadFieldPhotoSchema = z.object({
+  clientActionId: z.uuid(),
+  caption: z.string().trim().max(200).optional(),
+  takenAt: isoDateTime.optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+  accuracy: z.coerce.number().min(0).max(100_000).optional(),
+});
+export type UploadFieldPhotoInput = z.infer<typeof uploadFieldPhotoSchema>;
+
+export const updateFieldPhotoSchema = z.object({
+  caption: z.string().trim().max(200).nullable().optional(),
+  /** Libera a foto para o cliente ver no portal. */
+  visibleToCustomer: z.boolean().optional(),
+});
+export type UpdateFieldPhotoInput = z.infer<typeof updateFieldPhotoSchema>;
+
+export const saveFieldSignatureSchema = z.object({
+  clientActionId: z.uuid(),
+  signedByName: z.string().trim().min(2).max(120),
+});
+export type SaveFieldSignatureInput = z.infer<typeof saveFieldSignatureSchema>;
