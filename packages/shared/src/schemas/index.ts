@@ -13,3 +13,4 @@ export * from './engineering.js';
 export * from './engineering-management.js';
 export * from './offgrid.js';
 export * from './integrations.js';
+export * from './operations.js';

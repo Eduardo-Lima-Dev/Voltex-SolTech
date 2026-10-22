@@ -171,10 +171,10 @@ describe('painel inicial', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('vendedor vê Engine/Off-Grid como "Sem acesso"', async () => {
+  it('vendedor vê Engine, Off-Grid e Operação como "Sem acesso"', async () => {
     renderApp('/', { session: makeSession('SALESPERSON') });
     await screen.findByRole('heading', { name: /Olá, Eduardo/ });
-    expect(screen.getAllByText('Sem acesso')).toHaveLength(2);
+    expect(screen.getAllByText('Sem acesso')).toHaveLength(3);
   });
 });
 

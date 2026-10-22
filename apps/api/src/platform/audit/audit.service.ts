@@ -44,8 +44,10 @@ export class AuditService {
       requestId: this.context.requestId ?? null,
     };
     // Sem contexto de tenant (login, convite) o cliente escopado recusaria a gravação: usa o de sistema.
-    const target = client ?? (this.context.tenantId ? this.prisma.db : this.prisma.system);
-    await target.auditLog.create({ data });
+    // Cada ramo chama um único tipo de cliente: a união dos dois estoura a profundidade de tipos do TypeScript.
+    if (client) await client.auditLog.create({ data });
+    else if (this.context.tenantId) await this.prisma.db.auditLog.create({ data });
+    else await this.prisma.system.auditLog.create({ data });
   }
 
   async list(query: ListAuditLogsQuery) {

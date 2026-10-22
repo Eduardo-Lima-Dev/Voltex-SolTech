@@ -106,6 +106,13 @@ model Tenant {
   integrationRuns             IntegrationRun[]
   integrationDeadLetters      IntegrationDeadLetter[]
   communicationLogs           CommunicationLog[]
+  installations               Installation[]
+  installationHistory         InstallationHistory[]
+  materialItems               MaterialItem[]
+  crews                       Crew[]
+  crewMembers                 CrewMember[]
+  workOrders                  WorkOrder[]
+  fieldIssues                 FieldIssue[]
 
   @@map("tenants")
 }
@@ -166,10 +173,11 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  branch        Branch?        @relation(fields: [branchId], references: [id])
-  team          Team?          @relation(fields: [teamId], references: [id])
-  refreshTokens RefreshToken[]
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  team            Team?          @relation(fields: [teamId], references: [id])
+  refreshTokens   RefreshToken[]
+  crewMemberships CrewMember[]
 
   @@index([tenantId, role])
   @@map("users")

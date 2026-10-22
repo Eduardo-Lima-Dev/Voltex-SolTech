@@ -60,6 +60,12 @@ export const queryKeys = {
   energyBill: (id: string) => ['energy-bill', id] as const,
   effectiveRules: ['rules', 'effective'] as const,
   dataSources: ['data-hub', 'sources'] as const,
+  operationsDashboard: ['operations', 'dashboard'] as const,
+  installations: (filters?: unknown) => ['operations', 'installations', filters ?? {}] as const,
+  installation: (id: string) => ['operations', 'installation', id] as const,
+  installationQuotes: (id: string) => ['operations', 'installation', id, 'quotes'] as const,
+  crews: ['operations', 'crews'] as const,
+  agenda: (filters?: unknown) => ['operations', 'agenda', filters ?? {}] as const,
   integrationProviders: ['integrations', 'providers'] as const,
   integrationConnections: ['integrations', 'connections'] as const,
   integrationRuns: (connectionId?: string) =>
