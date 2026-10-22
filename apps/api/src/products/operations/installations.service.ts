@@ -8,6 +8,7 @@ import {
   type InstallationStatus,
   type InstallationSummaryDto,
   type ListInstallationsQuery,
+  type RegisterAcceptanceInput,
   type OperationsDashboardDto,
   type UpdateInstallationInput,
 } from '@voltex/shared';
@@ -178,6 +179,15 @@ export class InstallationsService {
       installedAt: row.installedAt?.toISOString() ?? null,
       doneAt: row.doneAt?.toISOString() ?? null,
       cancelReason: row.cancelReason,
+      acceptance: row.acceptedAt
+        ? {
+            acceptedAt: row.acceptedAt.toISOString(),
+            acceptedByName: row.acceptedByName ?? '',
+            channel: row.acceptedChannel ?? 'OFFICE',
+            note: row.acceptanceNote,
+            hasSignature: row.acceptanceSignatureDocumentId !== null,
+          }
+        : null,
       allowedTransitions: [...INSTALLATION_TRANSITIONS[row.status]],
       materials: materials.map(toMaterialDto),
       workOrders: await this.presenter.present(orders),
@@ -466,6 +476,22 @@ export class InstallationsService {
           message: 'Ainda há itens da lista de materiais sem recebimento.',
         });
     }
+    if (to === 'CUSTOMER_ACCEPTANCE') {
+      const approved = await db.commissioningRecord.findFirst({
+        where: { installationId: inst.id, status: 'APPROVED' },
+        select: { id: true },
+      });
+      if (!approved)
+        throw new UnprocessableEntityException({
+          code: 'COMMISSIONING_NOT_APPROVED',
+          message: 'O comissionamento ainda não foi aprovado pelo responsável técnico.',
+        });
+    }
+    if (to === 'DONE' && !inst.acceptedAt)
+      throw new UnprocessableEntityException({
+        code: 'ACCEPTANCE_REQUIRED',
+        message: 'Registre o aceite do cliente para finalizar a instalação.',
+      });
     if (to === 'FIELD_ISSUE') {
       const open = await db.fieldIssue.count({
         where: { installationId: inst.id, status: 'OPEN', blocking: true },
@@ -503,6 +529,91 @@ export class InstallationsService {
           entityId: id,
           before: { responsibleId: inst.responsibleId },
           after: { responsibleId: input.responsibleId ?? inst.responsibleId },
+        },
+        tx,
+      );
+    });
+    return this.getDetail(id);
+  }
+
+  /**
+   * Registra o aceite do cliente e finaliza a instalação. É um **registro** (nome, data, canal e, se houver, a
+   * assinatura de campo), não uma assinatura eletrônica. Só vale com o comissionamento aprovado.
+   */
+  async registerAcceptance(
+    id: string,
+    input: Pick<RegisterAcceptanceInput, 'acceptedByName' | 'note' | 'workOrderId'> & {
+      channel: 'FIELD' | 'OFFICE' | 'PORTAL';
+      ip?: string | null;
+      userAgent?: string | null;
+    },
+  ): Promise<InstallationDetailDto> {
+    const inst = await this.require(id);
+    if (inst.status !== 'CUSTOMER_ACCEPTANCE')
+      throw new UnprocessableEntityException({
+        code: 'ACCEPTANCE_NOT_PENDING',
+        message: 'A instalação não está aguardando o aceite do cliente.',
+      });
+    const approved = await this.prisma.db.commissioningRecord.findFirst({
+      where: { installationId: id, status: 'APPROVED' },
+      select: { id: true },
+    });
+    if (!approved)
+      throw new UnprocessableEntityException({
+        code: 'COMMISSIONING_NOT_APPROVED',
+        message: 'O comissionamento ainda não foi aprovado pelo responsável técnico.',
+      });
+    let signatureDocumentId: string | null = null;
+    if (input.channel === 'FIELD' || input.workOrderId) {
+      const order = input.workOrderId
+        ? await this.prisma.db.workOrder.findFirst({
+            where: { id: input.workOrderId, installationId: id },
+            select: { signatureDocumentId: true },
+          })
+        : null;
+      if (!order?.signatureDocumentId)
+        throw new UnprocessableEntityException({
+          code: 'NO_FIELD_SIGNATURE',
+          message: 'A ordem informada não tem a assinatura do cliente colhida em campo.',
+        });
+      signatureDocumentId = order.signatureDocumentId;
+    }
+    await this.prisma.db.$transaction(async (tx) => {
+      await tx.installation.update({
+        where: { id },
+        data: {
+          acceptedAt: new Date(),
+          acceptedByName: input.acceptedByName,
+          acceptedChannel: input.channel,
+          acceptanceNote: input.note ?? null,
+          acceptanceIp: input.ip ?? null,
+          acceptanceUserAgent: input.userAgent ?? null,
+          acceptanceSignatureDocumentId: signatureDocumentId,
+        },
+      });
+      const accepted = await this.transition({ ...inst, acceptedAt: new Date() }, 'DONE', {
+        tx,
+        reason: `Aceite do cliente (${input.channel === 'PORTAL' ? 'portal' : input.channel === 'FIELD' ? 'em campo' : 'registrado pelo escritório'})`,
+      });
+      await this.events.publish(
+        {
+          type: DomainEvent.CUSTOMER_ACCEPTED,
+          projectCode: accepted.projectCode,
+          payload: {
+            installationId: accepted.id,
+            projectId: accepted.projectId,
+            opportunityId: accepted.opportunityId,
+            channel: input.channel,
+          },
+        },
+        tx,
+      );
+      await this.audit.record(
+        {
+          action: 'installation.accepted',
+          entity: 'Installation',
+          entityId: id,
+          after: { acceptedByName: input.acceptedByName, channel: input.channel },
         },
         tx,
       );

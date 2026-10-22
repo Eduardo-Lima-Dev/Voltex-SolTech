@@ -9,6 +9,14 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type AddCommissioningStringsInput,
+  type CommissioningRecordDto,
+  type CommissioningStatus,
+  type CommissioningTestDto,
+  type DecideCommissioningInput,
+  type RecordMeasurementInput,
+  type RegisterAcceptanceInput,
+  type UpdateCommissioningInput,
   type FieldActionInput,
   type FieldSyncResultDto,
   type FieldWorkOrderDto,
@@ -660,6 +668,51 @@ export function createEndpoints(client: ApiClient) {
         reconcile: () =>
           client.post<{ created: number }>(`${ROUTES.operations}/installations/reconcile`),
       },
+      commissioning: {
+        forInstallation: (installationId: string) =>
+          client.get<{
+            current: CommissioningRecordDto | null;
+            previous: {
+              id: string;
+              attempt: number;
+              status: CommissioningStatus;
+              decidedAt: string | null;
+              decisionNote: string | null;
+            }[];
+          }>(`${ROUTES.operations}/installations/${installationId}/commissioning`),
+        open: (installationId: string) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/installations/${installationId}/commissioning`,
+          ),
+        update: (id: string, input: UpdateCommissioningInput) =>
+          client.patch<CommissioningRecordDto>(`${ROUTES.operations}/commissioning/${id}`, input),
+        addStrings: (id: string, input: AddCommissioningStringsInput) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/commissioning/${id}/strings`,
+            input,
+          ),
+        recordTest: (testId: string, input: RecordMeasurementInput) =>
+          client.patch<CommissioningTestDto>(
+            `${ROUTES.operations}/commissioning/tests/${testId}`,
+            input,
+          ),
+        submit: (id: string) =>
+          client.post<CommissioningRecordDto>(`${ROUTES.operations}/commissioning/${id}/submit`),
+        decide: (id: string, input: DecideCommissioningInput) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/commissioning/${id}/decision`,
+            input,
+          ),
+        reportUrl: (id: string) =>
+          client.get<{ url: string; expiresIn: number }>(
+            `${ROUTES.operations}/commissioning/${id}/report`,
+          ),
+      },
+      acceptance: (installationId: string, input: RegisterAcceptanceInput) =>
+        client.post<InstallationDetailDto>(
+          `${ROUTES.operations}/installations/${installationId}/acceptance`,
+          input,
+        ),
       materials: {
         add: (installationId: string, input: CreateMaterialItemInput) =>
           client.post<MaterialItemDto>(

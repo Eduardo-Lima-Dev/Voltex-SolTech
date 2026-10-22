@@ -64,6 +64,9 @@ export class DataExportService {
       db.crew.findMany({ include: { members: true } }),
       db.workOrder.findMany(),
       db.fieldIssue.findMany(),
+      db.workOrderPhoto.findMany(),
+      db.commissioningRecord.findMany(),
+      db.commissioningTest.findMany(),
     ]);
     const [
       branches,
@@ -103,6 +106,9 @@ export class DataExportService {
       crews,
       workOrders,
       fieldIssues,
+      workOrderPhotos,
+      commissioningRecords,
+      commissioningTests,
     ] = rest;
 
     await this.audit.record({
@@ -163,6 +169,9 @@ export class DataExportService {
       crews,
       workOrders,
       fieldIssues,
+      workOrderPhotos,
+      commissioningRecords,
+      commissioningTests,
     };
   }
 }

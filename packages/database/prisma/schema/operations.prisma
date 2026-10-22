@@ -50,6 +50,27 @@ enum WorkOrderStatus {
   @@map("work_order_status")
 }
 
+enum CommissioningStatus {
+  IN_PROGRESS
+  /// Enviado ao responsável técnico para revisão e aprovação.
+  SUBMITTED
+  APPROVED
+  REJECTED
+
+  @@map("commissioning_status")
+}
+
+enum CommissioningResult {
+  PENDING
+  PENDING_RULE
+  PENDING_DATA
+  PASS
+  FAIL
+  NOT_APPLICABLE
+
+  @@map("commissioning_result")
+}
+
 enum FieldIssueStatus {
   OPEN
   RESOLVED
@@ -59,32 +80,42 @@ enum FieldIssueStatus {
 
 /// Execução em campo de um projeto homologado (1:1 com o `Project`).
 model Installation {
-  id                    String             @id @default(uuid(7)) @db.Uuid
-  tenantId              String             @map("tenant_id") @db.Uuid
-  projectId             String             @unique @map("project_id") @db.Uuid
-  opportunityId         String             @map("opportunity_id") @db.Uuid
-  projectCode           String             @map("project_code")
-  accountId             String             @map("account_id") @db.Uuid
-  siteId                String?            @map("site_id") @db.Uuid
+  id                            String             @id @default(uuid(7)) @db.Uuid
+  tenantId                      String             @map("tenant_id") @db.Uuid
+  projectId                     String             @unique @map("project_id") @db.Uuid
+  opportunityId                 String             @map("opportunity_id") @db.Uuid
+  projectCode                   String             @map("project_code")
+  accountId                     String             @map("account_id") @db.Uuid
+  siteId                        String?            @map("site_id") @db.Uuid
   /// Snapshot técnico aprovado de onde vieram os materiais (da cotação do contrato). Nulo = sem projeto técnico.
-  engineeringSnapshotId String?            @map("engineering_snapshot_id") @db.Uuid
-  status                InstallationStatus @default(AWAITING_ENGINEERING)
-  responsibleId         String?            @map("responsible_id") @db.Uuid
-  materialsGeneratedAt  DateTime?          @map("materials_generated_at")
-  materialsReadyAt      DateTime?          @map("materials_ready_at")
-  installedAt           DateTime?          @map("installed_at")
-  doneAt                DateTime?          @map("done_at")
-  cancelledAt           DateTime?          @map("cancelled_at")
-  cancelReason          String?            @map("cancel_reason")
-  createdAt             DateTime           @default(now()) @map("created_at")
-  updatedAt             DateTime           @updatedAt @map("updated_at")
+  engineeringSnapshotId         String?            @map("engineering_snapshot_id") @db.Uuid
+  status                        InstallationStatus @default(AWAITING_ENGINEERING)
+  responsibleId                 String?            @map("responsible_id") @db.Uuid
+  materialsGeneratedAt          DateTime?          @map("materials_generated_at")
+  materialsReadyAt              DateTime?          @map("materials_ready_at")
+  installedAt                   DateTime?          @map("installed_at")
+  doneAt                        DateTime?          @map("done_at")
+  cancelledAt                   DateTime?          @map("cancelled_at")
+  cancelReason                  String?            @map("cancel_reason")
+  /// Aceite do cliente (registro, não assinatura eletrônica): quem, quando, por qual canal e de onde.
+  acceptedAt                    DateTime?          @map("accepted_at")
+  acceptedByName                String?            @map("accepted_by_name")
+  /// `FIELD` (assinatura em campo), `OFFICE` (registrado pelo escritório) ou `PORTAL` (cliente, pelo link).
+  acceptedChannel               String?            @map("accepted_channel")
+  acceptanceNote                String?            @map("acceptance_note")
+  acceptanceIp                  String?            @map("acceptance_ip")
+  acceptanceUserAgent           String?            @map("acceptance_user_agent")
+  acceptanceSignatureDocumentId String?            @map("acceptance_signature_document_id") @db.Uuid
+  createdAt                     DateTime           @default(now()) @map("created_at")
+  updatedAt                     DateTime           @updatedAt @map("updated_at")
 
-  tenant     Tenant                @relation(fields: [tenantId], references: [id])
-  project    Project               @relation(fields: [projectId], references: [id])
-  materials  MaterialItem[]
-  workOrders WorkOrder[]
-  issues     FieldIssue[]
-  history    InstallationHistory[]
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  project       Project               @relation(fields: [projectId], references: [id])
+  commissioning CommissioningRecord[]
+  materials     MaterialItem[]
+  workOrders    WorkOrder[]
+  issues        FieldIssue[]
+  history       InstallationHistory[]
 
   @@index([tenantId, status])
   @@index([tenantId, accountId])
@@ -286,4 +317,96 @@ model FieldAction {
   @@unique([tenantId, clientActionId])
   @@index([tenantId, workOrderId])
   @@map("field_actions")
+}
+
+/// Comissionamento de uma instalação (uma tentativa). O modelo de ensaios e as tolerâncias vêm da regra
+/// `ops.commissioning` ativa e revisada; sem ela vale o modelo-base provisório e a aprovação fica travada.
+model CommissioningRecord {
+  id                    String              @id @default(uuid(7)) @db.Uuid
+  tenantId              String              @map("tenant_id") @db.Uuid
+  installationId        String              @map("installation_id") @db.Uuid
+  /// Reprovado volta a instalar e a próxima tentativa abre um registro novo.
+  attempt               Int
+  status                CommissioningStatus @default(IN_PROGRESS)
+  /// `STANDARD` (categoria 1) ou `EXTENDED` (categoria 1 + 2).
+  level                 String              @default("STANDARD")
+  /// Regra usada (`<id>@<versão>` ou o modelo-base) e se é provisória.
+  ruleRef               String              @map("rule_ref")
+  provisional           Boolean
+  ruleNote              String?             @map("rule_note")
+  ruleSources           Json                @default("[]") @map("rule_sources")
+  ruleReviewedBy        String?             @map("rule_reviewed_by")
+  internalTestRule      Boolean             @default(false) @map("internal_test_rule")
+  engineeringSnapshotId String?             @map("engineering_snapshot_id") @db.Uuid
+  /// Condições medidas no local: `{ irradianceWm2, moduleTempC, ambientC }`.
+  conditions            Json                @default("{}")
+  /// Modelo de ensaios usado, congelado (a regra pode mudar depois; este registro continua com o que valeu nele).
+  model                 Json                @default("{}")
+  /// Ensaios do modelo que não geraram linha e avisos de dado faltando.
+  skipped               Json                @default("[]")
+  notes                 Json                @default("[]")
+  startedAt             DateTime            @default(now()) @map("started_at")
+  submittedAt           DateTime?           @map("submitted_at")
+  submittedById         String?             @map("submitted_by_id") @db.Uuid
+  decidedAt             DateTime?           @map("decided_at")
+  decidedById           String?             @map("decided_by_id") @db.Uuid
+  decisionNote          String?             @map("decision_note")
+  reportDocumentId      String?             @map("report_document_id") @db.Uuid
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  installation Installation        @relation(fields: [installationId], references: [id])
+  tests        CommissioningTest[]
+
+  @@unique([installationId, attempt])
+  @@index([tenantId, status])
+  @@map("commissioning_records")
+}
+
+model CommissioningTest {
+  id               String              @id @default(uuid(7)) @db.Uuid
+  tenantId         String              @map("tenant_id") @db.Uuid
+  recordId         String              @map("record_id") @db.Uuid
+  position         Int
+  code             String
+  label            String
+  testGroup        String              @map("test_group")
+  kind             String
+  level            String
+  scope            String
+  unit             String?
+  /// `NONE`, `VOC_STRING` ou `ISC_STRING`.
+  expectedKind     String              @map("expected_kind")
+  tolerancePct     Float?              @map("tolerance_pct")
+  minValue         Float?              @map("min_value")
+  maxValue         Float?              @map("max_value")
+  required         Boolean
+  source           String
+  subjectKey       String              @map("subject_key")
+  subjectLabel     String              @map("subject_label")
+  /// Dados elétricos da string (para calcular o esperado): `{ modulesInSeries, vocStcV, ... }`.
+  electrical       Json?
+  result           CommissioningResult @default(PENDING)
+  measuredValue    Float?              @map("measured_value")
+  passed           Boolean?
+  expectedValue    Float?              @map("expected_value")
+  deviationPct     Float?              @map("deviation_pct")
+  basis            String?
+  reason           String?
+  note             String?
+  /// Condições desta medição, quando diferem das do registro (a irradiância muda ao longo do dia).
+  conditions       Json?
+  measuredAt       DateTime?           @map("measured_at")
+  measuredById     String?             @map("measured_by_id") @db.Uuid
+  /// Fotos de campo (`WorkOrderPhoto`) que servem de evidência deste ensaio.
+  evidencePhotoIds Json                @default("[]") @map("evidence_photo_ids")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  tenant Tenant              @relation(fields: [tenantId], references: [id])
+  record CommissioningRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, code, subjectKey])
+  @@index([tenantId, recordId, position])
+  @@map("commissioning_tests")
 }

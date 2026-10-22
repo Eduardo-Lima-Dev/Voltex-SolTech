@@ -88,6 +88,7 @@ const detail = (o: Partial<InstallationDetailDto> = {}): InstallationDetailDto =
   installedAt: null,
   doneAt: null,
   cancelReason: null,
+  acceptance: null,
   allowedTransitions: ['MATERIAL_READY', 'CANCELLED'],
   materials: [
     material(),

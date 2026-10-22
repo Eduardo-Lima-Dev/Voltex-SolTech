@@ -121,3 +121,13 @@ Pré-requisitos: um contrato assinado (projeto criado) e um usuário com perfil 
 4. Feche e reabra o app ainda em modo avião: as ordens e o que foi feito continuam lá.
 5. Desligue o modo avião: os itens sobem sozinhos. No escritório, a ficha da instalação mostra "Pendência de campo" e as fotos; resolva a pendência e **Concluir** em campo (peça a **assinatura do cliente** antes).
 6. Teste a recusa: cancele a ordem no escritório com o celular offline, faça uma ação em campo e volte à rede: aparece **O sistema recusou algo** com a mensagem.
+
+**11D — Comissionamento e aceite**
+
+Pré-requisito: instalação concluída (ordem de comissionamento criada) e, para aprovar, uma regra `ops.commissioning` **ativada pelo responsável técnico** (Administração → Regras; sem ela vale o modelo provisório e a aprovação fica travada).
+
+1. Na ficha da instalação, **Comissionamento**: o registro traz o aviso de modelo provisório (sem regra) ou a regra e o revisor. Confira os ensaios por grupo; acrescente strings se não houve projeto técnico.
+2. No celular, abra a ordem de comissionamento: informe **irradiância e temperatura do módulo**, marque as conferências e registre as medições. A tela mostra o esperado, o desvio e "Conforme/Reprovado" na hora (sem regra: "Sem regra para julgar").
+3. **Concluir ordem** sem todos os obrigatórios: o sistema recusa e diz quantos faltam. Com tudo registrado, o registro vai para revisão.
+4. Como **responsável técnico**: **Reprovar** pede o motivo e devolve a instalação a "em instalação"; **Aprovar** só libera sem nenhuma trava (a tela lista as que restam). Aprovado, baixe o **Relatório (PDF)**.
+5. **Aceite do cliente**: colha a assinatura na ordem (app de campo) e registre o aceite (com ou sem essa assinatura): a instalação fica "Finalizada".

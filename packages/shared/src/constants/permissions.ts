@@ -72,6 +72,11 @@ export const PERMISSIONS = [
   'ops.installation.write',
   'ops.workorder.read',
   'ops.workorder.write',
+  'ops.commissioning.read',
+  /** Preparar o comissionamento: nível, condições, strings e registro dos ensaios pelo escritório. */
+  'ops.commissioning.write',
+  /** Aprovar ou reprovar o comissionamento (responsável técnico). */
+  'ops.commissioning.approve',
   /** App de campo: iniciar, concluir e registrar pendência nas ordens em que o usuário está escalado. */
   'ops.field.execute',
   // Off-Grid Designer
@@ -152,6 +157,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.ENGINEERING]: [
+    'ops.commissioning.read',
     'ops.installation.read',
     ...startsWith(
       'engine.project.read',
@@ -172,6 +178,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.TECHNICAL_LEAD]: [
+    'ops.commissioning.read',
+    'ops.commissioning.approve',
     'ops.installation.read',
     ...startsWith('engine.', 'offgrid.'),
     'crm.opportunity.read',
@@ -188,6 +196,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.OPERATIONS]: [
+    'ops.commissioning.read',
+    'ops.commissioning.write',
     'ops.installation.read',
     'ops.installation.write',
     'ops.workorder.read',
@@ -224,6 +234,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.read',
   ],
   [Role.OM]: [
+    'ops.commissioning.read',
     'ops.installation.read',
     'ops.workorder.read',
     'platform.communication.send',

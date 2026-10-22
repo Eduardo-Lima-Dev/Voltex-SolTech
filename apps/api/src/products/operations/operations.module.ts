@@ -4,6 +4,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import type { Env } from '../../config/env';
 import { DocumentsModule } from '../../platform/documents/documents.module';
 import { CrmModule } from '../crm/crm.module';
+import { CommissioningService } from './commissioning.service';
 import { CrewsService } from './crews.service';
 import { FieldService } from './field.service';
 import { FieldIssuesService } from './field-issues.service';
@@ -35,9 +36,10 @@ import { WorkOrdersService } from './work-orders.service';
     CrewsService,
     WorkOrdersService,
     FieldIssuesService,
+    CommissioningService,
     FieldService,
     OperationsAutomationsService,
   ],
-  exports: [InstallationsService, MaterialsService, WorkOrdersService],
+  exports: [InstallationsService, MaterialsService, WorkOrdersService, CommissioningService],
 })
 export class OperationsModule {}

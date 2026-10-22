@@ -3,6 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { DomainEvent, type DomainEventEnvelope } from '@voltex/shared';
 import { RequestContext } from '../../common/context/request-context';
 import { PrismaService } from '../../platform/prisma/prisma.service';
+import { CommissioningService } from './commissioning.service';
 import { InstallationsService } from './installations.service';
 import { MaterialsService } from './materials.service';
 
@@ -21,6 +22,7 @@ export class OperationsAutomationsService {
     private readonly context: RequestContext,
     private readonly installations: InstallationsService,
     private readonly materials: MaterialsService,
+    private readonly commissioning: CommissioningService,
   ) {}
 
   /** Contrato assinado → projeto criado → nasce a instalação, aguardando a engenharia. */
@@ -62,5 +64,14 @@ export class OperationsAutomationsService {
         });
       });
     });
+  }
+  /** Instalação concluída → o registro do comissionamento já fica pronto, com os ensaios do projeto. */
+  @OnEvent(DomainEvent.INSTALLATION_COMPLETED, { suppressErrors: false })
+  async onInstallationCompleted(event: DomainEventEnvelope): Promise<void> {
+    const installationId = String(event.payload.installationId ?? '');
+    if (!installationId) return;
+    await this.context.run({ tenantId: event.tenantId }, () =>
+      this.commissioning.ensureRecord(installationId, { newAttemptIfRejected: true }),
+    );
   }
 }
