@@ -8,6 +8,8 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  LeadScoringConfig,
+  LeadScoringConfigInput,
   MfaChallengeDto,
   MfaConfirmInput,
   MfaDisableInput,
@@ -1047,6 +1049,12 @@ export function createEndpoints(client: ApiClient) {
           client.post<UpdateProposalDto>(`${ROUTES.dataHub}/updates/${id}/decide`, input),
       },
       scanTariffs: () => client.post<TariffScanResultDto>(`${ROUTES.dataHub}/tariffs/scan`),
+    },
+    leadScoring: {
+      get: () => client.get<LeadScoringConfig>('/lead-scoring/config'),
+      save: (input: LeadScoringConfigInput) =>
+        client.put<LeadScoringConfig>('/lead-scoring/config', input),
+      rescore: () => client.post<{ updated: number }>('/lead-scoring/rescore'),
     },
     leads: {
       list: (query: Partial<ListLeadsQuery>) =>

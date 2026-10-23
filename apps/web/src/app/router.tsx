@@ -335,6 +335,21 @@ const pageRoutes: RouteObject[] = [
                   };
                 },
               },
+              {
+                path: 'pontuacao',
+                lazy: async () => {
+                  const { LeadScoringPage } =
+                    await import('@/features/crm/leads/lead-scoring-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.lead-scoring.manage">
+                        <LeadScoringPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pontuação de leads' },
+                  };
+                },
+              },
             ],
           },
           {
