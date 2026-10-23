@@ -118,6 +118,9 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'crm.project.read': 'Ver projetos',
   'crm.project.write': 'Criar e editar projetos',
   'crm.finance.read': 'Ver o financeiro dos projetos',
+  'crm.finance.write': 'Lançar parcelas, custos, crédito e comissões',
+  'crm.portal.manage': 'Liberar o portal do cliente',
+  'crm.lead-scoring.manage': 'Configurar a pontuação e a distribuição de leads',
   'crm.dashboard.read': 'Ver o painel comercial',
   'calculator.session.read': 'Ver cálculos',
   'calculator.session.create': 'Criar cálculos',
@@ -518,6 +521,8 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   PROJECT_STATUS_CHANGED: 'Homologação',
   INSTALLATION_STATUS_CHANGED: 'Instalação',
   PLANT_ACTIVATED: 'Planta ativada',
+  RECEIVABLE_PAID: 'Parcela recebida',
+  CREDIT_STATUS_CHANGED: 'Crédito atualizado',
 };
 
 export const ROOF_TYPE_LABELS: Record<RoofType, string> = {

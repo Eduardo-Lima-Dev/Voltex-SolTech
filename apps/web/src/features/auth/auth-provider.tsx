@@ -8,7 +8,14 @@ import {
   type ReactNode,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { AcceptInvitationInput, CurrentUser, LoginInput, Permission } from '@voltex/shared';
+import type {
+  AcceptInvitationInput,
+  CurrentUser,
+  LoginInput,
+  MfaChallengeDto,
+  Permission,
+  SessionResponse,
+} from '@voltex/shared';
 import type { ApiClient } from '@/lib/api/client';
 import type { Endpoints } from '@/lib/api/endpoints';
 import {
@@ -20,7 +27,10 @@ import {
 interface AuthContextValue {
   status: SessionStatus;
   user: CurrentUser | null;
-  login: (input: LoginInput) => Promise<void>;
+  /** Devolve o desafio do segundo fator, ou `null` quando a sessão já foi aberta. */
+  login: (input: LoginInput) => Promise<MfaChallengeDto | null>;
+  /** Abre a sessão com o resultado de uma etapa do segundo fator. */
+  establishSession: (session: SessionResponse) => void;
   acceptInvitation: (input: AcceptInvitationInput) => Promise<void>;
   logout: () => Promise<void>;
   /** Verdadeiro se o usuário tem a permissão (todas, se vier uma lista). */
@@ -65,10 +75,18 @@ export function AuthProvider({
   }, [client, store]);
 
   const login = useCallback(
-    async (input: LoginInput) => {
-      store.setSession(await endpoints.auth.login(input));
+    async (input: LoginInput): Promise<MfaChallengeDto | null> => {
+      const result = await endpoints.auth.login(input);
+      if ('mfaToken' in result) return result;
+      store.setSession(result);
+      return null;
     },
     [endpoints, store],
+  );
+
+  const establishSession = useCallback(
+    (session: SessionResponse) => store.setSession(session),
+    [store],
   );
 
   const acceptInvitation = useCallback(
@@ -96,12 +114,13 @@ export function AuthProvider({
       status: state.status,
       user: state.user,
       login,
+      establishSession,
       acceptInvitation,
       logout,
       can,
       canAny: (permissions) => permissions.some((p) => granted.has(p)),
     };
-  }, [state, login, acceptInvitation, logout]);
+  }, [state, login, establishSession, acceptInvitation, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

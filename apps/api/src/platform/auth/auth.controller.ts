@@ -37,8 +37,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const session = await this.auth.login(body, this.meta(req));
-    return this.cookies.respond(res, session);
+    const result = await this.auth.login(body, this.meta(req));
+    // Desafio do segundo fator: ainda não há sessão, nem cookie.
+    if ('mfaToken' in result) return result;
+    return this.cookies.respond(res, result);
   }
 
   @Public()

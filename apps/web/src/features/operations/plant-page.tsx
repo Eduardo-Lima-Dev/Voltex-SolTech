@@ -34,6 +34,7 @@ import {
   daysLeftLabel,
   formatDay,
 } from './aftersales-labels';
+import { PlantMonitoringSection } from './plant-monitoring';
 import { NewTicketDialog, TicketDialog, TicketRows } from './tickets-page';
 
 function AddAssetDialog({ plantId, onClose }: { plantId: string; onClose: () => void }) {
@@ -213,6 +214,8 @@ export function PlantPage() {
           )}
         </CardContent>
       </Card>
+
+      <PlantMonitoringSection plantId={p.id} />
 
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">

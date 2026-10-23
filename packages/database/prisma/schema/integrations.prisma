@@ -73,9 +73,10 @@ model IntegrationConnection {
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
 
-  tenant      Tenant                  @relation(fields: [tenantId], references: [id])
-  runs        IntegrationRun[]
-  deadLetters IntegrationDeadLetter[]
+  tenant           Tenant                    @relation(fields: [tenantId], references: [id])
+  runs             IntegrationRun[]
+  deadLetters      IntegrationDeadLetter[]
+  monitoringLinks  PlantMonitoringLink[]
 
   @@unique([tenantId, provider, label])
   @@index([tenantId, kind, status])
@@ -142,4 +143,45 @@ model CommunicationLog {
   @@index([tenantId, entityType, entityId])
   @@index([tenantId, accountId])
   @@map("communication_logs")
+}
+
+enum SignatureRequestStatus {
+  /// Enviado ao provedor; o signatário ainda não assinou.
+  SENT
+  COMPLETED
+  DECLINED
+  /// Falha ao enviar ou ao baixar o arquivo assinado: precisa de uma pessoa.
+  ERROR
+
+  @@map("signature_request_status")
+}
+
+/// Pedido de assinatura eletrônica de um contrato enviado a um provedor (ex.: DocuSeal). Opcional: o registro
+/// manual do contrato assinado continua sendo o caminho padrão.
+model SignatureRequest {
+  id               String                 @id @default(uuid(7)) @db.Uuid
+  tenantId         String                 @map("tenant_id") @db.Uuid
+  contractId       String                 @map("contract_id") @db.Uuid
+  connectionId     String                 @map("connection_id") @db.Uuid
+  provider         String
+  /// Identificador do envio no provedor (submissão); chave dos avisos (webhook) do provedor.
+  externalId       String                 @map("external_id")
+  status           SignatureRequestStatus @default(SENT)
+  signerName       String                 @map("signer_name")
+  signerEmail      String                 @map("signer_email")
+  /// Segredo do aviso do provedor, só o hash.
+  webhookSecretHash String                @map("webhook_secret_hash")
+  sentById         String?                @map("sent_by_id") @db.Uuid
+  sentAt           DateTime               @default(now()) @map("sent_at")
+  completedAt      DateTime?              @map("completed_at")
+  lastEventAt      DateTime?              @map("last_event_at")
+  error            String?
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([provider, externalId])
+  @@index([tenantId, contractId])
+  @@map("signature_requests")
 }

@@ -44,6 +44,8 @@ export const createLeadSchema = z.object({
   state: stateSchema.optional(),
   notes: z.string().max(2000).optional(),
   utm: utmSchema.optional(),
+  /** Valor médio da conta de luz mensal, em centavos (critério de pontuação). */
+  monthlyBillCents: z.number().int().min(0).max(100_000_000).optional(),
   ownerId: z.uuid().optional(),
 });
 export type CreateLeadInput = z.input<typeof createLeadSchema>;
@@ -73,6 +75,8 @@ export const listLeadsQuerySchema = paginationQuerySchema.extend({
   source: z.enum(LeadSource).optional(),
   segment: z.enum(CustomerSegment).optional(),
   ownerId: z.uuid().optional(),
+  /** Ordem da lista: mais recentes (padrão) ou maior pontuação primeiro. */
+  sort: z.enum(['recent', 'score']).default('recent'),
   /** `true`: só leads com o primeiro contato atrasado (SLA estourado). */
   slaBreached: z
     .enum(['true', 'false'])

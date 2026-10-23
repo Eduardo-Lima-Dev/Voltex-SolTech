@@ -19,5 +19,10 @@ export interface PrivacyRequestDto {
 export interface RetentionPolicyDto {
   policy: RetentionPolicyInput;
   floors: { signedContractsMonths: number };
-  sources: { signedContractsMonths: string; accessLogs: string };
+  sources: {
+    signedContractsMonths: string;
+    fieldPhotosMonths: string;
+    geolocationMonths: string;
+    accessLogs: string;
+  };
 }

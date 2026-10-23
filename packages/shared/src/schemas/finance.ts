@@ -1,102 +1,79 @@
 import { z } from 'zod';
 
-export const CreateReceivableInput = z.object({
-  referenceId: z.string().min(1, 'ID de referência obrigatório'),
-  order: z.number().int().positive('Número da parcela deve ser positivo'),
-  amountCents: z.number().int().positive('Valor deve ser positivo'),
-  dueAt: z.string().datetime('Data de vencimento inválida'),
-});
-export type CreateReceivableInput = z.infer<typeof CreateReceivableInput>;
+/** Financeiro por projeto (11G). Tudo manual: não há gateway de pagamento nem integração bancária. */
 
-export const ReceivableDto = z.object({
-  id: z.string().uuid(),
-  projectId: z.string().uuid(),
-  referenceId: z.string(),
-  order: z.number(),
-  amountCents: z.number(),
-  dueAt: z.string().datetime(),
-  paidAt: z.string().datetime().nullable(),
-  paymentMethod: z.string().nullable(),
-  status: z.enum(['OPEN', 'PAID', 'OVERDUE', 'CANCELLED']),
-  notes: z.string().nullable(),
-  createdAt: z.string().datetime(),
-});
-export type ReceivableDto = z.infer<typeof ReceivableDto>;
+const isoDate = z.iso.date();
 
-export const ProjectCostEntryDto = z.object({
-  id: z.string().uuid(),
-  category: z.string(),
-  description: z.string(),
-  estimatedCents: z.number().nullable(),
-  actualCents: z.number(),
-  supplier: z.string().nullable(),
-  recordedAt: z.string().datetime(),
-});
-export type ProjectCostEntryDto = z.infer<typeof ProjectCostEntryDto>;
+export const RECEIVABLE_STATUSES = ['OPEN', 'PAID', 'OVERDUE', 'CANCELLED'] as const;
+export type ReceivableStatus = (typeof RECEIVABLE_STATUSES)[number];
 
-export const ProjectFinancialSummaryDto = z.object({
-  projectId: z.string().uuid(),
-  valueCents: z.number(),
-  totalReceivedCents: z.number(),
-  totalCostsCents: z.number(),
-  totalCommissionsCents: z.number(),
-  marginCents: z.number(),
-  marginPct: z.number(),
-  receivablesCount: z.number(),
-  receivablesPaidCount: z.number(),
-  overdueCount: z.number(),
-  receivables: z.array(ReceivableDto),
-  costEntries: z.array(ProjectCostEntryDto),
-});
-export type ProjectFinancialSummaryDto = z.infer<typeof ProjectFinancialSummaryDto>;
+export const COST_CATEGORIES = ['MATERIAL', 'LABOR', 'TRANSPORT', 'TAXES', 'OTHER'] as const;
+export type CostCategory = (typeof COST_CATEGORIES)[number];
 
-export const CreateCommissionPolicyInput = z.object({
-  base: z.enum(['RECEIVED', 'SIGNED']),
-  weights: z.record(z.string(), z.number()),
-  validFrom: z.string(),
-  notes: z.string().optional(),
-});
-export type CreateCommissionPolicyInput = z.infer<typeof CreateCommissionPolicyInput>;
+export const CREDIT_STATUSES = ['SIMULATED', 'SENT', 'PENDING', 'APPROVED', 'REJECTED'] as const;
+export type CreditStatus = (typeof CREDIT_STATUSES)[number];
 
-export const CommissionPolicyDto = z.object({
-  id: z.string().uuid(),
-  base: z.string(),
-  weights: z.record(z.string(), z.number()),
-  validFrom: z.string(),
-  validTo: z.string().nullable(),
-  createdAt: z.string().datetime(),
-});
-export type CommissionPolicyDto = z.infer<typeof CommissionPolicyDto>;
+export const COMMISSION_BASES = ['RECEIVED', 'SIGNED'] as const;
+export type CommissionBase = (typeof COMMISSION_BASES)[number];
 
-export const CommissionDto = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid().nullable(),
-  projectId: z.string().uuid().nullable(),
-  amountCents: z.number(),
-  calculatedAt: z.string().datetime(),
-  paidAt: z.string().datetime().nullable(),
+export const createReceivableSchema = z.object({
+  referenceId: z.string().trim().min(1).max(80),
+  order: z.number().int().positive(),
+  amountCents: z.number().int().positive(),
+  dueOn: isoDate,
+  notes: z.string().trim().max(500).optional(),
 });
-export type CommissionDto = z.infer<typeof CommissionDto>;
+export type CreateReceivableInput = z.infer<typeof createReceivableSchema>;
 
-export const CreateCreditApplicationInput = z.object({
-  institution: z.string().min(1, 'Instituição obrigatória'),
-  amountCents: z.number().int().positive('Valor deve ser positivo'),
-  annualRatePct: z.number().positive('Taxa deve ser positiva').optional(),
-  termMonths: z.number().int().positive('Prazo deve ser positivo').optional(),
+export const markReceivablePaidSchema = z.object({
+  paymentMethod: z.string().trim().min(1).max(60),
+  /** Data do recebimento; sem ela vale hoje. */
+  paidOn: isoDate.optional(),
+  receiptDocumentId: z.uuid().optional(),
 });
-export type CreateCreditApplicationInput = z.infer<typeof CreateCreditApplicationInput>;
+export type MarkReceivablePaidInput = z.infer<typeof markReceivablePaidSchema>;
 
-export const CreditApplicationDto = z.object({
-  id: z.string().uuid(),
-  projectId: z.string().uuid(),
-  institution: z.string(),
-  status: z.enum(['SIMULATED', 'SENT', 'PENDING', 'APPROVED', 'REJECTED']),
-  annualRatePct: z.number().nullable(),
-  termMonths: z.number().nullable(),
-  amountCents: z.number(),
-  totalCents: z.number().nullable(),
-  pendencies: z.array(z.string()),
-  appliedAt: z.string().datetime().nullable(),
-  respondedAt: z.string().datetime().nullable(),
+export const cancelReceivableSchema = z.object({ reason: z.string().trim().min(3).max(500) });
+export type CancelReceivableInput = z.infer<typeof cancelReceivableSchema>;
+
+export const createCostEntrySchema = z.object({
+  category: z.enum(COST_CATEGORIES),
+  description: z.string().trim().min(1).max(200),
+  actualCents: z.number().int().nonnegative(),
+  estimatedCents: z.number().int().nonnegative().optional(),
+  supplier: z.string().trim().max(120).optional(),
+  documentId: z.uuid().optional(),
 });
-export type CreditApplicationDto = z.infer<typeof CreditApplicationDto>;
+export type CreateCostEntryInput = z.infer<typeof createCostEntrySchema>;
+
+export const createCreditApplicationSchema = z.object({
+  institution: z.string().trim().min(1).max(120),
+  amountCents: z.number().int().positive(),
+  /** Taxa anual em %, como informada pela instituição. */
+  annualRatePct: z.number().positive().max(1000).optional(),
+  termMonths: z.number().int().positive().max(480).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+export type CreateCreditApplicationInput = z.infer<typeof createCreditApplicationSchema>;
+
+export const updateCreditStatusSchema = z.object({
+  status: z.enum(['SENT', 'PENDING', 'APPROVED', 'REJECTED']),
+  pendencies: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+export type UpdateCreditStatusInput = z.infer<typeof updateCreditStatusSchema>;
+
+/**
+ * Política de comissão da empresa. Sem valor padrão: quem define é a empresa.
+ * `weights`: percentual (0–100) por perfil (`SALESPERSON`) ou por usuário (id); o id do usuário tem precedência.
+ */
+export const createCommissionPolicySchema = z.object({
+  base: z.enum(COMMISSION_BASES),
+  weights: z.record(z.string().min(1).max(64), z.number().min(0).max(100)),
+  validFrom: isoDate,
+  notes: z.string().trim().max(500).optional(),
+});
+export type CreateCommissionPolicyInput = z.infer<typeof createCommissionPolicySchema>;
+
+export const markCommissionPaidSchema = z.object({ paidOn: isoDate.optional() });
+export type MarkCommissionPaidInput = z.infer<typeof markCommissionPaidSchema>;

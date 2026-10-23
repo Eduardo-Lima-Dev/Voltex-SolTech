@@ -27,9 +27,13 @@ import {
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
+import { SendMessage } from '@/components/send-message';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
-import { formatDateTime } from '@/lib/format';
+import { formatDate as formatDay, formatDateTime } from '@/lib/format';
+
+const formatTime = (iso: string): string =>
+  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 import { queryKeys } from '../admin/query-keys';
 import { WORK_ORDER_STATUS_LABELS, WORK_ORDER_TYPE_LABELS } from './labels';
 
@@ -281,6 +285,28 @@ export function WorkOrdersSection({ installation }: { installation: Installation
                     {o.cancelReason ? ` · ${o.cancelReason}` : ''}
                   </div>
                 </div>
+                {o.status === 'SCHEDULED' && o.scheduledStart ? (
+                  <Can permission="platform.communication.send">
+                    <details className="w-full text-sm">
+                      <summary className="cursor-pointer text-primary">Avisar o cliente</summary>
+                      <div className="pt-2">
+                        <SendMessage
+                          template="installation.scheduled"
+                          variables={{
+                            nome: installation.accountName ?? 'cliente',
+                            data: formatDay(o.scheduledStart),
+                            janela: o.scheduledEnd
+                              ? `${formatTime(o.scheduledStart)} às ${formatTime(o.scheduledEnd)}`
+                              : `a partir das ${formatTime(o.scheduledStart)}`,
+                          }}
+                          copyText={`A ${WORK_ORDER_TYPE_LABELS[o.type].toLowerCase()} está agendada para ${formatDay(o.scheduledStart)}.`}
+                          entityType="WorkOrder"
+                          entityId={o.id}
+                        />
+                      </div>
+                    </details>
+                  </Can>
+                ) : null}
                 <Can permission="ops.workorder.write">
                   {o.status === 'PENDING' ||
                   o.status === 'SCHEDULED' ||

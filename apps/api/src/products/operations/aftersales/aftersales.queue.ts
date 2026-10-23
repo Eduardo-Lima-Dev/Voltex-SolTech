@@ -5,6 +5,7 @@ import IORedis from 'ioredis';
 import { RequestContext } from '../../../common/context/request-context';
 import type { Env } from '../../../config/env';
 import { PrismaService } from '../../../platform/prisma/prisma.service';
+import { FinanceScanService } from '../../crm/finance/finance-scan.service';
 import { AftersalesScanService } from './aftersales-scan.service';
 
 const QUEUE = 'aftersales';
@@ -25,6 +26,7 @@ export class AftersalesQueue implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly context: RequestContext,
     private readonly scan: AftersalesScanService,
+    private readonly financeScan: FinanceScanService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -60,19 +62,28 @@ export class AftersalesQueue implements OnModuleInit, OnModuleDestroy {
     this.connection?.disconnect();
   }
 
-  /** Empresas com alguma planta (também usado pelos testes, sem Redis). */
+  /** Empresas com planta ou parcela a receber (também usado pelos testes, sem Redis). */
   async scanAllTenants(): Promise<{ tenants: number }> {
-    const tenants = await this.prisma.system.plant.findMany({
-      distinct: ['tenantId'],
-      select: { tenantId: true },
-    });
-    for (const { tenantId } of tenants) {
+    const [withPlants, withReceivables] = await Promise.all([
+      this.prisma.system.plant.findMany({ distinct: ['tenantId'], select: { tenantId: true } }),
+      this.prisma.system.receivable.findMany({
+        where: { status: { in: ['OPEN', 'OVERDUE'] } },
+        distinct: ['tenantId'],
+        select: { tenantId: true },
+      }),
+    ]);
+    const plantTenants = new Set(withPlants.map((t) => t.tenantId));
+    const tenantIds = new Set([...plantTenants, ...withReceivables.map((t) => t.tenantId)]);
+    for (const tenantId of tenantIds) {
       try {
-        await this.context.run({ tenantId }, () => this.scan.scanTenant());
+        await this.context.run({ tenantId }, async () => {
+          if (plantTenants.has(tenantId)) await this.scan.scanTenant();
+          await this.financeScan.scanTenant();
+        });
       } catch (error) {
-        this.logger.error({ err: error, tenantId }, 'Falha na rotina do pós-venda de uma empresa');
+        this.logger.error({ err: error, tenantId }, 'Falha na rotina diária de uma empresa');
       }
     }
-    return { tenants: tenants.length };
+    return { tenants: tenantIds.size };
   }
 }

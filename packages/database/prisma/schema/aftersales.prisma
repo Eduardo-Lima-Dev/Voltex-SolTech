@@ -100,12 +100,16 @@ model Plant {
   createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt             DateTime    @updatedAt @map("updated_at")
 
-  tenant      Tenant            @relation(fields: [tenantId], references: [id])
-  assets      PlantAsset[]
-  events      PlantEvent[]
-  tickets     Ticket[]
-  plans       MaintenancePlan[]
-  omContracts OmContract[]
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  assets            PlantAsset[]
+  events            PlantEvent[]
+  tickets           Ticket[]
+  plans             MaintenancePlan[]
+  omContracts       OmContract[]
+  monitoringLinks   PlantMonitoringLink[]
+  monitoringDaily   MonitoringDaily[]
+  monitoringSnapshot MonitoringSnapshot?
+  monitoringAlarms  MonitoringAlarm[]
 
   @@index([tenantId, status])
   @@index([tenantId, accountId])
