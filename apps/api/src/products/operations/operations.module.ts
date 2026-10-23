@@ -9,6 +9,8 @@ import { AftersalesQueue } from './aftersales/aftersales.queue';
 import { AftersalesScanService } from './aftersales/aftersales-scan.service';
 import { AftersalesDashboardService } from './aftersales/dashboard.service';
 import { MaintenanceService } from './aftersales/maintenance.service';
+import { MonitoringController } from './aftersales/monitoring.controller';
+import { MonitoringService } from './aftersales/monitoring.service';
 import { OmContractsService } from './aftersales/om-contracts.service';
 import { PlantsService } from './aftersales/plants.service';
 import { OperationsSettingsService } from './aftersales/settings.service';
@@ -38,7 +40,7 @@ import { WorkOrdersService } from './work-orders.service';
       }),
     }),
   ],
-  controllers: [OperationsController, AftersalesController],
+  controllers: [OperationsController, AftersalesController, MonitoringController],
   providers: [
     WorkOrderPresenter,
     InstallationsService,
@@ -57,6 +59,7 @@ import { WorkOrdersService } from './work-orders.service';
     PlantsService,
     AftersalesDashboardService,
     AftersalesScanService,
+    MonitoringService,
     AftersalesQueue,
   ],
   exports: [
