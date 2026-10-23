@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { DocumentsModule } from '../../platform/documents/documents.module';
 import { CalculatorModule } from '../calculator/calculator.module';
 import { AutomationsService } from './automations/automations.service';
-import { FinanceController } from './finance/finance.controller';
+import { FinanceController, FinanceOverviewController } from './finance/finance.controller';
+import { FinanceScanService } from './finance/finance-scan.service';
 import { FinanceService } from './finance/finance.service';
 import { ContractsController } from './contracts/contracts.controller';
 import { ContractsService } from './contracts/contracts.service';
+import { SignatureRegistrar } from './contracts/signature-providers';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { DashboardService } from './dashboard/dashboard.service';
 import { HomologationRulesController } from './projects/homologation-rules.controller';
@@ -23,6 +25,8 @@ import { PdfTextBillParser } from './energy-bills/pdf-text-bill-parser';
 import { GuardController } from './guard/guard.controller';
 import { GuardService } from './guard/guard.service';
 import { LeadCaptureController, LeadsController, PublicLeadsController } from './leads.controller';
+import { LeadScoringController } from './lead-scoring.controller';
+import { LeadScoringService } from './lead-scoring.service';
 import { LeadsService } from './leads.service';
 import { OpportunitiesController, PipelineController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
@@ -37,12 +41,12 @@ import { TimelineService } from './support/timeline.service';
 import { UserDirectory } from './support/user-directory.service';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
-import { PortalModule } from './portal/portal.module';
 
 @Module({
-  imports: [DocumentsModule, CalculatorModule, PortalModule],
+  imports: [DocumentsModule, CalculatorModule],
   controllers: [
     LeadsController,
+    LeadScoringController,
     LeadCaptureController,
     PublicLeadsController,
     AccountsController,
@@ -60,12 +64,14 @@ import { PortalModule } from './portal/portal.module';
     ProposalsController,
     PublicProposalsController,
     FinanceController,
+    FinanceOverviewController,
   ],
   providers: [
     UserDirectory,
     TimelineService,
     PipelineService,
     LeadsService,
+    LeadScoringService,
     AccountsService,
     OpportunitiesService,
     TasksService,
@@ -79,13 +85,17 @@ import { PortalModule } from './portal/portal.module';
     HomologationRulesService,
     ProjectsService,
     ContractsService,
+    SignatureRegistrar,
     DashboardService,
     PrivacyService,
     AutomationsService,
     FinanceService,
+    FinanceScanService,
     { provide: BILL_PARSER, useExisting: PdfTextBillParser },
   ],
   exports: [
+    FinanceScanService,
+    FinanceService,
     OpportunitiesService,
     TimelineService,
     UserDirectory,

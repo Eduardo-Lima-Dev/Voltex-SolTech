@@ -99,6 +99,8 @@ Pré-requisitos: bateria, controlador, inversor off-grid e módulo **aprovados**
 
 ## Fase 11 — Operação, campo e integrações
 
+> **Roteiro completo, com os dados a digitar em cada campo e clientes já criados por script: [roteiro-fase-11.md](roteiro-fase-11.md).** O texto abaixo é o resumo anterior, por sub-fase.
+
 Pré-requisitos: um contrato assinado (projeto criado) e um usuário com perfil **Operação**; um **Instalador** (e uma equipe com ele); no celular, o navegador com a aplicação publicada em HTTPS (câmera, GPS e instalação como app só funcionam assim).
 
 **11A — Integrações e comunicações**

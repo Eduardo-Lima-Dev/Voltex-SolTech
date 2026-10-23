@@ -218,20 +218,25 @@ function NavSubmenu({ base, label, icon: Icon, items, onNavigate }: NavSubmenuPr
       </SidebarMenuButton>
       {open ? (
         <ul id={listId} className="mt-1 ml-4 space-y-0.5 border-l border-sidebar-border pl-2">
-          {items.map((item) => (
-            <li key={item.to}>
-              <SidebarMenuButton asChild>
-                <NavLink
-                  to={item.to}
-                  onClick={onNavigate}
-                  className={({ isActive }) => navClass(isActive)}
-                >
-                  <item.icon />
-                  {item.label}
-                </NavLink>
-              </SidebarMenuButton>
-            </li>
-          ))}
+          {items.map((item) => {
+            // A tela continua marcada nas subtelas (ficha do lead, da conta, do projeto…): vale o prefixo do caminho.
+            const current = pathname === item.to || pathname.startsWith(`${item.to}/`);
+            return (
+              <li key={item.to}>
+                <SidebarMenuButton asChild isActive={current}>
+                  <NavLink
+                    to={item.to}
+                    onClick={onNavigate}
+                    aria-current={current ? 'page' : undefined}
+                    className={navClass(current)}
+                  >
+                    <item.icon />
+                    {item.label}
+                  </NavLink>
+                </SidebarMenuButton>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
     </SidebarMenuItem>

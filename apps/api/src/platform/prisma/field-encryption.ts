@@ -36,8 +36,15 @@ const WRITE_OPERATIONS = new Set([
 ]);
 
 type Json = Record<string, unknown>;
-const isObject = (value: unknown): value is Json =>
-  typeof value === 'object' && value !== null && !(value instanceof Date);
+/**
+ * Só objetos "puros" (literais). Instâncias de classe (`Decimal`, `Buffer`, `Date`) passam intactas: reconstruí-las
+ * campo a campo as destruiria.
+ */
+const isObject = (value: unknown): value is Json => {
+  if (typeof value !== 'object' || value === null) return false;
+  const proto = Object.getPrototypeOf(value) as unknown;
+  return proto === Object.prototype || proto === null;
+};
 
 /** O servidor só sobe com o conjunto de chaves válido (validado em `env.ts`). */
 export function createFieldEncryption(ring: Keyring, context: RequestContext) {

@@ -415,3 +415,78 @@ model CommissioningTest {
   @@index([tenantId, recordId, position])
   @@map("commissioning_tests")
 }
+
+// Monitoramento de inversores (Fase 11F): dados de geração, potência e alarmes.
+// Integrados via `IntegrationConnection` (provisor Growatt, SolarEdge, etc).
+
+model PlantMonitoringLink {
+  id               String              @id @default(uuid(7)) @db.Uuid
+  tenantId         String              @map("tenant_id") @db.Uuid
+  plantId          String              @map("plant_id") @db.Uuid
+  connectionId     String              @map("connection_id") @db.Uuid
+  externalPlantId  String              @map("external_plant_id")
+  addedAt          DateTime            @default(now()) @map("added_at")
+
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
+  plant      Plant                   @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  connection IntegrationConnection   @relation(fields: [connectionId], references: [id])
+
+  @@unique([plantId, connectionId])
+  @@index([tenantId, plantId])
+  @@index([tenantId, connectionId])
+  @@map("plant_monitoring_links")
+}
+
+model MonitoringDaily {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  plantId      String    @map("plant_id") @db.Uuid
+  date         DateTime  @db.Date
+  kwhGenerated Decimal   @map("kwh_generated") @db.Decimal(10, 2)
+  source       String
+  receivedAt   DateTime  @default(now()) @map("received_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([plantId, date, source])
+  @@index([tenantId, plantId, date])
+  @@map("monitoring_daily")
+}
+
+model MonitoringSnapshot {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  plantId   String    @map("plant_id") @db.Uuid
+  /// Potência instantânea em kW.
+  powerKw   Decimal   @map("power_kw") @db.Decimal(10, 2)
+  status    String
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([plantId])
+  @@index([tenantId, plantId])
+  @@map("monitoring_snapshots")
+}
+
+model MonitoringAlarm {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  plantId     String     @map("plant_id") @db.Uuid
+  code        String
+  text        String
+  severity    String
+  openedAt    DateTime   @map("opened_at")
+  closedAt    DateTime?  @map("closed_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  /// A mesma ocorrência lida de novo não duplica.
+  @@unique([plantId, code, openedAt])
+  @@index([tenantId, plantId, openedAt])
+  @@index([tenantId, closedAt])
+  @@map("monitoring_alarms")
+}

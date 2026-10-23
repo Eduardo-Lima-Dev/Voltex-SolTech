@@ -7,6 +7,55 @@ import type {
   CreateSnapshotInput,
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
+import type {
+  LeadScoringConfig,
+  LeadScoringConfigInput,
+  MfaChallengeDto,
+  MfaConfirmInput,
+  MfaDisableInput,
+  MfaLoginConfirmInput,
+  MfaPolicy,
+  MfaPolicyInput,
+  MfaRecoveryDto,
+  MfaSetupDto,
+  MfaStatusDto,
+  MfaVerifyInput,
+  AddPortalTicketCommentInput,
+  CreatePortalAccessInput,
+  CreatePortalTicketInput,
+  PortalAcceptanceInput,
+  PortalAccessDto,
+  PortalLinkDto,
+  PortalMeDto,
+  PortalProjectDto,
+  PortalProjectSummaryDto,
+  PortalTicketDetailDto,
+  PortalTicketDto,
+  PortalUploadDto,
+  PortalUploadReviewDto,
+  ReviewPortalUploadInput,
+  ExternalPlantDto,
+  ImportMonitoringCsvInput,
+  LinkPlantMonitoringInput,
+  MonitoringImportResultDto,
+  PlantMonitoringLinkDto,
+  PlantMonitoringPageDto,
+  CancelReceivableInput,
+  CommissionDto,
+  CommissionPolicyDto,
+  CreateCommissionPolicyInput,
+  CreateCostEntryInput,
+  CreateCreditApplicationInput,
+  CreateReceivableInput,
+  CreditApplicationDto,
+  FinanceOverviewDto,
+  MarkCommissionPaidInput,
+  MarkReceivablePaidInput,
+  ProjectCostEntryDto,
+  ProjectFinancialSummaryDto,
+  ReceivableDto,
+  UpdateCreditStatusInput,
+} from '@voltex/shared';
 import {
   ROUTES,
   type AddCommissioningStringsInput,
@@ -305,8 +354,27 @@ export type AuditQuery = Partial<Omit<ListAuditLogsQuery, 'from' | 'to'>> & {
 export function createEndpoints(client: ApiClient) {
   return {
     auth: {
+      /** Sessão, ou o desafio do segundo fator quando o usuário o usa ou a empresa o exige. */
       login: (input: LoginInput) =>
-        client.post<SessionResponse>(ROUTES.auth.login, input, { auth: false }),
+        client.post<SessionResponse | MfaChallengeDto>(ROUTES.auth.login, input, { auth: false }),
+      mfa: {
+        verify: (input: MfaVerifyInput) =>
+          client.post<SessionResponse>('/auth/mfa/verify', input, { auth: false }),
+        loginSetup: (mfaToken: string) =>
+          client.post<MfaSetupDto>('/auth/mfa/login/setup', { mfaToken }, { auth: false }),
+        loginConfirm: (input: MfaLoginConfirmInput) =>
+          client.post<SessionResponse & MfaRecoveryDto>('/auth/mfa/login/confirm', input, {
+            auth: false,
+          }),
+        status: () => client.get<MfaStatusDto>('/auth/mfa/status'),
+        setup: () => client.post<MfaSetupDto>('/auth/mfa/setup'),
+        confirm: (input: MfaConfirmInput) =>
+          client.post<MfaRecoveryDto>('/auth/mfa/confirm', input),
+        disable: (input: MfaDisableInput) => client.post<void>('/auth/mfa/disable', input),
+        policy: () => client.get<MfaPolicy>('/auth/mfa/policy'),
+        setPolicy: (input: MfaPolicyInput) => client.put<MfaPolicy>('/auth/mfa/policy', input),
+        resetUser: (userId: string) => client.post<void>(`/auth/mfa/users/${userId}/reset`),
+      },
       logout: () => client.post<void>(ROUTES.auth.logout, undefined, { auth: false }),
       acceptInvitation: (input: AcceptInvitationInput) =>
         client.post<SessionResponse>(ROUTES.invitations.accept, input, { auth: false }),
@@ -805,6 +873,40 @@ export function createEndpoints(client: ApiClient) {
         updateSettings: (input: OperationsSettingsInput) =>
           client.put<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`, input),
         scan: () => client.post<unknown>(`${ROUTES.operations}/aftersales/scan`),
+        monitoring: {
+          page: (plantId: string) =>
+            client.get<PlantMonitoringPageDto>(`${ROUTES.operations}/plants/${plantId}/monitoring`),
+          connections: (plantId: string) =>
+            client.get<
+              {
+                id: string;
+                label: string;
+                provider: string;
+                providerLabel: string;
+                status: string;
+                canListPlants: boolean;
+              }[]
+            >(`${ROUTES.operations}/plants/${plantId}/monitoring/connections`),
+          externalPlants: (plantId: string, connectionId: string) =>
+            client.get<ExternalPlantDto[]>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/external-plants`,
+              { query: { connectionId } },
+            ),
+          link: (plantId: string, input: LinkPlantMonitoringInput) =>
+            client.post<PlantMonitoringLinkDto>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/links`,
+              input,
+            ),
+          unlink: (plantId: string, linkId: string) =>
+            client.delete<void>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/links/${linkId}`,
+            ),
+          importCsv: (plantId: string, input: ImportMonitoringCsvInput) =>
+            client.post<MonitoringImportResultDto>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/import`,
+              input,
+            ),
+        },
         plants: {
           list: (query: Partial<ListPlantsQuery> = {}) =>
             client.get<Paginated<PlantSummaryDto>>(`${ROUTES.operations}/plants`, {
@@ -948,6 +1050,12 @@ export function createEndpoints(client: ApiClient) {
       },
       scanTariffs: () => client.post<TariffScanResultDto>(`${ROUTES.dataHub}/tariffs/scan`),
     },
+    leadScoring: {
+      get: () => client.get<LeadScoringConfig>('/lead-scoring/config'),
+      save: (input: LeadScoringConfigInput) =>
+        client.put<LeadScoringConfig>('/lead-scoring/config', input),
+      rescore: () => client.post<{ updated: number }>('/lead-scoring/rescore'),
+    },
     leads: {
       list: (query: Partial<ListLeadsQuery>) =>
         client.get<Paginated<LeadDto>>(ROUTES.leads, { query: query as QueryParams }),
@@ -1088,6 +1196,49 @@ export function createEndpoints(client: ApiClient) {
       changeStatus: (id: string, input: ChangeProjectStatusInput) =>
         client.post<ProjectDto>(`${ROUTES.projects}/${id}/status`, input),
     },
+    finance: {
+      overview: () => client.get<FinanceOverviewDto>('/finance/overview'),
+      summary: (projectId: string) =>
+        client.get<ProjectFinancialSummaryDto>(`${ROUTES.projects}/${projectId}/finance/summary`),
+      createReceivable: (projectId: string, input: CreateReceivableInput) =>
+        client.post<ReceivableDto>(`${ROUTES.projects}/${projectId}/finance/receivables`, input),
+      payReceivable: (projectId: string, id: string, input: MarkReceivablePaidInput) =>
+        client.post<ReceivableDto>(
+          `${ROUTES.projects}/${projectId}/finance/receivables/${id}/pay`,
+          input,
+        ),
+      cancelReceivable: (projectId: string, id: string, input: CancelReceivableInput) =>
+        client.post<ReceivableDto>(
+          `${ROUTES.projects}/${projectId}/finance/receivables/${id}/cancel`,
+          input,
+        ),
+      addCost: (projectId: string, input: CreateCostEntryInput) =>
+        client.post<ProjectCostEntryDto>(`${ROUTES.projects}/${projectId}/finance/costs`, input),
+      removeCost: (projectId: string, id: string) =>
+        client.delete<void>(`${ROUTES.projects}/${projectId}/finance/costs/${id}`),
+      createCredit: (projectId: string, input: CreateCreditApplicationInput) =>
+        client.post<CreditApplicationDto>(
+          `${ROUTES.projects}/${projectId}/finance/credit-applications`,
+          input,
+        ),
+      creditStatus: (projectId: string, id: string, input: UpdateCreditStatusInput) =>
+        client.post<CreditApplicationDto>(
+          `${ROUTES.projects}/${projectId}/finance/credit-applications/${id}/status`,
+          input,
+        ),
+      recalculateCommissions: (projectId: string) =>
+        client.post<CommissionDto[]>(
+          `${ROUTES.projects}/${projectId}/finance/commissions/recalculate`,
+        ),
+      payCommission: (projectId: string, id: string, input: MarkCommissionPaidInput) =>
+        client.post<CommissionDto>(
+          `${ROUTES.projects}/${projectId}/finance/commissions/${id}/pay`,
+          input,
+        ),
+      policies: () => client.get<CommissionPolicyDto[]>('/finance/commission-policies'),
+      createPolicy: (input: CreateCommissionPolicyInput) =>
+        client.post<CommissionPolicyDto>('/finance/commission-policies', input),
+    },
     homologation: {
       list: () => client.get<HomologationChecklistDto[]>(ROUTES.homologationChecklists),
       effective: (distributorId?: string) =>
@@ -1143,6 +1294,58 @@ export function createEndpoints(client: ApiClient) {
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
     },
+    portalAccess: {
+      list: (accountId: string) =>
+        client.get<PortalAccessDto[]>('/portal-access', { query: { accountId } }),
+      create: (input: CreatePortalAccessInput) =>
+        client.post<PortalAccessDto>('/portal-access', input),
+      deactivate: (id: string) => client.post<PortalAccessDto>(`/portal-access/${id}/deactivate`),
+      link: (id: string) => client.post<PortalLinkDto>(`/portal-access/${id}/link`),
+      uploads: (status: 'PENDING' | 'ACCEPTED' | 'REJECTED' = 'PENDING') =>
+        client.get<PortalUploadReviewDto[]>('/portal-access/uploads', { query: { status } }),
+      review: (id: string, input: ReviewPortalUploadInput) =>
+        client.post<PortalUploadReviewDto>(`/portal-access/uploads/${id}/review`, input),
+    },
+    // Área do cliente: cookie próprio da sessão do portal, sem o login interno (`auth: false`).
+    portal: {
+      requestLink: (email: string) =>
+        client.post<{ message: string }>('/public/portal/request-link', { email }, { auth: false }),
+      exchange: (token: string) =>
+        client.post<{ expiresAt: string }>('/public/portal/exchange', { token }, { auth: false }),
+      me: () => client.get<PortalMeDto>('/portal/me', { auth: false }),
+      logout: () => client.post<void>('/portal/logout', undefined, { auth: false }),
+      projects: () => client.get<PortalProjectSummaryDto[]>('/portal/projects', { auth: false }),
+      project: (id: string) =>
+        client.get<PortalProjectDto>(`/portal/projects/${id}`, { auth: false }),
+      downloadUrl: (projectId: string, documentId: string) =>
+        client.get<{ url: string }>(
+          `/portal/projects/${projectId}/documents/${documentId}/download`,
+          {
+            auth: false,
+          },
+        ),
+      accept: (projectId: string, input: PortalAcceptanceInput) =>
+        client.post<PortalProjectDto>(`/portal/projects/${projectId}/acceptance`, input, {
+          auth: false,
+        }),
+      upload: (projectId: string, file: File, note?: string) => {
+        const form = new FormData();
+        form.set('file', file);
+        if (note) form.set('note', note);
+        return client.upload<PortalUploadDto>(`/portal/projects/${projectId}/uploads`, form, {
+          auth: false,
+        });
+      },
+      tickets: () => client.get<PortalTicketDto[]>('/portal/tickets', { auth: false }),
+      ticket: (id: string) =>
+        client.get<PortalTicketDetailDto>(`/portal/tickets/${id}`, { auth: false }),
+      createTicket: (input: CreatePortalTicketInput) =>
+        client.post<PortalTicketDto>('/portal/tickets', input, { auth: false }),
+      comment: (id: string, input: AddPortalTicketCommentInput) =>
+        client.post<PortalTicketDetailDto>(`/portal/tickets/${id}/comments`, input, {
+          auth: false,
+        }),
+    },
     publicEngineering: {
       get: (token: string) =>
         client.get<PublicEngineeringReportDto>(`/public/engineering/${token}`, { auth: false }),
@@ -1159,6 +1362,8 @@ export function createEndpoints(client: ApiClient) {
         client.post<PrivacyRequestDto>(`${ROUTES.privacy}/erasures`, input),
     },
     documents: {
+      downloadUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`/documents/${id}/download-url`),
       upload: (file: File, target?: { entityType?: string; entityId?: string }) => {
         const form = new FormData();
         form.append('file', file);

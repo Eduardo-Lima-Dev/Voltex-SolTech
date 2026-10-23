@@ -51,6 +51,12 @@ export const PERMISSIONS = [
   'crm.project.read',
   'crm.project.write',
   'crm.finance.read',
+  /** Lançar parcelas, custos, crédito e comissões do projeto; dar baixa manual nos recebimentos. */
+  'crm.finance.write',
+  /** Liberar e revogar o acesso do cliente ao portal (link mágico). */
+  'crm.portal.manage',
+  /** Critérios de pontuação e regras de distribuição de leads. */
+  'crm.lead-scoring.manage',
   'crm.dashboard.read',
   // Solar Calculator
   'calculator.session.read',
@@ -123,6 +129,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     ),
     'crm.pipeline.manage',
     'crm.project.read',
+    'crm.portal.manage',
+    'crm.lead-scoring.manage',
     ...startsWith('calculator.'),
     'platform.user.read',
     'platform.document.read',
@@ -144,6 +152,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   ],
   [Role.SALESPERSON]: [
     'platform.communication.send',
+    'crm.portal.manage',
     'crm.lead.read',
     'crm.lead.write',
     'crm.account.read',
@@ -244,6 +253,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'ops.plant.read',
     'platform.communication.send',
     'crm.finance.read',
+    'crm.finance.write',
     'crm.margin.read',
     'crm.guard.read',
     'crm.opportunity.read',

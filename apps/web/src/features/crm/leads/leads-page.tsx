@@ -138,6 +138,13 @@ function SlaCell({ lead }: { lead: LeadDto }) {
   );
 }
 
+const SCORE_KEY_LABELS: Record<string, string> = {
+  SOURCE: 'Origem',
+  SEGMENT: 'Segmento',
+  STATE: 'Estado',
+  MONTHLY_BILL: 'Conta de luz',
+};
+
 export function LeadsPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -148,6 +155,7 @@ export function LeadsPage() {
   const [source, setSource] = useState<'' | LeadSource>('');
   const [segment, setSegment] = useState<'' | CustomerSegment>('');
   const [slaOnly, setSlaOnly] = useState(false);
+  const [sort, setSort] = useState<'recent' | 'score'>('recent');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search.trim());
 
@@ -158,7 +166,7 @@ export function LeadsPage() {
   const [disqualifying, setDisqualifying] = useState<LeadDto | null>(null);
   const [deleting, setDeleting] = useState<LeadDto | null>(null);
 
-  const filters = { page, search: debouncedSearch, status, source, segment, slaOnly };
+  const filters = { page, search: debouncedSearch, status, source, segment, slaOnly, sort };
   const list = useQuery({
     queryKey: queryKeys.leads(filters),
     queryFn: () =>
@@ -170,6 +178,7 @@ export function LeadsPage() {
         source: source || undefined,
         segment: segment || undefined,
         slaBreached: slaOnly ? true : undefined,
+        sort,
       }),
     placeholderData: keepPreviousData,
   });
@@ -230,7 +239,7 @@ export function LeadsPage() {
           </Can>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1fr)_11rem_10rem_12rem_10rem]">
+          <div className="mb-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]">
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -282,6 +291,14 @@ export function LeadsPage() {
               ))}
             </NativeSelect>
             <NativeSelect
+              aria-label="Ordenar leads"
+              value={sort}
+              onChange={(e) => reset(setSort)(e.target.value as 'recent' | 'score')}
+            >
+              <option value="recent">Mais recentes</option>
+              <option value="score">Maior pontuação</option>
+            </NativeSelect>
+            <NativeSelect
               aria-label="Filtrar por prazo de contato"
               value={slaOnly ? 'breached' : ''}
               onChange={(e) => reset(setSlaOnly)(e.target.value === 'breached')}
@@ -306,6 +323,7 @@ export function LeadsPage() {
                   <TableRow>
                     <TableHead>Lead</TableHead>
                     <TableHead>Origem</TableHead>
+                    <TableHead>Pontuação</TableHead>
                     <TableHead>Situação</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Primeiro contato</TableHead>
@@ -317,7 +335,7 @@ export function LeadsPage() {
                 <TableBody>
                   {list.data.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                         {debouncedSearch || status || source || segment || slaOnly
                           ? 'Nenhum lead encontrado com esses filtros.'
                           : 'Nenhum lead ainda. Cadastre, importe uma planilha ou ligue o formulário do seu site.'}
@@ -337,6 +355,29 @@ export function LeadsPage() {
                             </div>
                           </TableCell>
                           <TableCell>{LEAD_SOURCE_LABELS[lead.source]}</TableCell>
+                          <TableCell>
+                            {lead.score === null ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <Badge
+                                variant={
+                                  lead.score >= 70
+                                    ? 'green'
+                                    : lead.score >= 40
+                                      ? 'yellow'
+                                      : 'secondary'
+                                }
+                                title={lead.scoreBreakdown
+                                  ?.map(
+                                    (b) =>
+                                      `${SCORE_KEY_LABELS[b.key] ?? b.key}: ${b.points} pts (peso ${b.weight})`,
+                                  )
+                                  .join('\n')}
+                              >
+                                {lead.score}
+                              </Badge>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Badge variant={STATUS_BADGE[lead.status]}>
                               {LEAD_STATUS_LABELS[lead.status]}
