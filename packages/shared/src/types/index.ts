@@ -205,3 +205,4 @@ export * from './integrations.js';
 export * from './operations.js';
 export * from './commissioning.js';
 export * from './aftersales.js';
+export * from './monitoring.js';
