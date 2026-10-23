@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import type { PortalProjectDto } from '@voltex/shared';
-import { API, makeSession } from '@/test/fixtures';
+import { API } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 

@@ -184,7 +184,9 @@ export function AccountDetailPage() {
         </div>
       </header>
 
-      <PortalCard accountId={data.id} accountName={data.name} contacts={data.contacts} />
+      <Can permission="crm.portal.manage">
+        <PortalCard accountId={data.id} accountName={data.name} contacts={data.contacts} />
+      </Can>
 
       <Card>
         <CardHeader className="flex-row items-start justify-between space-y-0">
