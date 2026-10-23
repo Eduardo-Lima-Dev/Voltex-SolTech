@@ -1,0 +1,145 @@
+// Integration Hub (Fase 11A, ADR-0019): conexões por empresa com serviços externos (monitoramento de inversores,
+// assinatura eletrônica), execuções com retentativa, fila de falhas e histórico de comunicações.
+// As credenciais ficam CIFRADAS por empresa (extensão de criptografia do Prisma) e nunca voltam pela API.
+
+enum IntegrationKind {
+  MONITORING
+  SIGNATURE
+
+  @@map("integration_kind")
+}
+
+enum IntegrationStatus {
+  /// Cadastrada, mas ainda não ligada pela empresa.
+  DISABLED
+  ACTIVE
+  /// Pausada por falhas seguidas ou por decisão do administrador.
+  PAUSED
+
+  @@map("integration_status")
+}
+
+enum IntegrationHealth {
+  UNKNOWN
+  GREEN
+  YELLOW
+  RED
+
+  @@map("integration_health")
+}
+
+enum IntegrationRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  /// Provedor desligado no servidor, conexão pausada ou orçamento de chamadas esgotado: nada foi buscado.
+  SKIPPED
+
+  @@map("integration_run_status")
+}
+
+enum CommunicationChannel {
+  EMAIL
+  /// Link wa.me aberto pelo usuário no próprio aparelho: o servidor não envia nada.
+  WHATSAPP_LINK
+  COPY_LINK
+
+  @@map("communication_channel")
+}
+
+/// Conta de uma empresa em um provedor externo (ex.: SolarEdge, DocuSeal).
+model IntegrationConnection {
+  id                  String            @id @default(uuid(7)) @db.Uuid
+  tenantId            String            @map("tenant_id") @db.Uuid
+  /// Chave do adaptador no registro do código (ex.: `solaredge`).
+  provider            String
+  kind                IntegrationKind
+  label               String
+  status              IntegrationStatus @default(DISABLED)
+  /// Copiado do adaptador na criação: `false` = endpoint não oficial (exige aceite dos termos).
+  official            Boolean
+  /// Credenciais cifradas (JSON). Nunca devolvidas pela API: só um resumo mascarado.
+  credentials         Json
+  config              Json              @default("{}")
+  health              IntegrationHealth @default(UNKNOWN)
+  consecutiveFailures Int               @default(0) @map("consecutive_failures")
+  lastSyncAt          DateTime?         @map("last_sync_at")
+  lastError           String?           @map("last_error")
+  /// Aceite explícito dos termos de uso do provedor (obrigatório para os não oficiais).
+  termsAcceptedById   String?           @map("terms_accepted_by_id") @db.Uuid
+  termsAcceptedAt     DateTime?         @map("terms_accepted_at")
+  createdById         String?           @map("created_by_id") @db.Uuid
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  deletedAt           DateTime?         @map("deleted_at")
+
+  tenant      Tenant                  @relation(fields: [tenantId], references: [id])
+  runs        IntegrationRun[]
+  deadLetters IntegrationDeadLetter[]
+
+  @@unique([tenantId, provider, label])
+  @@index([tenantId, kind, status])
+  @@map("integration_connections")
+}
+
+model IntegrationRun {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  tenantId     String               @map("tenant_id") @db.Uuid
+  connectionId String               @map("connection_id") @db.Uuid
+  /// `SYNC`, `TEST` ou `MANUAL_IMPORT`.
+  trigger      String
+  status       IntegrationRunStatus @default(RUNNING)
+  attempt      Int                  @default(1)
+  startedAt    DateTime             @default(now()) @map("started_at")
+  finishedAt   DateTime?            @map("finished_at")
+  error        String?
+  summary      Json                 @default("{}")
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  connection IntegrationConnection @relation(fields: [connectionId], references: [id])
+
+  @@index([tenantId, connectionId, startedAt])
+  @@map("integration_runs")
+}
+
+/// Trabalho que esgotou as tentativas. Fica à espera de reprocessamento por uma pessoa.
+model IntegrationDeadLetter {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  connectionId String    @map("connection_id") @db.Uuid
+  payload      Json
+  error        String
+  attempts     Int
+  createdAt    DateTime  @default(now()) @map("created_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  resolvedById String?   @map("resolved_by_id") @db.Uuid
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  connection IntegrationConnection @relation(fields: [connectionId], references: [id])
+
+  @@index([tenantId, resolvedAt])
+  @@map("integration_dead_letters")
+}
+
+/// Registro de toda saída de comunicação iniciada por uma pessoa (e-mail, link do WhatsApp, link copiado).
+/// O destinatário é dado pessoal: entra na anonimização por titular.
+model CommunicationLog {
+  id         String               @id @default(uuid(7)) @db.Uuid
+  tenantId   String               @map("tenant_id") @db.Uuid
+  channel    CommunicationChannel
+  /// Modelo usado (ex.: `portal.access`, `installation.scheduled`).
+  template   String
+  recipient  String?
+  subject    String?
+  entityType String?              @map("entity_type")
+  entityId   String?              @map("entity_id") @db.Uuid
+  accountId  String?              @map("account_id") @db.Uuid
+  sentById   String?              @map("sent_by_id") @db.Uuid
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, accountId])
+  @@map("communication_logs")
+}

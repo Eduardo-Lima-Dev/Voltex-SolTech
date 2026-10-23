@@ -3,6 +3,7 @@ import {
   Calculator,
   CircuitBoard,
   Handshake,
+  HardHat,
   type LucideIcon,
 } from 'lucide-react';
 import { Product, type Permission } from '@voltex/shared';
@@ -81,6 +82,21 @@ export const PRODUCTS: readonly ProductDef[] = [
       'Autonomia, banco de baterias e simulação horária',
       'Controlador, inversor, gerador e rede (híbrido sem injeção)',
       'Cenários, custo e aprovação técnica',
+    ],
+  },
+  {
+    id: Product.OPERATIONS,
+    name: PRODUCT_LABELS.OPERATIONS,
+    path: '/operations',
+    icon: HardHat,
+    tagline: 'Da obra homologada à planta entregue.',
+    permission: 'ops.installation.read',
+    availability: { status: 'available' },
+    highlights: [
+      'Instalação com materiais, compras e recebimento',
+      'Equipes, agenda e ordens de serviço',
+      'Pendências de campo e histórico',
+      'Painel de execução da operação',
     ],
   },
 ];

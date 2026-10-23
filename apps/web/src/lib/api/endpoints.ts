@@ -9,6 +9,83 @@ import type {
 } from '@voltex/solar-engine';
 import {
   ROUTES,
+  type AddCommissioningStringsInput,
+  type CommissioningRecordDto,
+  type CommissioningStatus,
+  type CommissioningTestDto,
+  type DecideCommissioningInput,
+  type RecordMeasurementInput,
+  type RegisterAcceptanceInput,
+  type UpdateCommissioningInput,
+  type FieldActionInput,
+  type FieldSyncResultDto,
+  type FieldWorkOrderDto,
+  type WorkOrderPhotoDto,
+  type AddTicketCommentInput,
+  type AftersalesDashboardDto,
+  type ChangeTicketStatusInput,
+  type CreateAssetInput,
+  type CreateMaintenancePlanInput,
+  type CreateManualWarrantyInput,
+  type CreateOmContractInput,
+  type CreateTicketInput,
+  type CreateTicketWorkOrderInput,
+  type CreateWarrantyTermInput,
+  type ListPlantsQuery,
+  type ListTicketsQuery,
+  type ListWarrantiesQuery,
+  type MaintenancePlanDto,
+  type OmContractDto,
+  type OperationsSettingsDto,
+  type OperationsSettingsInput,
+  type PlantDetailDto,
+  type PlantSummaryDto,
+  type ReplaceAssetInput,
+  type TicketDetailDto,
+  type TicketSummaryDto,
+  type UpdateAssetInput,
+  type UpdateMaintenancePlanInput,
+  type UpdateOmContractInput,
+  type UpdatePlantInput,
+  type UpdateTicketInput,
+  type WarrantyRowDto,
+  type WarrantyTermDto,
+  type AgendaDto,
+  type CancelWorkOrderInput,
+  type ChangeInstallationStatusInput,
+  type CompleteWorkOrderInput,
+  type CreateCrewInput,
+  type CreateFieldIssueInput,
+  type CreateMaterialItemInput,
+  type CreateWorkOrderInput,
+  type CrewDto,
+  type FieldIssueDto,
+  type InstallationDetailDto,
+  type InstallationSummaryDto,
+  type ListInstallationsQuery,
+  type MaterialItemDto,
+  type MaterialQuoteDto,
+  type OperationsDashboardDto,
+  type OrderMaterialItemInput,
+  type ResolveFieldIssueInput,
+  type UpdateCrewInput,
+  type UpdateInstallationInput,
+  type UpdateMaterialItemInput,
+  type UpdateWorkOrderInput,
+  type WorkOrderDto,
+  type ActivateIntegrationConnectionInput,
+  type CommunicationLogDto,
+  type CommunicationTemplateDto,
+  type CreateIntegrationConnectionInput,
+  type IntegrationConnectionDto,
+  type IntegrationDeadLetterDto,
+  type IntegrationProviderDto,
+  type IntegrationRunDto,
+  type LogCopiedLinkInput,
+  type SendEmailInput,
+  type UpdateIntegrationConnectionInput,
+  type WhatsAppLinkDto,
+  type WhatsAppLinkInput,
   type ChangeOffgridRequestInput,
   type CreateOffgridProjectInput,
   type CreateOffgridRequestInput,
@@ -562,6 +639,272 @@ export function createEndpoints(client: ApiClient) {
           query: { dryRun: String(dryRun) },
         });
       },
+    },
+    integrations: {
+      providers: () => client.get<IntegrationProviderDto[]>(`${ROUTES.integrations}/providers`),
+      connections: {
+        list: () => client.get<IntegrationConnectionDto[]>(`${ROUTES.integrations}/connections`),
+        create: (input: CreateIntegrationConnectionInput) =>
+          client.post<IntegrationConnectionDto>(`${ROUTES.integrations}/connections`, input),
+        update: (id: string, input: UpdateIntegrationConnectionInput) =>
+          client.patch<IntegrationConnectionDto>(`${ROUTES.integrations}/connections/${id}`, input),
+        activate: (id: string, input: ActivateIntegrationConnectionInput) =>
+          client.post<IntegrationConnectionDto>(
+            `${ROUTES.integrations}/connections/${id}/activate`,
+            input,
+          ),
+        pause: (id: string) =>
+          client.post<IntegrationConnectionDto>(`${ROUTES.integrations}/connections/${id}/pause`),
+        test: (id: string) =>
+          client.post<{ ok: boolean; message: string; run: IntegrationRunDto }>(
+            `${ROUTES.integrations}/connections/${id}/test`,
+          ),
+        sync: (id: string) =>
+          client.post<{ status: 'SUCCEEDED' | 'FAILED' | 'SKIPPED'; error?: string }>(
+            `${ROUTES.integrations}/connections/${id}/sync`,
+          ),
+        remove: (id: string) =>
+          client.delete<{ id: string }>(`${ROUTES.integrations}/connections/${id}`),
+      },
+      runs: (connectionId?: string) =>
+        client.get<IntegrationRunDto[]>(`${ROUTES.integrations}/runs`, {
+          query: (connectionId ? { connectionId, limit: '30' } : { limit: '30' }) as QueryParams,
+        }),
+      deadLetters: {
+        list: () => client.get<IntegrationDeadLetterDto[]>(`${ROUTES.integrations}/dead-letters`),
+        retry: (id: string) =>
+          client.post<{ resolved: boolean }>(`${ROUTES.integrations}/dead-letters/${id}/retry`),
+        dismiss: (id: string) =>
+          client.post<{ id: string }>(`${ROUTES.integrations}/dead-letters/${id}/dismiss`),
+      },
+    },
+    operations: {
+      dashboard: () => client.get<OperationsDashboardDto>(`${ROUTES.operations}/dashboard`),
+      installations: {
+        list: (query: Partial<ListInstallationsQuery> = {}) =>
+          client.get<Paginated<InstallationSummaryDto>>(`${ROUTES.operations}/installations`, {
+            query: query as QueryParams,
+          }),
+        get: (id: string) =>
+          client.get<InstallationDetailDto>(`${ROUTES.operations}/installations/${id}`),
+        update: (id: string, input: UpdateInstallationInput) =>
+          client.patch<InstallationDetailDto>(`${ROUTES.operations}/installations/${id}`, input),
+        changeStatus: (id: string, input: ChangeInstallationStatusInput) =>
+          client.post<InstallationDetailDto>(
+            `${ROUTES.operations}/installations/${id}/status`,
+            input,
+          ),
+        reconcile: () =>
+          client.post<{ created: number }>(`${ROUTES.operations}/installations/reconcile`),
+      },
+      commissioning: {
+        forInstallation: (installationId: string) =>
+          client.get<{
+            current: CommissioningRecordDto | null;
+            previous: {
+              id: string;
+              attempt: number;
+              status: CommissioningStatus;
+              decidedAt: string | null;
+              decisionNote: string | null;
+            }[];
+          }>(`${ROUTES.operations}/installations/${installationId}/commissioning`),
+        open: (installationId: string) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/installations/${installationId}/commissioning`,
+          ),
+        update: (id: string, input: UpdateCommissioningInput) =>
+          client.patch<CommissioningRecordDto>(`${ROUTES.operations}/commissioning/${id}`, input),
+        addStrings: (id: string, input: AddCommissioningStringsInput) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/commissioning/${id}/strings`,
+            input,
+          ),
+        recordTest: (testId: string, input: RecordMeasurementInput) =>
+          client.patch<CommissioningTestDto>(
+            `${ROUTES.operations}/commissioning/tests/${testId}`,
+            input,
+          ),
+        submit: (id: string) =>
+          client.post<CommissioningRecordDto>(`${ROUTES.operations}/commissioning/${id}/submit`),
+        decide: (id: string, input: DecideCommissioningInput) =>
+          client.post<CommissioningRecordDto>(
+            `${ROUTES.operations}/commissioning/${id}/decision`,
+            input,
+          ),
+        reportUrl: (id: string) =>
+          client.get<{ url: string; expiresIn: number }>(
+            `${ROUTES.operations}/commissioning/${id}/report`,
+          ),
+      },
+      acceptance: (installationId: string, input: RegisterAcceptanceInput) =>
+        client.post<InstallationDetailDto>(
+          `${ROUTES.operations}/installations/${installationId}/acceptance`,
+          input,
+        ),
+      materials: {
+        add: (installationId: string, input: CreateMaterialItemInput) =>
+          client.post<MaterialItemDto>(
+            `${ROUTES.operations}/installations/${installationId}/materials`,
+            input,
+          ),
+        generate: (installationId: string) =>
+          client.post<{ created: number }>(
+            `${ROUTES.operations}/installations/${installationId}/materials/generate`,
+          ),
+        quotes: (installationId: string) =>
+          client.get<MaterialQuoteDto[]>(
+            `${ROUTES.operations}/installations/${installationId}/materials/quotes`,
+          ),
+        update: (id: string, input: UpdateMaterialItemInput) =>
+          client.patch<MaterialItemDto>(`${ROUTES.operations}/materials/${id}`, input),
+        order: (id: string, input: OrderMaterialItemInput) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/order`, input),
+        receive: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/receive`),
+        separate: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/separate`),
+        cancel: (id: string) =>
+          client.post<MaterialItemDto>(`${ROUTES.operations}/materials/${id}/cancel`),
+      },
+      crews: {
+        list: () => client.get<CrewDto[]>(`${ROUTES.operations}/crews`),
+        create: (input: CreateCrewInput) =>
+          client.post<CrewDto>(`${ROUTES.operations}/crews`, input),
+        update: (id: string, input: UpdateCrewInput) =>
+          client.patch<CrewDto>(`${ROUTES.operations}/crews/${id}`, input),
+      },
+      workOrders: {
+        create: (input: CreateWorkOrderInput) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders`, input),
+        update: (id: string, input: UpdateWorkOrderInput) =>
+          client.patch<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}`, input),
+        cancel: (id: string, input: CancelWorkOrderInput) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/cancel`, input),
+        start: (id: string) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/start`),
+        complete: (id: string, input: CompleteWorkOrderInput = {}) =>
+          client.post<WorkOrderDto>(`${ROUTES.operations}/work-orders/${id}/complete`, input),
+      },
+      agenda: (query: { from: string; to: string; crewId?: string }) =>
+        client.get<AgendaDto>(`${ROUTES.operations}/agenda`, { query: query as QueryParams }),
+      issues: {
+        create: (installationId: string, input: CreateFieldIssueInput) =>
+          client.post<FieldIssueDto>(
+            `${ROUTES.operations}/installations/${installationId}/issues`,
+            input,
+          ),
+        resolve: (id: string, input: ResolveFieldIssueInput) =>
+          client.post<FieldIssueDto>(`${ROUTES.operations}/issues/${id}/resolve`, input),
+      },
+      aftersales: {
+        dashboard: () =>
+          client.get<AftersalesDashboardDto>(`${ROUTES.operations}/aftersales/dashboard`),
+        settings: () =>
+          client.get<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`),
+        updateSettings: (input: OperationsSettingsInput) =>
+          client.put<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`, input),
+        scan: () => client.post<unknown>(`${ROUTES.operations}/aftersales/scan`),
+        plants: {
+          list: (query: Partial<ListPlantsQuery> = {}) =>
+            client.get<Paginated<PlantSummaryDto>>(`${ROUTES.operations}/plants`, {
+              query: query as QueryParams,
+            }),
+          get: (id: string) => client.get<PlantDetailDto>(`${ROUTES.operations}/plants/${id}`),
+          update: (id: string, input: UpdatePlantInput) =>
+            client.patch<PlantDetailDto>(`${ROUTES.operations}/plants/${id}`, input),
+          reconcile: () =>
+            client.post<{ created: number }>(`${ROUTES.operations}/plants/reconcile`),
+          addAsset: (id: string, input: CreateAssetInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/plants/${id}/assets`, input),
+        },
+        assets: {
+          update: (id: string, input: UpdateAssetInput) =>
+            client.patch<PlantDetailDto>(`${ROUTES.operations}/assets/${id}`, input),
+          replace: (id: string, input: ReplaceAssetInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/assets/${id}/replace`, input),
+          addWarranty: (id: string, input: CreateManualWarrantyInput) =>
+            client.post<PlantDetailDto>(`${ROUTES.operations}/assets/${id}/warranties`, input),
+        },
+        warranties: {
+          list: (query: Partial<ListWarrantiesQuery> = {}) =>
+            client.get<WarrantyRowDto[]>(`${ROUTES.operations}/warranties`, {
+              query: query as QueryParams,
+            }),
+          remove: (id: string) => client.delete<unknown>(`${ROUTES.operations}/warranties/${id}`),
+          terms: (all = false) =>
+            client.get<WarrantyTermDto[]>(`${ROUTES.operations}/warranty-terms`, {
+              query: { all: String(all) } as QueryParams,
+            }),
+          createTerm: (input: CreateWarrantyTermInput) =>
+            client.post<WarrantyTermDto>(`${ROUTES.operations}/warranty-terms`, input),
+          retireTerm: (id: string) =>
+            client.post<WarrantyTermDto>(`${ROUTES.operations}/warranty-terms/${id}/retire`),
+        },
+        tickets: {
+          list: (query: Partial<ListTicketsQuery> = {}) =>
+            client.get<Paginated<TicketSummaryDto>>(`${ROUTES.operations}/tickets`, {
+              query: query as QueryParams,
+            }),
+          get: (id: string) => client.get<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}`),
+          create: (input: CreateTicketInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets`, input),
+          update: (id: string, input: UpdateTicketInput) =>
+            client.patch<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}`, input),
+          changeStatus: (id: string, input: ChangeTicketStatusInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/status`, input),
+          comment: (id: string, input: AddTicketCommentInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/comments`, input),
+          workOrder: (id: string, input: CreateTicketWorkOrderInput) =>
+            client.post<TicketDetailDto>(`${ROUTES.operations}/tickets/${id}/work-order`, input),
+        },
+        plans: {
+          list: (plantId?: string) =>
+            client.get<MaintenancePlanDto[]>(`${ROUTES.operations}/maintenance-plans`, {
+              query: (plantId ? { plantId } : {}) as QueryParams,
+            }),
+          create: (input: CreateMaintenancePlanInput) =>
+            client.post<MaintenancePlanDto>(`${ROUTES.operations}/maintenance-plans`, input),
+          update: (id: string, input: UpdateMaintenancePlanInput) =>
+            client.patch<MaintenancePlanDto>(`${ROUTES.operations}/maintenance-plans/${id}`, input),
+        },
+        contracts: {
+          list: (status?: 'ACTIVE' | 'EXPIRED' | 'CANCELLED') =>
+            client.get<OmContractDto[]>(`${ROUTES.operations}/om-contracts`, {
+              query: (status ? { status } : {}) as QueryParams,
+            }),
+          create: (input: CreateOmContractInput) =>
+            client.post<OmContractDto>(`${ROUTES.operations}/om-contracts`, input),
+          update: (id: string, input: UpdateOmContractInput) =>
+            client.patch<OmContractDto>(`${ROUTES.operations}/om-contracts/${id}`, input),
+        },
+      },
+    },
+    field: {
+      orders: () => client.get<FieldWorkOrderDto[]>(`${ROUTES.operations}/field/work-orders`),
+      sync: (actions: FieldActionInput[]) =>
+        client.post<FieldSyncResultDto[]>(`${ROUTES.operations}/field/sync`, { actions }),
+      uploadPhoto: (workOrderId: string, form: FormData) =>
+        client.upload<WorkOrderPhotoDto>(
+          `${ROUTES.operations}/field/work-orders/${workOrderId}/photos`,
+          form,
+        ),
+      saveSignature: (workOrderId: string, form: FormData) =>
+        client.upload<{ signedByName: string; signedAt: string }>(
+          `${ROUTES.operations}/field/work-orders/${workOrderId}/signature`,
+          form,
+        ),
+    },
+    communications: {
+      templates: () => client.get<CommunicationTemplateDto[]>(`${ROUTES.communications}/templates`),
+      list: (query: { entityType?: string; entityId?: string; accountId?: string } = {}) =>
+        client.get<CommunicationLogDto[]>(ROUTES.communications, { query: query as QueryParams }),
+      email: (input: SendEmailInput) =>
+        client.post<CommunicationLogDto>(`${ROUTES.communications}/email`, input),
+      whatsAppLink: (input: WhatsAppLinkInput) =>
+        client.post<WhatsAppLinkDto>(`${ROUTES.communications}/whatsapp-link`, input),
+      copiedLink: (input: LogCopiedLinkInput) =>
+        client.post<CommunicationLogDto>(`${ROUTES.communications}/copied-link`, input),
     },
     dataHub: {
       weather: (query: {

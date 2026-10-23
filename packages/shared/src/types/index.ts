@@ -201,3 +201,8 @@ export * from './equipment.js';
 export * from './engineering.js';
 export * from './engineering-management.js';
 export * from './offgrid.js';
+export * from './integrations.js';
+export * from './operations.js';
+export * from './commissioning.js';
+export * from './aftersales.js';
+export * from './finance.js';

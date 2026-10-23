@@ -1,0 +1,161 @@
+// Financeiro por projeto (Fase 11G): recebíveis, custos, comissões e crédito.
+// Manual: sem gateway de pagamento, tudo registrado pela empresa.
+
+enum ReceivableStatus {
+  OPEN
+  PAID
+  OVERDUE
+  CANCELLED
+
+  @@map("receivable_status")
+}
+
+enum CreditApplicationStatus {
+  SIMULATED
+  SENT
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("credit_application_status")
+}
+
+/// Parcela de um contrato: valor, vencimento, situação, forma de pagamento.
+model Receivable {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  projectId     String            @map("project_id") @db.Uuid
+  opportunityId String            @map("opportunity_id") @db.Uuid
+  /// Número da nota fiscal, pedido ou contrato (identificação do recebível).
+  referenceId   String            @map("reference_id")
+  order         Int
+  /// Valor total da parcela (centavos para evitar floating point).
+  amountCents   Int               @map("amount_cents")
+  dueAt         DateTime          @map("due_at")
+  /// Data e forma do pagamento efetivo (e-transferência, boleto, cheque, etc.).
+  paidAt        DateTime?         @map("paid_at")
+  paymentMethod String?           @map("payment_method")
+  /// Comprovante do pagamento (Document).
+  receiptDocumentId String?       @map("receipt_document_id") @db.Uuid
+  status        ReceivableStatus  @default(OPEN)
+  /// Observação (ex: "aguardando cheque", "pagamento em atraso").
+  notes         String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costEntries ProjectCostEntry[]
+
+  @@index([tenantId, projectId, dueAt])
+  @@index([tenantId, status])
+  @@map("receivables")
+}
+
+/// Custo real de um projeto: material, mão de obra, transporte, etc.
+model ProjectCostEntry {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  projectId     String    @map("project_id") @db.Uuid
+  receivableId  String?   @map("receivable_id") @db.Uuid
+  /// Categoria: "MATERIAL", "LABOR", "TRANSPORT", "OTHER".
+  category      String
+  /// Descrição (ex: "Painéis solares", "Instalação").
+  description   String
+  /// Valor estimado no orçamento (centavos).
+  estimatedCents Int?     @map("estimated_cents")
+  /// Valor real da nota fiscal ou recibos.
+  actualCents   Int       @map("actual_cents")
+  supplier      String?
+  documentId    String?   @map("document_id") @db.Uuid
+  recordedAt    DateTime  @default(now()) @map("recorded_at")
+
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  receivable   Receivable? @relation(fields: [receivableId], references: [id])
+
+  @@index([tenantId, projectId])
+  @@map("project_cost_entries")
+}
+
+/// Política de comissão da empresa: base (RECEBIDO ou ASSINADO) e % por perfil.
+/// Sem valor padrão: a empresa define quando tiver política.
+model CommissionPolicy {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  /// Base de cálculo: "RECEIVED" (recebimento efetivo) ou "SIGNED" (assinatura do contrato).
+  base        String
+  /// Pesos por perfil (JSON): { "SALES": 10, "ENGINEER": 2 }.
+  weights     Json      @default("{}")
+  validFrom   DateTime  @map("valid_from") @db.Date
+  validTo     DateTime? @map("valid_to") @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  commissions  Commission[]
+
+  @@index([tenantId, validFrom])
+  @@map("commission_policies")
+}
+
+/// Comissão calculada e paga manualmente: quem, quanto, quando, referência.
+model Commission {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  policyId      String    @map("policy_id") @db.Uuid
+  userId        String?   @map("user_id") @db.Uuid
+  projectId     String?   @map("project_id") @db.Uuid
+  /// Valor da comissão (centavos).
+  amountCents   Int       @map("amount_cents")
+  /// Data de cálculo (mês de referência).
+  calculatedAt  DateTime  @map("calculated_at")
+  /// Data de pagamento efetivo (nulo se pendente).
+  paidAt        DateTime? @map("paid_at")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id])
+  policy   CommissionPolicy  @relation(fields: [policyId], references: [id])
+  project  Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, policyId, calculatedAt])
+  @@index([tenantId, userId, paidAt])
+  @@map("commissions")
+}
+
+/// Simulação ou aplicação de crédito (financiamento): instituição, taxa, prazo, status.
+/// Registro manual de propostas e decisões de crédito.
+model CreditApplication {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  projectId     String                   @map("project_id") @db.Uuid
+  /// Instituição financeira (ex: "Itaú", "Caixa", "Específico").
+  institution   String
+  status        CreditApplicationStatus  @default(SIMULATED)
+  /// Taxa de juros mensais (em %, ex: 1.5).
+  annualRatePct Float?                   @map("annual_rate_pct")
+  /// Prazo em meses.
+  termMonths    Int?                     @map("term_months")
+  /// Valor financiado (centavos).
+  amountCents   Int                      @map("amount_cents")
+  /// Montante total com juros (centavos).
+  totalCents    Int?                     @map("total_cents")
+  /// Pendências para aprovação (falta de documentação, renda insuficiente, etc.).
+  pendencies    Json                     @default("[]")
+  /// Documento da proposta de crédito.
+  documentId    String?                  @map("document_id") @db.Uuid
+  appliedAt     DateTime?                @map("applied_at")
+  respondedAt   DateTime?                @map("responded_at")
+  notes         String?
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, projectId])
+  @@index([tenantId, status])
+  @@map("credit_applications")
+}
