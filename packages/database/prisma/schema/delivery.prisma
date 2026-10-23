@@ -148,12 +148,16 @@ model Project {
   createdAt              DateTime      @default(now()) @map("created_at")
   updatedAt              DateTime      @updatedAt @map("updated_at")
 
-  tenant       Tenant                 @relation(fields: [tenantId], references: [id])
-  opportunity  Opportunity            @relation(fields: [opportunityId], references: [id])
-  contract     Contract               @relation(fields: [contractId], references: [id])
-  distributor  Distributor?           @relation(fields: [distributorId], references: [id])
-  checklist    ProjectChecklistItem[]
-  installation Installation?
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
+  opportunity         Opportunity            @relation(fields: [opportunityId], references: [id])
+  contract            Contract               @relation(fields: [contractId], references: [id])
+  distributor         Distributor?           @relation(fields: [distributorId], references: [id])
+  checklist           ProjectChecklistItem[]
+  installation        Installation?
+  receivables         Receivable[]
+  costEntries         ProjectCostEntry[]
+  commissions         Commission[]
+  creditApplications  CreditApplication[]
 
   @@unique([tenantId, projectCode])
   @@index([tenantId, status])
