@@ -239,7 +239,7 @@ export function LeadsPage() {
           </Can>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1fr)_11rem_10rem_12rem_10rem_10rem]">
+          <div className="mb-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]">
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"

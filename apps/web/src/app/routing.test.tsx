@@ -171,10 +171,21 @@ describe('painel inicial', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('vendedor vê Engine, Off-Grid e Operação como "Sem acesso"', async () => {
+  it('o início do vendedor mostra só o que é dele, sem cartões bloqueados', async () => {
     renderApp('/', { session: makeSession('SALESPERSON') });
     await screen.findByRole('heading', { name: /Olá, Eduardo/ });
-    expect(screen.getAllByText('Sem acesso')).toHaveLength(3);
+    expect(await screen.findByText('Minhas tarefas')).toBeInTheDocument();
+    expect(screen.queryByText('Sem acesso')).not.toBeInTheDocument();
+    expect(screen.queryByText('Financeiro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Instalações')).not.toBeInTheDocument();
+  });
+
+  it('o início do instalador abre com o dia em campo e sem dados comerciais', async () => {
+    renderApp('/', { session: makeSession('INSTALLER') });
+    await screen.findByRole('heading', { name: /Olá, Eduardo/ });
+    expect(await screen.findByText('Meu dia em campo')).toBeInTheDocument();
+    expect(screen.queryByText('Comercial')).not.toBeInTheDocument();
+    expect(screen.queryByText('Financeiro')).not.toBeInTheDocument();
   });
 });
 
