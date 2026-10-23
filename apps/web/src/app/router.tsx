@@ -130,6 +130,13 @@ const pageRoutes: RouteObject[] = [
         element: <AppShell />,
         children: [
           {
+            path: 'conta/seguranca',
+            lazy: async () => {
+              const { SecurityPage } = await import('@/features/account/security-page');
+              return { Component: SecurityPage, handle: { title: 'Segurança da conta' } };
+            },
+          },
+          {
             index: true,
             lazy: async () => {
               const { DashboardPage } = await import('@/features/dashboard/dashboard-page');

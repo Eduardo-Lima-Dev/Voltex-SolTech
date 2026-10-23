@@ -8,6 +8,16 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  MfaChallengeDto,
+  MfaConfirmInput,
+  MfaDisableInput,
+  MfaLoginConfirmInput,
+  MfaPolicy,
+  MfaPolicyInput,
+  MfaRecoveryDto,
+  MfaSetupDto,
+  MfaStatusDto,
+  MfaVerifyInput,
   AddPortalTicketCommentInput,
   CreatePortalAccessInput,
   CreatePortalTicketInput,
@@ -342,8 +352,27 @@ export type AuditQuery = Partial<Omit<ListAuditLogsQuery, 'from' | 'to'>> & {
 export function createEndpoints(client: ApiClient) {
   return {
     auth: {
+      /** Sessão, ou o desafio do segundo fator quando o usuário o usa ou a empresa o exige. */
       login: (input: LoginInput) =>
-        client.post<SessionResponse>(ROUTES.auth.login, input, { auth: false }),
+        client.post<SessionResponse | MfaChallengeDto>(ROUTES.auth.login, input, { auth: false }),
+      mfa: {
+        verify: (input: MfaVerifyInput) =>
+          client.post<SessionResponse>('/auth/mfa/verify', input, { auth: false }),
+        loginSetup: (mfaToken: string) =>
+          client.post<MfaSetupDto>('/auth/mfa/login/setup', { mfaToken }, { auth: false }),
+        loginConfirm: (input: MfaLoginConfirmInput) =>
+          client.post<SessionResponse & MfaRecoveryDto>('/auth/mfa/login/confirm', input, {
+            auth: false,
+          }),
+        status: () => client.get<MfaStatusDto>('/auth/mfa/status'),
+        setup: () => client.post<MfaSetupDto>('/auth/mfa/setup'),
+        confirm: (input: MfaConfirmInput) =>
+          client.post<MfaRecoveryDto>('/auth/mfa/confirm', input),
+        disable: (input: MfaDisableInput) => client.post<void>('/auth/mfa/disable', input),
+        policy: () => client.get<MfaPolicy>('/auth/mfa/policy'),
+        setPolicy: (input: MfaPolicyInput) => client.put<MfaPolicy>('/auth/mfa/policy', input),
+        resetUser: (userId: string) => client.post<void>(`/auth/mfa/users/${userId}/reset`),
+      },
       logout: () => client.post<void>(ROUTES.auth.logout, undefined, { auth: false }),
       acceptInvitation: (input: AcceptInvitationInput) =>
         client.post<SessionResponse>(ROUTES.invitations.accept, input, { auth: false }),
