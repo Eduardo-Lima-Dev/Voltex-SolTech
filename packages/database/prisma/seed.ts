@@ -32,6 +32,8 @@ const demoUsers: SeedUser[] = [
   { name: 'Rafael Responsável Técnico', email: 'rt@voltex.demo', role: Role.TECHNICAL_LEAD },
   { name: 'Olivia Operações', email: 'operacao@voltex.demo', role: Role.OPERATIONS },
   { name: 'Fábio Financeiro', email: 'financeiro@voltex.demo', role: Role.FINANCE },
+  { name: 'Igor Instalador', email: 'instalador@voltex.demo', role: Role.INSTALLER },
+  { name: 'Paula Pós-venda', email: 'posvenda@voltex.demo', role: Role.OM },
 ];
 
 /** Segundo tenant, usado para testar manualmente o isolamento entre empresas. */
