@@ -1,0 +1,58 @@
+// Portal do cliente (Fase 11H): acesso por link mágico, sessão, visualização de projeto.
+
+/// Registro de acesso ao portal por conta e contato.
+model PortalAccess {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  email     String
+  active    Boolean   @default(true)
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([accountId, email])
+  @@index([tenantId, accountId])
+  @@map("portal_accesses")
+}
+
+/// Link mágico: token único, expira em 30 min, uso único.
+/// Hash do token guardado (nunca o token em texto claro).
+model PortalMagicLink {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  /// SHA-256(token), nunca guardamos o token em texto claro.
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  ip        String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tokenHash])
+  @@index([tenantId, accountId, expiresAt])
+  @@map("portal_magic_links")
+}
+
+/// Sessão do cliente: cookie httpOnly, SameSite=Strict, expira em 12h, revogável.
+model PortalSession {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  accountId String    @map("account_id") @db.Uuid
+  /// SHA-256(sessionToken).
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  ip        String?
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tokenHash])
+  @@index([tenantId, accountId, revokedAt])
+  @@map("portal_sessions")
+}

@@ -131,6 +131,9 @@ model Tenant {
   commissionPolicies          CommissionPolicy[]
   commissions                 Commission[]
   creditApplications          CreditApplication[]
+  portalAccesses              PortalAccess[]
+  portalMagicLinks            PortalMagicLink[]
+  portalSessions              PortalSession[]
 
   @@map("tenants")
 }
