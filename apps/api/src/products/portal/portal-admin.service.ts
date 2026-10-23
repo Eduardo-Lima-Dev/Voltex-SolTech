@@ -69,7 +69,7 @@ export class PortalAdminService {
           action: 'portal.access_granted',
           entity: 'PortalAccess',
           entityId: saved.id,
-          after: { accountId: input.accountId, email },
+          after: { accountId: input.accountId },
         },
         tx,
       );
