@@ -197,6 +197,8 @@ model User {
   mfaSecret    String?   @map("mfa_secret")
   mfaRecoveryCodes Json? @map("mfa_recovery_codes")
   mfaEnabledAt DateTime? @map("mfa_enabled_at")
+  /// Último passo TOTP aceito: o mesmo código não vale duas vezes.
+  mfaLastStep  Int?      @map("mfa_last_step")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")

@@ -19,3 +19,4 @@ export * from './aftersales.js';
 export * from './finance.js';
 export * from './monitoring.js';
 export * from './portal.js';
+export * from './mfa.js';
