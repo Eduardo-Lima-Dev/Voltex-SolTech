@@ -8,6 +8,20 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  AddPortalTicketCommentInput,
+  CreatePortalAccessInput,
+  CreatePortalTicketInput,
+  PortalAcceptanceInput,
+  PortalAccessDto,
+  PortalLinkDto,
+  PortalMeDto,
+  PortalProjectDto,
+  PortalProjectSummaryDto,
+  PortalTicketDetailDto,
+  PortalTicketDto,
+  PortalUploadDto,
+  PortalUploadReviewDto,
+  ReviewPortalUploadInput,
   ExternalPlantDto,
   ImportMonitoringCsvInput,
   LinkPlantMonitoringInput,
@@ -1243,6 +1257,58 @@ export function createEndpoints(client: ApiClient) {
       pdfUrl: (token: string) => `${ROUTES.publicProposals}/${token}/pdf`,
       logoUrl: (token: string) => `${ROUTES.publicProposals}/${token}/logo`,
     },
+    portalAccess: {
+      list: (accountId: string) =>
+        client.get<PortalAccessDto[]>('/portal-access', { query: { accountId } }),
+      create: (input: CreatePortalAccessInput) =>
+        client.post<PortalAccessDto>('/portal-access', input),
+      deactivate: (id: string) => client.post<PortalAccessDto>(`/portal-access/${id}/deactivate`),
+      link: (id: string) => client.post<PortalLinkDto>(`/portal-access/${id}/link`),
+      uploads: (status: 'PENDING' | 'ACCEPTED' | 'REJECTED' = 'PENDING') =>
+        client.get<PortalUploadReviewDto[]>('/portal-access/uploads', { query: { status } }),
+      review: (id: string, input: ReviewPortalUploadInput) =>
+        client.post<PortalUploadReviewDto>(`/portal-access/uploads/${id}/review`, input),
+    },
+    // Área do cliente: cookie próprio da sessão do portal, sem o login interno (`auth: false`).
+    portal: {
+      requestLink: (email: string) =>
+        client.post<{ message: string }>('/public/portal/request-link', { email }, { auth: false }),
+      exchange: (token: string) =>
+        client.post<{ expiresAt: string }>('/public/portal/exchange', { token }, { auth: false }),
+      me: () => client.get<PortalMeDto>('/portal/me', { auth: false }),
+      logout: () => client.post<void>('/portal/logout', undefined, { auth: false }),
+      projects: () => client.get<PortalProjectSummaryDto[]>('/portal/projects', { auth: false }),
+      project: (id: string) =>
+        client.get<PortalProjectDto>(`/portal/projects/${id}`, { auth: false }),
+      downloadUrl: (projectId: string, documentId: string) =>
+        client.get<{ url: string }>(
+          `/portal/projects/${projectId}/documents/${documentId}/download`,
+          {
+            auth: false,
+          },
+        ),
+      accept: (projectId: string, input: PortalAcceptanceInput) =>
+        client.post<PortalProjectDto>(`/portal/projects/${projectId}/acceptance`, input, {
+          auth: false,
+        }),
+      upload: (projectId: string, file: File, note?: string) => {
+        const form = new FormData();
+        form.set('file', file);
+        if (note) form.set('note', note);
+        return client.upload<PortalUploadDto>(`/portal/projects/${projectId}/uploads`, form, {
+          auth: false,
+        });
+      },
+      tickets: () => client.get<PortalTicketDto[]>('/portal/tickets', { auth: false }),
+      ticket: (id: string) =>
+        client.get<PortalTicketDetailDto>(`/portal/tickets/${id}`, { auth: false }),
+      createTicket: (input: CreatePortalTicketInput) =>
+        client.post<PortalTicketDto>('/portal/tickets', input, { auth: false }),
+      comment: (id: string, input: AddPortalTicketCommentInput) =>
+        client.post<PortalTicketDetailDto>(`/portal/tickets/${id}/comments`, input, {
+          auth: false,
+        }),
+    },
     publicEngineering: {
       get: (token: string) =>
         client.get<PublicEngineeringReportDto>(`/public/engineering/${token}`, { auth: false }),
@@ -1259,6 +1325,8 @@ export function createEndpoints(client: ApiClient) {
         client.post<PrivacyRequestDto>(`${ROUTES.privacy}/erasures`, input),
     },
     documents: {
+      downloadUrl: (id: string) =>
+        client.get<{ url: string; expiresIn: number }>(`/documents/${id}/download-url`),
       upload: (file: File, target?: { entityType?: string; entityId?: string }) => {
         const form = new FormData();
         form.append('file', file);

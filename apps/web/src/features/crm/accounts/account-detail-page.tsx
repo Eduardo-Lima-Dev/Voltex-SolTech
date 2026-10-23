@@ -29,6 +29,7 @@ import {
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { NewOpportunityDialog } from '../opportunities/new-opportunity-dialog';
+import { PortalCard } from './portal-card';
 import {
   AccountFormDialog,
   ConsumerUnitDialog,
@@ -182,6 +183,8 @@ export function AccountDetailPage() {
           </div>
         </div>
       </header>
+
+      <PortalCard accountId={data.id} accountName={data.name} contacts={data.contacts} />
 
       <Card>
         <CardHeader className="flex-row items-start justify-between space-y-0">

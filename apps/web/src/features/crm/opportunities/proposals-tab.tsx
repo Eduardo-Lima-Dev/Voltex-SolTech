@@ -1,3 +1,4 @@
+import { SendMessage } from '@/components/send-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, Download, FilePlus2, Send } from 'lucide-react';
 import { useState } from 'react';
@@ -199,7 +200,17 @@ function CreateProposalDialog({
   );
 }
 
-function LinkDialog({ url, onClose }: { url: string | null; onClose: () => void }) {
+function LinkDialog({
+  url,
+  onClose,
+  customerName,
+  opportunityId,
+}: {
+  url: string | null;
+  onClose: () => void;
+  customerName: string;
+  opportunityId: string;
+}) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url ?? '');
@@ -229,6 +240,14 @@ function LinkDialog({ url, onClose }: { url: string | null; onClose: () => void 
             <Copy /> Copiar
           </Button>
         </div>
+        {url ? (
+          <SendMessage
+            template="proposal.link"
+            variables={{ nome: customerName, link: url }}
+            entityType="Opportunity"
+            entityId={opportunityId}
+          />
+        ) : null}
         <DialogFooter>
           <Button onClick={onClose}>Fechar</Button>
         </DialogFooter>
@@ -237,7 +256,15 @@ function LinkDialog({ url, onClose }: { url: string | null; onClose: () => void 
   );
 }
 
-export function ProposalsTab({ opportunityId, open }: { opportunityId: string; open: boolean }) {
+export function ProposalsTab({
+  opportunityId,
+  open,
+  customerName = 'cliente',
+}: {
+  opportunityId: string;
+  open: boolean;
+  customerName?: string;
+}) {
   const refresh = useRefreshProposals(opportunityId);
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -368,7 +395,12 @@ export function ProposalsTab({ opportunityId, open }: { opportunityId: string; o
         open={creating}
         onOpenChange={setCreating}
       />
-      <LinkDialog url={link} onClose={() => setLink(null)} />
+      <LinkDialog
+        url={link}
+        onClose={() => setLink(null)}
+        customerName={customerName}
+        opportunityId={opportunityId}
+      />
     </div>
   );
 }

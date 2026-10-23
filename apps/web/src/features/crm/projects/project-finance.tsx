@@ -43,6 +43,7 @@ import {
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
+import { SendMessage } from '@/components/send-message';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCents } from '@/lib/format';
@@ -556,13 +557,16 @@ function SummaryCards({ summary }: { summary: ProjectFinancialSummaryDto }) {
 function ReceivablesTab({
   projectId,
   summary,
+  accountName,
 }: {
   projectId: string;
   summary: ProjectFinancialSummaryDto;
+  accountName: string;
 }) {
   const [adding, setAdding] = useState(false);
   const [paying, setPaying] = useState<ReceivableDto | null>(null);
   const [cancelling, setCancelling] = useState<ReceivableDto | null>(null);
+  const [reminding, setReminding] = useState<ReceivableDto | null>(null);
   const nextOrder = Math.max(0, ...summary.receivables.map((r) => r.order)) + 1;
   return (
     <div className="space-y-3">
@@ -612,6 +616,9 @@ function ReceivablesTab({
                         <Button size="sm" variant="outline" onClick={() => setPaying(r)}>
                           Dar baixa
                         </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setReminding(r)}>
+                          Lembrar o cliente
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => setCancelling(r)}>
                           Cancelar
                         </Button>
@@ -624,6 +631,31 @@ function ReceivablesTab({
           </TableBody>
         </Table>
       )}
+      {reminding ? (
+        <div className="space-y-2 rounded-md border p-3 text-sm">
+          <p className="font-medium">
+            Lembrete da parcela {reminding.order} ({formatCents(reminding.amountCents)}, vence em{' '}
+            {formatDay(reminding.dueOn)})
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O lembrete só sai quando você escolhe um canal: o sistema nunca cobra sozinho.
+          </p>
+          <SendMessage
+            template="payment.reminder"
+            variables={{
+              nome: accountName,
+              valor: formatCents(reminding.amountCents),
+              vencimento: formatDay(reminding.dueOn),
+            }}
+            copyText={`Lembrete: parcela de ${formatCents(reminding.amountCents)} com vencimento em ${formatDay(reminding.dueOn)}.`}
+            entityType="Receivable"
+            entityId={reminding.id}
+          />
+          <Button size="sm" variant="ghost" onClick={() => setReminding(null)}>
+            Fechar
+          </Button>
+        </div>
+      ) : null}
       {adding ? (
         <AddReceivableDialog
           projectId={projectId}
@@ -875,7 +907,13 @@ function CommissionsTab({
 }
 
 /** Financeiro da ficha do projeto (11G): parcelas, custos, crédito e comissões, tudo registrado à mão. */
-export function ProjectFinanceSection({ projectId }: { projectId: string }) {
+export function ProjectFinanceSection({
+  projectId,
+  accountName,
+}: {
+  projectId: string;
+  accountName: string;
+}) {
   const summary = useQuery({
     queryKey: ['project-finance', projectId],
     queryFn: () => endpoints.finance.summary(projectId),
@@ -911,7 +949,11 @@ export function ProjectFinanceSection({ projectId }: { projectId: string }) {
                 <TabsTrigger value="comissoes">Comissões</TabsTrigger>
               </TabsList>
               <TabsContent value="parcelas">
-                <ReceivablesTab projectId={projectId} summary={summary.data} />
+                <ReceivablesTab
+                  projectId={projectId}
+                  summary={summary.data}
+                  accountName={accountName}
+                />
               </TabsContent>
               <TabsContent value="custos">
                 <CostsTab projectId={projectId} costs={summary.data.costEntries} />

@@ -39,6 +39,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { formatCents, formatDate, formatDateTime } from '@/lib/format';
 import { PROJECT_STATUS_BADGE } from './projects-page';
+import { PortalUploadsCard } from './portal-uploads-card';
 import { ProjectFinanceSection } from './project-finance';
 
 /** Próximos passos da homologação (espelha as transições do servidor). */
@@ -497,8 +498,12 @@ export function ProjectDetailPage() {
         </CardContent>
       </Card>
 
+      <Can permission="crm.portal.manage">
+        <PortalUploadsCard projectId={p.id} />
+      </Can>
+
       <Can permission="crm.finance.read">
-        <ProjectFinanceSection projectId={p.id} />
+        <ProjectFinanceSection projectId={p.id} accountName={p.accountName} />
       </Can>
 
       <StatusDialog project={p} target={target} onClose={() => setTarget(null)} />
