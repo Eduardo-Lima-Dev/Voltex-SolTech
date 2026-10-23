@@ -560,6 +560,20 @@ const pageRoutes: RouteObject[] = [
                   };
                 },
               },
+              {
+                path: 'financeiro',
+                lazy: async () => {
+                  const { FinancePage } = await import('@/features/operations/finance-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.finance.read">
+                        <FinancePage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Financeiro' },
+                  };
+                },
+              },
             ],
           },
           {

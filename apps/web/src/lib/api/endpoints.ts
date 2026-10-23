@@ -7,6 +7,23 @@ import type {
   CreateSnapshotInput,
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
+import type {
+  CancelReceivableInput,
+  CommissionDto,
+  CommissionPolicyDto,
+  CreateCommissionPolicyInput,
+  CreateCostEntryInput,
+  CreateCreditApplicationInput,
+  CreateReceivableInput,
+  CreditApplicationDto,
+  FinanceOverviewDto,
+  MarkCommissionPaidInput,
+  MarkReceivablePaidInput,
+  ProjectCostEntryDto,
+  ProjectFinancialSummaryDto,
+  ReceivableDto,
+  UpdateCreditStatusInput,
+} from '@voltex/shared';
 import {
   ROUTES,
   type AddCommissioningStringsInput,
@@ -1087,6 +1104,49 @@ export function createEndpoints(client: ApiClient) {
         client.patch<ProjectDto>(`${ROUTES.projects}/${id}/checklist/${itemId}`, input),
       changeStatus: (id: string, input: ChangeProjectStatusInput) =>
         client.post<ProjectDto>(`${ROUTES.projects}/${id}/status`, input),
+    },
+    finance: {
+      overview: () => client.get<FinanceOverviewDto>('/finance/overview'),
+      summary: (projectId: string) =>
+        client.get<ProjectFinancialSummaryDto>(`${ROUTES.projects}/${projectId}/finance/summary`),
+      createReceivable: (projectId: string, input: CreateReceivableInput) =>
+        client.post<ReceivableDto>(`${ROUTES.projects}/${projectId}/finance/receivables`, input),
+      payReceivable: (projectId: string, id: string, input: MarkReceivablePaidInput) =>
+        client.post<ReceivableDto>(
+          `${ROUTES.projects}/${projectId}/finance/receivables/${id}/pay`,
+          input,
+        ),
+      cancelReceivable: (projectId: string, id: string, input: CancelReceivableInput) =>
+        client.post<ReceivableDto>(
+          `${ROUTES.projects}/${projectId}/finance/receivables/${id}/cancel`,
+          input,
+        ),
+      addCost: (projectId: string, input: CreateCostEntryInput) =>
+        client.post<ProjectCostEntryDto>(`${ROUTES.projects}/${projectId}/finance/costs`, input),
+      removeCost: (projectId: string, id: string) =>
+        client.delete<void>(`${ROUTES.projects}/${projectId}/finance/costs/${id}`),
+      createCredit: (projectId: string, input: CreateCreditApplicationInput) =>
+        client.post<CreditApplicationDto>(
+          `${ROUTES.projects}/${projectId}/finance/credit-applications`,
+          input,
+        ),
+      creditStatus: (projectId: string, id: string, input: UpdateCreditStatusInput) =>
+        client.post<CreditApplicationDto>(
+          `${ROUTES.projects}/${projectId}/finance/credit-applications/${id}/status`,
+          input,
+        ),
+      recalculateCommissions: (projectId: string) =>
+        client.post<CommissionDto[]>(
+          `${ROUTES.projects}/${projectId}/finance/commissions/recalculate`,
+        ),
+      payCommission: (projectId: string, id: string, input: MarkCommissionPaidInput) =>
+        client.post<CommissionDto>(
+          `${ROUTES.projects}/${projectId}/finance/commissions/${id}/pay`,
+          input,
+        ),
+      policies: () => client.get<CommissionPolicyDto[]>('/finance/commission-policies'),
+      createPolicy: (input: CreateCommissionPolicyInput) =>
+        client.post<CommissionPolicyDto>('/finance/commission-policies', input),
     },
     homologation: {
       list: () => client.get<HomologationChecklistDto[]>(ROUTES.homologationChecklists),

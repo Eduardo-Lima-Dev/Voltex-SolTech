@@ -10,6 +10,8 @@
  */
 import { createPrismaClient } from '@voltex/database';
 
+type Db = ReturnType<typeof createPrismaClient>;
+
 export const INTERNAL_TEST_MARK = 'TESTE INTERNO (dados de exemplo)';
 
 interface WarrantyTermData {
@@ -73,7 +75,7 @@ const WARRANTY_TERMS: WarrantyTermData[] = [
   },
 ];
 
-async function seedWarrantyTerms(prisma: any, tenantId: string): Promise<string[]> {
+async function seedWarrantyTerms(prisma: Db, tenantId: string): Promise<string[]> {
   const report: string[] = [];
   const now = new Date();
 
@@ -90,11 +92,11 @@ async function seedWarrantyTerms(prisma: any, tenantId: string): Promise<string[
     });
 
     if (existing) {
-      report.push(`${key}: termo já existe (v${existing.version}); nada foi alterado.`);
+      report.push(`${key}: termo já existe; nada foi alterado.`);
       continue;
     }
 
-    const created = await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       // Aposentar anteriores do mesmo fabricante e categoria
       await tx.manufacturerWarrantyTerm.updateMany({
         where: {
@@ -129,7 +131,7 @@ async function seedWarrantyTerms(prisma: any, tenantId: string): Promise<string[
   return report;
 }
 
-async function seedOperationsSettings(prisma: any, tenantId: string): Promise<string[]> {
+async function seedOperationsSettings(prisma: Db, tenantId: string): Promise<string[]> {
   const report: string[] = [];
 
   const tenant = await prisma.tenant.findUniqueOrThrow({

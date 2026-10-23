@@ -1,10 +1,5 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import type {
-  MonitoringDaily,
-  MonitoringSnapshot,
-  Plant,
-  PlantMonitoringLink,
-} from '@voltex/database';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { MonitoringDaily, MonitoringSnapshot, PlantMonitoringLink } from '@voltex/database';
 import type {
   LinkPlantMonitoringInput,
   MonitoringDailyDto,
@@ -16,8 +11,6 @@ import { RequestContext } from '../../../common/context/request-context';
 import { AuditService } from '../../../platform/audit/audit.service';
 import { PrismaService } from '../../../platform/prisma/prisma.service';
 import { isoDay } from './dates';
-
-type Tx = Parameters<Parameters<PrismaService['db']['$transaction']>[0]>[0];
 
 const toMonitoringLinkDto = (link: PlantMonitoringLink): PlantMonitoringLinkDto => ({
   id: link.id,
@@ -241,7 +234,6 @@ export class MonitoringService {
     const expectedLastMonth = expectedMonthly[monthIndex - 1 >= 0 ? monthIndex - 1 : 11] ?? 0;
 
     const actualThisMonth = thisMonthData.reduce((sum, d) => sum + d.kwhGenerated, 0);
-    const actualLastMonth = lastMonthData.reduce((sum, d) => sum + d.kwhGenerated, 0);
 
     return {
       links: links.map(toMonitoringLinkDto),

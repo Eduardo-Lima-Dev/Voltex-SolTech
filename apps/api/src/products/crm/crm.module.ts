@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { DocumentsModule } from '../../platform/documents/documents.module';
 import { CalculatorModule } from '../calculator/calculator.module';
 import { AutomationsService } from './automations/automations.service';
-import { FinanceController } from './finance/finance.controller';
+import { FinanceController, FinanceOverviewController } from './finance/finance.controller';
+import { FinanceScanService } from './finance/finance-scan.service';
 import { FinanceService } from './finance/finance.service';
 import { ContractsController } from './contracts/contracts.controller';
 import { ContractsService } from './contracts/contracts.service';
@@ -59,6 +60,7 @@ import { TasksService } from './tasks.service';
     ProposalsController,
     PublicProposalsController,
     FinanceController,
+    FinanceOverviewController,
   ],
   providers: [
     UserDirectory,
@@ -82,9 +84,11 @@ import { TasksService } from './tasks.service';
     PrivacyService,
     AutomationsService,
     FinanceService,
+    FinanceScanService,
     { provide: BILL_PARSER, useExisting: PdfTextBillParser },
   ],
   exports: [
+    FinanceScanService,
     OpportunitiesService,
     TimelineService,
     UserDirectory,
