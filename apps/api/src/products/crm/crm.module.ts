@@ -7,6 +7,7 @@ import { FinanceScanService } from './finance/finance-scan.service';
 import { FinanceService } from './finance/finance.service';
 import { ContractsController } from './contracts/contracts.controller';
 import { ContractsService } from './contracts/contracts.service';
+import { SignatureRegistrar } from './contracts/signature-providers';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { DashboardService } from './dashboard/dashboard.service';
 import { HomologationRulesController } from './projects/homologation-rules.controller';
@@ -84,6 +85,7 @@ import { TasksService } from './tasks.service';
     HomologationRulesService,
     ProjectsService,
     ContractsService,
+    SignatureRegistrar,
     DashboardService,
     PrivacyService,
     AutomationsService,

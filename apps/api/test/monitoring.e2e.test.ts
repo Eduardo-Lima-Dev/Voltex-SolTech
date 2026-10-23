@@ -169,6 +169,10 @@ describe('Monitoramento de inversores (e2e)', () => {
           .sort(),
       ).toEqual(['apsystems', 'fronius', 'solaredge']);
       expect(monitoring.filter((p) => !p.official)).toHaveLength(5);
+      const signature = (res.body as { key: string; kind: string; available: boolean }[]).find(
+        (p) => p.kind === 'SIGNATURE',
+      );
+      expect(signature).toMatchObject({ key: 'docuseal', available: false });
     });
 
     it('provedor sem adaptador aceita o cadastro, mas não liga nem testa', async () => {
