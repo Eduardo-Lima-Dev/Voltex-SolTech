@@ -73,6 +73,7 @@ import { WorkOrdersService } from './work-orders.service';
     CommissioningService,
     PlantsService,
     TicketsService,
+    MonitoringService,
   ],
 })
 export class OperationsModule {}

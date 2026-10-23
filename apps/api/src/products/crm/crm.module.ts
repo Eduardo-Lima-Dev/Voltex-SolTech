@@ -89,6 +89,7 @@ import { TasksService } from './tasks.service';
   ],
   exports: [
     FinanceScanService,
+    FinanceService,
     OpportunitiesService,
     TimelineService,
     UserDirectory,
