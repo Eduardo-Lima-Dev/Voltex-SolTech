@@ -17,3 +17,4 @@ export * from './operations.js';
 export * from './commissioning.js';
 export * from './aftersales.js';
 export * from './finance.js';
+export * from './monitoring.js';

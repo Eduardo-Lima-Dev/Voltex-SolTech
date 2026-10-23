@@ -37,10 +37,9 @@ import { TimelineService } from './support/timeline.service';
 import { UserDirectory } from './support/user-directory.service';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
-import { PortalModule } from './portal/portal.module';
 
 @Module({
-  imports: [DocumentsModule, CalculatorModule, PortalModule],
+  imports: [DocumentsModule, CalculatorModule],
   controllers: [
     LeadsController,
     LeadCaptureController,

@@ -134,6 +134,10 @@ model Tenant {
   portalAccesses              PortalAccess[]
   portalMagicLinks            PortalMagicLink[]
   portalSessions              PortalSession[]
+  plantMonitoringLinks        PlantMonitoringLink[]
+  monitoringDaily             MonitoringDaily[]
+  monitoringSnapshots         MonitoringSnapshot[]
+  monitoringAlarms            MonitoringAlarm[]
 
   @@map("tenants")
 }
