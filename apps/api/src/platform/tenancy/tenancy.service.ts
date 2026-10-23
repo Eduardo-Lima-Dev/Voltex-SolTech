@@ -42,7 +42,17 @@ export class TenancyService {
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.document !== undefined ? { document: input.document } : {}),
-        ...(input.settings !== undefined ? { settings: input.settings as object } : {}),
+        // `settings.plan` é do operador da plataforma e `settings.operations` tem endpoint próprio (prazos do
+        // pós-venda): a edição geral das configurações não os altera nem os apaga.
+        ...(input.settings !== undefined
+          ? {
+              settings: {
+                ...input.settings,
+                plan: (before.settings as Record<string, unknown> | null)?.plan,
+                operations: (before.settings as Record<string, unknown> | null)?.operations,
+              } as object,
+            }
+          : {}),
       },
       select: {
         id: true,

@@ -35,6 +35,31 @@ const pageRoutes: RouteObject[] = [
     },
   },
   {
+    // App de campo: fora da casca da suíte, funciona sem internet e abre com o perfil guardado no aparelho.
+    path: '/campo',
+    handle: { title: 'App de campo' },
+    lazy: async () => {
+      const { FieldLayout } = await import('@/features/field/field-layout');
+      return { Component: FieldLayout };
+    },
+    children: [
+      {
+        index: true,
+        lazy: async () => {
+          const { FieldHomePage } = await import('@/features/field/field-home-page');
+          return { Component: FieldHomePage, handle: { title: 'Ordens de campo' } };
+        },
+      },
+      {
+        path: ':id',
+        lazy: async () => {
+          const { FieldOrderPage } = await import('@/features/field/field-order-page');
+          return { Component: FieldOrderPage, handle: { title: 'Ordem de campo' } };
+        },
+      },
+    ],
+  },
+  {
     // Proposta do cliente: link com token, sem login e fora da casca da suíte.
     path: '/p/:token',
     lazy: async () => {
@@ -377,6 +402,167 @@ const pageRoutes: RouteObject[] = [
             ],
           },
           {
+            path: 'operations',
+            handle: { title: 'Operação' },
+            lazy: async () => {
+              const { OperationsLayout } = await import('@/features/operations/layout');
+              return { Component: OperationsLayout };
+            },
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { OperationsIndexRedirect } = await import('@/features/operations/layout');
+                  return { Component: OperationsIndexRedirect };
+                },
+              },
+              { path: 'campo', element: <Navigate to="/campo" replace /> },
+              {
+                path: 'painel',
+                lazy: async () => {
+                  const { OperationsDashboardPage } =
+                    await import('@/features/operations/dashboard-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <OperationsDashboardPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Painel da Operação' },
+                  };
+                },
+              },
+              {
+                path: 'instalacoes',
+                lazy: async () => {
+                  const { InstallationsPage } =
+                    await import('@/features/operations/installations-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <InstallationsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Instalações' },
+                  };
+                },
+              },
+              {
+                path: 'instalacoes/:id',
+                lazy: async () => {
+                  const { InstallationPage } =
+                    await import('@/features/operations/installation-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <InstallationPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Instalação' },
+                  };
+                },
+              },
+              {
+                path: 'agenda',
+                lazy: async () => {
+                  const { AgendaPage } = await import('@/features/operations/agenda-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.workorder.read">
+                        <AgendaPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Agenda' },
+                  };
+                },
+              },
+              {
+                path: 'equipes',
+                lazy: async () => {
+                  const { CrewsPage } = await import('@/features/operations/crews-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.installation.read">
+                        <CrewsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Equipes' },
+                  };
+                },
+              },
+              {
+                path: 'plantas',
+                lazy: async () => {
+                  const { PlantsPage } = await import('@/features/operations/plants-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <PlantsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Plantas' },
+                  };
+                },
+              },
+              {
+                path: 'plantas/:id',
+                lazy: async () => {
+                  const { PlantPage } = await import('@/features/operations/plant-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <PlantPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Planta' },
+                  };
+                },
+              },
+              {
+                path: 'chamados',
+                lazy: async () => {
+                  const { TicketsPage } = await import('@/features/operations/tickets-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.ticket.read">
+                        <TicketsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Chamados' },
+                  };
+                },
+              },
+              {
+                path: 'garantias',
+                lazy: async () => {
+                  const { WarrantiesPage } = await import('@/features/operations/warranties-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <WarrantiesPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Garantias' },
+                  };
+                },
+              },
+              {
+                path: 'contratos',
+                lazy: async () => {
+                  const { ContractsPage } = await import('@/features/operations/contracts-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="ops.plant.read">
+                        <ContractsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'O&M e manutenção' },
+                  };
+                },
+              },
+            ],
+          },
+          {
             path: 'offgrid',
             handle: { title: 'Off-Grid Designer' },
             lazy: async () => {
@@ -651,6 +837,21 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Fontes de dados' },
+                  };
+                },
+              },
+              {
+                path: 'integracoes',
+                lazy: async () => {
+                  const { IntegrationsPage } =
+                    await import('@/features/admin/integrations/integrations-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('integracoes').anyOf}>
+                        <IntegrationsPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Integrações' },
                   };
                 },
               },

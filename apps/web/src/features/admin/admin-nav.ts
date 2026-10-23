@@ -4,6 +4,7 @@ import {
   Inbox,
   FileText,
   HardHat,
+  Plug,
   LockKeyhole,
   Percent,
   Receipt,
@@ -27,6 +28,7 @@ export interface AdminTab {
     | 'regras'
     | 'fontes'
     | 'atualizacoes'
+    | 'integracoes'
     | 'margens'
     | 'contratos'
     | 'homologacao'
@@ -101,6 +103,13 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'Dados vindos de fora que esperam a sua decisão',
     icon: Inbox,
     anyOf: ['platform.rule.read'],
+  },
+  {
+    path: 'integracoes',
+    label: 'Integrações',
+    description: 'Monitoramento de inversores e outros serviços externos',
+    icon: Plug,
+    anyOf: ['platform.integration.read'],
   },
   {
     path: 'margens',

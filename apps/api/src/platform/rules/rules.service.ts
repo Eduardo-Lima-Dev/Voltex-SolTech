@@ -189,9 +189,13 @@ export class RulesService {
   async activate(id: string, input: ActivateRuleSetInput) {
     const draft = await this.get(id);
     if (draft.status !== 'DRAFT') throw new ConflictException('Só rascunhos podem ser ativados');
-    if (draft.key.startsWith('engine.') && !input.reviewedByRegistration)
+    // Regras técnicas (Engine e comissionamento) exigem o registro no conselho de quem as revisou.
+    if (
+      (draft.key.startsWith('engine.') || draft.key === 'ops.commissioning') &&
+      !input.reviewedByRegistration
+    )
       throw new UnprocessableEntityException(
-        'Informe o registro no conselho (CREA/CFT/CAU) de quem revisou a regra do Engine.',
+        'Informe o registro no conselho (CREA/CFT/CAU) de quem revisou a regra técnica.',
       );
     const now = new Date();
     if (draft.validFrom && draft.validFrom.getTime() > now.getTime()) {

@@ -20,9 +20,11 @@ const PROTECTED: Record<string, { encrypted: string[]; blind: string[]; json: st
   Proposal: { encrypted: ['acceptedByDocument'], blind: [], json: [] },
   // O texto do contrato e as variáveis preenchidas trazem nome, CPF/CNPJ e endereço do cliente.
   Contract: { encrypted: ['body'], blind: [], json: ['variables'] },
+  // Chaves, senhas e tokens dos provedores externos (Integration Hub): nunca em claro no banco.
+  IntegrationConnection: { encrypted: [], blind: [], json: ['credentials'] },
 };
 const REVEAL_TEXT = new Set(['document', 'acceptedByDocument', 'body']);
-const REVEAL_JSON = new Set(['variables']);
+const REVEAL_JSON = new Set(['variables', 'credentials']);
 const WRITE_OPERATIONS = new Set([
   'create',
   'createMany',

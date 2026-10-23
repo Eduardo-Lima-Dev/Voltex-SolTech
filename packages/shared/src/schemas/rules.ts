@@ -99,7 +99,13 @@ export const ENGINE_RULESET_KEYS = [
   'engine.economics',
   'offgrid.design',
 ] as const;
-export const RULESET_KEYS = [CALCULATOR_RULESET_KEY, ...ENGINE_RULESET_KEYS] as const;
+/** Regras da Operação (Fase 11): comissionamento. */
+export const COMMISSIONING_RULESET_KEY = 'ops.commissioning' as const;
+export const RULESET_KEYS = [
+  CALCULATOR_RULESET_KEY,
+  ...ENGINE_RULESET_KEYS,
+  COMMISSIONING_RULESET_KEY,
+] as const;
 export type RuleSetKey = (typeof RULESET_KEYS)[number];
 
 const tableRowSchema = z.record(z.string(), z.union([z.number(), z.string(), z.null()]));
@@ -115,6 +121,96 @@ export const engineRulesDefinitionSchema = z.object({
   rules: z.array(conditionalRuleSchema).max(500).default([]),
 });
 export type EngineRulesDefinition = z.output<typeof engineRulesDefinitionSchema>;
+
+// ---------------------------------------------------------------------------------------------------------
+// Regra de comissionamento (Fase 11D, ADR-0022): o modelo de ensaios e as tolerâncias são do responsável técnico
+// ---------------------------------------------------------------------------------------------------------
+
+export const COMMISSIONING_TEST_KINDS = ['CHECK', 'MEASURE'] as const;
+export type CommissioningTestKind = (typeof COMMISSIONING_TEST_KINDS)[number];
+/** `STANDARD` = ensaios de todos os sistemas (categoria 1); `EXTENDED` = só nos sistemas maiores ou mais complexos (categoria 2). */
+export const COMMISSIONING_LEVELS = ['STANDARD', 'EXTENDED'] as const;
+export type CommissioningLevel = (typeof COMMISSIONING_LEVELS)[number];
+/** A que o ensaio se aplica: ao sistema todo, a cada string ou a cada inversor. */
+export const COMMISSIONING_SCOPES = ['SYSTEM', 'STRING', 'INVERTER'] as const;
+export type CommissioningScope = (typeof COMMISSIONING_SCOPES)[number];
+/** Valor esperado calculado do projeto: `VOC_STRING` e `ISC_STRING` usam o módulo, a configuração da string e as condições medidas. */
+export const COMMISSIONING_EXPECTED = ['NONE', 'VOC_STRING', 'ISC_STRING'] as const;
+export type CommissioningExpected = (typeof COMMISSIONING_EXPECTED)[number];
+
+export const commissioningTestRowSchema = z
+  .object({
+    /** Código estável (ex.: `STRING_ISC`). */
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_]{2,60}$/, 'Use letras maiúsculas, números e _ (ex.: STRING_ISC)'),
+    label: z.string().trim().min(3).max(200),
+    group: z.string().trim().min(2).max(100),
+    kind: z.enum(COMMISSIONING_TEST_KINDS),
+    level: z.enum(COMMISSIONING_LEVELS).default('STANDARD'),
+    scope: z.enum(COMMISSIONING_SCOPES).default('SYSTEM'),
+    unit: z.string().trim().max(12).optional(),
+    expected: z.enum(COMMISSIONING_EXPECTED).default('NONE'),
+    /** Desvio máximo, em %, entre o medido e o esperado (precisa de `expected`). */
+    tolerancePct: z.number().positive().max(100).optional(),
+    /** Limites absolutos do valor medido (ex.: resistência de isolamento mínima). */
+    min: z.number().optional(),
+    max: z.number().optional(),
+    /** Ensaio obrigatório para aprovar (os opcionais podem ficar sem registro). */
+    required: z.boolean().default(true),
+    /** De onde vem o ensaio e o limite (norma, página, fabricante). Obrigatória: ensaio sem fonte não vale. */
+    source: z.string().trim().min(3).max(300),
+  })
+  .superRefine((row, ctx) => {
+    if (
+      row.kind === 'CHECK' &&
+      (row.tolerancePct !== undefined || row.min !== undefined || row.max !== undefined)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Ensaio de conferência (CHECK) não tem tolerância nem limites',
+      });
+    if (row.tolerancePct !== undefined && row.expected === 'NONE')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tolerancePct'],
+        message: 'A tolerância em % precisa de um valor esperado (`expected`)',
+      });
+    if (row.min !== undefined && row.max !== undefined && row.min > row.max)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['min'],
+        message: 'O mínimo não pode passar do máximo',
+      });
+    if (row.kind === 'MEASURE' && !row.unit)
+      ctx.addIssue({ code: 'custom', path: ['unit'], message: 'Informe a unidade da medição' });
+    if (row.expected !== 'NONE' && row.scope !== 'STRING')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['expected'],
+        message: 'O valor esperado do projeto só existe por string',
+      });
+  });
+export type CommissioningTestRow = z.output<typeof commissioningTestRowSchema>;
+
+export const commissioningRulesDefinitionSchema = z
+  .object({
+    tests: z.array(commissioningTestRowSchema).min(1).max(200),
+  })
+  .superRefine((def, ctx) => {
+    const seen = new Set<string>();
+    for (const [i, test] of def.tests.entries()) {
+      if (seen.has(test.code))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['tests', i, 'code'],
+          message: `Código repetido: ${test.code}`,
+        });
+      seen.add(test.code);
+    }
+  });
+export type CommissioningRulesDefinition = z.output<typeof commissioningRulesDefinitionSchema>;
 
 export interface RuleSetDefinition {
   key: RuleSetKey;
@@ -166,6 +262,12 @@ export const RULESET_DEFINITIONS: Record<RuleSetKey, RuleSetDefinition> = {
     label: 'Off-Grid: perdas, DoD por química, autonomia mínima, reservas e SIGFI',
     schema: engineRulesDefinitionSchema,
     scoped: true,
+  },
+  'ops.commissioning': {
+    key: 'ops.commissioning',
+    label: 'Comissionamento: modelo de ensaios, tolerâncias e limites',
+    schema: commissioningRulesDefinitionSchema,
+    scoped: false,
   },
 };
 

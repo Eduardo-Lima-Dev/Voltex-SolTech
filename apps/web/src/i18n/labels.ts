@@ -59,6 +59,7 @@ export const PRODUCT_LABELS: Record<Product, string> = {
   CALCULATOR: 'Solar Calculator',
   ENGINE: 'Solar Engine Studio',
   OFFGRID: 'Off-Grid Designer',
+  OPERATIONS: 'Operação',
 };
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -74,6 +75,23 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'platform.rule.manage': 'Gerenciar regras regulatórias',
   'platform.catalog.read': 'Ver o catálogo técnico',
   'platform.catalog.manage': 'Gerenciar o catálogo técnico',
+  'platform.integration.read': 'Ver integrações e execuções',
+  'platform.integration.manage': 'Gerenciar integrações e credenciais',
+  'platform.communication.send': 'Enviar comunicações ao cliente',
+  'ops.installation.read': 'Ver instalações',
+  'ops.installation.write': 'Gerenciar instalações, materiais e equipes',
+  'ops.workorder.read': 'Ver ordens de serviço e agenda',
+  'ops.workorder.write': 'Criar e agendar ordens de serviço',
+  'ops.commissioning.read': 'Ver o comissionamento',
+  'ops.commissioning.write': 'Preparar e registrar o comissionamento',
+  'ops.commissioning.approve': 'Aprovar o comissionamento',
+  'ops.plant.read': 'Ver plantas instaladas',
+  'ops.plant.write': 'Editar plantas e ativos',
+  'ops.ticket.read': 'Ver chamados',
+  'ops.ticket.write': 'Abrir e atender chamados',
+  'ops.warranty.manage': 'Gerenciar termos e garantias',
+  'ops.om.manage': 'Gerenciar contratos de O&M e manutenção',
+  'ops.field.execute': 'Executar ordens de serviço em campo',
   'crm.lead.read': 'Ver leads',
   'crm.lead.write': 'Criar e editar leads',
   'crm.account.read': 'Ver contas e contatos',
@@ -123,6 +141,7 @@ export const PERMISSION_GROUPS: { id: string; label: string; prefix: string }[] 
   { id: 'calculator', label: PRODUCT_LABELS.CALCULATOR, prefix: 'calculator.' },
   { id: 'engine', label: PRODUCT_LABELS.ENGINE, prefix: 'engine.' },
   { id: 'offgrid', label: PRODUCT_LABELS.OFFGRID, prefix: 'offgrid.' },
+  { id: 'ops', label: PRODUCT_LABELS.OPERATIONS, prefix: 'ops.' },
 ];
 
 export const permissionsOfGroup = (prefix: string): Permission[] =>
@@ -497,6 +516,8 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   CONTRACT_SIGNED: 'Contrato assinado',
   PROJECT_CREATED: 'Projeto criado',
   PROJECT_STATUS_CHANGED: 'Homologação',
+  INSTALLATION_STATUS_CHANGED: 'Instalação',
+  PLANT_ACTIVATED: 'Planta ativada',
 };
 
 export const ROOF_TYPE_LABELS: Record<RoofType, string> = {

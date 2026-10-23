@@ -102,6 +102,38 @@ model Tenant {
   projects                    Project[]
   projectChecklistItems       ProjectChecklistItem[]
   privacyRequests             PrivacyRequest[]
+  integrationConnections      IntegrationConnection[]
+  integrationRuns             IntegrationRun[]
+  integrationDeadLetters      IntegrationDeadLetter[]
+  communicationLogs           CommunicationLog[]
+  installations               Installation[]
+  installationHistory         InstallationHistory[]
+  materialItems               MaterialItem[]
+  crews                       Crew[]
+  crewMembers                 CrewMember[]
+  workOrders                  WorkOrder[]
+  fieldIssues                 FieldIssue[]
+  workOrderPhotos             WorkOrderPhoto[]
+  fieldActions                FieldAction[]
+  commissioningRecords        CommissioningRecord[]
+  commissioningTests          CommissioningTest[]
+  plants                      Plant[]
+  plantAssets                 PlantAsset[]
+  plantEvents                 PlantEvent[]
+  manufacturerWarrantyTerms   ManufacturerWarrantyTerm[]
+  assetWarranties             AssetWarranty[]
+  tickets                     Ticket[]
+  ticketComments              TicketComment[]
+  maintenancePlans            MaintenancePlan[]
+  omContracts                 OmContract[]
+  receivables                 Receivable[]
+  projectCostEntries          ProjectCostEntry[]
+  commissionPolicies          CommissionPolicy[]
+  commissions                 Commission[]
+  creditApplications          CreditApplication[]
+  portalAccesses              PortalAccess[]
+  portalMagicLinks            PortalMagicLink[]
+  portalSessions              PortalSession[]
 
   @@map("tenants")
 }
@@ -162,10 +194,11 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  branch        Branch?        @relation(fields: [branchId], references: [id])
-  team          Team?          @relation(fields: [teamId], references: [id])
-  refreshTokens RefreshToken[]
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  team            Team?          @relation(fields: [teamId], references: [id])
+  refreshTokens   RefreshToken[]
+  crewMemberships CrewMember[]
 
   @@index([tenantId, role])
   @@map("users")

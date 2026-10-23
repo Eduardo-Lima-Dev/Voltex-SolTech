@@ -13,12 +13,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@voltex/ui';
+import type { Permission } from '@voltex/shared';
 import { useAuth } from '@/features/auth/auth-provider';
 import { PRODUCTS } from '@/features/products/registry';
 import { ADMIN_PERMISSIONS, ADMIN_TABS } from '@/features/admin/admin-nav';
 import { CRM_PERMISSIONS, CRM_TABS } from '@/features/crm/crm-nav';
 import { ENGINE_PERMISSIONS, ENGINE_TABS } from '@/features/engine/engine-nav';
 import { OFFGRID_PERMISSIONS, OFFGRID_TABS } from '@/features/offgrid/offgrid-nav';
+import { OPERATIONS_PERMISSIONS, OPERATIONS_TABS } from '@/features/operations/operations-nav';
+
+type SubmenuItem = { to: string; label: string; icon: LucideIcon };
 
 interface SidebarNavProps {
   /** Chamado ao navegar (fecha o menu no celular). */
@@ -29,31 +33,45 @@ interface SidebarNavProps {
 /** Menu lateral: troca entre os produtos da suíte e acesso à administração. Sempre azul-marinho (marca). */
 export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
   const { can, canAny } = useAuth();
-  // O CRM aparece para quem acessa qualquer uma das suas telas (ex.: o instalador só vê Projetos e Tarefas).
-  const products = PRODUCTS.filter((product) =>
-    product.path === '/crm'
-      ? canAny(CRM_PERMISSIONS)
-      : product.path === '/engine'
-        ? canAny(ENGINE_PERMISSIONS)
-        : product.path === '/offgrid'
-          ? canAny(OFFGRID_PERMISSIONS)
-          : can(product.permission),
-  );
-  const crmItems = CRM_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
-    to: `/crm/${tab.path}`,
-    label: tab.label,
-    icon: tab.icon,
-  }));
-  const engineItems = ENGINE_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
-    to: `/engine/${tab.path}`,
-    label: tab.label,
-    icon: tab.icon,
-  }));
-  const offgridItems = OFFGRID_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
-    to: `/offgrid/${tab.path}`,
-    label: tab.label,
-    icon: tab.icon,
-  }));
+  // Cada produto com telas próprias aparece para quem acessa qualquer uma delas (ex.: o instalador só vê Projetos e Tarefas).
+  const submenus: Record<string, { anyOf: readonly Permission[]; items: SubmenuItem[] }> = {
+    '/crm': {
+      anyOf: CRM_PERMISSIONS,
+      items: CRM_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+        to: `/crm/${tab.path}`,
+        label: tab.label,
+        icon: tab.icon,
+      })),
+    },
+    '/engine': {
+      anyOf: ENGINE_PERMISSIONS,
+      items: ENGINE_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+        to: `/engine/${tab.path}`,
+        label: tab.label,
+        icon: tab.icon,
+      })),
+    },
+    '/offgrid': {
+      anyOf: OFFGRID_PERMISSIONS,
+      items: OFFGRID_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+        to: `/offgrid/${tab.path}`,
+        label: tab.label,
+        icon: tab.icon,
+      })),
+    },
+    '/operations': {
+      anyOf: OPERATIONS_PERMISSIONS,
+      items: OPERATIONS_TABS.filter((tab) => can(tab.permission)).map((tab) => ({
+        to: `/operations/${tab.path}`,
+        label: tab.label,
+        icon: tab.icon,
+      })),
+    },
+  };
+  const products = PRODUCTS.filter((product) => {
+    const submenu = submenus[product.path];
+    return submenu ? canAny(submenu.anyOf) : can(product.permission);
+  });
   const adminItems = ADMIN_TABS.filter((tab) => canAny(tab.anyOf)).map((tab) => ({
     to: `/admin/${tab.path}`,
     label: tab.label,
@@ -97,21 +115,13 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
             <SidebarGroupLabel>Produtos</SidebarGroupLabel>
             <SidebarMenu>
               {products.map((product) =>
-                (product.path === '/crm' && crmItems.length > 0) ||
-                (product.path === '/engine' && engineItems.length > 0) ||
-                (product.path === '/offgrid' && offgridItems.length > 0) ? (
+                (submenus[product.path]?.items.length ?? 0) > 0 ? (
                   <NavSubmenu
                     key={product.id}
                     base={product.path}
                     label={product.name}
                     icon={product.icon}
-                    items={
-                      product.path === '/crm'
-                        ? crmItems
-                        : product.path === '/offgrid'
-                          ? offgridItems
-                          : engineItems
-                    }
+                    items={submenus[product.path]!.items}
                     onNavigate={onNavigate}
                   />
                 ) : (
