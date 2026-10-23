@@ -24,6 +24,8 @@ import { PdfTextBillParser } from './energy-bills/pdf-text-bill-parser';
 import { GuardController } from './guard/guard.controller';
 import { GuardService } from './guard/guard.service';
 import { LeadCaptureController, LeadsController, PublicLeadsController } from './leads.controller';
+import { LeadScoringController } from './lead-scoring.controller';
+import { LeadScoringService } from './lead-scoring.service';
 import { LeadsService } from './leads.service';
 import { OpportunitiesController, PipelineController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
@@ -43,6 +45,7 @@ import { TasksService } from './tasks.service';
   imports: [DocumentsModule, CalculatorModule],
   controllers: [
     LeadsController,
+    LeadScoringController,
     LeadCaptureController,
     PublicLeadsController,
     AccountsController,
@@ -67,6 +70,7 @@ import { TasksService } from './tasks.service';
     TimelineService,
     PipelineService,
     LeadsService,
+    LeadScoringService,
     AccountsService,
     OpportunitiesService,
     TasksService,

@@ -51,6 +51,7 @@ export class TenancyService {
                 plan: (before.settings as Record<string, unknown> | null)?.plan,
                 operations: (before.settings as Record<string, unknown> | null)?.operations,
                 mfa: (before.settings as Record<string, unknown> | null)?.mfa,
+                leadScoring: (before.settings as Record<string, unknown> | null)?.leadScoring,
               } as object,
             }
           : {}),
