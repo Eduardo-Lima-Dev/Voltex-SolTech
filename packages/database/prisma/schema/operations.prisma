@@ -458,7 +458,8 @@ model MonitoringSnapshot {
   id        String    @id @default(uuid(7)) @db.Uuid
   tenantId  String    @map("tenant_id") @db.Uuid
   plantId   String    @map("plant_id") @db.Uuid
-  kwhPower  Decimal   @map("kwh_power") @db.Decimal(10, 2)
+  /// Potência instantânea em kW.
+  powerKw   Decimal   @map("power_kw") @db.Decimal(10, 2)
   status    String
   receivedAt DateTime @default(now()) @map("received_at")
 
@@ -483,6 +484,8 @@ model MonitoringAlarm {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   plant  Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
 
+  /// A mesma ocorrência lida de novo não duplica.
+  @@unique([plantId, code, openedAt])
   @@index([tenantId, plantId, openedAt])
   @@index([tenantId, closedAt])
   @@map("monitoring_alarms")

@@ -8,6 +8,12 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  ExternalPlantDto,
+  ImportMonitoringCsvInput,
+  LinkPlantMonitoringInput,
+  MonitoringImportResultDto,
+  PlantMonitoringLinkDto,
+  PlantMonitoringPageDto,
   CancelReceivableInput,
   CommissionDto,
   CommissionPolicyDto,
@@ -822,6 +828,40 @@ export function createEndpoints(client: ApiClient) {
         updateSettings: (input: OperationsSettingsInput) =>
           client.put<OperationsSettingsDto>(`${ROUTES.operations}/aftersales/settings`, input),
         scan: () => client.post<unknown>(`${ROUTES.operations}/aftersales/scan`),
+        monitoring: {
+          page: (plantId: string) =>
+            client.get<PlantMonitoringPageDto>(`${ROUTES.operations}/plants/${plantId}/monitoring`),
+          connections: (plantId: string) =>
+            client.get<
+              {
+                id: string;
+                label: string;
+                provider: string;
+                providerLabel: string;
+                status: string;
+                canListPlants: boolean;
+              }[]
+            >(`${ROUTES.operations}/plants/${plantId}/monitoring/connections`),
+          externalPlants: (plantId: string, connectionId: string) =>
+            client.get<ExternalPlantDto[]>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/external-plants`,
+              { query: { connectionId } },
+            ),
+          link: (plantId: string, input: LinkPlantMonitoringInput) =>
+            client.post<PlantMonitoringLinkDto>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/links`,
+              input,
+            ),
+          unlink: (plantId: string, linkId: string) =>
+            client.delete<void>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/links/${linkId}`,
+            ),
+          importCsv: (plantId: string, input: ImportMonitoringCsvInput) =>
+            client.post<MonitoringImportResultDto>(
+              `${ROUTES.operations}/plants/${plantId}/monitoring/import`,
+              input,
+            ),
+        },
         plants: {
           list: (query: Partial<ListPlantsQuery> = {}) =>
             client.get<Paginated<PlantSummaryDto>>(`${ROUTES.operations}/plants`, {

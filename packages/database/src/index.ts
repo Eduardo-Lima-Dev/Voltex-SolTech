@@ -76,6 +76,11 @@ export type {
   MonitoringDaily,
   MonitoringSnapshot,
   MonitoringAlarm,
+  PortalAccess,
+  PortalMagicLink,
+  PortalSession,
+  PortalUpload,
+  SignatureRequest,
 } from './generated/client';
 export type * from './generated/models';
 export { createPrismaClient, type CreatePrismaClientOptions } from './client';

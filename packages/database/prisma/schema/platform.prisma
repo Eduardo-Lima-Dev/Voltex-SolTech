@@ -134,6 +134,8 @@ model Tenant {
   portalAccesses              PortalAccess[]
   portalMagicLinks            PortalMagicLink[]
   portalSessions              PortalSession[]
+  signatureRequests           SignatureRequest[]
+  portalUploads               PortalUpload[]
   plantMonitoringLinks        PlantMonitoringLink[]
   monitoringDaily             MonitoringDaily[]
   monitoringSnapshots         MonitoringSnapshot[]
@@ -190,9 +192,11 @@ model User {
   passwordHash String    @map("password_hash")
   role         Role
   isActive     Boolean   @default(true) @map("is_active")
-  /// Preparado para MFA (RNF-SEG-011); sem uso até a Fase 11.
+  /// MFA por TOTP (RNF-SEG-011). O segredo fica cifrado; os códigos de recuperação, só em hash.
   mfaEnabled   Boolean   @default(false) @map("mfa_enabled")
   mfaSecret    String?   @map("mfa_secret")
+  mfaRecoveryCodes Json? @map("mfa_recovery_codes")
+  mfaEnabledAt DateTime? @map("mfa_enabled_at")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")

@@ -26,7 +26,7 @@ export class DataExportService {
       this.prisma.system.tenant.findUniqueOrThrow({ where: { id: tenantId } }),
       db.branch.findMany(),
       db.team.findMany(),
-      db.user.findMany({ omit: { passwordHash: true, mfaSecret: true } }),
+      db.user.findMany({ omit: { passwordHash: true, mfaSecret: true, mfaRecoveryCodes: true } }),
       db.lead.findMany({
         omit: { emailNormalized: true, phoneNormalized: true, documentNormalized: true },
       }),
@@ -75,6 +75,20 @@ export class DataExportService {
       db.ticket.findMany({ include: { comments: true } }),
       db.maintenancePlan.findMany(),
       db.omContract.findMany(),
+      db.receivable.findMany(),
+      db.projectCostEntry.findMany(),
+      db.commissionPolicy.findMany(),
+      db.commission.findMany(),
+      db.creditApplication.findMany(),
+      db.plantMonitoringLink.findMany(),
+      db.monitoringDaily.findMany(),
+      db.monitoringSnapshot.findMany(),
+      db.monitoringAlarm.findMany(),
+      // Acessos ao portal: só o cadastro. Tokens de link e de sessão (hashes) são segredo e ficam de fora.
+      db.portalAccess.findMany(),
+      db.portalUpload.findMany(),
+      // Pedidos de assinatura: sem o hash do segredo do aviso do provedor.
+      db.signatureRequest.findMany({ omit: { webhookSecretHash: true } }),
     ]);
     const [
       branches,
@@ -125,6 +139,18 @@ export class DataExportService {
       tickets,
       maintenancePlans,
       omContracts,
+      receivables,
+      projectCostEntries,
+      commissionPolicies,
+      commissions,
+      creditApplications,
+      plantMonitoringLinks,
+      monitoringDaily,
+      monitoringSnapshots,
+      monitoringAlarms,
+      portalAccesses,
+      portalUploads,
+      signatureRequests,
     ] = rest;
 
     await this.audit.record({
@@ -196,6 +222,18 @@ export class DataExportService {
       tickets,
       maintenancePlans,
       omContracts,
+      receivables,
+      projectCostEntries,
+      commissionPolicies,
+      commissions,
+      creditApplications,
+      plantMonitoringLinks,
+      monitoringDaily,
+      monitoringSnapshots,
+      monitoringAlarms,
+      portalAccesses,
+      portalUploads,
+      signatureRequests,
     };
   }
 }

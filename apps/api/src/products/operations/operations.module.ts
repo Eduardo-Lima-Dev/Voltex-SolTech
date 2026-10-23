@@ -9,8 +9,10 @@ import { AftersalesQueue } from './aftersales/aftersales.queue';
 import { AftersalesScanService } from './aftersales/aftersales-scan.service';
 import { AftersalesDashboardService } from './aftersales/dashboard.service';
 import { MaintenanceService } from './aftersales/maintenance.service';
-import { MonitoringController } from './aftersales/monitoring.controller';
-import { MonitoringService } from './aftersales/monitoring.service';
+import { MonitoringController } from './aftersales/monitoring/monitoring.controller';
+import { MonitoringIngestService } from './aftersales/monitoring/monitoring-ingest.service';
+import { MonitoringRegistrar } from './aftersales/monitoring/monitoring-registrar.service';
+import { MonitoringService } from './aftersales/monitoring/monitoring.service';
 import { OmContractsService } from './aftersales/om-contracts.service';
 import { PlantsService } from './aftersales/plants.service';
 import { OperationsSettingsService } from './aftersales/settings.service';
@@ -60,6 +62,8 @@ import { WorkOrdersService } from './work-orders.service';
     AftersalesDashboardService,
     AftersalesScanService,
     MonitoringService,
+    MonitoringIngestService,
+    MonitoringRegistrar,
     AftersalesQueue,
   ],
   exports: [

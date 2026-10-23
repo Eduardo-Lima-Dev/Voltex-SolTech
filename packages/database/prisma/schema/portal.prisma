@@ -8,9 +8,12 @@ model PortalAccess {
   email     String
   active    Boolean   @default(true)
   createdById String?  @map("created_by_id") @db.Uuid
+  lastLoginAt DateTime? @map("last_login_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  magicLinks   PortalMagicLink[]
+  sessions     PortalSession[]
 
   @@unique([accountId, email])
   @@index([tenantId, accountId])
@@ -23,6 +26,7 @@ model PortalMagicLink {
   id        String    @id @default(uuid(7)) @db.Uuid
   tenantId  String    @map("tenant_id") @db.Uuid
   accountId String    @map("account_id") @db.Uuid
+  accessId  String?   @map("access_id") @db.Uuid
   /// SHA-256(token), nunca guardamos o token em texto claro.
   tokenHash String    @map("token_hash")
   expiresAt DateTime  @map("expires_at")
@@ -30,7 +34,8 @@ model PortalMagicLink {
   ip        String?
   createdAt DateTime  @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant Tenant        @relation(fields: [tenantId], references: [id])
+  access PortalAccess? @relation(fields: [accessId], references: [id], onDelete: Cascade)
 
   @@unique([tokenHash])
   @@index([tenantId, accountId, expiresAt])
@@ -42,6 +47,7 @@ model PortalSession {
   id        String    @id @default(uuid(7)) @db.Uuid
   tenantId  String    @map("tenant_id") @db.Uuid
   accountId String    @map("account_id") @db.Uuid
+  accessId  String?   @map("access_id") @db.Uuid
   /// SHA-256(sessionToken).
   tokenHash String    @map("token_hash")
   expiresAt DateTime  @map("expires_at")
@@ -50,9 +56,40 @@ model PortalSession {
   userAgent String?   @map("user_agent")
   createdAt DateTime  @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant Tenant        @relation(fields: [tenantId], references: [id])
+  access PortalAccess? @relation(fields: [accessId], references: [id], onDelete: Cascade)
 
   @@unique([tokenHash])
   @@index([tenantId, accountId, revokedAt])
   @@map("portal_sessions")
+}
+
+enum PortalUploadStatus {
+  /// Em quarentena: só entra no projeto depois que um usuário interno aceita.
+  PENDING
+  ACCEPTED
+  REJECTED
+
+  @@map("portal_upload_status")
+}
+
+/// Documento enviado pelo cliente pelo portal. Fica em quarentena até a revisão de um usuário interno.
+model PortalUpload {
+  id           String             @id @default(uuid(7)) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  accountId    String             @map("account_id") @db.Uuid
+  projectId    String             @map("project_id") @db.Uuid
+  accessId     String?            @map("access_id") @db.Uuid
+  documentId   String             @map("document_id") @db.Uuid
+  note         String?
+  status       PortalUploadStatus @default(PENDING)
+  reviewedById String?            @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?          @map("reviewed_at")
+  reviewNote   String?            @map("review_note")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, projectId, status])
+  @@map("portal_uploads")
 }

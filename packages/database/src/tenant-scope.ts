@@ -98,6 +98,11 @@ export const TENANT_SCOPED_MODELS = [
   'MonitoringDaily',
   'MonitoringSnapshot',
   'MonitoringAlarm',
+  'PortalAccess',
+  'PortalMagicLink',
+  'PortalSession',
+  'PortalUpload',
+  'SignatureRequest',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

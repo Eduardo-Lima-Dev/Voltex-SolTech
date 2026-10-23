@@ -99,12 +99,14 @@ export const ENGINE_RULESET_KEYS = [
   'engine.economics',
   'offgrid.design',
 ] as const;
-/** Regras da Operação (Fase 11): comissionamento. */
+/** Regras da Operação (Fase 11): comissionamento e monitoramento. */
 export const COMMISSIONING_RULESET_KEY = 'ops.commissioning' as const;
+export const MONITORING_RULESET_KEY = 'ops.monitoring' as const;
 export const RULESET_KEYS = [
   CALCULATOR_RULESET_KEY,
   ...ENGINE_RULESET_KEYS,
   COMMISSIONING_RULESET_KEY,
+  MONITORING_RULESET_KEY,
 ] as const;
 export type RuleSetKey = (typeof RULESET_KEYS)[number];
 
@@ -212,6 +214,26 @@ export const commissioningRulesDefinitionSchema = z
   });
 export type CommissioningRulesDefinition = z.output<typeof commissioningRulesDefinitionSchema>;
 
+// ---------------------------------------------------------------------------------------------------------
+// Regra de monitoramento (Fase 11F): quando um desvio de geração ou um alarme vira chamado. É da empresa/RT:
+// sem regra ativa e revisada, o sistema mostra a comparação mas NÃO abre chamado sozinho.
+// ---------------------------------------------------------------------------------------------------------
+
+export const monitoringRulesDefinitionSchema = z.object({
+  deviation: z.object({
+    /** Quanto abaixo do esperado, em %, o dia precisa estar para contar (ex.: 20 = abaixo de 80% do esperado). */
+    thresholdPct: z.number().positive().max(100),
+    /** Quantos dias seguidos abaixo do limiar abrem o chamado. */
+    consecutiveDays: z.number().int().min(1).max(31),
+  }),
+  /** Severidades de alarme do inversor que abrem chamado (vazio = alarme não abre chamado). */
+  alarmTicketSeverities: z
+    .array(z.enum(['WARNING', 'CRITICAL']))
+    .max(2)
+    .default([]),
+});
+export type MonitoringRulesDefinition = z.output<typeof monitoringRulesDefinitionSchema>;
+
 export interface RuleSetDefinition {
   key: RuleSetKey;
   label: string;
@@ -267,6 +289,12 @@ export const RULESET_DEFINITIONS: Record<RuleSetKey, RuleSetDefinition> = {
     key: 'ops.commissioning',
     label: 'Comissionamento: modelo de ensaios, tolerâncias e limites',
     schema: commissioningRulesDefinitionSchema,
+    scoped: false,
+  },
+  'ops.monitoring': {
+    key: 'ops.monitoring',
+    label: 'Monitoramento: desvio de geração e alarmes que abrem chamado',
+    schema: monitoringRulesDefinitionSchema,
     scoped: false,
   },
 };
