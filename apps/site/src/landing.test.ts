@@ -37,3 +37,23 @@ describe('landing page reflete o sistema', () => {
     expect(labels).toEqual(['01', '02', '03', '04', '05', '06', '07']);
   });
 });
+
+describe('landing page cobre a execução e o pós-venda', () => {
+  it('apresenta os cinco produtos, com a Operação disponível', () => {
+    expect(text).toMatch(/Cinco produtos, um cadastro/);
+    expect(text).not.toMatch(/Quatro produtos/);
+    expect(text).toMatch(/Operação\s+Da obra homologada à planta entregue/);
+  });
+
+  it('descreve campo offline, portal, pós-venda e financeiro sem prometer pagamento nem assinatura eletrônica', () => {
+    expect(text).toMatch(/App de campo, mesmo sem sinal/);
+    expect(text).toMatch(/Portal do cliente/);
+    expect(text).toMatch(/Pós-venda e garantias/);
+    expect(text).toMatch(/O sistema não processa pagamentos/);
+    expect(text).not.toMatch(/gateway|Pix automático|assinatura eletrônica|DocuSeal/i);
+  });
+
+  it('cita a verificação em duas etapas', () => {
+    expect(text).toMatch(/Verificação em duas etapas/);
+  });
+});

@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from '@voltex/ui';
 import {
@@ -53,6 +53,10 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate('/conta/seguranca')}>
+          <ShieldCheck />
+          Segurança da conta
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void handleLogout()}>
           <LogOut />
           Sair

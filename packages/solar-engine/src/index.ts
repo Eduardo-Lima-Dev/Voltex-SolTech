@@ -11,3 +11,4 @@ export * from './io/index.js';
 export * from './catalog/index.js';
 export * from './offgrid/index.js';
 export * from './commissioning/index.js';
+export * from './monitoring/index.js';

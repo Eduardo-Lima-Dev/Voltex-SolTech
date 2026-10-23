@@ -78,12 +78,64 @@ const pageRoutes: RouteObject[] = [
     },
   },
   {
+    // Portal do cliente: sessão própria (link mágico), sem o login interno e fora da casca da suíte.
+    path: '/portal/entrar',
+    lazy: async () => {
+      const { PortalLoginPage } = await import('@/features/portal/portal-login-page');
+      return { Component: PortalLoginPage, handle: { title: 'Portal do cliente' } };
+    },
+  },
+  {
+    path: '/portal/acesso/:token',
+    lazy: async () => {
+      const { PortalAccessPage } = await import('@/features/portal/portal-access-page');
+      return { Component: PortalAccessPage, handle: { title: 'Portal do cliente' } };
+    },
+  },
+  {
+    path: '/portal',
+    lazy: async () => {
+      const { PortalLayout } = await import('@/features/portal/portal-layout');
+      return { Component: PortalLayout, handle: { title: 'Portal do cliente' } };
+    },
+    children: [
+      {
+        index: true,
+        lazy: async () => {
+          const { PortalHomePage } = await import('@/features/portal/portal-home-page');
+          return { Component: PortalHomePage, handle: { title: 'Meus projetos' } };
+        },
+      },
+      {
+        path: 'projetos/:id',
+        lazy: async () => {
+          const { PortalProjectPage } = await import('@/features/portal/portal-project-page');
+          return { Component: PortalProjectPage, handle: { title: 'Meu projeto' } };
+        },
+      },
+      {
+        path: 'chamados/:id',
+        lazy: async () => {
+          const { PortalTicketPage } = await import('@/features/portal/portal-ticket-page');
+          return { Component: PortalTicketPage, handle: { title: 'Chamado' } };
+        },
+      },
+    ],
+  },
+  {
     element: <RequireAuth />,
     errorElement: <RouteErrorPage />,
     children: [
       {
         element: <AppShell />,
         children: [
+          {
+            path: 'conta/seguranca',
+            lazy: async () => {
+              const { SecurityPage } = await import('@/features/account/security-page');
+              return { Component: SecurityPage, handle: { title: 'Segurança da conta' } };
+            },
+          },
           {
             index: true,
             lazy: async () => {
@@ -280,6 +332,21 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'Tarefas' },
+                  };
+                },
+              },
+              {
+                path: 'pontuacao',
+                lazy: async () => {
+                  const { LeadScoringPage } =
+                    await import('@/features/crm/leads/lead-scoring-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.lead-scoring.manage">
+                        <LeadScoringPage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Pontuação de leads' },
                   };
                 },
               },
@@ -557,6 +624,20 @@ const pageRoutes: RouteObject[] = [
                       </RequirePermission>
                     ),
                     handle: { title: 'O&M e manutenção' },
+                  };
+                },
+              },
+              {
+                path: 'financeiro',
+                lazy: async () => {
+                  const { FinancePage } = await import('@/features/operations/finance-page');
+                  return {
+                    element: (
+                      <RequirePermission permission="crm.finance.read">
+                        <FinancePage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Financeiro' },
                   };
                 },
               },

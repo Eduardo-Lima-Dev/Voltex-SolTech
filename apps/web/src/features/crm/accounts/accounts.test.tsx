@@ -1,11 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { AccountDetailDto, AccountDto } from '@voltex/shared';
 import { API, distributor, makeAccount, makeOpportunity, makeSession, page } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
+
+// A ficha mostra o cartão do portal (acessos do cliente): sem acessos nos testes de contas.
+beforeEach(() => {
+  server.use(http.get(`${API}/portal-access`, () => HttpResponse.json([])));
+});
 
 const toList = (a: AccountDetailDto): AccountDto => {
   const { contacts: _c, sites: _s, consumerUnits: _u, ...rest } = a;
@@ -22,6 +27,59 @@ const detailHandlers = (
   http.get(`${API}/opportunities`, () => HttpResponse.json(page(opportunities))),
   http.get(`${API}/distributors`, () => HttpResponse.json([distributor()])),
 ];
+
+describe('CRM · Contas · portal do cliente', () => {
+  it('a equipe libera o acesso por e-mail, gera o link e oferece os canais de envio', async () => {
+    const account = makeAccount();
+    let granted: unknown;
+    server.use(
+      ...detailHandlers(account),
+      http.get(`${API}/portal-access`, () =>
+        HttpResponse.json([
+          {
+            id: 'pa-1',
+            accountId: account.id,
+            email: 'maria@teste.test',
+            active: true,
+            lastLoginAt: null,
+            createdAt: '2026-10-01T00:00:00.000Z',
+          },
+        ]),
+      ),
+      http.post(`${API}/portal-access`, async ({ request }) => {
+        granted = await request.json();
+        return HttpResponse.json({}, { status: 201 });
+      }),
+      http.post(`${API}/portal-access/pa-1/link`, () =>
+        HttpResponse.json({
+          url: 'http://localhost:5173/portal/acesso/abc',
+          expiresAt: '2026-10-23T15:30:00.000Z',
+        }),
+      ),
+    );
+    renderApp(`/crm/contas/${account.id}`, { session: makeSession('SALES_MANAGER') });
+    const user = userEvent.setup();
+    expect(await screen.findByText('maria@teste.test')).toBeInTheDocument();
+    expect(screen.getByText('nunca acessou')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Gerar link' }));
+    expect(await screen.findByText('http://localhost:5173/portal/acesso/abc')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Enviar por e-mail/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Abrir no WhatsApp/ })).toBeDisabled();
+    await user.type(screen.getByLabelText('Liberar acesso para o e-mail'), 'outro@teste.test');
+    await user.click(screen.getByRole('button', { name: 'Liberar' }));
+    await waitFor(() =>
+      expect(granted).toEqual({ accountId: account.id, email: 'outro@teste.test' }),
+    );
+  });
+
+  it('perfil sem permissão do portal não vê o cartão', async () => {
+    const account = makeAccount();
+    server.use(...detailHandlers(account));
+    renderApp(`/crm/contas/${account.id}`, { session: makeSession('SDR') });
+    expect(await screen.findByRole('heading', { name: account.name })).toBeInTheDocument();
+    expect(screen.queryByText('Portal do cliente')).not.toBeInTheDocument();
+  });
+});
 
 describe('CRM · Contas', () => {
   describe('lista', () => {

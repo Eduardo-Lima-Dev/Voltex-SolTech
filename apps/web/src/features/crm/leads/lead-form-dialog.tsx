@@ -34,6 +34,7 @@ import {
   SEGMENT_LABELS,
 } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
+import { parseMoney } from '../opportunities/quote-form';
 import { errorMessage, fieldErrors, isApiError } from '@/lib/api/errors';
 
 interface Values {
@@ -46,6 +47,8 @@ interface Values {
   preliminaryGroup: '' | CustomerGroup;
   city: string;
   state: string;
+  /** Conta de luz mensal, em reais (texto). */
+  monthlyBill: string;
   notes: string;
 }
 
@@ -59,6 +62,7 @@ const empty: Values = {
   preliminaryGroup: '',
   city: '',
   state: '',
+  monthlyBill: '',
   notes: '',
 };
 
@@ -72,6 +76,10 @@ const fromLead = (lead: LeadDto): Values => ({
   preliminaryGroup: lead.preliminaryGroup ?? '',
   city: lead.city ?? '',
   state: lead.state ?? '',
+  monthlyBill:
+    lead.monthlyBillCents === null
+      ? ''
+      : (lead.monthlyBillCents / 100).toFixed(2).replace('.', ','),
   notes: lead.notes ?? '',
 });
 
@@ -109,6 +117,9 @@ export function LeadFormDialog({ lead, open, onOpenChange, onOpenExisting }: Lea
         preliminaryGroup: values.preliminaryGroup || undefined,
         city: values.city || undefined,
         state: values.state || undefined,
+        monthlyBillCents: values.monthlyBill.trim()
+          ? (parseMoney(values.monthlyBill) ?? undefined)
+          : undefined,
         notes: values.notes || undefined,
       };
       return lead
@@ -254,6 +265,13 @@ export function LeadFormDialog({ lead, open, onOpenChange, onOpenExisting }: Lea
               </NativeSelect>
             </Field>
           </div>
+          <Field
+            id="lead-bill"
+            label="Conta de luz mensal (R$)"
+            hint="Usada na pontuação do lead, se a empresa tiver esse critério."
+          >
+            <Input id="lead-bill" inputMode="decimal" {...form.register('monthlyBill')} />
+          </Field>
           <Field id="lead-notes" label="Observações">
             <Textarea id="lead-notes" rows={3} maxLength={2000} {...form.register('notes')} />
           </Field>

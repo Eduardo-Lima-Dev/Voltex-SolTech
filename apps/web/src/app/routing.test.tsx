@@ -171,10 +171,21 @@ describe('painel inicial', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('vendedor vê Engine, Off-Grid e Operação como "Sem acesso"', async () => {
+  it('o início do vendedor mostra só o que é dele, sem cartões bloqueados', async () => {
     renderApp('/', { session: makeSession('SALESPERSON') });
     await screen.findByRole('heading', { name: /Olá, Eduardo/ });
-    expect(screen.getAllByText('Sem acesso')).toHaveLength(3);
+    expect(await screen.findByText('Minhas tarefas')).toBeInTheDocument();
+    expect(screen.queryByText('Sem acesso')).not.toBeInTheDocument();
+    expect(screen.queryByText('Financeiro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Instalações')).not.toBeInTheDocument();
+  });
+
+  it('o início do instalador abre com o dia em campo e sem dados comerciais', async () => {
+    renderApp('/', { session: makeSession('INSTALLER') });
+    await screen.findByRole('heading', { name: /Olá, Eduardo/ });
+    expect(await screen.findByText('Meu dia em campo')).toBeInTheDocument();
+    expect(screen.queryByText('Comercial')).not.toBeInTheDocument();
+    expect(screen.queryByText('Financeiro')).not.toBeInTheDocument();
   });
 });
 
@@ -203,6 +214,17 @@ describe('rotas do CRM', () => {
     crmHandlers();
     const { router } = renderApp('/crm', { session: makeSession('SDR') });
     await waitFor(() => expect(router.state.location.pathname).toBe('/crm/leads'));
+  });
+
+  it('o item do submenu continua marcado dentro das subtelas (ficha da conta marca Contas)', async () => {
+    crmHandlers();
+    server.use(http.get(`${API}/accounts/:id`, () => HttpResponse.json({}, { status: 404 })));
+    renderApp('/crm/contas/abc');
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    const contas = await within(nav).findByRole('link', { name: 'Contas' });
+    expect(contas).toHaveAttribute('aria-current', 'page');
+    expect(contas).toHaveAttribute('data-active', 'true');
+    expect(within(nav).getByRole('link', { name: 'Leads' })).not.toHaveAttribute('aria-current');
   });
 
   it('o SDR vê Leads, Contas e Tarefas, mas não Oportunidades; a rota de oportunidades fica bloqueada', async () => {

@@ -168,7 +168,7 @@ export function OpportunityDetailPage() {
           <QuotesTab opportunityId={id} open={open} />
         </TabsContent>
         <TabsContent value="proposta" className="pt-4">
-          <ProposalsTab opportunityId={id} open={open} />
+          <ProposalsTab opportunityId={id} open={open} customerName={data.accountName} />
         </TabsContent>
         <TabsContent value="contrato" className="pt-4">
           <ContractTab opportunityId={id} stage={data.stage} open={open} />

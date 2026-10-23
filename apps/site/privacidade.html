@@ -25,7 +25,7 @@
     <main class="legal">
       <div class="wrap">
         <h1>Política de Privacidade</h1>
-        <p class="legal__meta">Versão 1.0 · atualizada em 21 de outubro de 2026</p>
+        <p class="legal__meta">Versão 1.1 · atualizada em 23 de outubro de 2026</p>
 
         <p>
           Esta política explica como
@@ -92,6 +92,23 @@
               <td>Nome, conselho profissional, número de registro e da ART/TRT/RRT</td>
               <td>Informados no projeto pela empresa ou pelo profissional</td>
             </tr>
+            <tr>
+              <td>Técnico de campo da empresa contratante</td>
+              <td>
+                Nome, e-mail, ordens de serviço atribuídas, fotos da obra (a localização embutida
+                nas imagens é removida no aparelho), pontos de geolocalização registrados no início
+                e no fim da ordem, e a assinatura do cliente em imagem
+              </td>
+              <td>Registrados no app de campo pelo técnico</td>
+            </tr>
+            <tr>
+              <td>Cliente final no portal do cliente</td>
+              <td>
+                E-mail, registros de acesso ao portal, chamados abertos, mensagens e documentos que
+                enviar
+              </td>
+              <td>Liberado pela empresa contratante ou informado pelo próprio cliente</td>
+            </tr>
           </tbody>
         </table>
         <p>
@@ -135,6 +152,19 @@
             ANEEL): recebem apenas dados técnicos da consulta, como coordenadas do local do projeto,
             e não o nome do cliente.
           </li>
+          <li>
+            <strong>Provedor de e-mail</strong>: recebe o endereço e o texto das mensagens enviadas
+            pela plataforma, como convites e o link de acesso ao portal do cliente.
+          </li>
+          <li>
+            <strong>Fabricantes de inversores</strong> (somente se a empresa contratante ligar a
+            integração): recebem a credencial e o identificador da usina informados pela empresa, e
+            devolvem dados de geração. Nenhum dado pessoal do cliente é enviado a eles.
+          </li>
+          <li>
+            <strong>WhatsApp</strong>: a plataforma só monta o link de conversa; a mensagem é
+            enviada pela pessoa que clica, no aplicativo dela, sem integração automática.
+          </li>
           <li><strong>Autoridades</strong>, quando exigido por lei ou ordem judicial.</li>
         </ul>
         <p>
@@ -151,6 +181,15 @@
           <li>
             Senhas são armazenadas com algoritmo de <em>hash</em> próprio para senhas (Argon2);
             nunca em texto aberto.
+          </li>
+          <li>
+            Verificação em duas etapas (código de aplicativo autenticador) para usuários da
+            plataforma; o segredo é guardado cifrado e os códigos de recuperação, apenas em forma de
+            <em>hash</em>.
+          </li>
+          <li>
+            O cliente acessa o portal por um link de uso único, que vale por 30 minutos, e a sessão
+            dele é separada da dos usuários da plataforma; guardamos só o <em>hash</em> do link.
           </li>
           <li>
             Cada empresa só acessa os dados dela (isolamento por empresa em toda consulta) e o
@@ -176,6 +215,11 @@
           <li>
             <strong>Contatos que não viraram cliente e negócios perdidos</strong>: pelo prazo
             definido pela empresa contratante, conforme a finalidade.
+          </li>
+          <li>
+            <strong>Fotos de campo e geolocalização</strong>: pelo prazo definido pela empresa
+            contratante, conforme a finalidade; a empresa também pode eliminá-los a qualquer momento
+            junto com os demais dados da pessoa.
           </li>
           <li>
             <strong>Registros de acesso e de auditoria</strong>: mantidos para segurança e prestação
@@ -211,9 +255,12 @@
         <h2>8. Cookies e armazenamento local</h2>
         <p>
           Usamos apenas o necessário: um <em>cookie</em> de sessão seguro (inacessível ao
-          JavaScript) para manter você conectado, e itens do navegador que guardam a preferência de
-          tema e uma indicação de que houve uma sessão. Não usamos cookies de publicidade nem de
-          rastreamento de terceiros.
+          JavaScript) para manter você conectado, outro, também seguro, para a sessão do portal do
+          cliente, e itens do navegador que guardam a preferência de tema e uma indicação de que
+          houve uma sessão. O app de campo guarda no aparelho do técnico, para funcionar sem
+          internet, as ordens baixadas e o que ainda não foi enviado; esses dados saem do aparelho
+          depois de enviados ou quando o técnico escolhe limpar o aparelho. Não usamos cookies de
+          publicidade nem de rastreamento de terceiros.
         </p>
 
         <h2>9. Encarregado e contato</h2>
