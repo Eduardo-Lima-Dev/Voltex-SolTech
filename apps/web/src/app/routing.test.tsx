@@ -205,6 +205,17 @@ describe('rotas do CRM', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/crm/leads'));
   });
 
+  it('o item do submenu continua marcado dentro das subtelas (ficha da conta marca Contas)', async () => {
+    crmHandlers();
+    server.use(http.get(`${API}/accounts/:id`, () => HttpResponse.json({}, { status: 404 })));
+    renderApp('/crm/contas/abc');
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    const contas = await within(nav).findByRole('link', { name: 'Contas' });
+    expect(contas).toHaveAttribute('aria-current', 'page');
+    expect(contas).toHaveAttribute('data-active', 'true');
+    expect(within(nav).getByRole('link', { name: 'Leads' })).not.toHaveAttribute('aria-current');
+  });
+
   it('o SDR vê Leads, Contas e Tarefas, mas não Oportunidades; a rota de oportunidades fica bloqueada', async () => {
     crmHandlers();
     renderApp('/crm/leads', { session: makeSession('SDR') });
