@@ -39,7 +39,8 @@ export function parseKwh(raw: string): number | null {
  * motivo e não impedem as demais. Datas futuras são recusadas; data repetida vale a última.
  */
 export function parseGenerationCsv(text: string, today: Date = new Date()): CsvParseResult {
-  const lines = text.replace(/^﻿/, '').split(/\r?\n/);
+  const clean = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  const lines = clean.split(/\r?\n/);
   const rejected: CsvParseResult['rejected'] = [];
   const byDate = new Map<string, number>();
   const limit = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10);
