@@ -126,6 +126,9 @@ model Tenant {
   ticketComments              TicketComment[]
   maintenancePlans            MaintenancePlan[]
   omContracts                 OmContract[]
+  portalAccesses              PortalAccess[]
+  portalMagicLinks            PortalMagicLink[]
+  portalSessions              PortalSession[]
 
   @@map("tenants")
 }
