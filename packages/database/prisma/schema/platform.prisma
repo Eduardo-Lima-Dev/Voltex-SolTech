@@ -126,6 +126,10 @@ model Tenant {
   ticketComments              TicketComment[]
   maintenancePlans            MaintenancePlan[]
   omContracts                 OmContract[]
+  plantMonitoringLinks        PlantMonitoringLink[]
+  monitoringDaily             MonitoringDaily[]
+  monitoringSnapshots         MonitoringSnapshot[]
+  monitoringAlarms            MonitoringAlarm[]
 
   @@map("tenants")
 }

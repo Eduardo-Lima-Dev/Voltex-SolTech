@@ -73,9 +73,10 @@ model IntegrationConnection {
   updatedAt           DateTime          @updatedAt @map("updated_at")
   deletedAt           DateTime?         @map("deleted_at")
 
-  tenant      Tenant                  @relation(fields: [tenantId], references: [id])
-  runs        IntegrationRun[]
-  deadLetters IntegrationDeadLetter[]
+  tenant           Tenant                    @relation(fields: [tenantId], references: [id])
+  runs             IntegrationRun[]
+  deadLetters      IntegrationDeadLetter[]
+  monitoringLinks  PlantMonitoringLink[]
 
   @@unique([tenantId, provider, label])
   @@index([tenantId, kind, status])
