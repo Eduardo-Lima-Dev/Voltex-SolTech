@@ -147,7 +147,7 @@ describe('Segurança da conta', () => {
       http.get(`${API}/auth/mfa/policy`, () => HttpResponse.json({ required: false, roles: [] })),
       http.put(`${API}/auth/mfa/policy`, async ({ request }) => {
         saved = await request.json();
-        return HttpResponse.json(saved);
+        return HttpResponse.json(saved as Record<string, unknown>);
       }),
     );
     renderApp('/conta/seguranca', { session: makeSession('ADMIN') });
