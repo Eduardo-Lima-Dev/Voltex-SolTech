@@ -13,11 +13,19 @@ export const RETENTION_DEFAULTS = {
   unconvertedLeadsMonths: null as number | null,
   lostOpportunitiesMonths: null as number | null,
   signedContractsMonths: RETENTION_FLOORS.signedContractsMonths as number,
+  /** Fotos de campo (instalação e comissionamento). Sem prazo legal conhecido: `null` = decisão da empresa. */
+  fieldPhotosMonths: null as number | null,
+  /** Geolocalização registrada pelo app de campo. `null` = nunca eliminar sozinho. */
+  geolocationMonths: null as number | null,
 };
 
 export const RETENTION_SOURCES = {
   signedContractsMonths:
     'CTN (arts. 173, 174 e 195) e CDC (art. 27): 5 anos. Confirme com o seu jurídico; o Código Civil admite prazos maiores (até 10 anos) para ações de contrato.',
+  fieldPhotosMonths:
+    'Não há prazo legal mínimo conhecido para as fotos de campo. Considere o prazo das garantias dos equipamentos (elas podem servir de prova) e confirme com o seu jurídico.',
+  geolocationMonths:
+    'Localização é dado pessoal: guarde só pelo tempo necessário à execução e à garantia do serviço. Confirme o prazo com o seu jurídico.',
   accessLogs:
     'Marco Civil da Internet (Lei 12.965/2014, art. 15): registros de acesso a aplicações por, no mínimo, 6 meses. O histórico de auditoria da plataforma não é eliminado por este recurso.',
 } as const;
