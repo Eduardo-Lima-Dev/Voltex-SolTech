@@ -15,6 +15,7 @@ const STATUS: Record<AiUnavailableCode, number> = {
   TIMEOUT: 504,
   CIRCUIT_OPEN: 503,
   EMPTY_RESPONSE: 502,
+  PRIVACY_BLOCKED: 422,
 };
 
 /** A IA não pode responder agora. Já leva a mensagem pronta para o usuário (sem detalhe técnico). */

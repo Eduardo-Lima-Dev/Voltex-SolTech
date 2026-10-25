@@ -456,7 +456,7 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - Verificar SSE no ambiente publicado (Render/Vercel); se não passar, o modo de consulta.
 - **Aceite:** com `FakeAiProvider`, cada situação da §6 devolve a mensagem certa em menos de 1 s; com a credencial real, uma chamada simples responde e registra _neurons_.
 
-### 12B — Privacidade e fatos
+### 12B — Privacidade e fatos — **entregue em 2026-10-25**
 
 - Pseudonimizador, detectores, extrator de fatos, renderizador (`{{F#}}` → valor formatado; pseudônimo → nome conforme permissão).
 - Validador da §3.2 e o formato da §3.3.

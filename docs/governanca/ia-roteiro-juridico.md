@@ -12,7 +12,7 @@ Um assistente que responde perguntas em português sobre os dados da empresa no 
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | CPF, CNPJ, RG, e-mail, telefone, endereço, CEP, coordenadas, número da unidade consumidora, texto de contratos, documentos, fotos, assinaturas, senhas e tokens | Nome de cliente, de contato e de usuário interno (`[CLIENTE_1]`, `[USUARIO_1]`); o mapa fica no servidor | Valores, contagens, percentuais, datas, etapas e situações, cidade e UF, segmento, origem do lead, códigos de projeto, nomes de equipamento |
 
-Há testes automáticos que falham se um desses dados aparecer na carga enviada. **Situação:** o mascaramento é a sub-fase 12B (ainda não implementada); até lá a IA só roda com dados fictícios.
+Há testes automáticos que falham se um desses dados aparecer na carga enviada. **Situação (2026-10-25):** o mascaramento e a barreira final já estão implementados e testados (sub-fase 12B). Falta ligá-los às ferramentas reais de consulta (12D); enquanto isso o assistente de conversa ainda não existe, e a IA só roda com dados fictícios por causa da trava jurídica.
 
 **Risco residual a avaliar:** a combinação de cidade/UF, segmento e valor pode, em casos raros, permitir identificar um cliente pequeno.
 
