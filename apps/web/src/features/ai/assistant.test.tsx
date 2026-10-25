@@ -197,3 +197,51 @@ describe('assistente de IA', () => {
     expect(await screen.findByText('Nenhuma conversa ainda.')).toBeInTheDocument();
   });
 });
+
+describe('insights no início', () => {
+  const insight = {
+    id: 'i-1',
+    kind: 'OVERDUE_RECEIVABLES',
+    severity: 'ATTENTION',
+    text: 'Há 2 parcelas vencidas, somando R$ 3.000,00.',
+    aiWritten: true,
+    facts: [{ key: 'count', label: 'Parcelas vencidas', text: '2' }],
+    link: '/operations/financeiro',
+    status: 'NEW',
+    helpful: null,
+    generatedAt: '2026-10-26T08:00:00.000Z',
+  };
+
+  it('mostra o achado com a origem dos números e marca como não relevante', async () => {
+    let list = [insight];
+    let body: unknown;
+    server.use(
+      http.get(`${API}/ai/insights`, () => HttpResponse.json(list)),
+      http.patch(`${API}/ai/insights/i-1`, async ({ request }) => {
+        body = await request.json();
+        list = [];
+        return HttpResponse.json({ ...insight, status: 'DISMISSED' });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp('/');
+    expect(await screen.findByText('O que a IA notou hoje')).toBeInTheDocument();
+    expect(screen.getByText(/Há 2 parcelas vencidas/)).toBeInTheDocument();
+    expect(screen.getByText('Redigido por IA')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver os dados' })).toHaveAttribute(
+      'href',
+      '/operations/financeiro',
+    );
+    await user.click(screen.getByRole('button', { name: /Não relevante/ }));
+    await waitFor(() => expect(body).toEqual({ status: 'DISMISSED', helpful: false }));
+    await waitFor(() =>
+      expect(screen.queryByText('O que a IA notou hoje')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('sem achados o cartão não aparece', async () => {
+    renderApp('/');
+    await screen.findByRole('heading', { name: /Olá/ });
+    expect(screen.queryByText('O que a IA notou hoje')).not.toBeInTheDocument();
+  });
+});

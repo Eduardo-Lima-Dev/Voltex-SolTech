@@ -254,6 +254,36 @@ function DiagnosticsCard() {
   );
 }
 
+function InsightsRunCard() {
+  const queryClient = useQueryClient();
+  const run = useMutation({
+    mutationFn: () => endpoints.ai.insights.run(),
+    onSuccess: async (data) => {
+      toast.success(
+        `Rotina concluída: ${data.created} novos, ${data.updated} atualizados, ${data.resolved} resolvidos, ${data.written} redigidos pela IA.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['ai'] });
+    },
+    onError: (error) => toast.error(errorMessage(error)),
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Insights do dia</CardTitle>
+        <CardDescription>
+          A rotina roda sozinha uma vez por dia e aparece no início de cada pessoa, conforme a
+          permissão e a carteira. Aqui você pode rodar agora.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" disabled={run.isPending} onClick={() => run.mutate()}>
+          {run.isPending ? 'Rodando…' : 'Rodar a rotina agora'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function IntelligencePage() {
   return (
     <div className="space-y-6">
@@ -264,6 +294,7 @@ export function IntelligencePage() {
         </p>
       </div>
       <SettingsCard />
+      <InsightsRunCard />
       <UsageCard />
       <DiagnosticsCard />
     </div>

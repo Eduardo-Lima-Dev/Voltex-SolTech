@@ -61,6 +61,8 @@ model Tenant {
   aiUsage                     AiUsage[]
   aiConversations             AiConversation[]
   aiMessages                  AiMessage[]
+  insights                    Insight[]
+  priceExtractions            PriceExtraction[]
   catalogSourceLinks          CatalogSourceLink[]
   engineeringEvents           EngineeringEvent[]
   engineeringSurveys          EngineeringSurvey[]

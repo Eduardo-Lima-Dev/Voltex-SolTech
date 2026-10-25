@@ -120,6 +120,8 @@ export const envSchema = z
     AI_MODEL_DEFAULT: z.string().default('@cf/qwen/qwen3-30b-a3b-fp8'),
     AI_MODEL_FALLBACK: z.string().default('@cf/mistralai/mistral-small-3.1-24b-instruct'),
     /** Prazo de cada chamada ao provedor e prazo total de uma resposta (ms). */
+    /** Rotina diária de insights da IA. 0 desliga o agendamento (os testes chamam a rotina direto). */
+    AI_INSIGHTS_INTERVAL_MS: z.coerce.number().int().min(0).default(86_400_000),
     AI_CALL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(15_000),
     AI_TOTAL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(30_000),
     /** Teto diário de toda a plataforma, em neurons. Abaixo dos 10.000 do plano grátis, para deixar folga. */

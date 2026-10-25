@@ -10,6 +10,7 @@ const empty = { data: [], meta: { page: 1, pageSize: 5, total: 0 } };
  */
 const homeDefaults = [
   http.get(`${API}/tasks`, () => HttpResponse.json(empty)),
+  http.get(`${API}/ai/insights`, () => HttpResponse.json([])),
   http.get(`${API}/operations/field/work-orders`, () => HttpResponse.json([])),
   http.get(`${API}/dashboard/commercial`, () =>
     HttpResponse.json({

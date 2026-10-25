@@ -92,3 +92,85 @@ model AiMessage {
   @@index([tenantId, conversationId, createdAt])
   @@map("ai_messages")
 }
+
+enum InsightSeverity {
+  INFO
+  ATTENTION
+  CRITICAL
+
+  @@map("insight_severity")
+}
+
+enum InsightStatus {
+  NEW
+  SEEN
+  RESOLVED
+  DISMISSED
+
+  @@map("insight_status")
+}
+
+/// Achado da rotina diária de insights (Fase 12G): um detector determinístico encontra, a IA só redige a frase.
+model Insight {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  /// Detector que gerou (`OVERDUE_RECEIVABLES`, `STALLED_OPPORTUNITIES`…).
+  kind        String
+  severity    InsightSeverity
+  /// Chave estável do achado (`kind` + entidade/dono): evita duplicar a cada rodada.
+  dedupeKey   String          @map("dedupe_key")
+  /// Dono da carteira, quando o achado é de um vendedor; `null` = achado da empresa.
+  ownerId     String?         @map("owner_id") @db.Uuid
+  /// Permissão necessária para ver o insight.
+  permission  String
+  /// Valores do achado, sempre vindos do sistema: `[{ key, type, value }]`.
+  facts       Json            @default("[]")
+  /// Texto padrão do detector (sempre existe).
+  defaultText String          @map("default_text")
+  /// Texto redigido pela IA e validado (`null` = não redigido; vale o padrão).
+  aiText      String?         @map("ai_text")
+  /// Tela para ver os dados.
+  link        String
+  status      InsightStatus   @default(NEW)
+  statusById  String?         @map("status_by_id") @db.Uuid
+  statusAt    DateTime?       @map("status_at")
+  helpful     Boolean?
+  generatedAt DateTime        @default(now()) @map("generated_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, status, generatedAt])
+  @@map("insights")
+}
+
+enum PriceExtractionStatus {
+  PENDING_REVIEW
+  IMPORTED
+  DISCARDED
+
+  @@map("price_extraction_status")
+}
+
+/// Tabela de preços lida por IA (Fase 12H). Guarda só as linhas extraídas (com o trecho de origem); nada vai
+/// para a lista de preços sem a confirmação de uma pessoa.
+model PriceExtraction {
+  id           String                @id @default(uuid(7)) @db.Uuid
+  tenantId     String                @map("tenant_id") @db.Uuid
+  userId       String                @map("user_id") @db.Uuid
+  filename     String
+  status       PriceExtractionStatus @default(PENDING_REVIEW)
+  /// Linhas extraídas e validadas: fabricante, modelo, fornecedor, preço, vigência, trecho de origem e casamento.
+  rows         Json                  @default("[]")
+  model        String?
+  neurons      Float?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  importedAt   DateTime?             @map("imported_at")
+  importedById String?               @map("imported_by_id") @db.Uuid
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("price_extractions")
+}

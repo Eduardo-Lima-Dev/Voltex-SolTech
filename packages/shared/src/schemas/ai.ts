@@ -138,3 +138,82 @@ export const aiFeedbackSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
 export type AiFeedbackInput = z.infer<typeof aiFeedbackSchema>;
+
+// ---- Insights proativos (12G) ----
+
+export const INSIGHT_SEVERITIES = ['INFO', 'ATTENTION', 'CRITICAL'] as const;
+export type InsightSeverity = (typeof INSIGHT_SEVERITIES)[number];
+
+export const INSIGHT_STATUSES = ['NEW', 'SEEN', 'RESOLVED', 'DISMISSED'] as const;
+export type InsightStatus = (typeof INSIGHT_STATUSES)[number];
+
+/** Detectores de insight. Cada um é uma regra determinística; a IA só redige a frase. */
+export const INSIGHT_KINDS = [
+  'OVERDUE_RECEIVABLES',
+  'STALLED_OPPORTUNITIES',
+  'OVERDUE_INSTALLATIONS',
+  'WARRANTIES_EXPIRING',
+  'BREACHED_TICKETS',
+] as const;
+export type InsightKind = (typeof INSIGHT_KINDS)[number];
+
+/**
+ * Parâmetros PADRÃO dos detectores (não são norma): a parcela só vira achado depois deste atraso. As demais regras
+ * usam os prazos que a empresa já configurou (oportunidade parada na analítica, garantia a vencer na operação).
+ */
+export const INSIGHT_DEFAULTS = {
+  overdueReceivableMinDays: 7,
+  /** Um insight dispensado ou resolvido por uma pessoa só volta depois deste prazo. */
+  reopenAfterDays: 30,
+} as const;
+
+/** Muda a situação de um insight. `NEW` só é gerado pela rotina. */
+export const updateInsightSchema = z.object({
+  status: z.enum(['SEEN', 'RESOLVED', 'DISMISSED']),
+  helpful: z.boolean().optional(),
+});
+export type UpdateInsightInput = z.infer<typeof updateInsightSchema>;
+
+// ---- Procurement assistido (12H) ----
+
+/** Uma linha de preço como o modelo a devolve. Tudo texto/número simples; o servidor revalida. */
+export const extractedPriceRowSchema = z.object({
+  manufacturer: z.string().trim().max(120).default(''),
+  model: z.string().trim().max(120).default(''),
+  description: z.string().trim().max(200).default(''),
+  supplier: z.string().trim().max(120).default(''),
+  sku: z.string().trim().max(80).default(''),
+  /** Preço em reais, como número. */
+  priceReais: z.number().nonnegative().max(100_000_000),
+  validFrom: z.string().trim().max(10).default(''),
+  validTo: z.string().trim().max(10).default(''),
+  /** Trecho do documento de onde a linha saiu (para a pessoa conferir). */
+  excerpt: z.string().trim().max(300).default(''),
+});
+export type ExtractedPriceRow = z.infer<typeof extractedPriceRowSchema>;
+
+export const extractedPricesSchema = z.object({
+  rows: z.array(extractedPriceRowSchema).max(200),
+});
+
+/** Confirmação da prévia: quais linhas importar, com possíveis correções da pessoa. */
+export const confirmPriceExtractionSchema = z.object({
+  rows: z
+    .array(
+      extractedPriceRowSchema
+        .pick({
+          manufacturer: true,
+          model: true,
+          description: true,
+          supplier: true,
+          sku: true,
+          priceReais: true,
+          validFrom: true,
+          validTo: true,
+        })
+        .extend({ index: z.number().int().min(0) }),
+    )
+    .min(1)
+    .max(200),
+});
+export type ConfirmPriceExtractionInput = z.infer<typeof confirmPriceExtractionSchema>;

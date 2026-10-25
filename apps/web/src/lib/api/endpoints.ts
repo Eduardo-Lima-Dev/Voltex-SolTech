@@ -16,6 +16,9 @@ import type {
   AiDiagnosticsDto,
   AiStatusDto,
   AiUsageDto,
+  InsightDto,
+  InsightRunResultDto,
+  UpdateInsightInput,
   UpdateAiSettingsInput,
   LeadScoringConfig,
   LeadScoringConfigInput,
@@ -1427,6 +1430,12 @@ export function createEndpoints(client: ApiClient) {
       removeConversation: (id: string) => client.delete<void>(`/ai/conversations/${id}`),
       feedback: (messageId: string, input: { helpful: boolean; reason?: string }) =>
         client.post<void>(`/ai/messages/${messageId}/feedback`, input),
+      insights: {
+        list: () => client.get<InsightDto[]>('/ai/insights'),
+        update: (id: string, input: UpdateInsightInput) =>
+          client.patch<InsightDto>(`/ai/insights/${id}`, input),
+        run: () => client.post<InsightRunResultDto>('/ai/insights/run'),
+      },
       admin: {
         settings: () => client.get<AiAdminSettingsDto>('/ai/admin/settings'),
         update: (input: UpdateAiSettingsInput) =>

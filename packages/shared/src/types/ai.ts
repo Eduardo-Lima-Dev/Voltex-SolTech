@@ -1,4 +1,11 @@
-import type { AiPurpose, AiUnavailableCode, TenantAiSettings } from '../schemas/ai.js';
+import type {
+  AiPurpose,
+  AiUnavailableCode,
+  InsightKind,
+  InsightSeverity,
+  InsightStatus,
+  TenantAiSettings,
+} from '../schemas/ai.js';
 
 export interface AiQuotaDto {
   /** Cotas em *neurons* por dia e quanto já foi usado hoje (dia UTC). */
@@ -113,3 +120,66 @@ export type AiChatEvent =
   | { type: 'progress'; label: string }
   | { type: 'answer'; data: AiChatResponseDto }
   | { type: 'error'; code: string; message: string; status: number };
+
+// ---- Insights (12G) ----
+
+export interface InsightFactDto {
+  key: string;
+  label: string;
+  /** Valor já formatado (`R$ 5.940,00`). */
+  text: string;
+}
+
+export interface InsightDto {
+  id: string;
+  kind: InsightKind;
+  severity: InsightSeverity;
+  /** Frase mostrada: a redigida pela IA (validada) ou, sem ela, o texto padrão do detector. */
+  text: string;
+  aiWritten: boolean;
+  facts: InsightFactDto[];
+  /** Tela com os dados (caminho do app). */
+  link: string;
+  status: InsightStatus;
+  helpful: boolean | null;
+  generatedAt: string;
+}
+
+export interface InsightRunResultDto {
+  detected: number;
+  created: number;
+  updated: number;
+  resolved: number;
+  written: number;
+}
+
+// ---- Procurement assistido (12H) ----
+
+export interface PriceExtractionRowDto {
+  index: number;
+  manufacturer: string;
+  model: string;
+  description: string;
+  supplier: string;
+  sku: string;
+  priceReais: number;
+  validFrom: string;
+  validTo: string;
+  excerpt: string;
+  /** Equipamento aprovado do catálogo que combina com fabricante e modelo, se houver. */
+  match: { equipmentId: string; label: string } | null;
+  /** Problemas que impedem a importação da linha (preço, vigência, fornecedor). */
+  problems: string[];
+}
+
+export interface PriceExtractionDto {
+  id: string;
+  filename: string;
+  status: 'PENDING_REVIEW' | 'IMPORTED' | 'DISCARDED';
+  rows: PriceExtractionRowDto[];
+  /** Quantas linhas o modelo devolveu e quantas foram descartadas por não passarem na validação. */
+  discardedCount: number;
+  model: string | null;
+  createdAt: string;
+  importedAt: string | null;
+}
