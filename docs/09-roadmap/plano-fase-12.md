@@ -462,7 +462,7 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - Validador da §3.2 e o formato da §3.3.
 - **Aceite:** suíte de vazamento (todos os tipos de dado pessoal × todas as ferramentas) passa; validador reprova números soltos, refs e pseudônimos inexistentes.
 
-### 12C — Camada analítica
+### 12C — Camada analítica — **entregue em 2026-10-25**
 
 - Métricas da §9.1 e §9.2, `clientes_potencial` (§9.3) com amostra mínima, memorial `docs/06-calculos/analitica.md`.
 - **Aceite:** testes com base fixa reproduzem os valores esperados; sem dados → `INSUFFICIENT_SAMPLE`/zero declarado; isolamento entre empresas.
