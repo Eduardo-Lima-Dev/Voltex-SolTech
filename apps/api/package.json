@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "vitest run --config vitest.e2e.config.mts"
+    "test:e2e": "vitest run --config vitest.e2e.config.mts",
+    "ai:eval": "AI_EVAL_REAL=1 vitest run --config vitest.e2e.config.mts test/ai-eval.e2e.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",
