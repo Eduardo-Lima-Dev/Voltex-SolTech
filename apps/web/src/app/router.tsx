@@ -995,6 +995,21 @@ const pageRoutes: RouteObject[] = [
                 },
               },
               {
+                path: 'inteligencia',
+                lazy: async () => {
+                  const { IntelligencePage } =
+                    await import('@/features/admin/intelligence/intelligence-page');
+                  return {
+                    element: (
+                      <RequirePermission anyOf={adminTab('inteligencia').anyOf}>
+                        <IntelligencePage />
+                      </RequirePermission>
+                    ),
+                    handle: { title: 'Inteligência' },
+                  };
+                },
+              },
+              {
                 path: 'privacidade',
                 lazy: async () => {
                   const { PrivacyPage } = await import('@/features/admin/privacy/privacy-page');

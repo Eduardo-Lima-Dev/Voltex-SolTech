@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { COMMISSION_BASES, type CommissionBase } from '@voltex/shared';
 import {
   Badge,
@@ -171,7 +172,14 @@ export function FinancePage() {
   return (
     <div className="space-y-6">
       <header>
-        <h2 className="text-2xl font-semibold tracking-tight">Financeiro</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-2xl font-semibold tracking-tight">Financeiro</h2>
+          <AskAssistantButton
+            label="Resumir com IA"
+            question="Resuma o financeiro: o que recebi, o que está vencido e as comissões a pagar"
+            screen="financeiro"
+          />
+        </div>
         <p className="text-muted-foreground">
           Parcelas, inadimplência e comissões. Tudo é registro manual, sem gateway de pagamento.
         </p>
