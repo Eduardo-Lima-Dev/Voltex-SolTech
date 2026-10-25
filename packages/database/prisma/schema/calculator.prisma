@@ -26,11 +26,13 @@ model CalculationSession {
   createdAt        DateTime     @default(now()) @map("created_at")
   deletedAt        DateTime?    @map("deleted_at")
 
-  tenant    Tenant                     @relation(fields: [tenantId], references: [id])
-  snapshots QuickCalculationSnapshot[]
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity?               @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  snapshots   QuickCalculationSnapshot[]
 
   @@index([tenantId, createdAt])
   @@index([tenantId, trafficLight])
+  @@index([tenantId, opportunityId])
   @@map("calculation_sessions")
 }
 

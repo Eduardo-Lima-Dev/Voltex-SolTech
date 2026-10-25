@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { DomainEvent, type ListDocumentsQuery, type UploadDocumentInput } from '@voltex/shared';
+import { isOwnershipRestricted } from '../prisma/ownership-scope';
 import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../audit/audit.service';
@@ -115,9 +116,21 @@ export class DocumentsService {
     }
   }
 
-  async list(query: ListDocumentsQuery) {
+  /**
+   * Vendedor e SDR só alcançam, pela API de documentos, o que eles mesmos enviaram (ADR-0028). Os documentos das
+   * entidades da carteira (proposta, contrato…) chegam a eles pelas rotas da própria entidade, que já são filtradas.
+   */
+  private uploaderOnly(fromApi: boolean): { uploadedById: string } | Record<string, never> {
+    const userId = this.context.userId;
+    return fromApi && userId && isOwnershipRestricted(this.context.role)
+      ? { uploadedById: userId }
+      : {};
+  }
+
+  async list(query: ListDocumentsQuery, fromApi = false) {
     const where = {
       deletedAt: null,
+      ...this.uploaderOnly(fromApi),
       ...(query.entityType ? { entityType: query.entityType } : {}),
       ...(query.entityId ? { entityId: query.entityId } : {}),
     };
@@ -136,21 +149,21 @@ export class DocumentsService {
     );
   }
 
-  async get(id: string) {
-    return this.toPublic(await this.getOrThrow(id));
+  async get(id: string, fromApi = false) {
+    return this.toPublic(await this.getOrThrow(id, fromApi));
   }
 
-  async versions(id: string) {
-    const document = await this.getOrThrow(id);
+  async versions(id: string, fromApi = false) {
+    const document = await this.getOrThrow(id, fromApi);
     const rows = await this.prisma.db.document.findMany({
-      where: { groupId: document.groupId, deletedAt: null },
+      where: { groupId: document.groupId, deletedAt: null, ...this.uploaderOnly(fromApi) },
       orderBy: { version: 'desc' },
     });
     return rows.map((row) => this.toPublic(row));
   }
 
-  async downloadUrl(id: string) {
-    const document = await this.getOrThrow(id);
+  async downloadUrl(id: string, fromApi = false) {
+    const document = await this.getOrThrow(id, fromApi);
     const url = await this.s3.presignedDownloadUrl(
       document.storageKey,
       document.filename,
@@ -172,8 +185,8 @@ export class DocumentsService {
   }
 
   /** Exclusão lógica: o objeto permanece no bucket (retenção/LGPD é política de infraestrutura). */
-  async remove(id: string) {
-    const document = await this.getOrThrow(id);
+  async remove(id: string, fromApi = false) {
+    const document = await this.getOrThrow(id, fromApi);
     await this.prisma.db.$transaction(async (tx) => {
       await tx.document.update({ where: { id }, data: { deletedAt: new Date() } });
       await this.audit.record(
@@ -189,8 +202,10 @@ export class DocumentsService {
     return { id };
   }
 
-  private async getOrThrow(id: string) {
-    const document = await this.prisma.db.document.findFirst({ where: { id, deletedAt: null } });
+  private async getOrThrow(id: string, fromApi = false) {
+    const document = await this.prisma.db.document.findFirst({
+      where: { id, deletedAt: null, ...this.uploaderOnly(fromApi) },
+    });
     if (!document) throw new NotFoundException('Documento não encontrado');
     return document;
   }

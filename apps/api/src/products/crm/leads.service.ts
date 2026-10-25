@@ -30,6 +30,7 @@ import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../../platform/audit/audit.service';
 import { EventBus } from '../../platform/events/event-bus.service';
+import { isOwnershipRestricted } from '../../platform/prisma/ownership-scope';
 import { PrismaService } from '../../platform/prisma/prisma.service';
 import { OpportunitiesService } from './opportunities.service';
 import { LeadScoringService } from './lead-scoring.service';
@@ -137,6 +138,7 @@ export class LeadsService {
   async create(data: CreateLeadData, options: { ownerFallback?: boolean } = {}): Promise<LeadDto> {
     let ownerId =
       data.ownerId ?? (options.ownerFallback === false ? null : (this.context.userId ?? null));
+    this.users.assertCanAssignPortfolio(data.ownerId);
     await this.users.assertActive(data.ownerId, 'responsável');
     const keys = keysOf(data);
     const duplicate = await this.findDuplicate(keys);
@@ -181,6 +183,7 @@ export class LeadsService {
     if (before.status === LeadStatus.CONVERTED)
       throw new ConflictException('Lead já convertido: edite a conta ou a oportunidade');
     const { status, disqualifiedReason, ...fields } = input;
+    this.users.assertCanAssignPortfolio(fields.ownerId);
     await this.users.assertActive(fields.ownerId, 'responsável');
 
     const merged = {
@@ -290,6 +293,7 @@ export class LeadsService {
           for (const k of ['email', 'phone', 'document'] as const)
             if (keys[k]) seen.set(`${k}:${keys[k]}`, position);
 
+          this.users.assertCanAssignPortfolio(data.ownerId);
           const created = await tx.lead.create({
             data: await this.toCreateData(
               {
@@ -298,7 +302,9 @@ export class LeadsService {
               },
               keys,
               data.ownerId ??
-                (await this.scoring.pickOwner(config, { state: data.state ?? null }, tx)),
+                (this.context.role === 'SALESPERSON'
+                  ? (this.context.userId ?? null)
+                  : await this.scoring.pickOwner(config, { state: data.state ?? null }, tx)),
               config,
             ),
           });
@@ -349,11 +355,27 @@ export class LeadsService {
             where: { documentNormalized: lead.documentNormalized, deletedAt: null },
           })
         : null;
+      if (
+        !existingAccount &&
+        lead.documentNormalized &&
+        isOwnershipRestricted(this.context.role) &&
+        (await this.context.withoutOwnership(() =>
+          tx.account.count({
+            where: { documentNormalized: lead.documentNormalized, deletedAt: null },
+          }),
+        )) > 0
+      )
+        throw new ConflictException({
+          message:
+            'Já existe uma conta com este documento na carteira de outro responsável. Fale com a gestão.',
+          code: 'DUPLICATE_ACCOUNT',
+        });
       const account =
         existingAccount ??
         (await tx.account.create({
           data: {
             tenantId: this.context.requireTenantId(),
+            ownerId: lead.ownerId ?? this.context.userId ?? null,
             type: dto.accountType,
             name: lead.name,
             document: lead.document,
@@ -551,11 +573,27 @@ export class LeadsService {
     };
   }
 
-  /** Procura outro lead com o mesmo e-mail, telefone ou documento (normalizados). */
+  /**
+   * Procura outro lead com o mesmo e-mail, telefone ou documento (normalizados). Quem trabalha só com a própria
+   * carteira também é avisado de duplicidade com a carteira dos outros, mas sem ver quem é (`foreign`).
+   */
   private async findDuplicate(
     keys: Keys,
     excludeId?: string,
     client: Pick<PrismaService['db'], 'lead'> = this.prisma.db,
+  ) {
+    const own = await this.findDuplicateIn(keys, excludeId, client);
+    if (own || !isOwnershipRestricted(this.context.role)) return own;
+    const foreign = await this.context.withoutOwnership(() =>
+      this.findDuplicateIn(keys, excludeId, client),
+    );
+    return foreign ? { id: '', name: '', matchedBy: foreign.matchedBy, foreign: true } : null;
+  }
+
+  private async findDuplicateIn(
+    keys: Keys,
+    excludeId: string | undefined,
+    client: Pick<PrismaService['db'], 'lead'>,
   ) {
     const or = [
       ...(keys.email ? [{ emailNormalized: keys.email }] : []),
@@ -580,7 +618,18 @@ export class LeadsService {
     return { id: found.id, name: found.name, matchedBy };
   }
 
-  private throwDuplicate(duplicate: { id: string; name: string; matchedBy: string[] }): never {
+  private throwDuplicate(duplicate: {
+    id: string;
+    name: string;
+    matchedBy: string[];
+    foreign?: boolean;
+  }): never {
+    if (duplicate.foreign)
+      throw new ConflictException({
+        message: `Já existe um lead com o mesmo ${duplicate.matchedBy.join(' e ')} na carteira de outro responsável. Fale com a gestão.`,
+        code: 'DUPLICATE_LEAD',
+        data: { matchedBy: duplicate.matchedBy },
+      });
     throw new ConflictException({
       message: `Já existe um lead com o mesmo ${duplicate.matchedBy.join(' e ')} (${duplicate.name})`,
       code: 'DUPLICATE_LEAD',

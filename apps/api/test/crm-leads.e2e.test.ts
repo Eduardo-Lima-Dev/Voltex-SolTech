@@ -90,24 +90,36 @@ describe('CRM · Leads (e2e)', () => {
       });
       expect(first.status).toBe(201);
 
-      const byPhone = await post('/leads', seller, { name: 'Outro Nome', phone: `+55 ${p}` });
+      const byPhone = await post('/leads', sdr, { name: 'Outro Nome', phone: `+55 ${p}` });
       expect(byPhone.status).toBe(409);
       expect(byPhone.body.code).toBe('DUPLICATE_LEAD');
       expect(byPhone.body.data).toEqual({ matchedLeadId: first.body.id, matchedBy: ['telefone'] });
 
-      const byEmail = await post('/leads', seller, {
+      const byEmail = await post('/leads', sdr, {
         name: 'Outro',
         email: '  PEDRO.DUP@exemplo.com ',
       });
       expect(byEmail.body.data.matchedBy).toEqual(['e-mail']);
-      const byDoc = await post('/leads', seller, { name: 'Outro', document: '52998224725' });
+      const byDoc = await post('/leads', sdr, { name: 'Outro', document: '52998224725' });
       expect(byDoc.body.data.matchedBy).toEqual(['documento']);
-      const both = await post('/leads', seller, {
+      const both = await post('/leads', sdr, {
         name: 'Outro',
         phone: p,
         email: 'pedro.dup@exemplo.com',
       });
       expect(both.body.data.matchedBy).toEqual(['e-mail', 'telefone']);
+    });
+
+    it('vendedor é avisado da duplicidade com a carteira de outro, sem ver quem é o lead', async () => {
+      const p = phone();
+      const first = await post('/leads', sdr, { name: 'Lead Do SDR', phone: p });
+      expect(first.status).toBe(201);
+      const dup = await post('/leads', seller, { name: 'Outro Nome', phone: p });
+      expect(dup.status).toBe(409);
+      expect(dup.body.code).toBe('DUPLICATE_LEAD');
+      expect(dup.body.data).toEqual({ matchedBy: ['telefone'] });
+      expect(JSON.stringify(dup.body)).not.toContain('Lead Do SDR');
+      expect(JSON.stringify(dup.body)).not.toContain(first.body.id);
     });
 
     it('lead sem contato nenhum não é considerado duplicado de outro sem contato', async () => {
@@ -268,13 +280,14 @@ describe('CRM · Leads (e2e)', () => {
   describe('conversão em conta e oportunidade', () => {
     it('cria conta, contato principal e oportunidade com Project ID; marca o lead como convertido', async () => {
       const lead = await post('/leads', sdr, {
+        ownerId: a.salesperson.id,
         name: 'Carla Converte',
         phone: phone(),
         email: 'carla@exemplo.com',
         segment: 'COMMERCIAL',
         document: '11.444.777/0001-61',
       });
-      await patch(`/leads/${lead.body.id}`, sdr, { status: 'QUALIFIED' });
+      await patch(`/leads/${lead.body.id}`, seller, { status: 'QUALIFIED' });
       const res = await post(`/leads/${lead.body.id}/convert`, seller, { projectType: 'HYBRID' });
       expect(res.status).toBe(201);
       expect(res.body.lead).toMatchObject({
@@ -306,17 +319,25 @@ describe('CRM · Leads (e2e)', () => {
         accountName: 'Carla Converte',
       });
       expect(opportunity.body.projectCode).toMatch(/^VLX-[0-9A-HJKMNP-TV-Z]{8}$/);
-      expect(opportunity.body.ownerId).toBe(a.sdr.id);
+      expect(opportunity.body.ownerId).toBe(a.salesperson.id);
     });
 
     it('lead convertido não converte de novo nem se edita; desqualificado precisa ser reaberto', async () => {
-      const lead = await post('/leads', sdr, { name: 'Converte Uma Vez', phone: phone() });
+      const lead = await post('/leads', sdr, {
+        ownerId: a.salesperson.id,
+        name: 'Converte Uma Vez',
+        phone: phone(),
+      });
       expect((await post(`/leads/${lead.body.id}/convert`, seller, {})).status).toBe(201);
       expect((await post(`/leads/${lead.body.id}/convert`, seller, {})).status).toBe(409);
       expect((await patch(`/leads/${lead.body.id}`, seller, { notes: 'x' })).status).toBe(409);
 
-      const dq = await post('/leads', sdr, { name: 'Desqualificado', phone: phone() });
-      await patch(`/leads/${dq.body.id}`, sdr, {
+      const dq = await post('/leads', sdr, {
+        ownerId: a.salesperson.id,
+        name: 'Desqualificado',
+        phone: phone(),
+      });
+      await patch(`/leads/${dq.body.id}`, seller, {
         status: 'DISQUALIFIED',
         disqualifiedReason: 'Fora da área',
       });
@@ -326,6 +347,7 @@ describe('CRM · Leads (e2e)', () => {
     it('cliente que já existe (mesmo documento) é reaproveitado em vez de duplicado', async () => {
       const doc = '111.444.777-35';
       const l1 = await post('/leads', sdr, {
+        ownerId: a.salesperson.id,
         name: 'Cliente Recorrente',
         phone: phone(),
         document: doc,
@@ -336,6 +358,7 @@ describe('CRM · Leads (e2e)', () => {
         data: { deletedAt: new Date() },
       }); // libera o documento para um novo lead
       const l2 = await post('/leads', sdr, {
+        ownerId: a.salesperson.id,
         name: 'Cliente Recorrente (novo lead)',
         phone: phone(),
         document: doc,
@@ -346,7 +369,10 @@ describe('CRM · Leads (e2e)', () => {
     });
 
     it('SDR converte em conta, mas só quem pode criar oportunidade cria a oportunidade', async () => {
-      const lead = await post('/leads', sdr, { name: 'Passa Para o Vendedor', phone: phone() });
+      const lead = await post('/leads', sdr, {
+        name: 'Passa Para o Vendedor',
+        phone: phone(),
+      });
       expect((await post(`/leads/${lead.body.id}/convert`, sdr, {})).status).toBe(403);
       const ok = await post(`/leads/${lead.body.id}/convert`, sdr, { createOpportunity: false });
       expect(ok.status).toBe(201);
