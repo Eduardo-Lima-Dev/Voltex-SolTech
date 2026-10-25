@@ -343,6 +343,10 @@ Conversão por etapa e por origem, segmento, UF e vendedor; ciclo médio; motivo
 4. **Amostra mínima:** precisa de pelo menos 25 clientes com margem real recebida (para o grupo dos 20% ter ao menos 5); abaixo disso, a ferramenta devolve `INSUFFICIENT_SAMPLE` e a IA diz que não pode responder com segurança (§9.5).
 5. Não é probabilidade de fechamento. Previsão de conversão de verdade fica na §11, só com histórico suficiente.
 
+### 9.4. Contrato das funções
+
+Entrada: empresa, período, filtros. Saída: valores **com o número de registros usados**, a data da consulta e a lista de fatos para a §3. Toda função tem teste com base fixa e casos de borda (sem dados, um registro, valores nulos).
+
 ### 9.5. Amostras mínimas (padrões da plataforma, configuráveis por empresa)
 
 Ficam em `tenant.settings.analytics.minSamples`, aparecem na tela de cada análise ("baseado em N registros; mínimo M") e são marcados como **prudência estatística da plataforma, não norma**.
@@ -356,10 +360,6 @@ Ficam em `tenant.settings.analytics.minSamples`, aparecem na tela de cada análi
 | Previsão de atraso de instalação                                 | 10 instalações concluídas                                                             |
 | Tendência e projeção de geração da planta                        | 14 dias de leitura                                                                    |
 | Médias simples (ticket médio, ciclo médio, MTTR)                 | 5 registros                                                                           |
-
-### 9.4. Contrato das funções
-
-Entrada: empresa, período, filtros. Saída: valores **com o número de registros usados**, a data da consulta e a lista de fatos para a §3. Toda função tem teste com base fixa e casos de borda (sem dados, um registro, valores nulos).
 
 ---
 
