@@ -97,6 +97,10 @@ export const tenantPlanSchema = z.object({
       users: z.number().int().positive().optional(),
       monitoringConnections: z.number().int().positive().optional(),
       storageMb: z.number().int().positive().optional(),
+      /** Cotas diárias de IA, em *neurons* do provedor (Fase 12). Sem valor: padrão da plataforma. */
+      aiDailyNeurons: z.number().int().min(0).optional(),
+      aiDailyNeuronsPerUser: z.number().int().min(0).optional(),
+      aiInsightsDailyNeurons: z.number().int().min(0).optional(),
     })
     .default({}),
 });

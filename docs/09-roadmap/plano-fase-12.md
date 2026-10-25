@@ -25,7 +25,7 @@ O sistema já cobre o ciclo do lead à usina em operação (Fases 0–11). A Fas
 
 **Regras da casa que continuam valendo:** nenhum número regulatório ou técnico inventado; números vêm do motor e do banco, nunca do modelo; decisões de risco ficam com uma pessoa (§54: preço, margem, crédito, aprovação técnica, assinatura, conformidade).
 
-**Teste de qualidade já feito (2026-10-25, dados fictícios, 7 modelos):** todos chamaram ferramentas corretamente. Os melhores em português e na fidelidade aos números foram `@cf/meta/llama-4-scout-17b-16e-instruct` e `@cf/mistralai/mistral-small-3.1-24b-instruct`, com cerca de 10–13 _neurons_ por resposta, o que dá **algo como 700 a 1.000 respostas por dia para a conta inteira**. Modelos de raciocínio (`glm-4.7-flash`, `gemma-4-26b`) devolveram texto vazio com 350 tokens de limite. Os modelos escreveram valores sem formatação ("19800 reais") e um deles criou marcadores que não existiam, o que motivou o desenho de **referências a fatos** da seção 3.
+**Teste de qualidade já feito (2026-10-25, dados fictícios, 7 modelos):** todos chamaram ferramentas corretamente. Os melhores em português e na fidelidade aos números foram `@cf/meta/llama-4-scout-17b-16e-instruct` e `@cf/mistralai/mistral-small-3.1-24b-instruct`, com cerca de 10–13 _neurons_ por resposta nos textos longos do teste. **Medida depois, pelo adaptador real:** o `mistral-small` responde em 0,5–2 s e o `llama-4-scout` levou 13–18 s mesmo em chamadas pequenas, então o **padrão passou a ser o `mistral-small` e o `llama-4-scout` ficou de reserva**; uma chamada simples custou ≈ 1 _neuron_ e uma com ferramenta ≈ 5, o que dá **algo como 700 a 1.000 respostas por dia para a conta inteira**. Modelos de raciocínio (`glm-4.7-flash`, `gemma-4-26b`) devolveram texto vazio com 350 tokens de limite. Os modelos escreveram valores sem formatação ("19800 reais") e um deles criou marcadores que não existiam, o que motivou o desenho de **referências a fatos** da seção 3.
 
 **Fluxo Git:** uma branch por sub-fase `feat/fase-12x-…` a partir de `develop`, merge `--no-ff` em `develop`. Sem push sem pedido. Commits sem crédito ao assistente.
 
@@ -191,7 +191,7 @@ Hoje as listagens do CRM não restringem por responsável: o vendedor vê os reg
 
 ### 5.2. Permissões novas
 
-- Permissões novas: `ai.assistant.use` (usar o assistente), `ai.insights.read` (ver insights), `ai.admin.manage` (ligar/desligar, cotas, ver uso), `procurement.extract` (extrair tabela de preço). Entram em `packages/shared/src/constants/permissions.ts`, nos perfis e em `PERMISSION_LABELS`.
+- Permissões novas: `ai.assistant.use` (usar o assistente), `ai.insights.read` (ver insights), `ai.admin.manage` (ligar/desligar, cotas, ver uso), `procurement.price.extract` (extrair tabela de preço). Entram em `packages/shared/src/constants/permissions.ts`, nos perfis e em `PERMISSION_LABELS`.
 
 ---
 
@@ -406,7 +406,7 @@ Ficam em `tenant.settings.analytics.minSamples`, aparecem na tela de cada análi
 
 ## 13. Procurement assistido (RF-CRM-054)
 
-1. Usuário com `procurement.extract` envia o PDF ou a planilha de preços do fornecedor.
+1. Usuário com `procurement.price.extract` envia o PDF ou a planilha de preços do fornecedor.
 2. O texto é extraído no servidor (`unpdf`, já instalado; planilha pelo leitor existente). **Tabela de preço de empresa não tem dado pessoal**; mesmo assim, o detector de dado pessoal roda antes de enviar.
 3. O modelo devolve **JSON estruturado** (item, fabricante, modelo, unidade, preço, prazo, validade, frete, condição), validado por zod.
 4. Tela de **prévia**: cada linha com o trecho do documento de onde saiu, o casamento sugerido com o catálogo (por código/modelo, determinístico) e marcação do que não casou. Nada é gravado sem o clique "Importar".
@@ -445,7 +445,7 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - ADR-0028 (carteira do vendedor e escopo por responsável) — [escrita](../04-arquitetura/adr/0028-carteira-do-vendedor.md). **Mudou em relação ao plano:** o SDR pode passar leads e contas (ele distribui); o painel comercial segue restrito à gestão.
 - **Aceite:** matriz e2e perfil × rota sem vazamento entre vendedores; gestor continua vendo tudo; 404 em leitura por id de registro alheio; Playwright do vendedor vendo só a própria carteira.
 
-### 12A — Fundações do provedor
+### 12A — Fundações do provedor — **entregue em 2026-10-25**
 
 - ADR-0029 (IA com provedor trocável, custo zero e dados mascarados) e ADR-0030 (assistente por ferramentas de leitura e fatos referenciados).
 - **Roteiro para o advogado** (`docs/governanca/ia-roteiro-juridico.md`), entregue nesta sub-fase para a revisão correr em paralelo (§17).

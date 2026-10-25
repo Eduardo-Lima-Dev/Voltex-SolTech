@@ -58,6 +58,7 @@ model Tenant {
   engineeringReviewComments   EngineeringReviewComment[]
   engineeringSnapshots        EngineeringSnapshot[]
   engineeringShareLinks       EngineeringShareLink[]
+  aiUsage                     AiUsage[]
   catalogSourceLinks          CatalogSourceLink[]
   engineeringEvents           EngineeringEvent[]
   engineeringSurveys          EngineeringSurvey[]
