@@ -60,6 +60,19 @@ const SYNONYMS: Record<string, string[]> = {
   significa: ['glossario'],
   explique: ['glossario'],
   pos: ['posvenda_painel'],
+  previs: [
+    'previsoes_recebimentos',
+    'previsoes_funil',
+    'previsoes_instalacoes',
+    'previsoes_geracao',
+  ],
+  projec: ['previsoes_recebimentos', 'previsoes_funil', 'previsoes_geracao'],
+  'vai receber': ['previsoes_recebimentos'],
+  'vou receber': ['previsoes_recebimentos'],
+  fechar: ['previsoes_funil'],
+  fechamento: ['previsoes_funil'],
+  atras: ['previsoes_instalacoes', 'recebiveis_vencidos'],
+  conclus: ['previsoes_instalacoes'],
 };
 
 /** Ferramentas que valem como padrão quando a pergunta não bate com nenhuma palavra-chave. */

@@ -165,6 +165,7 @@ describe('IA · catálogo de ferramentas (e2e)', () => {
       cotacoes_margens: { projeto: projectCodeA },
       financeiro_projeto: { projeto: projectCodeA },
       planta_desempenho: { projeto: projectCodeA },
+      previsoes_geracao: { projeto: projectCodeA },
       cliente_perfil: { cliente: '[CLIENTE_1]' },
     });
   });
@@ -403,6 +404,7 @@ describe('IA · catálogo de ferramentas (e2e)', () => {
         'cotacoes_margens',
         'financeiro_projeto',
         'planta_desempenho',
+        'previsoes_geracao',
       ])
         expect(await exec(adminOther, tool, { projeto: projectCodeA }), tool).toMatchObject({
           ok: false,

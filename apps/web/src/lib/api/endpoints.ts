@@ -1,4 +1,9 @@
 import type {
+  Forecast,
+  FunnelForecast,
+  GenerationForecast,
+  InstallationForecast,
+  ReceivablesForecast,
   SaveQuoteInput,
   UpdateQuoteInput,
   CalculationSessionDto,
@@ -1421,6 +1426,13 @@ export function createEndpoints(client: ApiClient) {
     },
     aneel: {
       import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
+    },
+    forecasts: {
+      receivables: () => client.get<Forecast<ReceivablesForecast>>('/forecasts/receivables'),
+      funnel: () => client.get<Forecast<FunnelForecast>>('/forecasts/funnel'),
+      installations: () => client.get<Forecast<InstallationForecast>>('/forecasts/installations'),
+      generation: (projectCode: string) =>
+        client.get<Forecast<GenerationForecast>>(`/forecasts/generation/${projectCode}`),
     },
     ai: {
       status: () => client.get<AiStatusDto>('/ai/status'),

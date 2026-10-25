@@ -23,6 +23,7 @@ import {
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
+import { GenerationForecastCard } from '@/features/forecasts/forecast-cards';
 import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
@@ -225,6 +226,8 @@ export function PlantPage() {
       </Card>
 
       <PlantMonitoringSection plantId={p.id} />
+
+      <GenerationForecastCard projectCode={p.projectCode} />
 
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">

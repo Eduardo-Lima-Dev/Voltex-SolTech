@@ -7,6 +7,7 @@ import { OperationsModule } from '../../../products/operations/operations.module
 import { ClientsTools } from './clients.tools';
 import { CommercialTools } from './commercial.tools';
 import { EngineeringTools } from './engineering.tools';
+import { ForecastTools } from './forecast.tools';
 import { FinanceTools } from './finance.tools';
 import { OperationsTools } from './operations.tools';
 import { PlatformTools } from './platform.tools';
@@ -24,6 +25,7 @@ import { AiToolRegistry } from './tool-registry.service';
     CommercialTools,
     EngineeringTools,
     FinanceTools,
+    ForecastTools,
     OperationsTools,
     PlatformTools,
     {
@@ -35,6 +37,7 @@ import { AiToolRegistry } from './tool-registry.service';
         OperationsTools,
         FinanceTools,
         PlatformTools,
+        ForecastTools,
       ],
       useFactory: (...sets: unknown[]) => sets,
     },
