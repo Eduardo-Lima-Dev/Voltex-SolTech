@@ -18,9 +18,10 @@ export function createAiProvider(
   fake: FakeAiProvider,
 ): AiProvider {
   const key = config.get('AI_PROVIDER', { infer: true });
-  if (key === 'fake') {
+  if (key === 'fake' || key === 'demo') {
     if (config.get('NODE_ENV', { infer: true }) === 'production')
-      throw new Error('AI_PROVIDER=fake não pode ser usado em produção');
+      throw new Error(`AI_PROVIDER=${key} não pode ser usado em produção`);
+    fake.demo = key === 'demo';
     return fake;
   }
   if (key === 'cloudflare') return cloudflare;

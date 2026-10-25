@@ -25,6 +25,8 @@ export interface AiGatewayRequest {
   temperature?: number;
   /** Troca o modelo padrão (a avaliação compara modelos). */
   model?: string;
+  /** Hora (ms) em que a resposta inteira precisa estar pronta; o gateway não passa dela. */
+  deadlineAt?: number;
 }
 
 /** Falhas que contam para abrir o disjuntor: o provedor está com problema, não a pergunta ou a cota. */
@@ -65,7 +67,9 @@ export class AiGatewayService {
     if (!this.breaker.canAttempt()) throw new AiUnavailableError('CIRCUIT_OPEN');
 
     const started = Date.now();
-    const totalMs = this.env('AI_TOTAL_TIMEOUT_MS');
+    const totalMs = request.deadlineAt
+      ? Math.max(1_000, request.deadlineAt - started)
+      : this.env('AI_TOTAL_TIMEOUT_MS');
     const callMs = this.env('AI_CALL_TIMEOUT_MS');
     const primary = request.model ?? this.env('AI_MODEL_DEFAULT');
     const fallback = this.env('AI_MODEL_FALLBACK');

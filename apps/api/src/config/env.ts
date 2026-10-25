@@ -113,12 +113,12 @@ export const envSchema = z
      */
     AI_ENABLED: booleanFromString.default(false),
     /** `cloudflare` (real), `fake` (só desenvolvimento e testes) ou `none`. */
-    AI_PROVIDER: z.enum(['cloudflare', 'fake', 'none']).default('none'),
+    AI_PROVIDER: z.enum(['cloudflare', 'fake', 'demo', 'none']).default('none'),
     CLOUDFLARE_ACCOUNT_ID: z.string().default(''),
     CLOUDFLARE_API_TOKEN: z.string().default(''),
     /** Modelo padrão e reserva (ids do catálogo do provedor). */
-    AI_MODEL_DEFAULT: z.string().default('@cf/mistralai/mistral-small-3.1-24b-instruct'),
-    AI_MODEL_FALLBACK: z.string().default('@cf/meta/llama-4-scout-17b-16e-instruct'),
+    AI_MODEL_DEFAULT: z.string().default('@cf/qwen/qwen3-30b-a3b-fp8'),
+    AI_MODEL_FALLBACK: z.string().default('@cf/mistralai/mistral-small-3.1-24b-instruct'),
     /** Prazo de cada chamada ao provedor e prazo total de uma resposta (ms). */
     AI_CALL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(15_000),
     AI_TOTAL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(30_000),

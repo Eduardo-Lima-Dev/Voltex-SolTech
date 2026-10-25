@@ -113,3 +113,28 @@ export const AI_CANNOT_ANSWER_MESSAGES: Record<AiCannotAnswerReason, string> = {
     'Não posso responder: a pergunta está fora do que o assistente cobre (os dados da sua empresa no sistema).',
   INSUFFICIENT_SAMPLE: 'Não posso responder com segurança: há poucos registros para essa análise.',
 };
+
+/** Pergunta ao assistente. `context` é a tela de onde a pessoa pergunta (para o assistente saber de qual projeto ou cliente fala). */
+export const aiChatRequestSchema = z.object({
+  conversationId: z.uuid().optional(),
+  question: z
+    .string()
+    .trim()
+    .min(2, 'Escreva a pergunta')
+    .max(1000, 'A pergunta pode ter até 1.000 caracteres'),
+  context: z
+    .object({
+      /** Código do projeto da tela (ex.: VLX-ABC12345). */
+      projectCode: z.string().trim().max(40).optional(),
+      /** Nome da tela (ex.: `financeiro`, `funil`, `planta`), só para a conversa começar no assunto certo. */
+      screen: z.string().trim().max(40).optional(),
+    })
+    .optional(),
+});
+export type AiChatRequest = z.infer<typeof aiChatRequestSchema>;
+
+export const aiFeedbackSchema = z.object({
+  helpful: z.boolean(),
+  reason: z.string().trim().max(300).optional(),
+});
+export type AiFeedbackInput = z.infer<typeof aiFeedbackSchema>;

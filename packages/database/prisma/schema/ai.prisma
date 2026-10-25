@@ -30,3 +30,65 @@ model AiUsage {
   @@index([day])
   @@map("ai_usage")
 }
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+
+  @@map("ai_message_role")
+}
+
+/// Conversa de um usuário com o assistente. Só o próprio usuário a lê.
+model AiConversation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  /// Primeira pergunta, JÁ mascarada.
+  title       String
+  /// Mapa de pseudônimos da conversa (`[CLIENTE_1]` → id da entidade). Os nomes reais ficam aqui, no servidor.
+  pseudonyms  Json      @default("[]")
+  /// Fatos citáveis da conversa (`F1`…), para as referências das mensagens antigas continuarem valendo.
+  facts       Json      @default("[]")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  messages AiMessage[]
+
+  @@index([tenantId, userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  conversationId String        @map("conversation_id") @db.Uuid
+  role           AiMessageRole
+  /// Usuário: a pergunta já mascarada. Assistente: o texto final, com os valores e os nomes do usuário.
+  text           String
+  /// Assistente: o que o modelo escreveu (com `{{F#}}` e pseudônimos), usado como histórico nas próximas perguntas.
+  maskedText     String?       @map("masked_text")
+  /// `ANSWER`, `CANNOT_ANSWER`, `NEEDS_CLARIFICATION` ou `FALLBACK` (só os dados, sem redação da IA).
+  kind           String?
+  cannotAnswerReason String?   @map("cannot_answer_reason")
+  /// Partes da resposta para a tela: texto e chips de valores com a fonte.
+  parts          Json          @default("[]")
+  /// Fatos citados na resposta, com a fonte (para o "ver os dados").
+  facts          Json          @default("[]")
+  followUps      Json          @default("[]")
+  /// Usuário: tipos de dado pessoal removidos da pergunta (só os tipos e quantos).
+  removed        Json          @default("{}")
+  model          String?
+  neurons        Float?
+  durationMs     Int?          @map("duration_ms")
+  helpful        Boolean?
+  feedbackReason String?       @map("feedback_reason")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  conversation AiConversation @relation(fields: [conversationId], references: [id])
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("ai_messages")
+}

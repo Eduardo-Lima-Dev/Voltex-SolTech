@@ -1,0 +1,63 @@
+{
+  "mode": "simulado",
+  "total": 70,
+  "byCategory": {
+    "ANSWERABLE": {
+      "total": 30,
+      "passed": 30,
+      "grounded": 30,
+      "kinds": {
+        "ANSWER": 30
+      }
+    },
+    "NO_DATA": {
+      "total": 10,
+      "passed": 10,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 10
+      }
+    },
+    "NO_ACCESS": {
+      "total": 8,
+      "passed": 8,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 8
+      }
+    },
+    "OUT_OF_SCOPE": {
+      "total": 8,
+      "passed": 8,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 8
+      }
+    },
+    "SMALL_SAMPLE": {
+      "total": 4,
+      "passed": 4,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 4
+      }
+    },
+    "INJECTION": {
+      "total": 6,
+      "passed": 6,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 6
+      }
+    },
+    "PII": {
+      "total": 4,
+      "passed": 4,
+      "grounded": 0,
+      "kinds": {
+        "CANNOT_ANSWER": 4
+      }
+    }
+  },
+  "failures": []
+}

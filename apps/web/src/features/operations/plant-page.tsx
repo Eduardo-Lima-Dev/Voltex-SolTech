@@ -23,6 +23,7 @@ import {
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
+import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCents, formatDateTime, formatKwp } from '@/lib/format';
@@ -172,7 +173,15 @@ export function PlantPage() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{p.name}</CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-3">
+            {p.name}
+            <AskAssistantButton
+              label="Resumir com IA"
+              question={`Resuma a situação da planta do projeto ${p.projectCode}`}
+              projectCode={p.projectCode}
+              screen="planta"
+            />
+          </CardTitle>
           <CardDescription>
             <Link
               to={`/operations/instalacoes/${p.installationId}`}

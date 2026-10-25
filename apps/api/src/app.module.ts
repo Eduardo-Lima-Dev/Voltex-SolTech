@@ -36,6 +36,7 @@ import { RulesModule } from './platform/rules/rules.module';
 import { CalculatorModule } from './products/calculator/calculator.module';
 import { CrmModule } from './products/crm/crm.module';
 import { AiModule } from './platform/ai/ai.module';
+import { AssistantModule } from './platform/ai/assistant/assistant.module';
 import { AiToolsModule } from './platform/ai/tools/ai-tools.module';
 import { AnalyticsModule } from './platform/analytics/analytics.module';
 import { FeatureGuard } from './platform/tenancy/feature.guard';
@@ -120,6 +121,7 @@ import { UsersModule } from './platform/users/users.module';
     IntegrationsModule,
     AiModule,
     AiToolsModule,
+    AssistantModule,
     AnalyticsModule,
     NotificationsModule,
     CatalogModule,

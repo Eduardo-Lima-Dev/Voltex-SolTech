@@ -8,6 +8,15 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  AiAdminSettingsDto,
+  AiChatEvent,
+  AiChatRequest,
+  AiConversationDetailDto,
+  AiConversationSummaryDto,
+  AiDiagnosticsDto,
+  AiStatusDto,
+  AiUsageDto,
+  UpdateAiSettingsInput,
   LeadScoringConfig,
   LeadScoringConfigInput,
   MfaChallengeDto,
@@ -1407,6 +1416,24 @@ export function createEndpoints(client: ApiClient) {
     },
     aneel: {
       import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
+    },
+    ai: {
+      status: () => client.get<AiStatusDto>('/ai/status'),
+      /** Pergunta em fluxo: `onEvent` recebe o progresso e, no fim, a resposta ou o erro com a mensagem pronta. */
+      chat: (input: AiChatRequest, onEvent: (event: AiChatEvent) => void, signal?: AbortSignal) =>
+        client.postStream<AiChatEvent>('/ai/chat', input, onEvent, { signal }),
+      conversations: () => client.get<AiConversationSummaryDto[]>('/ai/conversations'),
+      conversation: (id: string) => client.get<AiConversationDetailDto>(`/ai/conversations/${id}`),
+      removeConversation: (id: string) => client.delete<void>(`/ai/conversations/${id}`),
+      feedback: (messageId: string, input: { helpful: boolean; reason?: string }) =>
+        client.post<void>(`/ai/messages/${messageId}/feedback`, input),
+      admin: {
+        settings: () => client.get<AiAdminSettingsDto>('/ai/admin/settings'),
+        update: (input: UpdateAiSettingsInput) =>
+          client.put<AiAdminSettingsDto>('/ai/admin/settings', input),
+        usage: () => client.get<AiUsageDto>('/ai/admin/usage'),
+        diagnostics: () => client.post<AiDiagnosticsDto>('/ai/admin/diagnostics'),
+      },
     },
     audit: {
       list: (query: AuditQuery) =>

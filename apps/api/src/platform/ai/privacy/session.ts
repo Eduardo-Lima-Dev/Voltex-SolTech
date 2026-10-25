@@ -11,6 +11,8 @@ export type FinalizedAnswer =
       ok: true;
       kind: 'ANSWER' | 'CANNOT_ANSWER' | 'NEEDS_CLARIFICATION';
       text: string;
+      /** O que o modelo escreveu (com `{{F#}}` e pseudônimos), para o histórico das próximas perguntas. Vazio na recusa. */
+      maskedText: string;
       cannotAnswerReason: AiCannotAnswerReason | null;
       /** Fatos citados na resposta, com a fonte, para o "ver os dados" da tela. */
       factsUsed: Fact[];
@@ -78,6 +80,7 @@ export class AiPrivacySession {
         ok: true,
         kind: 'CANNOT_ANSWER',
         text: cannotAnswerText(parsed.cannotAnswerReason, missing),
+        maskedText: '',
         cannotAnswerReason: parsed.cannotAnswerReason ?? 'NO_DATA',
         factsUsed: [],
         followUps,
@@ -94,6 +97,7 @@ export class AiPrivacySession {
       ok: true,
       kind: parsed.kind,
       text: this.render(parsed.text, canSee),
+      maskedText: parsed.text,
       cannotAnswerReason: null,
       factsUsed: used,
       followUps,

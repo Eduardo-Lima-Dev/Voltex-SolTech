@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AiProvider, AiProviderError, type AiChatRequest, type AiChatResult } from '../ai-provider';
+import { demoBrain } from './demo-brain';
 
 type Script =
   AiChatResult | AiProviderError | ((request: AiChatRequest) => AiChatResult | AiProviderError);
@@ -12,6 +13,8 @@ type Script =
 export class FakeAiProvider extends AiProvider {
   readonly key = 'fake';
   configured = true;
+  /** Sem respostas na fila, responde como o "cérebro" de demonstração (`AI_PROVIDER=demo`). */
+  demo = false;
   /** Fila de respostas: cada chamada consome a primeira; se acabar, devolve `fallbackScript`. */
   private queue: Script[] = [];
   fallbackScript: Script = {
@@ -49,7 +52,7 @@ export class FakeAiProvider extends AiProvider {
       await new Promise<void>((resolve) => setTimeout(resolve, wait));
       if (this.delayMs > request.timeoutMs) throw new AiProviderError('TIMEOUT', 'simulado', true);
     }
-    const next = this.queue.shift() ?? this.fallbackScript;
+    const next = this.queue.shift() ?? (this.demo ? demoBrain : this.fallbackScript);
     const out = typeof next === 'function' ? next(request) : next;
     if (out instanceof AiProviderError) throw out;
     return { ...out, model: request.model };

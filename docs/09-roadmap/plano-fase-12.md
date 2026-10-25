@@ -223,7 +223,7 @@ Hoje as listagens do CRM não restringem por responsável: o vendedor vê os reg
 | ------------------------------------------------ | --------------------------------------- | --------------------------------------------------------------- |
 | Teto global da conta (`AI_DAILY_NEURONS_GLOBAL`) | 9.000 _neurons_/dia                     | ~700 respostas; deixa 1.000 de folga da cota grátis             |
 | Por empresa (`aiDailyNeurons`)                   | 1.500 _neurons_/dia                     | ~110–150 respostas; comporta 6 empresas testando ao mesmo tempo |
-| Por usuário (`aiDailyNeuronsPerUser`)            | 300 _neurons_/dia                       | ~25 respostas                                                   |
+| Por usuário (`aiDailyNeuronsPerUser`)            | 300 _neurons_/dia                       | ~10 respostas (custo real medido: 25 a 90 por pergunta)         |
 | Insights (`aiInsightsDailyNeurons`), por empresa | 150 _neurons_/dia, fora da cota do chat | ~12 redações de insight                                         |
 
 - A soma das cotas das empresas ativas não pode passar do teto global: a CLI recusa e mostra quanto sobra.
@@ -472,14 +472,14 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - Registro, permissões, mapa tema → ferramentas, todas as ferramentas da §8.
 - **Aceite:** os cinco testes de catálogo da §8 para todas as ferramentas.
 
-### 12E — Orquestrador e API do assistente
+### 12E — Orquestrador e API do assistente — **entregue em 2026-10-25** (3 rodadas de ferramenta, não 4; avaliação 70/70 simulada e 58/70 com o `qwen3` real; ver [assistente-ia.md](../07-desenvolvimento/assistente-ia.md))
 
 - Laço: escolher ferramentas → executar como o usuário → redigir com fatos → validar → renderizar; no máximo 4 rodadas de ferramenta; prazo total.
 - Endpoints: `POST /ai/chat` (SSE), `GET /ai/conversations`, `GET /ai/conversations/:id`, `DELETE /ai/conversations/:id`, `POST /ai/messages/:id/feedback`, `GET /ai/status` (ligado, cota restante, situação do provedor).
 - Instrução de sistema versionada no código, com testes de regressão.
 - **Aceite:** conjunto de avaliação (§16) com o `FakeAiProvider` e, em separado, com o modelo real.
 
-### 12F — Tela do assistente
+### 12F — Tela do assistente — **entregue em 2026-10-25** (painel, chips de fonte, histórico, avaliação, copiloto em projeto/planta/financeiro, Administração → Inteligência; roteiro em [roteiro-fase-12.md](../07-desenvolvimento/roteiro-fase-12.md))
 
 - Painel, sugestões por tela, chips de fonte, "ver os dados", estados, histórico, avaliação; copiloto nas fichas.
 - Administração → Inteligência.

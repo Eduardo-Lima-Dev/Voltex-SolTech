@@ -51,3 +51,65 @@ export interface AiDiagnosticsDto {
   code: AiUnavailableCode | null;
   message: string | null;
 }
+
+/** Parte de uma resposta: texto corrido ou um valor com a fonte (vira "chip" na tela). */
+export type AiMessagePart =
+  { type: 'text'; text: string } | { type: 'fact'; factId: string; text: string };
+
+/** De onde veio um valor citado na resposta. */
+export interface AiFactDto {
+  id: string;
+  /** Valor já formatado (`R$ 5.940,00`). */
+  text: string;
+  type: string;
+  tool: string;
+  /** Rótulo em português da consulta feita. */
+  toolLabel: string;
+  /** Caminho do campo no resultado (`totalReceivedCents`). */
+  field: string;
+  queriedAt: string;
+}
+
+export type AiAnswerKind = 'ANSWER' | 'CANNOT_ANSWER' | 'NEEDS_CLARIFICATION' | 'FALLBACK';
+
+export interface AiMessageDto {
+  id: string;
+  role: 'USER' | 'ASSISTANT';
+  /** Texto completo, sem formatação especial (para copiar). */
+  text: string;
+  parts: AiMessagePart[];
+  kind: AiAnswerKind | null;
+  cannotAnswerReason: string | null;
+  facts: AiFactDto[];
+  followUps: string[];
+  /** Pergunta: tipos de dado pessoal que foram removidos antes de ir à IA. */
+  removed: Record<string, number>;
+  helpful: boolean | null;
+  createdAt: string;
+}
+
+export interface AiChatResponseDto {
+  conversationId: string;
+  message: AiMessageDto;
+  /** Aviso quando algo foi removido da pergunta (ex.: "Removi um CPF da sua pergunta"). */
+  notice: string | null;
+}
+
+export interface AiConversationSummaryDto {
+  id: string;
+  title: string;
+  updatedAt: string;
+  messagesCount: number;
+}
+
+export interface AiConversationDetailDto {
+  id: string;
+  title: string;
+  messages: AiMessageDto[];
+}
+
+/** Eventos do envio em fluxo (SSE): progresso, resposta final ou erro com a mensagem pronta. */
+export type AiChatEvent =
+  | { type: 'progress'; label: string }
+  | { type: 'answer'; data: AiChatResponseDto }
+  | { type: 'error'; code: string; message: string; status: number };

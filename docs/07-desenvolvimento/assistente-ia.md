@@ -2,7 +2,7 @@
 
 Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
 
-> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos), 12C (camada analítica) e 12D (catálogo de ferramentas). O orquestrador (o chat de fato) e as telas vêm nas sub-fases 12E e 12F.
+> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos), 12C (camada analítica), 12D (catálogo de ferramentas), 12E (assistente de ponta a ponta) e 12F (telas). Insights, compras e previsões (12G a 12I) ainda não existem. **Roteiro para ver na tela:** [roteiro-fase-12.md](roteiro-fase-12.md).
 
 ## Ligar a IA no ambiente
 
@@ -10,7 +10,7 @@ No `.env` (nunca versionar valores reais):
 
 ```
 AI_ENABLED=true
-AI_PROVIDER=cloudflare
+AI_PROVIDER=cloudflare     # ou `demo` para ver as telas sem rede e sem custo (respostas determinísticas, não é inteligência)
 CLOUDFLARE_ACCOUNT_ID=…     # painel da Cloudflare → Workers AI → Use REST API
 CLOUDFLARE_API_TOKEN=…      # token com Workers AI (Leitura e Edição)
 ```
@@ -24,7 +24,7 @@ Não cadastre cartão na conta da Cloudflare: no plano grátis a chamada **falha
    set -a && . ./.env && set +a
    TENANT_SLUG=voltex-demo DEMO=true ENABLED=true node apps/api/dist/cli/set-tenant-ai.js
    ```
-2. Ou pelo administrador da empresa: `PUT /ai/admin/settings` com `{ "enabled": true, "acceptTerms": true }` (a tela vem na 12F). O aceite fica registrado (quem e quando) e auditado.
+2. Ou pelo administrador da empresa, em **Administração → Inteligência** (marca o aceite dos termos e liga), ou por `PUT /ai/admin/settings` com `{ "enabled": true, "acceptTerms": true }`. O aceite fica registrado (quem e quando) e auditado.
 3. Cotas por empresa (neurons por dia): `AI_DAILY=1500 AI_PER_USER=300 AI_INSIGHTS=150`. A soma das empresas ligadas não pode passar do teto da plataforma (`AI_DAILY_NEURONS_GLOBAL`, 9.000): a ferramenta recusa.
 
 ## Conferir que funciona
@@ -55,8 +55,8 @@ Chamada que falha por `PROVIDER_DOWN`, `TIMEOUT` ou `EMPTY_RESPONSE` é repetida
 
 - Testes não usam a internet nem gastam cota: `AI_PROVIDER=fake` e a classe `FakeAiProvider` (respostas programadas, atraso e falhas simuladas). Ela é recusada em produção.
 - O adaptador da Cloudflare tem testes com respostas gravadas (`providers/cloudflare-ai.provider.test.ts`); sempre que possível, confira também com uma chamada real (`/ai/admin/diagnostics`).
-- Latência medida em 2026-10-25: `mistral-small-3.1` 0,5 a 2 s; `llama-4-scout` 13 a 18 s em chamadas pequenas. Por isso o padrão é o primeiro e o segundo é reserva.
-- Custo medido: chamada simples ≈ 1 neuron; com ferramenta ≈ 5; a estimativa usada para barrar antes de chamar é de 15.
+- Modelo padrão: `qwen3-30b-a3b-fp8` (≈ 16 neurons por chamada); reserva: `mistral-small-3.1` (≈ 60 por chamada, mais fiel). O qwen3 às vezes responde vazio; então vale o reserva. `llama-4-scout` foi descartado pela latência (13 a 18 s).
+- **Custo real medido com o assistente completo (2026-10-25):** 16 a 63 neurons por chamada ao modelo e **25 a 90 neurons por pergunta** (uma pergunta usa de 1 a 3 chamadas). A estimativa inicial (≈ 5 por chamada) estava otimista. Com as cotas padrão isso dá, **por dia**: ~10 perguntas por usuário (300), ~20 a 60 por empresa (1.500) e ~100 a 350 para a conta inteira (9.000). Para testes com clientes, ajuste as cotas com a CLI `set-tenant-ai` e acompanhe em Administração → Inteligência.
 
 ## Privacidade e fatos (12B)
 
@@ -103,3 +103,30 @@ Código em `apps/api/src/platform/ai/tools/`. Cada ferramenta é uma **consulta 
 **Criar uma ferramenta nova:** escreva-a no conjunto do domínio com `defineTool({ name, area, description, permissions, mirrors, params, run })`. Devolva só campos seguros e use os pseudônimos do `ctx`. Os testes de `ai-tools.e2e.test.ts` já a cobrem (espelho de permissão, vazamento, carteira, isolamento). Para seu nome de campo ser reconhecido como dinheiro, percentual, contagem ou dias, siga a convenção: `...Cents`, `...Pct` (pontos percentuais), `...Rate` (fração), `...Count`, `...Days`, `...Kwh`.
 
 Lacunas conhecidas: `previsoes` (12I) ainda não existe; e a descoberta de clientes citados pelo nome na pergunta (para já virarem pseudônimo antes de ir ao modelo) é feita no orquestrador (12E).
+
+## Assistente (12E)
+
+Código em `apps/api/src/platform/ai/assistant/`. Fluxo de `AssistantService.ask`:
+
+1. **Privacidade da pergunta:** detectores trocam CPF, CNPJ, e-mail, telefone, CEP e coordenadas por marcadores; os tipos removidos viram o `notice` mostrado ao usuário. Nomes de clientes citados viram pseudônimos (`[CLIENTE_1]`); nome ambíguo vira pedido de esclarecimento.
+2. **Área sem acesso:** se a pergunta é de uma área que o perfil não pode ver (ex.: financeiro), responde com recusa fixa, sem chamar o modelo.
+3. **Seleção de ferramentas** por palavra-chave (`tool-selection.ts`), só as que o perfil pode usar; até 3 rodadas de chamadas de ferramenta.
+4. **Resposta estruturada** (`ANSWER`, `CANNOT_ANSWER`, `NEEDS_CLARIFICATION`) com referências `{{F#}}`; o validador barra número solto, referência inexistente, dado pessoal e idioma errado. Falhou: **uma** nova tentativa com instrução; falhou de novo: **resposta só com os dados** (`FALLBACK`), sem inventar.
+5. **Barreira final** antes de qualquer chamada ao provedor (`PRIVACY_BLOCKED`) e prazos de 15 s por chamada e 30 s no total.
+
+Rotas: `POST /ai/chat` (JSON, ou fluxo SSE com `Accept: text/event-stream`, eventos `progress`, `answer` e `error`), `GET /ai/conversations`, `GET /ai/conversations/:id`, `DELETE /ai/conversations/:id`, `POST /ai/messages/:id/feedback`. **Só o dono lê a própria conversa**; o título e o texto guardado são os mascarados; as conversas entram na exportação e na eliminação de dados da empresa (LGPD). A instrução de sistema é versionada (`PROMPT_VERSION`).
+
+### Avaliação de 70 perguntas
+
+`apps/api/test/ai-eval.e2e.test.ts`: 30 respondíveis, 10 sem dado, 8 sem acesso, 8 fora de escopo, 4 amostra pequena, 6 injeção de instrução e 4 com dado pessoal. Em CI roda com o provedor simulado e **exige 70/70**. Com o modelo real (`AI_EVAL_REAL=1 pnpm ai:eval`, opcional `AI_EVAL_MODEL`; gasta cota) os relatórios ficam em `apps/api/test-results/` (fora do git).
+
+Medido com o `qwen3` em 2026-10-25: **58 de 70** passaram. Recusas corretas (sem dado, sem acesso, fora de escopo, injeção): 32 de 32; dado pessoal: 3 de 4 (a falha foi resposta vazia do modelo, sem vazamento); amostra pequena: 2 de 4 (um caso respondeu onde devia recusar); respondíveis: 21 de 30 (as falhas foram respostas vazias do modelo, recusas indevidas e três respostas só com dados). **Nenhum vazamento de dado pessoal em nenhuma execução.**
+
+## Telas (12F)
+
+Código em `apps/web/src/features/ai/` e `features/admin/intelligence/`.
+
+- **Pergunte ao Voltex:** botão no cabeçalho (só com `ai.assistant.use`) abre o painel lateral (tela cheia no celular). Mostra o progresso do fluxo, a resposta com os valores como **chips** (clique para ver a consulta, o campo e a hora de onde veio), "Ver os dados", o selo "Gerado por IA a partir dos dados do sistema. Confira antes de decidir.", sugestões por tela, perguntas de seguimento, avaliação útil/não útil com motivo, nova conversa e histórico com apagar. Os estados (indisponível, cota esgotada, recusa, só dados, erro) mostram a mensagem pronta do servidor.
+- **Copiloto nas fichas:** botão "Resumir com IA" no projeto, na planta e no financeiro abre o painel numa conversa nova com a pergunta pronta (e o código do projeto no contexto).
+- **Administração → Inteligência** (`ai.admin.manage`): liga/desliga com aceite dos termos aqui registrado, situação e cotas do dia, uso dos últimos 30 dias e teste do modelo. Avisa quando falta o parecer jurídico (a IA só funciona em empresa de demonstração).
+- Testes: `features/ai/assistant.test.tsx` e `features/admin/intelligence/intelligence.test.tsx` (MSW); Playwright `apps/e2e/tests/jornada-ia.spec.ts` (`pnpm jornada`), com `AI_PROVIDER=demo` no servidor de teste e a empresa marcada como demonstração em `prepare-db.mjs`.
