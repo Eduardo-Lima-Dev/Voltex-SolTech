@@ -273,6 +273,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'ai.insights.read',
     'ops.plant.read',
     'platform.communication.send',
+    'crm.account.read',
     'crm.finance.read',
     'crm.finance.write',
     'crm.margin.read',

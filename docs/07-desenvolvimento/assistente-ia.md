@@ -2,7 +2,7 @@
 
 Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
 
-> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos) e 12C (camada analítica). O chat, as ferramentas e as telas vêm nas sub-fases 12D a 12F.
+> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos), 12C (camada analítica) e 12D (catálogo de ferramentas). O orquestrador (o chat de fato) e as telas vêm nas sub-fases 12E e 12F.
 
 ## Ligar a IA no ambiente
 
@@ -78,3 +78,28 @@ Para uma ferramenta nova (12D): devolver o resultado pela `session.ingestToolRes
 ## Camada analítica (12C)
 
 Rotas `GET /analytics/*` (leads, funil, ciclo de venda, motivos de perda, oportunidades paradas, tarefas, clientes, cliente por id, clientes com mais potencial) e `GET/PUT /analytics/settings`. Definições, fórmulas e exemplos em [analitica.md](../06-calculos/analitica.md). A IA vai consumir estas mesmas contas pelas ferramentas da 12D: o modelo nunca calcula, só explica o que a camada devolve. Sem amostra mínima, o resultado traz `INSUFFICIENT_SAMPLE`, e o assistente responde "não posso responder com segurança".
+
+## Catálogo de ferramentas (12D)
+
+Código em `apps/api/src/platform/ai/tools/`. Cada ferramenta é uma **consulta de leitura** que o modelo pode pedir; ele nunca recebe o banco, só o que elas devolvem, já mascarado e em fatos referenciados.
+
+**Regras de toda ferramenta** (um teste confere cada uma):
+
+1. **Permissão:** exige a mesma permissão da rota de leitura que espelha (`mirrors`), às vezes mais (o financeiro). Sem `ai.assistant.use`, nenhuma é oferecida ou executada.
+2. **Quem pergunta:** roda com a empresa, o perfil e a **carteira** de quem perguntou. O vendedor só consulta o que é dele.
+3. **Sem dado pessoal:** nome de cliente, contato, usuário e equipe sai como pseudônimo (`ctx.client/contact/person/crew`); texto livre digitado por pessoas (títulos de chamado, observações, descrições) **não** é devolvido.
+4. **Tamanho:** o resultado é cortado até caber (listas pela metade, repetidamente) e avisa `truncated`.
+5. **Falhas:** `ACCESS_DENIED` (com a área), `NOT_FOUND` (inclusive registro fora da carteira), `INVALID_ARGUMENTS` (sem repetir o valor) e `ERROR`.
+
+| Área                 | Ferramentas                                                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Comercial            | `leads_resumo`, `leads_buscar`, `funil_resumo`, `oportunidades_paradas`, `oportunidade_detalhe`, `tarefas_resumo`, `cotacoes_margens`, `propostas_resumo`, `contratos_resumo`, `projetos_resumo`, `painel_comercial`, `faturas_resumo` |
+| Clientes             | `clientes_ranking`, `cliente_perfil`, `clientes_potencial`, `clientes_risco`                                                                                                                                                           |
+| Engenharia           | `engenharia_painel`, `offgrid_painel`, `calculos_resumo`                                                                                                                                                                               |
+| Operação e pós-venda | `operacao_painel`, `instalacoes_buscar`, `agenda_resumo`, `pendencias_campo`, `comissionamento_resumo`, `posvenda_painel`, `planta_desempenho`, `chamados_resumo`, `garantias_resumo`, `om_contratos`                                  |
+| Financeiro           | `financeiro_visao`, `recebiveis_vencidos`, `financeiro_projeto`, `comissoes_resumo`                                                                                                                                                    |
+| Plataforma           | `catalogo_buscar`, `regras_ativas`, `glossario`                                                                                                                                                                                        |
+
+**Criar uma ferramenta nova:** escreva-a no conjunto do domínio com `defineTool({ name, area, description, permissions, mirrors, params, run })`. Devolva só campos seguros e use os pseudônimos do `ctx`. Os testes de `ai-tools.e2e.test.ts` já a cobrem (espelho de permissão, vazamento, carteira, isolamento). Para seu nome de campo ser reconhecido como dinheiro, percentual, contagem ou dias, siga a convenção: `...Cents`, `...Pct` (pontos percentuais), `...Rate` (fração), `...Count`, `...Days`, `...Kwh`.
+
+Lacunas conhecidas: `previsoes` (12I) ainda não existe; e a descoberta de clientes citados pelo nome na pergunta (para já virarem pseudônimo antes de ir ao modelo) é feita no orquestrador (12E).

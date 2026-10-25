@@ -467,7 +467,7 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - Métricas da §9.1 e §9.2, `clientes_potencial` (§9.3) com amostra mínima, memorial `docs/06-calculos/analitica.md`.
 - **Aceite:** testes com base fixa reproduzem os valores esperados; sem dados → `INSUFFICIENT_SAMPLE`/zero declarado; isolamento entre empresas.
 
-### 12D — Catálogo de ferramentas
+### 12D — Catálogo de ferramentas — **entregue em 2026-10-25** (36 ferramentas; `margem_real_resumo` e `segmentos_resultado` ficaram cobertas por `clientes_ranking` e `funil_resumo`)
 
 - Registro, permissões, mapa tema → ferramentas, todas as ferramentas da §8.
 - **Aceite:** os cinco testes de catálogo da §8 para todas as ferramentas.
