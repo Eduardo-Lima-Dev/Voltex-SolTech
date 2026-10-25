@@ -74,6 +74,7 @@ import { WorkOrdersService } from './work-orders.service';
     PlantsService,
     TicketsService,
     MonitoringService,
+    AftersalesDashboardService,
   ],
 })
 export class OperationsModule {}

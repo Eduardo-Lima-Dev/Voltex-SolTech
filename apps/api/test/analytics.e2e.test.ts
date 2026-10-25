@@ -144,6 +144,15 @@ describe('Camada analítica (e2e)', () => {
       expect(all.body.clientsCount).toBe(3);
     });
 
+    it('o perfil Financeiro enxerga as contas e analisa os clientes com os valores', async () => {
+      const res = await get('/analytics/clients?sortBy=margin&limit=50', finance);
+      expect(res.status).toBe(200);
+      expect(res.body.financeIncluded).toBe(true);
+      expect(res.body.clientsCount).toBe(3);
+      expect(res.body.rows[0]).toMatchObject({ marginRealCents: 600_000 });
+      expect((await get('/accounts?pageSize=5', finance)).status).toBe(200);
+    });
+
     it('perfil de um cliente: o dele sim, o de outra carteira 404, conta inexistente 404', async () => {
       expect((await get(`/analytics/clients/${dealA1.accountId}`, sellerA.token)).status).toBe(200);
       expect((await get(`/analytics/clients/${dealB1.accountId}`, sellerA.token)).status).toBe(404);

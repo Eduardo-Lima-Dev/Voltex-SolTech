@@ -288,7 +288,8 @@ const SECTIONS: readonly Section[] = [
   },
   {
     key: 'engineering',
-    permission: 'engine.project.read',
+    // O painel da engenharia exige gerenciar pedidos (a rota `/engineering/dashboard`).
+    permission: 'engine.request.manage',
     firstFor: ['ENGINEERING', 'TECHNICAL_LEAD'],
     node: <EngineeringCard />,
   },
