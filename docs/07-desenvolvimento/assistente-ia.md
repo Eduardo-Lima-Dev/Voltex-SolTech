@@ -2,7 +2,7 @@
 
 Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
 
-> **Estado:** sub-fase 12A (fundações). Existe o provedor, o portão de acesso, as cotas, o uso diário e o diagnóstico. O chat, as ferramentas e as telas vêm nas sub-fases 12B a 12F.
+> **Estado:** sub-fases 12A (fundações) e 12B (privacidade e fatos). O chat, as ferramentas e as telas vêm nas sub-fases 12C a 12F.
 
 ## Ligar a IA no ambiente
 
@@ -57,3 +57,20 @@ Chamada que falha por `PROVIDER_DOWN`, `TIMEOUT` ou `EMPTY_RESPONSE` é repetida
 - O adaptador da Cloudflare tem testes com respostas gravadas (`providers/cloudflare-ai.provider.test.ts`); sempre que possível, confira também com uma chamada real (`/ai/admin/diagnostics`).
 - Latência medida em 2026-10-25: `mistral-small-3.1` 0,5 a 2 s; `llama-4-scout` 13 a 18 s em chamadas pequenas. Por isso o padrão é o primeiro e o segundo é reserva.
 - Custo medido: chamada simples ≈ 1 neuron; com ferramenta ≈ 5; a estimativa usada para barrar antes de chamar é de 15.
+
+## Privacidade e fatos (12B)
+
+Código em `apps/api/src/platform/ai/privacy/`. Nada disso depende do provedor e tudo roda nos testes sem internet.
+
+| Peça                   | O que faz                                                                                                                                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `detectors.ts`         | Acha CPF e CNPJ (com dígito verificador), e-mail, telefone brasileiro, CEP, coordenadas e número longo (UC, contrato). Prefere mascarar a mais.                                                                                    |
+| `pseudonymizer.ts`     | Nome de cliente, contato, usuário e equipe vira `[CLIENTE_1]`… por conversa. Troca sem diferenciar maiúsculas ou acento, só palavra inteira. Na volta, mostra o nome real só a quem pode ver; sem permissão, fica "um cliente".    |
+| `facts.ts`             | Todo número, data, código e texto com algarismo de uma ferramenta vira um fato `F#` com tipo, valor e fonte. O modelo recebe `{ ref: "{{F3}}", valor: "R$ 5.940,00" }` e escreve só a referência.                                  |
+| `renderer.ts`          | Troca `{{F3}}` pelo valor formatado em pt-BR.                                                                                                                                                                                      |
+| `validator.ts`         | Reprova a resposta com algarismo fora de referência, referência ou pseudônimo inexistente, dado pessoal ou texto fora do português.                                                                                                |
+| `structured-answer.ts` | Formato `ANSWER` / `CANNOT_ANSWER` / `NEEDS_CLARIFICATION`; o texto da recusa é fixo do sistema.                                                                                                                                   |
+| `session.ts`           | Junta tudo: mascara a pergunta, transforma o resultado das ferramentas, valida e renderiza a resposta. Resposta reprovada devolve o texto de reforço para a 2ª tentativa; nunca chega à tela.                                      |
+| `guard.ts`             | Última barreira, dentro do gateway: se ainda houver dado pessoal no que vai ao provedor, **não envia**, registra `ai.privacy_blocked` na auditoria (só os tipos e quantos) e responde "por segurança, a pergunta não foi enviada". |
+
+Para uma ferramenta nova (12D): devolver o resultado pela `session.ingestToolResult(...)`, registrar nomes com `session.pseudonyms.alias(...)` e usar os dados de teste de `apps/api/test/ai-pii-fixtures.ts` na suíte de vazamento.

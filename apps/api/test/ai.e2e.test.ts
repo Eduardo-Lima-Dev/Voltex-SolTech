@@ -306,6 +306,70 @@ describe('IA · fundações (e2e)', () => {
       expect(usage.totals.failures).toBeGreaterThanOrEqual(2);
     });
   });
+
+  describe('privacidade na saída (última barreira)', () => {
+    const run = async <T>(fn: () => Promise<T>) => {
+      const { RequestContext } = await import('../src/common/context/request-context');
+      return t.app
+        .get(RequestContext)
+        .run({ tenantId: a.id, userId: a.owner.id, role: 'OWNER' }, fn);
+    };
+
+    it('qualquer tipo de dado pessoal bloqueia o envio: o provedor nem é chamado e o incidente é auditado sem o dado', async () => {
+      const { AiUnavailableError } = await import('../src/platform/ai/ai-errors');
+      const { PERSONAL_DATA_SAMPLES } = await import('./ai-pii-fixtures');
+      for (const [type, sample] of Object.entries(PERSONAL_DATA_SAMPLES)) {
+        await expect(
+          run(() =>
+            gateway.chat({
+              purpose: 'CHAT',
+              messages: [{ role: 'user', content: `Resuma o caso: ${sample}` }],
+            }),
+          ),
+          type,
+        ).rejects.toMatchObject({ aiCode: 'PRIVACY_BLOCKED' });
+      }
+      expect(fake.calls, 'nada foi enviado ao provedor').toHaveLength(0);
+      const audit = await t.prisma.system.auditLog.findMany({
+        where: { tenantId: a.id, action: 'ai.privacy_blocked' },
+      });
+      expect(audit).toHaveLength(Object.keys(PERSONAL_DATA_SAMPLES).length);
+      const stored = JSON.stringify(audit.map((x) => x.after));
+      for (const sample of Object.values(PERSONAL_DATA_SAMPLES))
+        expect(stored).not.toContain(sample);
+      const err = new AiUnavailableError('PRIVACY_BLOCKED');
+      expect(err.getStatus()).toBe(422);
+    });
+
+    it('texto mascarado passa e chega ao provedor sem o dado', async () => {
+      const { AiPrivacySession } = await import('../src/platform/ai/privacy/session');
+      const session = new AiPrivacySession();
+      session.pseudonyms.alias('CLIENTE', 'a1', 'Helena Duarte Campos');
+      const masked = session.maskUserText(
+        'Quanto Helena Duarte Campos deve? CPF 529.982.247-25 e-mail h@example.com',
+      );
+      fake.enqueue({
+        text: 'ok',
+        toolCalls: [],
+        model: 'x',
+        neurons: 1,
+        promptTokens: 1,
+        completionTokens: 1,
+        finishReason: 'stop',
+      });
+      await run(() =>
+        gateway.chat({ purpose: 'CHAT', messages: [{ role: 'user', content: masked.text }] }),
+      );
+      expect(fake.calls).toHaveLength(1);
+      const sent = JSON.stringify(fake.calls[0]!.messages);
+      expect(sent).toContain('[CLIENTE_1]');
+      expect(sent).not.toMatch(/Helena|529\.982|h@example/);
+    });
+
+    it('o diagnóstico (texto fixo, sem dado) continua passando pela barreira', async () => {
+      expect((await post('/ai/admin/diagnostics', owner)).body.ok).toBe(true);
+    });
+  });
 });
 
 describe('IA · ambiente sem IA e teto da plataforma (e2e)', () => {

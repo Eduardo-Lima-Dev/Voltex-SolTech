@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AiPurpose, AiUnavailableCode } from '@voltex/shared';
 import type { Env } from '../../config/env';
+import { AuditService } from '../audit/audit.service';
 import { AiGateService } from './ai-gate.service';
 import { AiUnavailableError } from './ai-errors';
 import {
@@ -14,6 +15,7 @@ import {
 import { exceededQuota } from './ai-quota';
 import { AiUsageService } from './ai-usage.service';
 import { CircuitBreaker } from './circuit-breaker';
+import { PersonalDataLeak, assertNoPersonalData } from './privacy/guard';
 
 export interface AiGatewayRequest {
   purpose: AiPurpose;
@@ -43,6 +45,7 @@ export class AiGatewayService {
     private readonly gate: AiGateService,
     private readonly usage: AiUsageService,
     private readonly config: ConfigService<Env, true>,
+    private readonly audit: AuditService,
   ) {}
 
   private env<K extends keyof Env>(key: K): Env[K] {
@@ -52,6 +55,7 @@ export class AiGatewayService {
   async chat(request: AiGatewayRequest): Promise<AiChatResult> {
     const blocked = await this.gate.blocker();
     if (blocked) throw new AiUnavailableError(blocked);
+    await this.assertSafeToSend(request);
     const quota = exceededQuota(
       request.purpose,
       await this.usage.limits(),
@@ -103,6 +107,27 @@ export class AiGatewayService {
       }
     }
     throw new AiUnavailableError(last?.code ?? 'PROVIDER_DOWN');
+  }
+
+  /**
+   * Última barreira de privacidade (ADR-0030): se ainda houver dado pessoal no que vai ao provedor, não envia nada,
+   * registra o incidente (só os tipos e quantos, nunca o dado) e responde com a mensagem pronta.
+   */
+  private async assertSafeToSend(request: AiGatewayRequest): Promise<void> {
+    try {
+      assertNoPersonalData(request.messages);
+    } catch (error) {
+      if (!(error instanceof PersonalDataLeak)) throw error;
+      this.logger.error({ types: error.counts }, 'Envio à IA bloqueado: dado pessoal detectado');
+      await this.audit
+        .record({
+          action: 'ai.privacy_blocked',
+          entity: 'Ai',
+          after: { purpose: request.purpose, types: error.counts },
+        })
+        .catch(() => undefined);
+      throw new AiUnavailableError('PRIVACY_BLOCKED');
+    }
   }
 
   /** Para os testes: volta o disjuntor ao estado fechado. */

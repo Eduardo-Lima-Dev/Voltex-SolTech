@@ -32,6 +32,8 @@ export const AI_UNAVAILABLE_CODES = [
   'CIRCUIT_OPEN',
   /** O modelo respondeu vazio (acontece com modelos que "pensam" além do limite). */
   'EMPTY_RESPONSE',
+  /** O conteúdo a enviar ainda tinha dado pessoal: por segurança, nada foi enviado ao provedor. */
+  'PRIVACY_BLOCKED',
 ] as const;
 export type AiUnavailableCode = (typeof AI_UNAVAILABLE_CODES)[number];
 
@@ -57,6 +59,8 @@ export const AI_UNAVAILABLE_MESSAGES: Record<AiUnavailableCode, string> = {
   CIRCUIT_OPEN:
     'O assistente de IA está instável e foi pausado por alguns instantes. Os dados do sistema continuam acessíveis normalmente.',
   EMPTY_RESPONSE: 'A IA não conseguiu montar uma resposta. Tente reformular a pergunta.',
+  PRIVACY_BLOCKED:
+    'Por segurança, a pergunta não foi enviada à IA porque ainda continha dado pessoal. Reformule sem CPF, CNPJ, e-mail, telefone ou endereço.',
 };
 
 /** Códigos que o usuário pode resolver esperando (cota) ou que merecem aviso à administração. */
@@ -89,3 +93,23 @@ export type UpdateAiSettingsInput = z.infer<typeof updateAiSettingsSchema>;
 
 export const AI_PURPOSES = ['CHAT', 'INSIGHTS', 'PROCUREMENT', 'DIAGNOSTICS'] as const;
 export type AiPurpose = (typeof AI_PURPOSES)[number];
+
+/** Motivos pelos quais o assistente diz que NÃO pode responder (texto fixo do sistema, nunca do modelo). */
+export const AI_CANNOT_ANSWER_REASONS = [
+  'NO_DATA',
+  'NO_TOOL',
+  'ACCESS_DENIED',
+  'OUT_OF_SCOPE',
+  'INSUFFICIENT_SAMPLE',
+] as const;
+export type AiCannotAnswerReason = (typeof AI_CANNOT_ANSWER_REASONS)[number];
+
+export const AI_CANNOT_ANSWER_MESSAGES: Record<AiCannotAnswerReason, string> = {
+  NO_DATA: 'Não posso responder: o sistema não tem esse dado registrado.',
+  NO_TOOL:
+    'Não posso responder: essa informação não está entre as que o assistente consegue consultar.',
+  ACCESS_DENIED: 'Não posso responder: o seu perfil não tem acesso a essa informação.',
+  OUT_OF_SCOPE:
+    'Não posso responder: a pergunta está fora do que o assistente cobre (os dados da sua empresa no sistema).',
+  INSUFFICIENT_SAMPLE: 'Não posso responder com segurança: há poucos registros para essa análise.',
+};
