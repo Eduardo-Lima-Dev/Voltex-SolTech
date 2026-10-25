@@ -68,7 +68,7 @@ describe('tabela de fatos', () => {
     expect(out.ativo).toBe(true);
     expect(out.totalOverdueCents.ref).toBe('{{F2}}');
     expect(out.totalOverdueCents.valor).toMatch(/R\$\s?2\.310,00/);
-    expect(out.overdue[0].amountCents.ref).toBe('{{F5}}');
+    expect(out.overdue[0]!.amountCents.ref).toBe('{{F5}}');
     const f = facts.get('F2')!;
     expect(f).toMatchObject({ type: 'MONEY', value: 231000, path: 'totalOverdueCents' });
     expect(f.source).toEqual({
