@@ -9,6 +9,8 @@ export interface RequestStore extends ClsStore {
   requestId?: string;
   ip?: string;
   userAgent?: string;
+  /** Liga só nas consultas de duplicidade, que precisam enxergar além da carteira (sem devolver o dado ao usuário). */
+  ownershipBypass?: boolean;
 }
 
 /** Contexto da requisição corrente (AsyncLocalStorage via nestjs-cls). Alimenta tenant, auditoria e logs. */
@@ -33,6 +35,24 @@ export class RequestContext {
   }
   get userAgent(): string | undefined {
     return this.cls.isActive() ? this.cls.get('userAgent') : undefined;
+  }
+
+  get ownershipBypass(): boolean {
+    return this.cls.isActive() ? this.cls.get('ownershipBypass') === true : false;
+  }
+
+  /**
+   * Roda `fn` sem o filtro de carteira (ADR-0028). Só para checar se algo já existe na empresa (duplicidade);
+   * quem usa não pode devolver ao usuário o registro que está fora da carteira dele.
+   */
+  async withoutOwnership<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.cls.isActive()) return fn();
+    this.cls.set('ownershipBypass', true);
+    try {
+      return await fn();
+    } finally {
+      this.cls.set('ownershipBypass', false);
+    }
   }
 
   set(values: Partial<RequestStore>): void {

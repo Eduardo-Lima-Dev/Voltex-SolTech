@@ -143,6 +143,8 @@ const accountBase = z.object({
   email: emailSchema.optional(),
   phone: phoneSchema.optional(),
   notes: z.string().max(2000).optional(),
+  /** Responsável pela conta (carteira). Padrão: quem cria. Só a gestão passa para outra pessoa. */
+  ownerId: z.uuid().optional(),
 });
 export const createAccountSchema = accountBase.extend({
   type: z.enum(AccountType).default(AccountType.PERSON),
@@ -153,6 +155,7 @@ export type UpdateAccountInput = z.input<typeof updateAccountSchema>;
 
 export const listAccountsQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().optional(),
+  ownerId: z.uuid().optional(),
 });
 export type ListAccountsQuery = z.output<typeof listAccountsQuerySchema>;
 

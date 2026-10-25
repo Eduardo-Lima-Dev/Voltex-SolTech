@@ -50,31 +50,31 @@ export class DocumentsController {
   @Get()
   @RequirePermissions('platform.document.read')
   list(@Query() query: ListDocumentsQueryDto) {
-    return this.documents.list(query);
+    return this.documents.list(query, true);
   }
 
   @Get(':id')
   @RequirePermissions('platform.document.read')
   get(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documents.get(id);
+    return this.documents.get(id, true);
   }
 
   @Get(':id/versions')
   @RequirePermissions('platform.document.read')
   versions(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documents.versions(id);
+    return this.documents.versions(id, true);
   }
 
   @Get(':id/download-url')
   @RequirePermissions('platform.document.read')
   downloadUrl(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documents.downloadUrl(id);
+    return this.documents.downloadUrl(id, true);
   }
 
   @Delete(':id')
   @HttpCode(200)
   @RequirePermissions('platform.document.write')
   remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documents.remove(id);
+    return this.documents.remove(id, true);
   }
 }

@@ -5,6 +5,7 @@ import { RequestContext } from '../../common/context/request-context';
 import type { Env } from '../../config/env';
 import { createKeyring, type Keyring } from '../crypto/field-crypto';
 import { createFieldEncryption } from './field-encryption';
+import { applyOwnership } from './ownership-scope';
 import { TenantScopeError, scopeArgs } from './tenant-scope';
 
 function createScopedClient(base: PrismaClient, context: RequestContext, ring: Keyring) {
@@ -30,6 +31,22 @@ function createScopedClient(base: PrismaClient, context: RequestContext, ring: K
                   args as Record<string, unknown>,
                   tenantId,
                 ) as typeof args,
+              );
+            },
+          },
+        },
+      })
+      // Carteira do vendedor/SDR (ADR-0028): só enxerga o que é dele. Sem perfil no contexto (filas, eventos), não restringe.
+      .$extends({
+        name: 'ownership-scope',
+        query: {
+          $allModels: {
+            $allOperations({ model, operation, args, query }) {
+              return query(
+                applyOwnership(model, operation, args as Record<string, unknown> | undefined, {
+                  role: context.ownershipBypass ? undefined : context.role,
+                  userId: context.userId,
+                }) as typeof args,
               );
             },
           },

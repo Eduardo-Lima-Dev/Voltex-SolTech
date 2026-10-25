@@ -81,6 +81,7 @@ export class OpportunitiesService {
   // ---- Criação ----
 
   async create(data: CreateOpportunityData): Promise<OpportunityDto> {
+    this.users.assertCanAssignPortfolio(data.ownerId);
     await this.users.assertActive(data.ownerId, 'responsável');
     const created = await this.prisma.db.$transaction((tx) =>
       this.createWithin(tx, {
@@ -319,6 +320,7 @@ export class OpportunitiesService {
 
   async update(id: string, input: UpdateOpportunityData): Promise<OpportunityDto> {
     const before = await this.findOrThrow(id);
+    this.users.assertCanAssignPortfolio(input.ownerId);
     if (before.status !== OpportunityStatus.OPEN)
       throw new ConflictException('Oportunidade encerrada não pode ser editada');
     await this.users.assertActive(input.ownerId, 'responsável');

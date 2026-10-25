@@ -350,15 +350,18 @@ describe('CRM · Fatura de energia (e2e)', () => {
 
   describe('permissões e isolamento', () => {
     it('SDR envia e valida; engenharia não acessa faturas; sem token é 401', async () => {
-      const { opp } = await newOpp();
-      const bill = await upload(sdr, await textPdf(SAMPLE_BILL), { opportunityId: opp.id });
+      // O SDR trabalha na própria carteira: envia a fatura da unidade de uma conta dele, não de uma oportunidade.
+      const acc = (await post('/accounts', sdr, { name: 'Conta do SDR' })).body;
+      const unit = (await post(`/accounts/${acc.id}/consumer-units`, sdr, { number: '7771234' }))
+        .body;
+      const bill = await upload(sdr, await textPdf(SAMPLE_BILL), { consumerUnitId: unit.id });
       expect(bill.status).toBe(201);
       expect(
         (await post(`/energy-bills/${bill.body.id}/validate`, sdr, { fields: fields() })).status,
       ).toBe(200);
       expect((await get('/energy-bills', engineering)).status).toBe(403);
       expect(
-        (await upload(engineering, await textPdf('x'), { opportunityId: opp.id })).status,
+        (await upload(engineering, await textPdf('x'), { consumerUnitId: unit.id })).status,
       ).toBe(403);
       expect((await t.http.get(`${API}/energy-bills`)).status).toBe(401);
     });

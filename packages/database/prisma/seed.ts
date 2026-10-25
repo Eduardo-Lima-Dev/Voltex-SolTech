@@ -28,6 +28,7 @@ const demoUsers: SeedUser[] = [
   { name: 'Marcos Gestor Comercial', email: 'gestor@voltex.demo', role: Role.SALES_MANAGER },
   { name: 'Sofia SDR', email: 'sdr@voltex.demo', role: Role.SDR },
   { name: 'Victor Vendedor', email: 'vendedor@voltex.demo', role: Role.SALESPERSON },
+  { name: 'Valéria Vendedora', email: 'vendedora@voltex.demo', role: Role.SALESPERSON },
   { name: 'Elisa Engenharia', email: 'engenharia@voltex.demo', role: Role.ENGINEERING },
   { name: 'Rafael Responsável Técnico', email: 'rt@voltex.demo', role: Role.TECHNICAL_LEAD },
   { name: 'Olivia Operações', email: 'operacao@voltex.demo', role: Role.OPERATIONS },
