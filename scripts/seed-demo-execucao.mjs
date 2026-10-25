@@ -579,6 +579,29 @@ async function finishJourney(u, sold, c, inst, crew) {
   await post(u.manager, '/portal-access', { accountId: sold.accountId, email: c.email });
 }
 
+const LEADS_VALERIA = [
+  {
+    name: 'Marcelo Tavares',
+    email: 'marcelo.tavares@example.com',
+    phone: '(85) 99222-0001',
+    source: 'WHATSAPP',
+    segment: 'RESIDENTIAL',
+    city: 'Eusébio',
+    state: 'CE',
+    monthlyBillCents: 61_000,
+  },
+  {
+    name: 'Restaurante Sabor do Mar',
+    phone: '(85) 99222-0002',
+    source: 'REFERRAL',
+    segment: 'COMMERCIAL',
+    city: 'Fortaleza',
+    state: 'CE',
+    monthlyBillCents: 520_000,
+    notes: 'Câmaras frias; conta alta.',
+  },
+];
+
 async function main() {
   // O login limita 5 tentativas por minuto: entra em lotes de 4, esperando a janela virar.
   const emails = [
@@ -590,6 +613,7 @@ async function main() {
     'financeiro',
     'instalador',
     'posvenda',
+    'vendedora',
   ];
   const sessions = [];
   for (const [i, name] of emails.entries()) {
@@ -599,7 +623,7 @@ async function main() {
     }
     sessions.push(await login(`${name}@voltex.demo`));
   }
-  const [owner, seller, manager, ops, rt, finance, installer, om] = sessions;
+  const [owner, seller, manager, ops, rt, finance, installer, om, seller2] = sessions;
   const u = {
     owner: owner.token,
     seller: seller.token,
@@ -609,6 +633,7 @@ async function main() {
     finance: finance.token,
     installer: installer.token,
     om: om.token,
+    seller2: seller2.token,
   };
 
   const policies = await get(u.manager, '/margin-policies');
@@ -706,6 +731,14 @@ async function main() {
   for (const lead of LEADS) {
     if (have.has(lead.name)) continue;
     await post(u.seller, '/leads', lead);
+    created++;
+  }
+  // Segunda carteira (Valéria): serve para conferir que cada vendedor só vê o que é dele.
+  const ours = await get(u.seller2, '/leads?pageSize=100');
+  const haveOurs = new Set((ours.items ?? ours.data ?? []).map((l) => l.name));
+  for (const lead of LEADS_VALERIA) {
+    if (haveOurs.has(lead.name)) continue;
+    await post(u.seller2, '/leads', lead);
     created++;
   }
   console.log(`✔ Leads: ${created} criado(s)`);

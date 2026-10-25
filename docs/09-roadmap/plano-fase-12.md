@@ -438,11 +438,11 @@ Todos com `tenantId`, em `TENANT_SCOPED_MODELS`, em `exportTenant()` (sem o cont
 
 Cada sub-fase termina com lint, typecheck, build, testes e verificação manual, e só segue com o merge na `develop`.
 
-### 12.0 — Carteira do vendedor (pré-requisito)
+### 12.0 — Carteira do vendedor (pré-requisito) — **entregue em 2026-10-25**
 
 - `Account.ownerId` (migração com preenchimento), `OwnershipScope` no CRM, aplicação em todas as rotas do CRM (§5.1), redistribuição pelo gestor, ajustes nas telas ("Sua carteira", sem filtro de responsável para o vendedor).
 - Seed de demonstração com **dois vendedores** e carteiras separadas, para testar.
-- ADR-0028 (carteira do vendedor e escopo por responsável).
+- ADR-0028 (carteira do vendedor e escopo por responsável) — [escrita](../04-arquitetura/adr/0028-carteira-do-vendedor.md). **Mudou em relação ao plano:** o SDR pode passar leads e contas (ele distribui); o painel comercial segue restrito à gestão.
 - **Aceite:** matriz e2e perfil × rota sem vazamento entre vendedores; gestor continua vendo tudo; 404 em leitura por id de registro alheio; Playwright do vendedor vendo só a própria carteira.
 
 ### 12A — Fundações do provedor
