@@ -17,6 +17,11 @@ O sistema já cobre o ciclo do lead à usina em operação (Fases 0–11). A Fas
 5. **A IA tem acesso a tudo o que o sistema expõe para leitura**, dentro do **perfil do usuário que pergunta**. Ela pode cruzar os dados para inferir o máximo: funil, financeiro, melhores e piores clientes, clientes com mais potencial e assim por diante.
 6. **Nunca inventar.** Sem dado, sem ferramenta ou sem permissão, a IA responde claramente que **não pode responder** e por quê. Nunca devolve informação falsa, inventada ou fora do nível de acesso do usuário.
 7. **Nunca deixar o usuário esperando.** Se a IA estiver fora do ar, lenta ou sem cota, o sistema responde na hora com uma mensagem clara (por exemplo, "O assistente de IA está indisponível no momento").
+8. **Vendedor só vê o que é dele** (carteira própria), nas telas, na API e na IA. A regra entra **antes** da IA, como sub-fase 12.0 (§5.1).
+9. **Melhor cliente** = os 20% de clientes com maior margem real recebida (padrão; a empresa pode trocar).
+10. **Amostras mínimas** valem para todas as análises e previsões, com os padrões da §9.5 (configuráveis por empresa).
+11. **Cota diária por empresa** durante os testes com clientes, com os valores da §7.
+12. **Revisão jurídica** obrigatória: um roteiro para o advogado sai já na 12A, para a revisão correr em paralelo, e a IA só é liberada para clientes reais depois do parecer (§17).
 
 **Regras da casa que continuam valendo:** nenhum número regulatório ou técnico inventado; números vêm do motor e do banco, nunca do modelo; decisões de risco ficam com uma pessoa (§54: preço, margem, crédito, aprovação técnica, assinatura, conformidade).
 
@@ -159,8 +164,33 @@ O assistente responde **sobre os dados da empresa no sistema**. Pergunta de conh
 
 - Toda ferramenta tem `permission` igual à do `GET` correspondente. O registro só **oferece ao modelo** as ferramentas que o usuário tem; e confere de novo na execução.
 - Pergunta sobre área sem permissão: o orquestrador vê que nenhuma ferramenta permitida cobre o tema (mapa tema → ferramentas) e responde `ACCESS_DENIED` sem chamar o modelo.
-- **Observação sobre o sistema atual:** hoje as listagens do CRM não restringem por responsável (o vendedor vê os leads de todos da empresa). A IA herda exatamente isso. Se a empresa quiser "vendedor só vê o que é seu", isso é uma mudança das telas e da API, e a IA acompanha automaticamente. **Decisão pendente do usuário** (§15).
+- **Carteira do vendedor:** decidido que o vendedor só vê o que é dele (§5.1). Como as ferramentas usam os mesmos serviços das telas, a IA herda a restrição automaticamente.
 - Pseudônimos de conta só são revelados se o usuário tiver `crm.account.read`.
+
+### 5.1. Carteira do vendedor (sub-fase 12.0)
+
+Hoje as listagens do CRM não restringem por responsável: o vendedor vê os registros de todos da empresa. A regra nova vale **para o perfil Vendedor (`SALESPERSON`)**; gestor comercial, administrador e proprietário continuam vendo tudo; os demais perfis não mudam.
+
+| Registro                                              | O que é "do vendedor"                                                                                                                                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lead                                                  | `ownerId` = ele                                                                                                                                                         |
+| Oportunidade                                          | `ownerId` = ele                                                                                                                                                         |
+| Conta                                                 | Novo campo `Account.ownerId` (preenchido na migração com o dono da primeira oportunidade da conta, ou do lead que a originou) **ou** conta com alguma oportunidade dele |
+| Contatos, imóveis e unidades consumidoras             | Os da conta que ele vê                                                                                                                                                  |
+| Tarefa                                                | Atribuída a ele, criada por ele ou ligada a uma oportunidade dele                                                                                                       |
+| Fatura, cálculo, triagem, cotação, proposta, contrato | Os de oportunidade dele                                                                                                                                                 |
+| Projeto                                               | O de oportunidade dele, ou em que ele é o responsável                                                                                                                   |
+| Financeiro e comissão                                 | Só a própria comissão (`Commission.userId` = ele), se o perfil tiver acesso ao financeiro                                                                               |
+| Painel comercial e funil                              | Só os números da carteira dele                                                                                                                                          |
+| Linha do tempo e documentos                           | Os das entidades que ele vê                                                                                                                                             |
+
+- **Implementação:** um único `OwnershipScope` no CRM que devolve o filtro do Prisma por entidade e perfil, aplicado em **todas** as listagens, buscas, quadros, painéis e leituras por id. Registro de outro vendedor aberto por id responde **404** (não revela que existe).
+- **Gestor redistribui:** o gestor comercial pode trocar o responsável de lead, oportunidade e conta; a mudança vai para a auditoria e a linha do tempo.
+- **Testes:** uma matriz e2e "perfil × rota" para todas as rotas do CRM (lista, detalhe, quadro, painel, exportação), com dois vendedores na mesma empresa; mais o teste de que as ferramentas da IA devolvem o mesmo recorte.
+- **Telas:** filtros "Responsável" somem para o vendedor; o funil e o painel mostram "Sua carteira".
+
+### 5.2. Permissões novas
+
 - Permissões novas: `ai.assistant.use` (usar o assistente), `ai.insights.read` (ver insights), `ai.admin.manage` (ligar/desligar, cotas, ver uso), `procurement.extract` (extrair tabela de preço). Entram em `packages/shared/src/constants/permissions.ts`, nos perfis e em `PERMISSION_LABELS`.
 
 ---
@@ -187,7 +217,17 @@ O assistente responde **sobre os dados da empresa no sistema**. Pergunta de conh
 ## 7. Custo zero
 
 - **Contador por chamada:** o provedor devolve `usage.neurons`; grava em `AiUsage` (empresa, usuário, dia UTC, _neurons_, chamadas, falhas).
-- **Teto global** configurável (`AI_DAILY_NEURONS_GLOBAL`, padrão abaixo de 10.000 para deixar margem) e **cota por empresa** em `tenant.settings.plan.limits.aiDailyNeurons` (CLI `set-tenant-plan`, que já existe). Cota por usuário opcional.
+- **Cotas durante os testes com clientes** (padrões da plataforma, configuráveis pela CLI `set-tenant-plan`, que já existe, em `tenant.settings.plan.limits`):
+
+| Cota                                             | Padrão                                  | Equivale a (pelo teste de 2026-10-25)                           |
+| ------------------------------------------------ | --------------------------------------- | --------------------------------------------------------------- |
+| Teto global da conta (`AI_DAILY_NEURONS_GLOBAL`) | 9.000 _neurons_/dia                     | ~700 respostas; deixa 1.000 de folga da cota grátis             |
+| Por empresa (`aiDailyNeurons`)                   | 1.500 _neurons_/dia                     | ~110–150 respostas; comporta 6 empresas testando ao mesmo tempo |
+| Por usuário (`aiDailyNeuronsPerUser`)            | 300 _neurons_/dia                       | ~25 respostas                                                   |
+| Insights (`aiInsightsDailyNeurons`), por empresa | 150 _neurons_/dia, fora da cota do chat | ~12 redações de insight                                         |
+
+- A soma das cotas das empresas ativas não pode passar do teto global: a CLI recusa e mostra quanto sobra.
+- Os valores voltam a ser revistos quando houver provedor pago; não são norma nem preço.
 - **Antes** de chamar, estima o custo da resposta (média móvel de _neurons_ por resposta); se não couber, nem chama.
 - **Cache:** mesma pergunta normalizada, mesmo usuário, mesmos dados (hash dos resultados das ferramentas) → devolve a resposta guardada por até 1 h, sem custo.
 - **Insights** rodam em lote fora do horário comercial e têm cota própria, para não tirar a do chat.
@@ -297,11 +337,25 @@ Conversão por etapa e por origem, segmento, UF e vendedor; ciclo médio; motivo
 
 ### 9.3. "Clientes com mais potencial" (sem caixa-preta)
 
-1. Define-se o grupo de **melhores clientes** por critério da empresa (padrão declarado: top 20% por margem real recebida). A empresa pode trocar o critério na tela.
+1. Define-se o grupo de **melhores clientes**: os **20% de clientes com maior margem real recebida** (decisão de 2026-10-25). A empresa pode trocar o critério na tela (receita recebida, número de projetos, contratos de O&M).
 2. Para cada lead/conta aberta, mede-se a **semelhança** com esse grupo em atributos que o sistema tem: segmento, faixa de conta de luz, UF/cidade, origem, potência estimada.
 3. O resultado é uma **lista ordenada com a explicação** ("parece com os melhores clientes em: segmento comercial, conta acima de R$ X, mesma região") e o **tamanho da amostra**.
-4. **Amostra mínima:** abaixo de um mínimo (padrão declarado, configurável), a ferramenta devolve `INSUFFICIENT_SAMPLE` e a IA diz que não pode responder com segurança.
+4. **Amostra mínima:** precisa de pelo menos 25 clientes com margem real recebida (para o grupo dos 20% ter ao menos 5); abaixo disso, a ferramenta devolve `INSUFFICIENT_SAMPLE` e a IA diz que não pode responder com segurança (§9.5).
 5. Não é probabilidade de fechamento. Previsão de conversão de verdade fica na §11, só com histórico suficiente.
+
+### 9.5. Amostras mínimas (padrões da plataforma, configuráveis por empresa)
+
+Ficam em `tenant.settings.analytics.minSamples`, aparecem na tela de cada análise ("baseado em N registros; mínimo M") e são marcados como **prudência estatística da plataforma, não norma**.
+
+| Análise                                                          | Mínimo padrão                                                                         |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Clientes com mais potencial (§9.3)                               | 25 clientes com margem real recebida                                                  |
+| Ranking ou comparação por grupo (segmento, origem, UF, vendedor) | 5 registros por grupo; grupo menor aparece como "poucos dados" e fica fora do ranking |
+| Taxa de conversão por etapa e previsão do funil                  | 30 oportunidades encerradas (ganhas + perdidas) no período                            |
+| Previsão de recebimentos                                         | 20 parcelas pagas                                                                     |
+| Previsão de atraso de instalação                                 | 10 instalações concluídas                                                             |
+| Tendência e projeção de geração da planta                        | 14 dias de leitura                                                                    |
+| Médias simples (ticket médio, ciclo médio, MTTR)                 | 5 registros                                                                           |
 
 ### 9.4. Contrato das funções
 
@@ -326,15 +380,15 @@ Entrada: empresa, período, filtros. Saída: valores **com o número de registro
 
 ## 11. Previsões (determinísticas, com amostra mínima)
 
-| Previsão                          | Método                                                                                                     | Mínimo                        | Saída                                                      |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
-| Recebimentos dos próximos 90 dias | Parcelas em aberto × distribuição histórica de atraso da própria empresa                                   | Histórico de N parcelas pagas | Valor esperado por semana com faixa (pior/esperado/melhor) |
-| Fechamento do funil               | Pipeline aberto × taxa de conversão histórica por etapa (já existe "previsão simples" sem pesos no painel) | N oportunidades encerradas    | Valor e quantidade esperados por mês                       |
-| Atraso de instalação              | Tempo médio por situação da instalação × situação atual                                                    | N instalações concluídas      | Data provável de conclusão + risco de atraso               |
-| Geração                           | Esperado do projeto × desempenho real recente da própria planta                                            | Dias de leitura mínimos       | Projeção do mês e alerta de tendência                      |
+| Previsão                          | Método                                                                                                     | Mínimo                      | Saída                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------- |
+| Recebimentos dos próximos 90 dias | Parcelas em aberto × distribuição histórica de atraso da própria empresa                                   | 20 parcelas pagas           | Valor esperado por semana com faixa (pior/esperado/melhor) |
+| Fechamento do funil               | Pipeline aberto × taxa de conversão histórica por etapa (já existe "previsão simples" sem pesos no painel) | 30 oportunidades encerradas | Valor e quantidade esperados por mês                       |
+| Atraso de instalação              | Tempo médio por situação da instalação × situação atual                                                    | 10 instalações concluídas   | Data provável de conclusão + risco de atraso               |
+| Geração                           | Esperado do projeto × desempenho real recente da própria planta                                            | 14 dias de leitura          | Projeção do mês e alerta de tendência                      |
 
 - Funções puras em `packages/solar-engine/src/forecast/`, memorial em `docs/06-calculos/previsoes.md`, cobertura ≥ 90%.
-- Os mínimos são **parâmetros da empresa**, com padrão declarado e marcado como tal; nunca apresentados como norma.
+- Os mínimos são os da §9.5: **parâmetros da empresa**, com padrão declarado e marcado como tal; nunca apresentados como norma.
 - Abaixo do mínimo: `INSUFFICIENT_SAMPLE`. A tela mostra "dados insuficientes" em vez de número.
 - A IA explica a previsão (premissas, amostra, faixa); não calcula.
 
@@ -384,9 +438,17 @@ Todos com `tenantId`, em `TENANT_SCOPED_MODELS`, em `exportTenant()` (sem o cont
 
 Cada sub-fase termina com lint, typecheck, build, testes e verificação manual, e só segue com o merge na `develop`.
 
+### 12.0 — Carteira do vendedor (pré-requisito)
+
+- `Account.ownerId` (migração com preenchimento), `OwnershipScope` no CRM, aplicação em todas as rotas do CRM (§5.1), redistribuição pelo gestor, ajustes nas telas ("Sua carteira", sem filtro de responsável para o vendedor).
+- Seed de demonstração com **dois vendedores** e carteiras separadas, para testar.
+- ADR-0028 (carteira do vendedor e escopo por responsável).
+- **Aceite:** matriz e2e perfil × rota sem vazamento entre vendedores; gestor continua vendo tudo; 404 em leitura por id de registro alheio; Playwright do vendedor vendo só a própria carteira.
+
 ### 12A — Fundações do provedor
 
-- ADR-0028 (IA com provedor trocável, custo zero e dados mascarados) e ADR-0029 (assistente por ferramentas de leitura e fatos referenciados).
+- ADR-0029 (IA com provedor trocável, custo zero e dados mascarados) e ADR-0030 (assistente por ferramentas de leitura e fatos referenciados).
+- **Roteiro para o advogado** (`docs/governanca/ia-roteiro-juridico.md`), entregue nesta sub-fase para a revisão correr em paralelo (§17).
 - `AiProvider` (`chat({ messages, tools, maxTokens, timeoutMs, model })` → `{ text | toolCalls, usage }`), `CloudflareAiProvider` (REST `/ai/run/{model}`), `FakeAiProvider` (respostas programadas nos testes).
 - Configuração: `AI_ENABLED`, `AI_PROVIDER=cloudflare`, `AI_MODEL_DEFAULT`, `AI_MODEL_FALLBACK`, `AI_DAILY_NEURONS_GLOBAL`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` no `env.ts` (zod) e no `.env.example` (sem valor).
 - Prazos, disjuntor, modelo reserva, tradução de erros do provedor para os códigos da §6.
@@ -474,6 +536,20 @@ Um **conjunto de avaliação** versionado em `apps/api/test/ai-eval/` com 60+ pe
 - **Direitos do titular:** eliminação apaga mensagens que citam a pessoa; exportação inclui as conversas do usuário.
 - **Decisões automatizadas (art. 20):** a IA não toma decisão sobre o titular; sugestões ficam com uma pessoa.
 
+### 17.1. Revisão jurídica (decidida)
+
+O roteiro `docs/governanca/ia-roteiro-juridico.md` (12A) leva ao advogado, em linguagem simples:
+
+1. O que é enviado ao provedor (dados mascarados, exemplos reais da carga) e o que nunca é enviado.
+2. Papéis: empresa cliente (controladora), Voltex (operadora), Cloudflare e, no futuro, AWS (suboperadores); os termos de dados da Cloudflare citados.
+3. Transferência internacional: a região de inferência não é informada; enquadramento pelo art. 33 e se as cláusulas-padrão da ANPD se aplicam ao caso.
+4. Base legal e transparência: se o aviso no sistema e o aceite do administrador bastam; texto proposto para a política e os termos.
+5. Retenção das conversas e direitos do titular (acesso, eliminação).
+6. Uso por clientes em teste: se é preciso restringir a dados fictícios até o parecer.
+7. Responsabilidade por respostas da IA (o selo "gerado por IA" e a regra de nunca decidir sozinha).
+
+**Trava de liberação:** enquanto o parecer não estiver registrado (`ai.legalReviewedAt` nas configurações da plataforma), a IA só liga para empresas marcadas como **demonstração** (dados fictícios). Com o parecer, as alterações sugeridas entram na política e nos termos (12J) e a trava sai.
+
 ---
 
 ## 18. Riscos
@@ -492,12 +568,13 @@ Um **conjunto de avaliação** versionado em `apps/api/test/ai-eval/` com 60+ pe
 
 ## 19. Pendências que ficam com o usuário
 
-1. Vendedor deve ver **só o que é seu** ou tudo da empresa? (Hoje vê tudo; a IA acompanha.)
-2. Critério padrão de "melhor cliente" (padrão proposto: top 20% por margem real recebida).
-3. Amostras mínimas das análises e previsões (padrões propostos e configuráveis).
-4. Cota diária por empresa durante os testes com clientes.
-5. Revisão jurídica da política e dos termos (suboperador de IA, art. 33).
-6. **Não cadastrar cartão** na conta da Cloudflare sem decisão (garante custo zero).
+**Decididas em 2026-10-25:** vendedor vê só a própria carteira (§5.1); melhor cliente = 20% com maior margem real recebida (§9.3); amostras mínimas da §9.5; cotas da §7; revisão jurídica com trava de liberação (§17.1).
+
+**Ainda com o usuário:**
+
+1. O **SDR** segue a regra do vendedor (só os leads dele) ou continua vendo todos os leads para distribuir? (Proposta: só os dele e os sem responsável.)
+2. Levar o roteiro jurídico ao advogado e registrar o parecer.
+3. **Não cadastrar cartão** na conta da Cloudflare sem decisão (garante custo zero).
 
 ## 20. Verificação (em cada sub-fase e no fim)
 
