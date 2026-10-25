@@ -16,6 +16,8 @@ import type {
   AiDiagnosticsDto,
   AiStatusDto,
   AiUsageDto,
+  ConfirmPriceExtractionInput,
+  PriceExtractionDto,
   InsightDto,
   InsightRunResultDto,
   UpdateInsightInput,
@@ -1430,6 +1432,20 @@ export function createEndpoints(client: ApiClient) {
       removeConversation: (id: string) => client.delete<void>(`/ai/conversations/${id}`),
       feedback: (messageId: string, input: { helpful: boolean; reason?: string }) =>
         client.post<void>(`/ai/messages/${messageId}/feedback`, input),
+      procurement: {
+        extract: (file: File) => {
+          const form = new FormData();
+          form.append('file', file);
+          return client.upload<PriceExtractionDto>('/ai/procurement/extractions', form);
+        },
+        confirm: (id: string, input: ConfirmPriceExtractionInput) =>
+          client.post<{ extraction: PriceExtractionDto; result: PriceImportResultDto }>(
+            `/ai/procurement/extractions/${id}/import`,
+            input,
+          ),
+        discard: (id: string) =>
+          client.post<PriceExtractionDto>(`/ai/procurement/extractions/${id}/discard`),
+      },
       insights: {
         list: () => client.get<InsightDto[]>('/ai/insights'),
         update: (id: string, input: UpdateInsightInput) =>

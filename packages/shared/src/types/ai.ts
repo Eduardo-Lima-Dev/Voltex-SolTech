@@ -177,8 +177,12 @@ export interface PriceExtractionDto {
   filename: string;
   status: 'PENDING_REVIEW' | 'IMPORTED' | 'DISCARDED';
   rows: PriceExtractionRowDto[];
-  /** Quantas linhas o modelo devolveu e quantas foram descartadas por não passarem na validação. */
+  /** Linhas que o modelo devolveu e foram descartadas por não passarem na validação (preço ou trecho não conferem). */
   discardedCount: number;
+  /** O documento era maior que o limite lido (só o começo foi analisado). */
+  truncated: boolean;
+  /** Dados pessoais que foram removidos do texto antes de ir à IA (tipo → quantos). */
+  removed: Record<string, number>;
   model: string | null;
   createdAt: string;
   importedAt: string | null;
