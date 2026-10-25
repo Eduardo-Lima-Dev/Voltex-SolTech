@@ -1,0 +1,32 @@
+// Inteligência artificial (Fase 12, ADR-0029): contagem do uso diário, para a cota de custo zero.
+// O CONTEÚDO das perguntas e respostas nunca é guardado aqui; só os totais por dia.
+
+enum AiUsagePurpose {
+  CHAT
+  INSIGHTS
+  PROCUREMENT
+  DIAGNOSTICS
+
+  @@map("ai_usage_purpose")
+}
+
+model AiUsage {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  /// Dia UTC: as cotas do provedor viram à meia-noite UTC.
+  day       DateTime       @db.Date
+  /// Id do usuário que perguntou, ou `system` para rotinas (insights, extrações agendadas).
+  userKey   String         @map("user_key")
+  purpose   AiUsagePurpose
+  /// Custo em *neurons* informado pelo provedor.
+  neurons   Float          @default(0)
+  calls     Int            @default(0)
+  failures  Int            @default(0)
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, day, userKey, purpose])
+  @@index([day])
+  @@map("ai_usage")
+}

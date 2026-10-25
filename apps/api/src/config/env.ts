@@ -107,6 +107,32 @@ export const envSchema = z
     INTEGRATIONS_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).default(900_000),
     /** Libera provedores em rede privada (ex.: assinatura eletrônica auto-hospedada no mesmo Docker). */
     INTEGRATIONS_ALLOW_PRIVATE_HOSTS: booleanFromString.default(false),
+    /**
+     * Inteligência artificial (Fase 12, ADR-0029). Desligada por padrão. O custo é zero por desenho: o provedor
+     * inicial é o plano grátis da Cloudflare, que falha em vez de cobrar, e o sistema conta o uso e para antes.
+     */
+    AI_ENABLED: booleanFromString.default(false),
+    /** `cloudflare` (real), `fake` (só desenvolvimento e testes) ou `none`. */
+    AI_PROVIDER: z.enum(['cloudflare', 'fake', 'none']).default('none'),
+    CLOUDFLARE_ACCOUNT_ID: z.string().default(''),
+    CLOUDFLARE_API_TOKEN: z.string().default(''),
+    /** Modelo padrão e reserva (ids do catálogo do provedor). */
+    AI_MODEL_DEFAULT: z.string().default('@cf/mistralai/mistral-small-3.1-24b-instruct'),
+    AI_MODEL_FALLBACK: z.string().default('@cf/meta/llama-4-scout-17b-16e-instruct'),
+    /** Prazo de cada chamada ao provedor e prazo total de uma resposta (ms). */
+    AI_CALL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(15_000),
+    AI_TOTAL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(30_000),
+    /** Teto diário de toda a plataforma, em neurons. Abaixo dos 10.000 do plano grátis, para deixar folga. */
+    AI_DAILY_NEURONS_GLOBAL: z.coerce.number().int().min(0).default(9_000),
+    /** Cotas padrão (neurons por dia) para quem não tem valor no plano: por empresa, por usuário e dos insights. */
+    AI_DEFAULT_TENANT_DAILY_NEURONS: z.coerce.number().int().min(0).default(1_500),
+    AI_DEFAULT_USER_DAILY_NEURONS: z.coerce.number().int().min(0).default(300),
+    AI_DEFAULT_INSIGHTS_DAILY_NEURONS: z.coerce.number().int().min(0).default(150),
+    /**
+     * Data (ISO) do parecer jurídico sobre o uso de IA. Vazio = ainda não houve: a IA só liga em empresas de
+     * demonstração (dados fictícios). Preencher depois da revisão do advogado.
+     */
+    AI_LEGAL_REVIEWED_AT: z.string().default(''),
   })
   .superRefine((env, ctx) => {
     const previous = env.DATA_ENCRYPTION_KEY_PREVIOUS.split(',')

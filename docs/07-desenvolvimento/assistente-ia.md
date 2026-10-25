@@ -1,0 +1,59 @@
+# Assistente de IA — operação e desenvolvimento
+
+Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
+
+> **Estado:** sub-fase 12A (fundações). Existe o provedor, o portão de acesso, as cotas, o uso diário e o diagnóstico. O chat, as ferramentas e as telas vêm nas sub-fases 12B a 12F.
+
+## Ligar a IA no ambiente
+
+No `.env` (nunca versionar valores reais):
+
+```
+AI_ENABLED=true
+AI_PROVIDER=cloudflare
+CLOUDFLARE_ACCOUNT_ID=…     # painel da Cloudflare → Workers AI → Use REST API
+CLOUDFLARE_API_TOKEN=…      # token com Workers AI (Leitura e Edição)
+```
+
+Não cadastre cartão na conta da Cloudflare: no plano grátis a chamada **falha em vez de cobrar**, e isso é o que garante o custo zero. Outras variáveis (modelos, prazos, cotas) estão comentadas em `.env.example`.
+
+## Ligar para uma empresa
+
+1. **Empresa de demonstração** (dados fictícios; a única que usa a IA antes do parecer jurídico):
+   ```bash
+   set -a && . ./.env && set +a
+   TENANT_SLUG=voltex-demo DEMO=true ENABLED=true node apps/api/dist/cli/set-tenant-ai.js
+   ```
+2. Ou pelo administrador da empresa: `PUT /ai/admin/settings` com `{ "enabled": true, "acceptTerms": true }` (a tela vem na 12F). O aceite fica registrado (quem e quando) e auditado.
+3. Cotas por empresa (neurons por dia): `AI_DAILY=1500 AI_PER_USER=300 AI_INSIGHTS=150`. A soma das empresas ligadas não pode passar do teto da plataforma (`AI_DAILY_NEURONS_GLOBAL`, 9.000): a ferramenta recusa.
+
+## Conferir que funciona
+
+- `GET /ai/status` (perfil com `ai.assistant.use`): responde na hora com `available`, o motivo e a cota restante. **Nunca chama o provedor.**
+- `POST /ai/admin/diagnostics` (perfil com `ai.admin.manage`): uma chamada mínima ao modelo. Devolve texto, modelo, custo em neurons e duração; conta na cota.
+- `GET /ai/admin/usage`: uso dos últimos 30 dias da empresa (só totais, sem conteúdo).
+
+## Por que a IA pode "não responder" (todas com mensagem pronta)
+
+| Código                                         | Quando                                               | Mensagem ao usuário                                                  |
+| ---------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `ENV_DISABLED`                                 | `AI_ENABLED=false`, sem provedor ou sem credencial   | O assistente de IA não está disponível neste ambiente.               |
+| `LEGAL_REVIEW_PENDING`                         | Sem parecer jurídico e empresa não é de demonstração | Aguarda a revisão jurídica; só funciona em empresas de demonstração. |
+| `PLAN_EXCLUDES_AI`                             | `features.ai=false` no plano                         | O plano da sua empresa não inclui o assistente de IA.                |
+| `TENANT_DISABLED`                              | A empresa não ligou                                  | Peça a um administrador para ligar em Administração → Inteligência.  |
+| `QUOTA_TENANT` / `QUOTA_USER` / `QUOTA_GLOBAL` | Cota do dia esgotada                                 | O limite de uso volta às 21h (horário de Brasília).                  |
+| `PROVIDER_QUOTA`                               | O provedor recusou por limite                        | Tente de novo amanhã.                                                |
+| `PROVIDER_AUTH`                                | Credencial recusada                                  | Indisponível; avise a administração.                                 |
+| `PROVIDER_DOWN`                                | Provedor fora do ar                                  | Indisponível no momento; os dados do sistema continuam acessíveis.   |
+| `TIMEOUT`                                      | Passou do prazo                                      | A IA demorou demais; tente de novo.                                  |
+| `CIRCUIT_OPEN`                                 | 3 falhas em 60 s                                     | Instável e pausado por alguns instantes.                             |
+| `EMPTY_RESPONSE`                               | Modelo respondeu vazio (nos dois modelos)            | Não conseguiu montar uma resposta; reformule.                        |
+
+Chamada que falha por `PROVIDER_DOWN`, `TIMEOUT` ou `EMPTY_RESPONSE` é repetida **uma vez** no modelo reserva. Credencial e limite não são repetidos.
+
+## Desenvolvimento e testes
+
+- Testes não usam a internet nem gastam cota: `AI_PROVIDER=fake` e a classe `FakeAiProvider` (respostas programadas, atraso e falhas simuladas). Ela é recusada em produção.
+- O adaptador da Cloudflare tem testes com respostas gravadas (`providers/cloudflare-ai.provider.test.ts`); sempre que possível, confira também com uma chamada real (`/ai/admin/diagnostics`).
+- Latência medida em 2026-10-25: `mistral-small-3.1` 0,5 a 2 s; `llama-4-scout` 13 a 18 s em chamadas pequenas. Por isso o padrão é o primeiro e o segundo é reserva.
+- Custo medido: chamada simples ≈ 1 neuron; com ferramenta ≈ 5; a estimativa usada para barrar antes de chamar é de 15.

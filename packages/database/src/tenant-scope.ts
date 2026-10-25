@@ -103,6 +103,7 @@ export const TENANT_SCOPED_MODELS = [
   'PortalSession',
   'PortalUpload',
   'SignatureRequest',
+  'AiUsage',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
