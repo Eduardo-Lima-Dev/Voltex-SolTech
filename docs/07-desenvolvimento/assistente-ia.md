@@ -2,7 +2,7 @@
 
 Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
 
-> **Estado:** sub-fases 12A (fundações) e 12B (privacidade e fatos). O chat, as ferramentas e as telas vêm nas sub-fases 12C a 12F.
+> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos) e 12C (camada analítica). O chat, as ferramentas e as telas vêm nas sub-fases 12D a 12F.
 
 ## Ligar a IA no ambiente
 
@@ -74,3 +74,7 @@ Código em `apps/api/src/platform/ai/privacy/`. Nada disso depende do provedor e
 | `guard.ts`             | Última barreira, dentro do gateway: se ainda houver dado pessoal no que vai ao provedor, **não envia**, registra `ai.privacy_blocked` na auditoria (só os tipos e quantos) e responde "por segurança, a pergunta não foi enviada". |
 
 Para uma ferramenta nova (12D): devolver o resultado pela `session.ingestToolResult(...)`, registrar nomes com `session.pseudonyms.alias(...)` e usar os dados de teste de `apps/api/test/ai-pii-fixtures.ts` na suíte de vazamento.
+
+## Camada analítica (12C)
+
+Rotas `GET /analytics/*` (leads, funil, ciclo de venda, motivos de perda, oportunidades paradas, tarefas, clientes, cliente por id, clientes com mais potencial) e `GET/PUT /analytics/settings`. Definições, fórmulas e exemplos em [analitica.md](../06-calculos/analitica.md). A IA vai consumir estas mesmas contas pelas ferramentas da 12D: o modelo nunca calcula, só explica o que a camada devolve. Sem amostra mínima, o resultado traz `INSUFFICIENT_SAMPLE`, e o assistente responde "não posso responder com segurança".
