@@ -485,22 +485,22 @@ Cada sub-fase termina com lint, typecheck, build, testes e verificação manual,
 - Administração → Inteligência.
 - **Aceite:** testes de componente com MSW para cada estado da §6; Playwright do fluxo pergunta → resposta com fonte; acessibilidade (teclado, leitor de tela).
 
-### 12G — Insights proativos
+### 12G — Insights proativos — **entregue em 2026-10-25** (5 detectores, fila `ai-insights`, cartão no início; ver [assistente-ia.md](../07-desenvolvimento/assistente-ia.md))
 
 - Detectores, fila diária, `Insight`, cartão no início, cota própria.
 - **Aceite:** com base fixa, cada detector gera o achado esperado; sem IA o texto padrão aparece.
 
-### 12H — Procurement assistido
+### 12H — Procurement assistido — **entregue em 2026-10-25** (PDF/CSV, prévia conferida, importação pela rota existente, total por fornecedor; planilha XLSX ficou fora: use CSV)
 
 - Extração, prévia, casamento com catálogo, importação pela rota existente, comparação de fornecedores.
 - **Aceite:** respostas gravadas de extração (sem chamar o provedor nos testes); nada é gravado sem confirmação; PDF de exemplo fictício.
 
-### 12I — Previsões
+### 12I — Previsões — **entregue em 2026-10-25** (4 previsões; o funil usa a taxa por etapa da linha do tempo; ver [previsoes.md](../06-calculos/previsoes.md))
 
 - Funções puras + memorial, ferramentas `previsoes`, cartões nas telas (financeiro, funil, operação, planta).
 - **Aceite:** casos de teste com séries fixas; abaixo do mínimo → "dados insuficientes".
 
-### 12J — Fechamento
+### 12J — Fechamento — **entregue em 2026-10-25** (retenção e eliminação das conversas, exportação, política v1.2, termos v1.2, landing; pendente só a revisão do advogado)
 
 - LGPD: retenção das conversas, eliminação e exportação, política de privacidade e termos (suboperador de IA, finalidade, dado mascarado, sem treino), **revisão do advogado**.
 - Landing: seção da IA (o que faz e o que **não** faz), sem prometer o que não existe.

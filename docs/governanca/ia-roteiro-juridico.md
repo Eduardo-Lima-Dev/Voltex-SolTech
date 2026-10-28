@@ -12,7 +12,9 @@ Um assistente que responde perguntas em português sobre os dados da empresa no 
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | CPF, CNPJ, RG, e-mail, telefone, endereço, CEP, coordenadas, número da unidade consumidora, texto de contratos, documentos, fotos, assinaturas, senhas e tokens | Nome de cliente, de contato e de usuário interno (`[CLIENTE_1]`, `[USUARIO_1]`); o mapa fica no servidor | Valores, contagens, percentuais, datas, etapas e situações, cidade e UF, segmento, origem do lead, códigos de projeto, nomes de equipamento |
 
-Há testes automáticos que falham se um desses dados aparecer na carga enviada. **Situação (2026-10-25):** o mascaramento e a barreira final já estão implementados e testados (sub-fase 12B). Falta ligá-los às ferramentas reais de consulta (12D); enquanto isso o assistente de conversa ainda não existe, e a IA só roda com dados fictícios por causa da trava jurídica.
+Há testes automáticos que falham se um desses dados aparecer na carga enviada. **Situação (2026-10-25):** mascaramento, barreira final, ferramentas de consulta, assistente, insights, procurement e previsões estão implementados e testados (12B a 12I). A IA só roda com dados fictícios (empresas de demonstração) por causa da trava jurídica.
+
+**Também chegam ao provedor (fora a pergunta e os números das consultas):** (a) a tabela de preços de fornecedor enviada ao procurement assistido, em pedaços de texto, **depois** que os detectores removem o que parecer dado pessoal (e-mail, telefone, números longos); tabela de preço de empresa não tem dado pessoal, mas o contato comercial do fornecedor pode aparecer no cabeçalho; (b) os valores de cada achado da rotina diária de insights (contagens, valores em reais, dias), sem nomes.
 
 **Risco residual a avaliar:** a combinação de cidade/UF, segmento e valor pode, em casos raros, permitir identificar um cliente pequeno.
 
@@ -36,5 +38,6 @@ Há testes automáticos que falham se um desses dados aparecer na carga enviada.
 ## 5. Depois do parecer
 
 1. Registrar a data em `AI_LEGAL_REVIEWED_AT` (isso libera a IA para empresas reais).
-2. Incluir o provedor de IA e a finalidade na Política de Privacidade e nos Termos (a versão 1.1 em vigor ainda não cita IA).
-3. Atualizar a landing com o que a IA faz e o que **não** faz.
+2. Rever o texto que **já foi incluído** na Política de Privacidade e nos Termos (versão 1.2, 2026-10-25: provedor de IA como suboperador, finalidade, dado mascarado, conversas, “não treina modelos”, IA opcional/só consulta/pode errar/não decide) e ajustar conforme o parecer.
+3. Rever a seção da landing (“Seus dados” e a pergunta “O que a IA faz? E o que ela não faz?”), já publicada no repositório.
+4. Confirmar o prazo padrão das conversas (hoje: até a pessoa apagar, ou o prazo que a empresa definir em Administração → Privacidade) e o apagamento das conversas que citam um titular eliminado (já implementado).

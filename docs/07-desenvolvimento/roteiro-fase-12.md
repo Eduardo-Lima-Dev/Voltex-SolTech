@@ -23,6 +23,13 @@ Para ver o assistente funcionando na tela, sem gastar a cota da Cloudflare, use 
 10. **Indisponível.** Em Inteligência, desligue a IA: o painel passa a mostrar a mensagem de indisponibilidade e bloqueia o envio.
 11. **Teclado e leitor de tela.** O painel abre e fecha com o teclado (Esc fecha), Enter envia (Shift+Enter quebra a linha) e a conversa é anunciada como região de log.
 
+12. **Insights.** Em Administração → Inteligência, clique em “Rodar a rotina agora”. No início apareça “O que a IA notou hoje” com os achados (parcelas vencidas há 7 dias ou mais, oportunidades paradas, instalações atrasadas...). Cada um tem “Ver os dados”. Marque um como “Não relevante”: ele sai e não volta por 30 dias. Entre como vendedor: só aparece o que é da carteira dele.
+13. **Procurement com IA.** Em Administração → Catálogo → Preços, use “Ler tabela de preços com IA” com um CSV de teste (com o provedor `demo` ele não extrai linhas; para ver a extração use `cloudflare`). Confira a prévia: origem de cada linha, casamento com o catálogo, problemas. Nada entra na lista antes de “Importar”.
+14. **Comparação de fornecedores.** Numa instalação com materiais e tabelas de preço vigentes de dois fornecedores, abra “Comparar ofertas”: aparece o total da lista por fornecedor e “menor total” só entre quem cobre tudo.
+15. **Previsões.** Em Operação → Financeiro, Painel comercial, Painel da operação e na ficha de uma planta aparecem os cartões de previsão. Com pouco histórico mostram “Dados insuficientes: há X e o mínimo da empresa é Y”. Para ver números, baixe o mínimo em `PUT /analytics/settings` (mínimo 3) ou use dados reais.
+16. **LGPD.** Em Administração → Privacidade, defina “Conversas com o assistente de IA (meses)”. Elimine um lead citado numa conversa: a conversa some do histórico de quem perguntou.
+17. **Textos públicos.** Abra `/privacidade` e `/termos` do site (seção 4 e 6 da política; seção 9 dos termos) e a pergunta “O que a IA faz?” na landing.
+
 ## Automatizado
 
 - `pnpm test:e2e` (API: assistente, ferramentas, avaliação simulada de 70 perguntas).

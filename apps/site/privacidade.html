@@ -25,7 +25,7 @@
     <main class="legal">
       <div class="wrap">
         <h1>Política de Privacidade</h1>
-        <p class="legal__meta">Versão 1.1 · atualizada em 23 de outubro de 2026</p>
+        <p class="legal__meta">Versão 1.2 · atualizada em 25 de outubro de 2026</p>
 
         <p>
           Esta política explica como
@@ -162,6 +162,15 @@
             devolvem dados de geração. Nenhum dado pessoal do cliente é enviado a eles.
           </li>
           <li>
+            <strong>Provedor de inteligência artificial</strong> (somente se a empresa contratante
+            ligar o assistente de IA; hoje, o Cloudflare Workers AI): recebe a pergunta e os números
+            das consultas feitas ao sistema, <em>sem dados pessoais</em>. Antes do envio, a
+            plataforma troca nomes por pseudônimos (como “[CLIENTE_1]”) e remove CPF, CNPJ, e-mail,
+            telefone, CEP e coordenadas; uma verificação final bloqueia o envio se algo restar. Os
+            nomes reais voltam apenas na tela de quem tem permissão para vê-los. A Voltex SolTech
+            não usa esses dados para treinar modelos. Esse provedor atua como suboperador.
+          </li>
+          <li>
             <strong>WhatsApp</strong>: a plataforma só monta o link de conversa; a mensagem é
             enviada pela pessoa que clica, no aplicativo dela, sem integração automática.
           </li>
@@ -169,7 +178,8 @@
         </ul>
         <p>
           Alguns provedores podem armazenar ou tratar dados fora do Brasil. Quando isso ocorrer, a
-          transferência observará o art. 33 da LGPD.
+          transferência observará o art. 33 da LGPD. É o caso possível do provedor de inteligência
+          artificial, que não informa a região em que processa as consultas.
         </p>
 
         <h2>5. Como protegemos</h2>
@@ -220,6 +230,12 @@
             <strong>Fotos de campo e geolocalização</strong>: pelo prazo definido pela empresa
             contratante, conforme a finalidade; a empresa também pode eliminá-los a qualquer momento
             junto com os demais dados da pessoa.
+          </li>
+          <li>
+            <strong>Conversas com o assistente de IA</strong>: guardam a pergunta e a resposta já
+            com os nomes trocados por pseudônimos, visíveis só para quem conversou. Ficam até a
+            própria pessoa apagar ou pelo prazo definido pela empresa contratante, e são eliminadas
+            junto com os dados de um titular que tenha sido citado nelas.
           </li>
           <li>
             <strong>Registros de acesso e de auditoria</strong>: mantidos para segurança e prestação

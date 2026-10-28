@@ -90,6 +90,7 @@ export class PrivacyService {
         signedContractsMonths: RETENTION_SOURCES.signedContractsMonths,
         fieldPhotosMonths: RETENTION_SOURCES.fieldPhotosMonths,
         geolocationMonths: RETENTION_SOURCES.geolocationMonths,
+        aiConversationsMonths: RETENTION_SOURCES.aiConversationsMonths,
         accessLogs: RETENTION_SOURCES.accessLogs,
       },
     };
@@ -297,7 +298,12 @@ export class PrivacyService {
         anonymizedAt: new Date(),
       },
     });
-    return { status: 'COMPLETED', summary: { leads: 1 }, documentKeys: [] };
+    const conversations = await this.eraseAiConversationsCiting(tx, [id]);
+    return {
+      status: 'COMPLETED',
+      summary: { leads: 1, ...(conversations ? { conversasDaIa: conversations } : {}) },
+      documentKeys: [],
+    };
   }
 
   private async eraseAccount(tx: Tx, id: string, policy: RetentionPolicyInput): Promise<Outcome> {
@@ -570,6 +576,11 @@ export class PrivacyService {
     });
     summary.arquivos = documents.length;
 
+    // Conversas do assistente que citam a conta ou os contatos de origem.
+    const citedIds = [id, ...convertedLeads.map((l) => l.id)];
+    const conversations = await this.eraseAiConversationsCiting(tx, citedIds);
+    if (conversations > 0) summary.conversasDaIa = conversations;
+
     return { status: 'COMPLETED', summary, documentKeys: documents.map((d) => d.storageKey) };
   }
 
@@ -797,18 +808,20 @@ export class PrivacyService {
     accounts: number;
     photos: number;
     geolocation: number;
+    aiConversations: number;
   }> {
     const tenants = await this.prisma.system.tenant.findMany({
       select: { id: true, settings: true },
     });
-    const total = { leads: 0, accounts: 0, photos: 0, geolocation: 0 };
+    const total = { leads: 0, accounts: 0, photos: 0, geolocation: 0, aiConversations: 0 };
     for (const tenant of tenants) {
       const policy = this.policyFrom(tenant.settings);
       if (
         policy.unconvertedLeadsMonths === null &&
         policy.lostOpportunitiesMonths === null &&
         policy.fieldPhotosMonths === null &&
-        policy.geolocationMonths === null
+        policy.geolocationMonths === null &&
+        policy.aiConversationsMonths === null
       )
         continue;
       const done = await this.context.run({ tenantId: tenant.id }, () => this.sweepTenant(policy));
@@ -816,6 +829,7 @@ export class PrivacyService {
       total.accounts += done.accounts;
       total.photos += done.photos;
       total.geolocation += done.geolocation;
+      total.aiConversations += done.aiConversations;
     }
     return total;
   }
@@ -860,6 +874,54 @@ export class PrivacyService {
     return photos.length;
   }
 
+  /** Conversas do assistente sem atividade há mais que o prazo: mensagens e conversa apagadas de vez. */
+  private async sweepAiConversations(months: number, now: number): Promise<number> {
+    const cutoff = new Date(now - months * MONTH);
+    const old = await this.prisma.db.aiConversation.findMany({
+      where: { updatedAt: { lt: cutoff } },
+      select: { id: true },
+      take: 500,
+    });
+    if (old.length === 0) return 0;
+    const ids = old.map((c) => c.id);
+    await this.prisma.db.$transaction(async (tx) => {
+      await tx.aiMessage.deleteMany({ where: { conversationId: { in: ids } } });
+      await tx.aiConversation.deleteMany({ where: { id: { in: ids } } });
+      await this.audit.record(
+        {
+          action: 'privacy.ai_conversations_expired',
+          entity: 'Tenant',
+          entityId: this.context.requireTenantId(),
+          actorId: null,
+          after: { conversations: ids.length, olderThanMonths: months },
+        },
+        tx,
+      );
+    });
+    return ids.length;
+  }
+
+  /**
+   * Apaga as conversas do assistente que citam alguma destas entidades (cliente, contato): os pseudônimos de cada
+   * conversa guardam o id de quem foi citado. Faz parte da eliminação do titular (LGPD).
+   */
+  private async eraseAiConversationsCiting(tx: Tx, entityIds: readonly string[]): Promise<number> {
+    if (entityIds.length === 0) return 0;
+    const wanted = new Set(entityIds);
+    const all = await tx.aiConversation.findMany({ select: { id: true, pseudonyms: true } });
+    const hit = all
+      .filter((c) =>
+        ((c.pseudonyms ?? []) as Array<{ entityId?: string }>).some(
+          (p) => p.entityId !== undefined && wanted.has(p.entityId),
+        ),
+      )
+      .map((c) => c.id);
+    if (hit.length === 0) return 0;
+    await tx.aiMessage.deleteMany({ where: { conversationId: { in: hit } } });
+    await tx.aiConversation.deleteMany({ where: { id: { in: hit } } });
+    return hit.length;
+  }
+
   /** Geolocalização do app de campo mais antiga que o prazo: coordenadas das fotos e das ordens zeradas. */
   private async sweepGeolocation(months: number, now: number): Promise<number> {
     const cutoff = new Date(now - months * MONTH);
@@ -892,11 +954,17 @@ export class PrivacyService {
     return total;
   }
 
-  private async sweepTenant(
-    policy: RetentionPolicyInput,
-  ): Promise<{ leads: number; accounts: number; photos: number; geolocation: number }> {
+  private async sweepTenant(policy: RetentionPolicyInput): Promise<{
+    leads: number;
+    accounts: number;
+    photos: number;
+    geolocation: number;
+    aiConversations: number;
+  }> {
     const now = Date.now();
-    const done = { leads: 0, accounts: 0, photos: 0, geolocation: 0 };
+    const done = { leads: 0, accounts: 0, photos: 0, geolocation: 0, aiConversations: 0 };
+    if (policy.aiConversationsMonths !== null)
+      done.aiConversations = await this.sweepAiConversations(policy.aiConversationsMonths, now);
     if (policy.fieldPhotosMonths !== null)
       done.photos = await this.sweepFieldPhotos(policy.fieldPhotosMonths, now);
     if (policy.geolocationMonths !== null)

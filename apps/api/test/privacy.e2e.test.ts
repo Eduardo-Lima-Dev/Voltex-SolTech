@@ -303,6 +303,7 @@ describe('Privacidade — eliminação de dados e retenção (e2e)', () => {
         lostOpportunitiesMonths: null,
         fieldPhotosMonths: null,
         geolocationMonths: null,
+        aiConversationsMonths: null,
         signedContractsMonths: 60,
       });
       expect(def.floors.signedContractsMonths).toBe(60);
@@ -337,6 +338,7 @@ describe('Privacidade — eliminação de dados e retenção (e2e)', () => {
         lostOpportunitiesMonths: 36,
         fieldPhotosMonths: null,
         geolocationMonths: null,
+        aiConversationsMonths: null,
         signedContractsMonths: 72,
       });
       expect((await auditOf(t, a.id, 'privacy.retention_updated')).length).toBeGreaterThan(0);

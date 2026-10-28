@@ -122,7 +122,14 @@ describe('IA · insights (e2e)', () => {
     const run = await post('/ai/insights/run', owner);
     expect(run.status).toBe(200);
     expect(run.body.created).toBeGreaterThanOrEqual(2);
-    const list = (await get('/ai/insights', owner)).body as Array<Record<string, any>>;
+    const list = (await get('/ai/insights', owner)).body as Array<
+      Record<string, unknown> & {
+        kind: string;
+        aiWritten: boolean;
+        text: string;
+        facts: { text: string }[];
+      }
+    >;
     const overdue = list.find((i) => i.kind === 'OVERDUE_RECEIVABLES')!;
     expect(overdue).toMatchObject({
       aiWritten: false,
@@ -139,7 +146,14 @@ describe('IA · insights (e2e)', () => {
     await t.prisma.system.insight.updateMany({ where: { tenantId: a.id }, data: { aiText: null } });
     const run = await post('/ai/insights/run', owner);
     expect(run.body.written).toBeGreaterThanOrEqual(1);
-    const list = (await get('/ai/insights', owner)).body as Array<Record<string, any>>;
+    const list = (await get('/ai/insights', owner)).body as Array<
+      Record<string, unknown> & {
+        kind: string;
+        aiWritten: boolean;
+        text: string;
+        facts: { text: string }[];
+      }
+    >;
     const written = list.find((i) => i.aiWritten)!;
     expect(written.text).toMatch(/^Atenção: o principal número é \S+\.$/);
     expect(written.text).not.toContain('{{');

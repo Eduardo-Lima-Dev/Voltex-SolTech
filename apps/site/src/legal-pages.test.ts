@@ -45,3 +45,30 @@ describe('páginas legais', () => {
     expect(home).toContain('href="/termos"');
   });
 });
+
+describe('IA nas páginas legais (Fase 12)', () => {
+  const privacy = text(page('privacidade.html'));
+  const terms = text(page('termos.html'));
+
+  it('a política diz o que vai ao provedor de IA, o que não vai e por quanto tempo as conversas ficam', () => {
+    expect(privacy).toMatch(/Provedor de inteligência artificial/);
+    expect(privacy).toMatch(/sem dados pessoais/);
+    expect(privacy).toMatch(/suboperador/);
+    expect(privacy).toMatch(/Conversas com o assistente de IA/);
+    expect(privacy).toMatch(/não usa esses dados para treinar modelos/);
+  });
+
+  it('os termos dizem que a IA é opcional, só consulta, pode errar e não decide', () => {
+    expect(terms).toMatch(/Assistente de inteligência artificial/);
+    expect(terms).toMatch(/opcional/);
+    expect(terms).toMatch(/apenas consulta/);
+    expect(terms).toMatch(/podem conter erros/);
+    expect(terms).toMatch(/não toma decisões/);
+  });
+
+  it('a página inicial não promete o que a IA não faz', () => {
+    const home = text(page('index.html'));
+    expect(home).toMatch(/O que a IA faz\? E o que ela não faz\?/);
+    expect(home).toMatch(/não substitui o engenheiro/);
+  });
+});
