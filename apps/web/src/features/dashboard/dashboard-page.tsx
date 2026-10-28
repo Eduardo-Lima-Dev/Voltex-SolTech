@@ -13,6 +13,7 @@ import {
 } from '@voltex/ui';
 import type { Permission } from '@voltex/shared';
 import { useAuth, useCurrentUser } from '@/features/auth/auth-provider';
+import { InsightsCard } from '@/features/ai/insights-card';
 import { PRODUCTS } from '@/features/products/registry';
 import { endpoints } from '@/lib/api/endpoints';
 import { formatCents, formatDateTime } from '@/lib/format';
@@ -288,7 +289,8 @@ const SECTIONS: readonly Section[] = [
   },
   {
     key: 'engineering',
-    permission: 'engine.project.read',
+    // O painel da engenharia exige gerenciar pedidos (a rota `/engineering/dashboard`).
+    permission: 'engine.request.manage',
     firstFor: ['ENGINEERING', 'TECHNICAL_LEAD'],
     node: <EngineeringCard />,
   },
@@ -323,6 +325,8 @@ export function DashboardPage() {
           {user.tenantName} · {roleLabel(user.role)}
         </p>
       </header>
+
+      {can('ai.insights.read') ? <InsightsCard /> : null}
 
       {ordered.length > 0 ? (
         <section aria-labelledby="agora" className="space-y-4">

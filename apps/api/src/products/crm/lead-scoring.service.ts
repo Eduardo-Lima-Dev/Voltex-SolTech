@@ -127,11 +127,15 @@ export class LeadScoringService {
       ? candidates.filter((id) => users.some((u) => u.id === id))
       : users.map((u) => u.id);
     if (pool.length === 0) return null;
-    const last = await db.lead.groupBy({
-      by: ['ownerId'],
-      where: { ownerId: { in: pool }, deletedAt: null },
-      _max: { createdAt: true },
-    });
+    // O rodízio olha o último lead de cada vendedor na empresa toda: quem distribui (SDR) não pode ter a vista
+    // restrita à própria carteira aqui, ou o rodízio ficaria errado. Só datas voltam, nenhum dado de lead.
+    const last = await this.context.withoutOwnership(() =>
+      db.lead.groupBy({
+        by: ['ownerId'],
+        where: { ownerId: { in: pool }, deletedAt: null },
+        _max: { createdAt: true },
+      }),
+    );
     return nextInRotation(
       pool,
       new Map(

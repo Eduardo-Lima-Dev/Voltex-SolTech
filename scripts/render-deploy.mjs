@@ -5,7 +5,8 @@
  *
  *   RENDER_API_KEY=... RENDER_SERVICE_ID=srv-... node scripts/render-deploy.mjs ghcr.io/dono/voltex-api:ETIQUETA
  *
- * Também define, antes de publicar, `DATA_HUB_ENABLED_SOURCES` (fontes externas ligadas) quando informada no ambiente.
+ * Também define, antes de publicar, `DATA_HUB_ENABLED_SOURCES` (fontes externas ligadas) e as variáveis do assistente de IA
+ * (`AI_*` e as credenciais `CLOUDFLARE_*`, estas sem imprimir o valor) quando informadas no ambiente.
  *
  * Fora do Actions, a chave vem de ~/.voltex-deploy/render e o serviço é o `voltex-api`.
  * Sai com código 1 se a publicação falhar ou se a API não responder depois dela.
@@ -58,7 +59,16 @@ if (!servicoId) {
 // Variáveis NÃO secretas que a publicação mantém a cada deploy. Uma a uma (PUT por chave): a Render troca só o valor
 // desta chave e preserva as demais. Sem isso a fonte ficaria desligada (o padrão da API é vazio = nada é buscado).
 // Valor vazio ou ausente = não mexe.
-for (const chaveVar of ['DATA_HUB_ENABLED_SOURCES']) {
+for (const chaveVar of [
+  'DATA_HUB_ENABLED_SOURCES',
+  // Assistente de IA (Fase 12): ligado por variável; vazio = não mexe (a IA continua como estava).
+  'AI_ENABLED',
+  'AI_PROVIDER',
+  'AI_LEGAL_REVIEWED_AT',
+  'AI_MODEL_DEFAULT',
+  'AI_MODEL_FALLBACK',
+  'AI_DAILY_NEURONS_GLOBAL',
+]) {
   const valor = process.env[chaveVar]?.trim();
   if (!valor) continue;
   try {
@@ -67,6 +77,18 @@ for (const chaveVar of ['DATA_HUB_ENABLED_SOURCES']) {
   } catch (erro) {
     // Não impede a publicação: a variável fica como estava e o aviso aparece no log do Actions.
     console.warn(`::warning::Não foi possível definir ${chaveVar} na Render: ${erro.message}`);
+  }
+}
+
+// Credenciais do provedor de IA: vêm dos segredos do GitHub e vão direto para a Render. O valor NUNCA é impresso.
+for (const chaveSegredo of ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN']) {
+  const valor = process.env[chaveSegredo]?.trim();
+  if (!valor) continue;
+  try {
+    await chamar('PUT', `/services/${servicoId}/env-vars/${chaveSegredo}`, { value: valor });
+    console.log(`Segredo ${chaveSegredo} definido na Render.`);
+  } catch (erro) {
+    console.warn(`::warning::Não foi possível definir ${chaveSegredo} na Render: ${erro.message}`);
   }
 }
 

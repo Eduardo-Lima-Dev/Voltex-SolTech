@@ -25,6 +25,7 @@ import {
 } from '@voltex/ui';
 import type { ProjectChecklistItemDto, ProjectDto, ProjectStatus } from '@voltex/shared';
 import { Can } from '@/app/guards';
+import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { Field } from '@/components/field';
 import { queryKeys } from '@/features/admin/query-keys';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -387,6 +388,12 @@ export function ProjectDetailPage() {
           <h2 className="text-2xl font-semibold tracking-tight">{p.title}</h2>
           <Badge variant={PROJECT_STATUS_BADGE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge>
           {p.overdue ? <Badge variant="red">Prazo vencido</Badge> : null}
+          <AskAssistantButton
+            label="Resumir com IA"
+            question={`Resuma a situação do projeto ${p.projectCode}`}
+            projectCode={p.projectCode}
+            screen="projeto"
+          />
         </div>
         <p className="text-muted-foreground">
           {p.accountName} · <span className="font-mono">{p.projectCode}</span> ·{' '}

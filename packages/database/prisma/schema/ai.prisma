@@ -1,0 +1,178 @@
+// Inteligência artificial (Fase 12, ADR-0029): contagem do uso diário, para a cota de custo zero.
+// O CONTEÚDO das perguntas e respostas nunca é guardado aqui; só os totais por dia.
+
+enum AiUsagePurpose {
+  CHAT
+  INSIGHTS
+  PROCUREMENT
+  DIAGNOSTICS
+
+  @@map("ai_usage_purpose")
+}
+
+model AiUsage {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  /// Dia UTC: as cotas do provedor viram à meia-noite UTC.
+  day       DateTime       @db.Date
+  /// Id do usuário que perguntou, ou `system` para rotinas (insights, extrações agendadas).
+  userKey   String         @map("user_key")
+  purpose   AiUsagePurpose
+  /// Custo em *neurons* informado pelo provedor.
+  neurons   Float          @default(0)
+  calls     Int            @default(0)
+  failures  Int            @default(0)
+  /// Perguntas feitas ao assistente (uma pergunta pode usar de 1 a 3 chamadas ao modelo).
+  questions Int            @default(0)
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, day, userKey, purpose])
+  @@index([day])
+  @@map("ai_usage")
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+
+  @@map("ai_message_role")
+}
+
+/// Conversa de um usuário com o assistente. Só o próprio usuário a lê.
+model AiConversation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  /// Primeira pergunta, JÁ mascarada.
+  title       String
+  /// Mapa de pseudônimos da conversa (`[CLIENTE_1]` → id da entidade). Os nomes reais ficam aqui, no servidor.
+  pseudonyms  Json      @default("[]")
+  /// Fatos citáveis da conversa (`F1`…), para as referências das mensagens antigas continuarem valendo.
+  facts       Json      @default("[]")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  messages AiMessage[]
+
+  @@index([tenantId, userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  conversationId String        @map("conversation_id") @db.Uuid
+  role           AiMessageRole
+  /// Usuário: a pergunta já mascarada. Assistente: o texto final, com os valores e os nomes do usuário.
+  text           String
+  /// Assistente: o que o modelo escreveu (com `{{F#}}` e pseudônimos), usado como histórico nas próximas perguntas.
+  maskedText     String?       @map("masked_text")
+  /// `ANSWER`, `CANNOT_ANSWER`, `NEEDS_CLARIFICATION` ou `FALLBACK` (só os dados, sem redação da IA).
+  kind           String?
+  cannotAnswerReason String?   @map("cannot_answer_reason")
+  /// Partes da resposta para a tela: texto e chips de valores com a fonte.
+  parts          Json          @default("[]")
+  /// Fatos citados na resposta, com a fonte (para o "ver os dados").
+  facts          Json          @default("[]")
+  followUps      Json          @default("[]")
+  /// Usuário: tipos de dado pessoal removidos da pergunta (só os tipos e quantos).
+  removed        Json          @default("{}")
+  model          String?
+  neurons        Float?
+  durationMs     Int?          @map("duration_ms")
+  helpful        Boolean?
+  feedbackReason String?       @map("feedback_reason")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  conversation AiConversation @relation(fields: [conversationId], references: [id])
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+enum InsightSeverity {
+  INFO
+  ATTENTION
+  CRITICAL
+
+  @@map("insight_severity")
+}
+
+enum InsightStatus {
+  NEW
+  SEEN
+  RESOLVED
+  DISMISSED
+
+  @@map("insight_status")
+}
+
+/// Achado da rotina diária de insights (Fase 12G): um detector determinístico encontra, a IA só redige a frase.
+model Insight {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  /// Detector que gerou (`OVERDUE_RECEIVABLES`, `STALLED_OPPORTUNITIES`…).
+  kind        String
+  severity    InsightSeverity
+  /// Chave estável do achado (`kind` + entidade/dono): evita duplicar a cada rodada.
+  dedupeKey   String          @map("dedupe_key")
+  /// Dono da carteira, quando o achado é de um vendedor; `null` = achado da empresa.
+  ownerId     String?         @map("owner_id") @db.Uuid
+  /// Permissão necessária para ver o insight.
+  permission  String
+  /// Valores do achado, sempre vindos do sistema: `[{ key, type, value }]`.
+  facts       Json            @default("[]")
+  /// Texto padrão do detector (sempre existe).
+  defaultText String          @map("default_text")
+  /// Texto redigido pela IA e validado (`null` = não redigido; vale o padrão).
+  aiText      String?         @map("ai_text")
+  /// Tela para ver os dados.
+  link        String
+  status      InsightStatus   @default(NEW)
+  statusById  String?         @map("status_by_id") @db.Uuid
+  statusAt    DateTime?       @map("status_at")
+  helpful     Boolean?
+  generatedAt DateTime        @default(now()) @map("generated_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, status, generatedAt])
+  @@map("insights")
+}
+
+enum PriceExtractionStatus {
+  PENDING_REVIEW
+  IMPORTED
+  DISCARDED
+
+  @@map("price_extraction_status")
+}
+
+/// Tabela de preços lida por IA (Fase 12H). Guarda só as linhas extraídas (com o trecho de origem); nada vai
+/// para a lista de preços sem a confirmação de uma pessoa.
+model PriceExtraction {
+  id           String                @id @default(uuid(7)) @db.Uuid
+  tenantId     String                @map("tenant_id") @db.Uuid
+  userId       String                @map("user_id") @db.Uuid
+  filename     String
+  status       PriceExtractionStatus @default(PENDING_REVIEW)
+  /// Linhas extraídas e validadas: fabricante, modelo, fornecedor, preço, vigência, trecho de origem e casamento.
+  rows         Json                  @default("[]")
+  model        String?
+  neurons      Float?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  importedAt   DateTime?             @map("imported_at")
+  importedById String?               @map("imported_by_id") @db.Uuid
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("price_extractions")
+}

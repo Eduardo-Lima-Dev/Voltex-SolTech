@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Outlet, useMatches } from 'react-router';
 import {
@@ -10,12 +10,43 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@voltex/ui';
+import { Can } from '@/app/guards';
+import { AssistantPanel } from '@/features/ai/assistant-panel';
+import { AssistantProvider, useAssistant } from '@/features/ai/assistant-context';
 import { SidebarNav } from './sidebar-nav';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 
+/** Botão "Pergunte ao Voltex" do cabeçalho: só aparece para quem tem a permissão do assistente. */
+function AssistantButton() {
+  const assistant = useAssistant();
+  return (
+    <Can permission="ai.assistant.use">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="gap-1.5"
+        aria-label="Pergunte ao Voltex"
+        onClick={() => assistant?.setOpen(true)}
+      >
+        <Sparkles className="text-brand-cyan" />
+        <span className="hidden sm:inline">Pergunte ao Voltex</span>
+      </Button>
+    </Can>
+  );
+}
+
 /** Casca da suíte: menu lateral (gaveta no celular), cabeçalho e área de conteúdo. */
 export function AppShell() {
+  return (
+    <AssistantProvider>
+      <Shell />
+      <AssistantPanel />
+    </AssistantProvider>
+  );
+}
+
+function Shell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const title = [...useMatches()]
     .reverse()
@@ -59,6 +90,7 @@ export function AppShell() {
           ) : null}
 
           <div className="ml-auto flex items-center gap-1">
+            <AssistantButton />
             <ThemeToggle />
             <UserMenu />
           </div>

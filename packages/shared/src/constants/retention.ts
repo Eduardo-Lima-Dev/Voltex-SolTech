@@ -17,6 +17,8 @@ export const RETENTION_DEFAULTS = {
   fieldPhotosMonths: null as number | null,
   /** Geolocalização registrada pelo app de campo. `null` = nunca eliminar sozinho. */
   geolocationMonths: null as number | null,
+  /** Conversas com o assistente de IA. `null` = guardar até a própria pessoa apagar. */
+  aiConversationsMonths: null as number | null,
 };
 
 export const RETENTION_SOURCES = {
@@ -26,6 +28,8 @@ export const RETENTION_SOURCES = {
     'Não há prazo legal mínimo conhecido para as fotos de campo. Considere o prazo das garantias dos equipamentos (elas podem servir de prova) e confirme com o seu jurídico.',
   geolocationMonths:
     'Localização é dado pessoal: guarde só pelo tempo necessário à execução e à garantia do serviço. Confirme o prazo com o seu jurídico.',
+  aiConversationsMonths:
+    'As conversas guardam a pergunta e a resposta já mascaradas (sem nomes e contatos reais). Não há prazo legal; guarde só pelo tempo útil ao histórico de uso e confirme com o seu jurídico. A pessoa pode apagar as próprias conversas a qualquer momento.',
   accessLogs:
     'Marco Civil da Internet (Lei 12.965/2014, art. 15): registros de acesso a aplicações por, no mínimo, 6 meses. O histórico de auditoria da plataforma não é eliminado por este recurso.',
 } as const;

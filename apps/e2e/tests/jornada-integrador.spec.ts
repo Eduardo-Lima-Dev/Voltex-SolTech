@@ -60,6 +60,24 @@ test('do formulário do site ao projeto protocolado', async ({ page }, info) => 
     await snap(page, info, 'Tela de entrada da aplicação', 2600);
   });
 
+  await test.step('2b. A gestão distribui o lead do site ao vendedor (API)', async () => {
+    // Lead que chega pelo site nasce sem responsável: o vendedor só enxerga o que está na carteira dele.
+    const owner = await apiToken(USERS.owner);
+    const leads = await api<{ data: { id: string }[] }>(
+      `/leads?search=${encodeURIComponent(cliente)}`,
+      owner,
+    );
+    const users = await api<{ data: { id: string; email: string }[] }>(
+      '/users?pageSize=100',
+      owner,
+    );
+    const seller = users.data.find((u) => u.email === USERS.seller);
+    await api(`/leads/${leads.data[0]!.id}`, owner, {
+      method: 'PATCH',
+      body: { ownerId: seller?.id },
+    });
+  });
+
   await test.step('3. O vendedor entra e encontra o contato como lead no CRM', async () => {
     await page.getByLabel('E-mail').fill(USERS.seller);
     await page

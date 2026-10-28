@@ -59,6 +59,8 @@ export interface ConvertLeadResult {
 export interface AccountDto {
   id: string;
   tenantId: string;
+  ownerId: string | null;
+  ownerName: string | null;
   type: AccountType;
   name: string;
   document: string | null;

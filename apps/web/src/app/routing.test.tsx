@@ -227,6 +227,19 @@ describe('rotas do CRM', () => {
     expect(within(nav).getByRole('link', { name: 'Leads' })).not.toHaveAttribute('aria-current');
   });
 
+  it('vendedor e SDR veem o aviso da carteira na lista de leads; o gestor não', async () => {
+    crmHandlers();
+    const seller = renderApp('/crm/leads', { session: makeSession('SALESPERSON') });
+    expect(await screen.findByText(/Você vê só a sua carteira/)).toBeInTheDocument();
+    seller.unmount();
+    const sdr = renderApp('/crm/leads', { session: makeSession('SDR') });
+    expect(await screen.findByText(/sem responsável, para poder distribuir/)).toBeInTheDocument();
+    sdr.unmount();
+    renderApp('/crm/leads', { session: makeSession('SALES_MANAGER') });
+    await screen.findByRole('heading', { name: /Leads|Olá/ }).catch(() => undefined);
+    expect(screen.queryByText(/Você vê só a sua carteira/)).not.toBeInTheDocument();
+  });
+
   it('o SDR vê Leads, Contas e Tarefas, mas não Oportunidades; a rota de oportunidades fica bloqueada', async () => {
     crmHandlers();
     renderApp('/crm/leads', { session: makeSession('SDR') });

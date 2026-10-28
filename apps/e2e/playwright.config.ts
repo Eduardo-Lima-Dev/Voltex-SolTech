@@ -14,6 +14,9 @@ const apiEnv = {
   AUTOMATION_SCAN_INTERVAL_MS: '0',
   AUTOMATION_QUEUE_PREFIX: 'voltex-e2e',
   S3_BUCKET: 'voltex-documents-e2e',
+  // IA com o provedor de demonstração (determinístico, sem custo e sem rede).
+  AI_ENABLED: 'true',
+  AI_PROVIDER: 'demo',
   JWT_SECRET: 'e2e-browser-jwt-secret-with-at-least-32-characters',
   JWT_REFRESH_SECRET: 'e2e-browser-refresh-secret-with-at-least-32-chars',
 };
@@ -28,6 +31,8 @@ const apiCommand = apiImage
       'WEB_URL',
       'CORS_ORIGIN',
       'THROTTLE_DISABLED',
+      'AI_ENABLED',
+      'AI_PROVIDER',
       'OUTBOX_POLL_INTERVAL_MS',
       'AUTOMATION_SCAN_INTERVAL_MS',
       'AUTOMATION_QUEUE_PREFIX',

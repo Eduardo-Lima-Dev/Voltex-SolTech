@@ -10,6 +10,31 @@ const empty = { data: [], meta: { page: 1, pageSize: 5, total: 0 } };
  */
 const homeDefaults = [
   http.get(`${API}/tasks`, () => HttpResponse.json(empty)),
+  http.get(`${API}/ai/insights`, () => HttpResponse.json([])),
+  http.get(`${API}/analytics/settings`, () =>
+    HttpResponse.json({
+      minSamples: {
+        potentialClients: 25,
+        groupSize: 5,
+        funnelClosed: 30,
+        receivablesPaid: 20,
+        installationsDone: 10,
+        generationDays: 14,
+        simpleAverage: 5,
+      },
+      bestClientShare: 0.2,
+      bestClientCriterion: 'MARGIN',
+      stalledDays: 14,
+      usingDefaults: true,
+    }),
+  ),
+  // Previsões: por padrão, "dados insuficientes" (cada teste troca por números quando precisa).
+  http.get(`${API}/forecasts/:name`, () =>
+    HttpResponse.json({ status: 'INSUFFICIENT_SAMPLE', sample: 0, required: 20 }),
+  ),
+  http.get(`${API}/forecasts/generation/:code`, () =>
+    HttpResponse.json({ status: 'INSUFFICIENT_SAMPLE', sample: 0, required: 14 }),
+  ),
   http.get(`${API}/operations/field/work-orders`, () => HttpResponse.json([])),
   http.get(`${API}/dashboard/commercial`, () =>
     HttpResponse.json({

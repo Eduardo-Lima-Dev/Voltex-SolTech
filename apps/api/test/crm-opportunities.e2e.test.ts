@@ -185,7 +185,7 @@ describe('CRM · Pipeline, oportunidades, tarefas e Calculator (e2e)', () => {
         ).status,
       ).toBe(422);
       expect(
-        (await post('/opportunities', seller, { accountId: acc.id, ownerId: b.admin.id })).status,
+        (await post('/opportunities', admin, { accountId: acc.id, ownerId: b.admin.id })).status,
       ).toBe(422);
     });
 
@@ -221,7 +221,11 @@ describe('CRM · Pipeline, oportunidades, tarefas e Calculator (e2e)', () => {
         })
       ).body;
       const before = (await outboxOf(t, a.id, 'OpportunityPremisesChanged')).length;
-      const updated = await patch(`/opportunities/${opp.id}`, seller, {
+      // Redistribuir a carteira é da gestão: o vendedor não passa a oportunidade para outra pessoa.
+      expect(
+        (await patch(`/opportunities/${opp.id}`, seller, { ownerId: a.manager.id })).status,
+      ).toBe(403);
+      const updated = await patch(`/opportunities/${opp.id}`, admin, {
         title: 'Título novo',
         ownerId: a.manager.id,
         expectedCloseDate: '2026-12-31',
@@ -689,7 +693,10 @@ describe('CRM · Pipeline, oportunidades, tarefas e Calculator (e2e)', () => {
 
   describe('permissões e isolamento', () => {
     it('SDR não cria oportunidade; vendedor sim; sem token 401', async () => {
-      const acc = (await post('/accounts', sdr, { name: 'Conta do SDR' })).body;
+      // O SDR distribui: cria a conta já na carteira do vendedor.
+      const acc = (
+        await post('/accounts', sdr, { name: 'Conta do SDR', ownerId: a.salesperson.id })
+      ).body;
       expect((await post('/opportunities', sdr, { accountId: acc.id })).status).toBe(403);
       expect((await post('/opportunities', seller, { accountId: acc.id })).status).toBe(201);
       expect((await t.http.get(`${API}/opportunities`)).status).toBe(401);

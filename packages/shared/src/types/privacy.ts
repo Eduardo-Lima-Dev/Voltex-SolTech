@@ -23,6 +23,7 @@ export interface RetentionPolicyDto {
     signedContractsMonths: string;
     fieldPhotosMonths: string;
     geolocationMonths: string;
+    aiConversationsMonths: string;
     accessLogs: string;
   };
 }
