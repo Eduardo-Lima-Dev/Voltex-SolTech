@@ -100,10 +100,11 @@ test.describe('Da triagem à proposta', () => {
   }) => {
     const owner = await apiToken(USERS.owner);
     await ensureMarginPolicy(owner);
-    const opp = await prepareOpportunity(owner, 'Cliente Aprovação');
-    await api(`/opportunities/${opp.id}/guard/evaluate`, owner, { method: 'POST' });
-    await api(`/opportunities/${opp.id}/stage`, owner, { body: { stage: 'QUOTING' } });
+    // A oportunidade nasce na carteira do vendedor: ele só enxerga e opera o que é dele.
     const seller = await apiToken(USERS.seller);
+    const opp = await prepareOpportunity(seller, 'Cliente Aprovação', owner);
+    await api(`/opportunities/${opp.id}/guard/evaluate`, seller, { method: 'POST' });
+    await api(`/opportunities/${opp.id}/stage`, seller, { body: { stage: 'QUOTING' } });
     const quote = await api(`/opportunities/${opp.id}/quotes`, seller, {
       body: {
         items: [{ category: 'MODULE', description: 'Kit', quantity: 1, unitCostCents: 1000000 }],

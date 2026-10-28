@@ -11,6 +11,7 @@ import {
   Scale,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   Sun,
   Users,
   type LucideIcon,
@@ -32,7 +33,8 @@ export interface AdminTab {
     | 'margens'
     | 'contratos'
     | 'homologacao'
-    | 'privacidade';
+    | 'privacidade'
+    | 'inteligencia';
   label: string;
   description: string;
   icon: LucideIcon;
@@ -138,6 +140,13 @@ export const ADMIN_TABS: readonly AdminTab[] = [
     description: 'LGPD: prazos de guarda e eliminação de dados',
     icon: LockKeyhole,
     anyOf: ['platform.tenant.manage'],
+  },
+  {
+    path: 'inteligencia',
+    label: 'Inteligência',
+    description: 'Assistente de IA: liga, cotas, uso e diagnóstico',
+    icon: Sparkles,
+    anyOf: ['ai.admin.manage'],
   },
 ];
 

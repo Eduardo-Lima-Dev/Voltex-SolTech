@@ -176,6 +176,8 @@ model Account {
   email              String?
   phone              String?
   notes              String?
+  /// Responsável pela conta (carteira). Vendedores só enxergam as contas da própria carteira.
+  ownerId            String?          @map("owner_id") @db.Uuid
   anonymizedAt       DateTime?        @map("anonymized_at")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
@@ -189,6 +191,7 @@ model Account {
 
   @@index([tenantId, name])
   @@index([tenantId, documentNormalized])
+  @@index([tenantId, ownerId])
   @@map("accounts")
 }
 
@@ -338,6 +341,7 @@ model Opportunity {
   proposals           Proposal[]
   contracts           Contract[]
   project             Project?
+  calculationSessions CalculationSession[]
 
   @@index([tenantId, stage])
   @@index([tenantId, status])

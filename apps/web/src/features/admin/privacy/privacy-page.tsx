@@ -45,6 +45,7 @@ function RetentionCard() {
   const [contracts, setContracts] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string | null>(null);
   const [geo, setGeo] = useState<string | null>(null);
+  const [aiChats, setAiChats] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
   const data = policy.data;
@@ -53,6 +54,7 @@ function RetentionCard() {
   const contractsText = contracts ?? data?.policy.signedContractsMonths.toString() ?? '';
   const photosText = photos ?? data?.policy.fieldPhotosMonths?.toString() ?? '';
   const geoText = geo ?? data?.policy.geolocationMonths?.toString() ?? '';
+  const aiChatsText = aiChats ?? data?.policy.aiConversationsMonths?.toString() ?? '';
 
   const save = useMutation({
     mutationFn: (input: RetentionPolicyInput) => endpoints.privacy.updatePolicy(input),
@@ -90,12 +92,17 @@ function RetentionCard() {
       return setError(
         'Informe os meses da geolocalização como um número inteiro, ou deixe em branco.',
       );
+    if (aiChatsText.trim() !== '' && toNumber(aiChatsText) === null)
+      return setError(
+        'Informe os meses das conversas com a IA como um número inteiro, ou deixe em branco.',
+      );
     setError(undefined);
     save.mutate({
       unconvertedLeadsMonths: toNumber(leadsText),
       lostOpportunitiesMonths: toNumber(lostText),
       fieldPhotosMonths: toNumber(photosText),
       geolocationMonths: toNumber(geoText),
+      aiConversationsMonths: toNumber(aiChatsText),
       signedContractsMonths: contractsMonths,
     });
   };
@@ -186,6 +193,19 @@ function RetentionCard() {
                 placeholder="Em branco = nunca apagar"
                 value={geoText}
                 onChange={(e) => setGeo(e.target.value)}
+              />
+            </Field>
+            <Field
+              id="ret-ai"
+              label="Conversas com o assistente de IA (meses)"
+              hint={policy.data.sources.aiConversationsMonths}
+            >
+              <Input
+                id="ret-ai"
+                inputMode="numeric"
+                placeholder="Em branco = até a pessoa apagar"
+                value={aiChatsText}
+                onChange={(e) => setAiChats(e.target.value)}
               />
             </Field>
             <p className="text-xs text-muted-foreground">{policy.data.sources.accessLogs}</p>

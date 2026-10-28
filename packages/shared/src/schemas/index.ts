@@ -21,3 +21,5 @@ export * from './monitoring.js';
 export * from './portal.js';
 export * from './mfa.js';
 export * from './lead-scoring.js';
+export * from './ai.js';
+export * from './analytics.js';

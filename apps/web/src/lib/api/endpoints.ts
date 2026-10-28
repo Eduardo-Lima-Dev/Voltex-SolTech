@@ -1,4 +1,9 @@
 import type {
+  Forecast,
+  FunnelForecast,
+  GenerationForecast,
+  InstallationForecast,
+  ReceivablesForecast,
   SaveQuoteInput,
   UpdateQuoteInput,
   CalculationSessionDto,
@@ -8,6 +13,22 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  AnalyticsSettingsDto,
+  AnalyticsSettingsInput,
+  AiAdminSettingsDto,
+  AiChatEvent,
+  AiChatRequest,
+  AiConversationDetailDto,
+  AiConversationSummaryDto,
+  AiDiagnosticsDto,
+  AiStatusDto,
+  AiUsageDto,
+  ConfirmPriceExtractionInput,
+  PriceExtractionDto,
+  InsightDto,
+  InsightRunResultDto,
+  UpdateInsightInput,
+  UpdateAiSettingsInput,
   LeadScoringConfig,
   LeadScoringConfigInput,
   MfaChallengeDto,
@@ -1407,6 +1428,56 @@ export function createEndpoints(client: ApiClient) {
     },
     aneel: {
       import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
+    },
+    analyticsSettings: {
+      get: () => client.get<AnalyticsSettingsDto>('/analytics/settings'),
+      update: (input: AnalyticsSettingsInput) =>
+        client.put<AnalyticsSettingsDto>('/analytics/settings', input),
+    },
+    forecasts: {
+      receivables: () => client.get<Forecast<ReceivablesForecast>>('/forecasts/receivables'),
+      funnel: () => client.get<Forecast<FunnelForecast>>('/forecasts/funnel'),
+      installations: () => client.get<Forecast<InstallationForecast>>('/forecasts/installations'),
+      generation: (projectCode: string) =>
+        client.get<Forecast<GenerationForecast>>(`/forecasts/generation/${projectCode}`),
+    },
+    ai: {
+      status: () => client.get<AiStatusDto>('/ai/status'),
+      /** Pergunta em fluxo: `onEvent` recebe o progresso e, no fim, a resposta ou o erro com a mensagem pronta. */
+      chat: (input: AiChatRequest, onEvent: (event: AiChatEvent) => void, signal?: AbortSignal) =>
+        client.postStream<AiChatEvent>('/ai/chat', input, onEvent, { signal }),
+      conversations: () => client.get<AiConversationSummaryDto[]>('/ai/conversations'),
+      conversation: (id: string) => client.get<AiConversationDetailDto>(`/ai/conversations/${id}`),
+      removeConversation: (id: string) => client.delete<void>(`/ai/conversations/${id}`),
+      feedback: (messageId: string, input: { helpful: boolean; reason?: string }) =>
+        client.post<void>(`/ai/messages/${messageId}/feedback`, input),
+      procurement: {
+        extract: (file: File) => {
+          const form = new FormData();
+          form.append('file', file);
+          return client.upload<PriceExtractionDto>('/ai/procurement/extractions', form);
+        },
+        confirm: (id: string, input: ConfirmPriceExtractionInput) =>
+          client.post<{ extraction: PriceExtractionDto; result: PriceImportResultDto }>(
+            `/ai/procurement/extractions/${id}/import`,
+            input,
+          ),
+        discard: (id: string) =>
+          client.post<PriceExtractionDto>(`/ai/procurement/extractions/${id}/discard`),
+      },
+      insights: {
+        list: () => client.get<InsightDto[]>('/ai/insights'),
+        update: (id: string, input: UpdateInsightInput) =>
+          client.patch<InsightDto>(`/ai/insights/${id}`, input),
+        run: () => client.post<InsightRunResultDto>('/ai/insights/run'),
+      },
+      admin: {
+        settings: () => client.get<AiAdminSettingsDto>('/ai/admin/settings'),
+        update: (input: UpdateAiSettingsInput) =>
+          client.put<AiAdminSettingsDto>('/ai/admin/settings', input),
+        usage: () => client.get<AiUsageDto>('/ai/admin/usage'),
+        diagnostics: () => client.post<AiDiagnosticsDto>('/ai/admin/diagnostics'),
+      },
     },
     audit: {
       list: (query: AuditQuery) =>

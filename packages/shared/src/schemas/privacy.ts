@@ -10,6 +10,8 @@ export const retentionPolicySchema = z.object({
   fieldPhotosMonths: z.number().int().min(1).max(240).nullable().default(null),
   /** Pontos de geolocalização do app de campo; `null` = não eliminar sozinho. */
   geolocationMonths: z.number().int().min(1).max(240).nullable().default(null),
+  /** Conversas com o assistente de IA; `null` = guardar até a pessoa apagar. */
+  aiConversationsMonths: z.number().int().min(1).max(240).nullable().default(null),
   signedContractsMonths: z
     .number()
     .int()

@@ -51,5 +51,9 @@ await seeded.connect();
 await seeded.query(
   `UPDATE tenants SET lead_capture_key = 'lk_e2e_jornada' WHERE slug = (SELECT slug FROM tenants ORDER BY created_at LIMIT 1)`,
 );
+// Empresa de demonstração: a IA só liga antes do parecer jurídico para elas (a jornada liga pela tela).
+await seeded.query(
+  `UPDATE tenants SET settings = COALESCE(settings, '{}'::jsonb) || '{"demo": true}'::jsonb`,
+);
 await seeded.end();
 console.log(`Banco ${name} pronto.`);

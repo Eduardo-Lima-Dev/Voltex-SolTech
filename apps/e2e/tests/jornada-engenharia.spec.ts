@@ -461,6 +461,16 @@ test('do pedido amarelo ao projeto técnico aprovado e à cotação', async ({ p
     );
     const snapshot = await api(`/engineering/projects/${projeto!.id}/snapshot`, owner);
     await ensureMarginPolicy(owner);
+    // A gestão passa a oportunidade para a carteira do vendedor: ele só enxerga e cota o que é dele.
+    const users = await api<{ data: { id: string; email: string }[] }>(
+      '/users?pageSize=100',
+      owner,
+    );
+    const sellerUser = users.data.find((u) => u.email === USERS.seller);
+    await api(`/opportunities/${oportunidade.id}`, owner, {
+      method: 'PATCH',
+      body: { ownerId: sellerUser?.id },
+    });
     const quote = await api(`/opportunities/${oportunidade.id}/quotes/from-engineering`, seller, {
       body: { engineeringSnapshotId: snapshot.id, priceCents: 4_500_000 },
     });

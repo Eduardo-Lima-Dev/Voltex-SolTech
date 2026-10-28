@@ -31,6 +31,8 @@ Object.assign(process.env, {
   THROTTLE_DISABLED: 'true',
   OUTBOX_POLL_INTERVAL_MS: '0',
   AUTOMATION_SCAN_INTERVAL_MS: '0',
+  // A rotina de insights é chamada direto pelos testes; agendada, ela disparia sozinha e consumiria respostas do provedor simulado.
+  AI_INSIGHTS_INTERVAL_MS: '0',
   AUTOMATION_RETENTION_INTERVAL_MS: '0',
   DATA_HUB_WATCH_INTERVAL_MS: '0',
   DATA_HUB_TARIFF_INTERVAL_MS: '0',

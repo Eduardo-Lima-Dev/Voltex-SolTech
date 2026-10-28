@@ -68,10 +68,14 @@ export interface PreparedOpportunity {
 export async function prepareOpportunity(
   token: string,
   label: string,
+  /** Quem cadastra a distribuidora (o vendedor não tem essa permissão). */
+  distributorToken: string = token,
 ): Promise<PreparedOpportunity> {
   const stamp = `${Date.now()}`.slice(-6);
   const accountName = `${label} ${stamp}`;
-  const dist = await api('/distributors', token, { body: { name: `Distribuidora ${stamp}` } });
+  const dist = await api('/distributors', distributorToken, {
+    body: { name: `Distribuidora ${stamp}` },
+  });
   const acc = await api('/accounts', token, { body: { name: accountName } });
   const site = await api(`/accounts/${acc.id}/sites`, token, {
     body: {

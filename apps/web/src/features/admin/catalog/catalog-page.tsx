@@ -48,6 +48,7 @@ import {
 import { EquipmentFormDialog, type EquipmentFormValues } from './equipment-form-dialog';
 import { ImportDialog } from './import-dialog';
 import { ItemDetailDialog } from './item-detail-dialog';
+import { PriceExtractionCard } from './price-extraction-card';
 
 const STATUS_BADGE = { DRAFT: 'secondary', APPROVED: 'green', RETIRED: 'outline' } as const;
 const KINDS = Object.keys(KIND_LABELS) as EquipmentKind[];
@@ -942,6 +943,9 @@ function Prices() {
               Importar
             </Button>
           </div>
+        </Can>
+        <Can permission="platform.catalog.manage">
+          <PriceExtractionCard />
         </Can>
         {report ? (
           <div className="space-y-1 rounded border p-3 text-sm">

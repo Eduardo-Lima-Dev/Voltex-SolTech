@@ -40,6 +40,7 @@ import { Pagination } from '@/components/pagination';
 import { ConfirmDialog } from '@/features/admin/company/confirm-delete';
 import { queryKeys } from '@/features/admin/query-keys';
 import { useAuth } from '@/features/auth/auth-provider';
+import { usePortfolioScope } from '@/features/auth/portfolio';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS, SEGMENT_LABELS } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
@@ -147,6 +148,7 @@ const SCORE_KEY_LABELS: Record<string, string> = {
 
 export function LeadsPage() {
   const { can } = useAuth();
+  const portfolio = usePortfolioScope();
   const queryClient = useQueryClient();
   const canWrite = can('crm.lead.write');
 
@@ -225,7 +227,10 @@ export function LeadsPage() {
         <CardHeader className="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row">
           <div className="space-y-1.5">
             <CardTitle>Leads</CardTitle>
-            <CardDescription>Quem chegou e ainda não virou cliente em negociação.</CardDescription>
+            <CardDescription>
+              Quem chegou e ainda não virou cliente em negociação.
+              {portfolio.note ? ` ${portfolio.note}` : ''}
+            </CardDescription>
           </div>
           <Can permission="crm.lead.write">
             <div className="flex gap-2">

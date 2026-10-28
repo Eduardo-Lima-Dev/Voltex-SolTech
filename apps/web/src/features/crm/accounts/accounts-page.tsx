@@ -1,3 +1,4 @@
+import { usePortfolioScope } from '@/features/auth/portfolio';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
@@ -30,6 +31,7 @@ import { AccountFormDialog } from './account-dialogs';
 const PAGE_SIZE = 10;
 
 export function AccountsPage() {
+  const portfolio = usePortfolioScope();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
@@ -49,6 +51,7 @@ export function AccountsPage() {
           <CardTitle>Contas</CardTitle>
           <CardDescription>
             Clientes, com seus contatos, imóveis e unidades consumidoras.
+            {portfolio.note ? ` ${portfolio.note}` : ''}
           </CardDescription>
         </div>
         <Can permission="crm.account.write">

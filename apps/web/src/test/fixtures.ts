@@ -319,6 +319,8 @@ export const makeBoard = (items: OpportunityDto[] = []): OpportunityBoardDto => 
 export const makeAccount = (overrides: Partial<AccountDetailDto> = {}): AccountDetailDto => ({
   id: 'acc-1',
   tenantId: 'tenant-1',
+  ownerId: 'user-owner',
+  ownerName: 'Eduardo Silva',
   type: 'PERSON',
   name: 'Maria Silva',
   document: null,

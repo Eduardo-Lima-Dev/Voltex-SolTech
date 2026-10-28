@@ -22,6 +22,16 @@ services:
       # Fontes externas ligadas (clima, tarifas e fontes de equipamentos). Vazio = nada é buscado.
       - key: DATA_HUB_ENABLED_SOURCES
         value: nasa-power,pvgis,aneel-tariffs,techlux,cec-library
+      # Assistente de IA (Fase 12): custo zero no plano grátis da Cloudflare (não cadastre cartão: a chamada falha em vez de
+      # cobrar). As credenciais abaixo são preenchidas no painel ou pelos segredos do GitHub (veja o guia da IA).
+      - key: AI_ENABLED
+        value: 'true'
+      - key: AI_PROVIDER
+        value: cloudflare
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

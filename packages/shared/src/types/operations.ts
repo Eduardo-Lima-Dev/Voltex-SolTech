@@ -197,3 +197,49 @@ export interface FieldSyncResultDto {
   status: 'APPLIED' | 'DUPLICATE' | 'REJECTED';
   message: string | null;
 }
+
+/** Lista de materiais inteira por fornecedor: quanto custa comprar o que ele cobre e o que ele não cobre. */
+export interface SupplierTotalDto {
+  supplier: string;
+  /** Itens da lista que este fornecedor tem com preço vigente. */
+  coveredCount: number;
+  /** Itens da lista sem oferta deste fornecedor. */
+  missingCount: number;
+  /** Soma dos totais dos itens cobertos. */
+  coveredTotalCents: number;
+  /** Primeira data em que uma das ofertas deixa de valer (`null` = sem fim). */
+  validUntil: string | null;
+  /** Cobre todos os itens e tem o menor total entre os que cobrem tudo. */
+  best: boolean;
+}
+
+/** Agrupa as ofertas por fornecedor (RF-CRM-054). Só marca "melhor" entre quem cobre todos os itens. */
+export function summarizeSuppliers(quotes: readonly MaterialQuoteDto[]): SupplierTotalDto[] {
+  const total = quotes.length;
+  const by = new Map<string, SupplierTotalDto>();
+  for (const q of quotes)
+    for (const o of q.offers) {
+      const cur = by.get(o.supplier) ?? {
+        supplier: o.supplier,
+        coveredCount: 0,
+        missingCount: total,
+        coveredTotalCents: 0,
+        validUntil: null,
+        best: false,
+      };
+      cur.coveredCount += 1;
+      cur.missingCount = total - cur.coveredCount;
+      cur.coveredTotalCents += o.totalCents;
+      if (o.validTo && (!cur.validUntil || o.validTo < cur.validUntil)) cur.validUntil = o.validTo;
+      by.set(o.supplier, cur);
+    }
+  const rows = [...by.values()].sort(
+    (a, b) => a.missingCount - b.missingCount || a.coveredTotalCents - b.coveredTotalCents,
+  );
+  const full = rows.filter((r) => r.missingCount === 0);
+  if (full.length > 0) {
+    const min = Math.min(...full.map((r) => r.coveredTotalCents));
+    for (const r of full) r.best = r.coveredTotalCents === min;
+  }
+  return rows;
+}
