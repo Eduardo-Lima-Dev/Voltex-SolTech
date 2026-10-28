@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import type { Env } from '../../config/env';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MfaController } from './mfa.controller';
+import { MfaService } from './mfa.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { PasswordService } from './password.service';
 import { PermissionsGuard } from './permissions.guard';
@@ -21,10 +23,18 @@ import { SessionCookieService } from './session-cookie.service';
       }),
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, PasswordService, SessionCookieService, JwtAuthGuard, PermissionsGuard],
+  controllers: [AuthController, MfaController],
+  providers: [
+    AuthService,
+    MfaService,
+    PasswordService,
+    SessionCookieService,
+    JwtAuthGuard,
+    PermissionsGuard,
+  ],
   exports: [
     AuthService,
+    MfaService,
     PasswordService,
     SessionCookieService,
     JwtAuthGuard,

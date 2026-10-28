@@ -1,6 +1,9 @@
 import { type PrismaClient, type Prisma } from '@voltex/database';
 import { INTERNAL_TEST_RULE_MARK, isInternalTestRule } from '@voltex/shared';
-import { OFFGRID_PROVISIONAL_PARAMETERS } from '@voltex/solar-engine';
+import {
+  COMMISSIONING_BASE_DEFINITION,
+  OFFGRID_PROVISIONAL_PARAMETERS,
+} from '@voltex/solar-engine';
 
 /** Quem consta como revisor das regras de teste interno: deixa claro que NÃO é revisão de engenheiro. */
 export const INTERNAL_TEST_REVIEWER =
@@ -16,7 +19,13 @@ const SOURCE = {
 
 export interface InternalTestRule {
   key:
-    'engine.design' | 'engine.cables' | 'engine.connection' | 'engine.economics' | 'offgrid.design';
+    | 'engine.design'
+    | 'engine.cables'
+    | 'engine.connection'
+    | 'engine.economics'
+    | 'offgrid.design'
+    | 'ops.commissioning'
+    | 'ops.monitoring';
   definition: Record<string, unknown>;
   sources: (typeof SOURCE)[];
   notes: string;
@@ -88,6 +97,26 @@ export const INTERNAL_TEST_RULES: InternalTestRule[] = [
     // Os 17 valores provisórios do Manual CRESESB 2014 que o motor já usa quando não há regra: aqui viram regra ativa
     // de TESTE (continuam sem valor normativo).
     definition: { parameters: { ...OFFGRID_PROVISIONAL_PARAMETERS } },
+  },
+  {
+    key: 'ops.commissioning',
+    // A lista de ensaios do modelo-base (EnergIF 2023) com tolerâncias de EXEMPLO nos ensaios de Voc e Isc da string.
+    // Os percentuais abaixo não vêm de norma: o responsável técnico define os reais.
+    definition: {
+      tests: COMMISSIONING_BASE_DEFINITION.tests.map((test) =>
+        test.expected === 'NONE'
+          ? test
+          : { ...test, tolerancePct: test.expected === 'VOC_STRING' ? 5 : 10 },
+      ),
+    },
+  },
+  {
+    key: 'ops.monitoring',
+    // Limiar de EXEMPLO: abre chamado após 5 dias seguidos 30% abaixo do esperado ou com alarme crítico.
+    definition: {
+      deviation: { thresholdPct: 30, consecutiveDays: 5 },
+      alarmTicketSeverities: ['CRITICAL'],
+    },
   },
 ].map((rule) => ({
   ...rule,

@@ -133,6 +133,12 @@ model Lead {
   state                  String?
   notes                  String?
   utm                    Json?
+  /// Valor médio da conta de luz mensal, em centavos (critério de pontuação).
+  monthlyBillCents       Int?             @map("monthly_bill_cents")
+  /// Pontuação de 0 a 100 pelos critérios da empresa; nula = empresa sem critérios ou lead ainda não pontuado.
+  score                  Int?
+  scoreBreakdown         Json?            @map("score_breakdown")
+  scoredAt               DateTime?        @map("scored_at")
   status                 LeadStatus       @default(NEW)
   ownerId                String?          @map("owner_id") @db.Uuid
   /// Prazo do primeiro contato (SLA) e quando ele aconteceu.

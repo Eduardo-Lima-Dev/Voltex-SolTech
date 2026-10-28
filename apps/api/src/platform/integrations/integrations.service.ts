@@ -103,6 +103,7 @@ export class IntegrationsService {
       official: a.official,
       docsUrl: a.docsUrl ?? null,
       licenseStatus: a.licenseStatus,
+      available: a.available !== false,
       notes: a.notes ?? null,
       credentialFields: a.credentialFields,
       enabled: this.registry.isEnabled(a.key),
@@ -126,6 +127,7 @@ export class IntegrationsService {
       id: row.id,
       provider: row.provider,
       providerLabel: adapter?.label ?? row.provider,
+      providerAvailable: adapter?.available !== false,
       kind: row.kind,
       label: row.label,
       status: row.status,
@@ -271,6 +273,11 @@ export class IntegrationsService {
       throw new ServiceUnavailableException(
         `O provedor "${adapter.label}" está desligado neste servidor. Ele só é consultado depois de conferidos os termos de uso.`,
       );
+    if (adapter.available === false)
+      throw new UnprocessableEntityException({
+        code: 'PROVIDER_NOT_AVAILABLE',
+        message: `O adaptador de "${adapter.label}" ainda não foi implementado: ${adapter.notes ?? 'falta a documentação do provedor'}.`,
+      });
     if (adapter.licenseStatus === 'BLOCKED')
       throw new UnprocessableEntityException(`O provedor "${adapter.label}" está bloqueado.`);
     if (!adapter.official && !input.acceptTerms && !row.termsAcceptedAt)
@@ -390,6 +397,22 @@ export class IntegrationsService {
         ...(extra.summary ? { summary: extra.summary as Prisma.InputJsonValue } : {}),
       },
     });
+  }
+
+  /** Usinas da conta no provedor (monitoramento), para a empresa escolher qual vincular a uma planta. */
+  async listExternalPlants(id: string): Promise<{ id: string; name: string }[]> {
+    const row = await this.require(id);
+    const adapter = this.adapterOrThrow(row.provider);
+    if (!this.registry.isEnabled(adapter.key))
+      throw new ServiceUnavailableException(
+        `O provedor "${adapter.label}" está desligado neste servidor.`,
+      );
+    if (!adapter.listPlants)
+      throw new UnprocessableEntityException({
+        code: 'PROVIDER_CANNOT_LIST',
+        message: `${adapter.label} não permite listar as usinas: informe o ID da usina à mão.`,
+      });
+    return adapter.listPlants(this.adapterContext(row));
   }
 
   /** Testa as credenciais chamando o provedor. Não conta falha nem pausa a conexão. */

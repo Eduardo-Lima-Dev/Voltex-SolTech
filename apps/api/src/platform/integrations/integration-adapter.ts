@@ -33,6 +33,8 @@ export interface IntegrationAdapter {
   official: boolean;
   docsUrl?: string;
   licenseStatus: 'PENDING_REVIEW' | 'CLEARED' | 'BLOCKED';
+  /** `false` = só catalogado: sem documentação ou contrato não há como consultar. Não pode ser ligado. Padrão: `true`. */
+  available?: boolean;
   notes?: string;
   credentialFields: IntegrationCredentialFieldDto[];
   credentialSchema: ZodType<Record<string, string>>;
@@ -41,5 +43,7 @@ export interface IntegrationAdapter {
   /** Intervalo mínimo entre sincronizações agendadas. */
   minIntervalMinutes: number;
   test(ctx: AdapterContext): Promise<AdapterTestResult>;
+  /** Monitoramento: usinas da conta no provedor (para escolher qual vincular). Ausente quando o provedor não lista. */
+  listPlants?(ctx: AdapterContext): Promise<{ id: string; name: string }[]>;
   sync?(ctx: AdapterContext): Promise<AdapterSyncResult>;
 }

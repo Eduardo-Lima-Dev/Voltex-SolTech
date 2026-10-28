@@ -88,6 +88,8 @@ export class PrivacyService {
       floors: { signedContractsMonths: RETENTION_FLOORS.signedContractsMonths },
       sources: {
         signedContractsMonths: RETENTION_SOURCES.signedContractsMonths,
+        fieldPhotosMonths: RETENTION_SOURCES.fieldPhotosMonths,
+        geolocationMonths: RETENTION_SOURCES.geolocationMonths,
         accessLogs: RETENTION_SOURCES.accessLogs,
       },
     };
@@ -535,11 +537,16 @@ export class PrivacyService {
     }
     summary.faturas = bills.length;
 
-    // Arquivos: faturas, contratos e PDFs de proposta.
+    // Fase 11: portal, campo, instalação, comissionamento, pós-venda, financeiro e assinatura eletrônica.
+    const execution = await this.eraseExecutionData(tx, id, tokens, now);
+    Object.assign(summary, execution.summary);
+
+    // Arquivos: faturas, contratos e PDFs de proposta (e os da execução, listados acima).
     const documents = await tx.document.findMany({
       where: {
         deletedAt: null,
         OR: [
+          { id: { in: execution.documentIds } },
           { id: { in: bills.map((b) => b.documentId) } },
           { entityType: 'Contract', entityId: { in: contracts.map((c) => c.id) } },
           { entityType: 'Proposal', entityId: { in: proposals.map((p) => p.id) } },
@@ -566,30 +573,334 @@ export class PrivacyService {
     return { status: 'COMPLETED', summary, documentKeys: documents.map((d) => d.storageKey) };
   }
 
+  /**
+   * Dados da execução (Fase 11) de uma conta: portal, campo (fotos, assinaturas e geolocalização), instalação,
+   * comissionamento, pós-venda, financeiro e assinatura eletrônica. Devolve os arquivos a retirar do armazenamento.
+   */
+  private async eraseExecutionData(
+    tx: Tx,
+    accountId: string,
+    tokens: readonly string[],
+    now: Date,
+  ): Promise<{ summary: Record<string, number>; documentIds: string[] }> {
+    const summary: Record<string, number> = {};
+    const docs = new Set<string>();
+    const scrub = (text: string | null) => (text ? scrubText(text, tokens) : text);
+
+    const [projects, installations, plants] = await Promise.all([
+      tx.project.findMany({ where: { accountId }, select: { id: true, contractId: true } }),
+      tx.installation.findMany({ where: { accountId } }),
+      tx.plant.findMany({ where: { accountId } }),
+    ]);
+    const installationIds = installations.map((i) => i.id);
+    const projectIds = projects.map((p) => p.id);
+    const plantIds = plants.map((p) => p.id);
+
+    // Portal: acessos (com links e sessões em cascata) e arquivos que o cliente enviou.
+    const uploads = await tx.portalUpload.findMany({ where: { accountId } });
+    uploads.forEach((u) => docs.add(u.documentId));
+    await tx.portalUpload.deleteMany({ where: { accountId } });
+    summary.acessosAoPortal = (await tx.portalAccess.deleteMany({ where: { accountId } })).count;
+    summary.arquivosEnviadosPeloCliente = uploads.length;
+    await tx.portalMagicLink.deleteMany({ where: { accountId } });
+    await tx.portalSession.deleteMany({ where: { accountId } });
+
+    // Instalação: quem aceitou, de onde e a assinatura.
+    for (const inst of installations) {
+      if (inst.acceptanceSignatureDocumentId) docs.add(inst.acceptanceSignatureDocumentId);
+      await tx.installation.update({
+        where: { id: inst.id },
+        data: {
+          acceptedByName: inst.acceptedByName ? REMOVED : null,
+          acceptanceNote: null,
+          acceptanceIp: null,
+          acceptanceUserAgent: null,
+          acceptanceSignatureDocumentId: null,
+          cancelReason: scrub(inst.cancelReason),
+        },
+      });
+    }
+    summary.instalacoes = installations.length;
+
+    // Ordens de serviço: geolocalização, fotos, assinatura do cliente e textos livres.
+    const orders = await tx.workOrder.findMany({
+      where: {
+        OR: [
+          { accountId },
+          { installationId: { in: installationIds } },
+          { plantId: { in: plantIds } },
+        ],
+      },
+      include: { photos: true },
+    });
+    let photos = 0;
+    for (const order of orders) {
+      if (order.signatureDocumentId) docs.add(order.signatureDocumentId);
+      await tx.workOrder.update({
+        where: { id: order.id },
+        data: {
+          geo: [],
+          notes: scrub(order.notes),
+          cancelReason: scrub(order.cancelReason),
+          signatureDocumentId: null,
+          signedByName: order.signedByName ? REMOVED : null,
+          checklist: scrubJson(order.checklist, tokens) as object,
+        },
+      });
+      for (const photo of order.photos) {
+        docs.add(photo.documentId);
+        photos += 1;
+      }
+    }
+    await tx.workOrderPhoto.updateMany({
+      where: { workOrderId: { in: orders.map((o) => o.id) } },
+      data: { latitude: null, longitude: null, accuracy: null, visibleToCustomer: false },
+    });
+    for (const photo of orders.flatMap((o) => o.photos))
+      await tx.workOrderPhoto.update({
+        where: { id: photo.id },
+        data: { caption: scrub(photo.caption) },
+      });
+    summary.ordensDeServico = orders.length;
+    summary.fotosDeCampo = photos;
+
+    // Pendências de campo e comissionamento (relatório e fotos dos ensaios).
+    const issues = await tx.fieldIssue.findMany({
+      where: { installationId: { in: installationIds } },
+    });
+    for (const issue of issues)
+      await tx.fieldIssue.update({
+        where: { id: issue.id },
+        data: {
+          description: scrubText(issue.description, tokens),
+          resolution: scrub(issue.resolution),
+        },
+      });
+    const records = await tx.commissioningRecord.findMany({
+      where: { installationId: { in: installationIds } },
+    });
+    for (const record of records) {
+      if (record.reportDocumentId) docs.add(record.reportDocumentId);
+      await tx.commissioningRecord.update({
+        where: { id: record.id },
+        data: { reportDocumentId: null, decisionNote: scrub(record.decisionNote) },
+      });
+    }
+    summary.comissionamentos = records.length;
+
+    // Pós-venda: usina, chamados (inclusive as mensagens do cliente) e histórico.
+    for (const plant of plants)
+      await tx.plant.update({
+        where: { id: plant.id },
+        data: { name: scrubText(plant.name, tokens), notes: scrub(plant.notes) },
+      });
+    const events = await tx.plantEvent.findMany({ where: { plantId: { in: plantIds } } });
+    for (const event of events)
+      await tx.plantEvent.update({
+        where: { id: event.id },
+        data: {
+          text: scrubText(event.text, tokens),
+          data: scrubJson(event.data, tokens) as object,
+        },
+      });
+    const tickets = await tx.ticket.findMany({ where: { plantId: { in: plantIds } } });
+    for (const ticket of tickets)
+      await tx.ticket.update({
+        where: { id: ticket.id },
+        data: {
+          title: scrubText(ticket.title, tokens),
+          description: scrub(ticket.description),
+          resolution: scrub(ticket.resolution),
+        },
+      });
+    const comments = await tx.ticketComment.findMany({
+      where: { ticketId: { in: tickets.map((t) => t.id) } },
+    });
+    for (const c of comments)
+      await tx.ticketComment.update({
+        where: { id: c.id },
+        data: c.authorId
+          ? { body: scrubText(c.body, tokens) }
+          : { body: 'Mensagem removida (LGPD)', authorName: REMOVED },
+      });
+    summary.chamados = tickets.length;
+
+    // Financeiro: observações, comprovantes e propostas de crédito.
+    const receivables = await tx.receivable.findMany({ where: { projectId: { in: projectIds } } });
+    for (const r of receivables) {
+      if (r.receiptDocumentId) docs.add(r.receiptDocumentId);
+      await tx.receivable.update({
+        where: { id: r.id },
+        data: { notes: scrub(r.notes), receiptDocumentId: null },
+      });
+    }
+    const credits = await tx.creditApplication.findMany({
+      where: { projectId: { in: projectIds } },
+    });
+    for (const c of credits) {
+      if (c.documentId) docs.add(c.documentId);
+      await tx.creditApplication.update({
+        where: { id: c.id },
+        data: {
+          notes: scrub(c.notes),
+          pendencies: scrubJson(c.pendencies, tokens) as object,
+          documentId: null,
+        },
+      });
+    }
+    const costs = await tx.projectCostEntry.findMany({ where: { projectId: { in: projectIds } } });
+    for (const c of costs) if (c.documentId) docs.add(c.documentId);
+    summary.parcelas = receivables.length;
+    summary.pedidosDeCredito = credits.length;
+
+    // Assinatura eletrônica: nome e e-mail de quem assinou.
+    summary.pedidosDeAssinatura = (
+      await tx.signatureRequest.updateMany({
+        where: { contractId: { in: projects.map((p) => p.contractId) } },
+        data: { signerName: REMOVED, signerEmail: 'removido@removido.invalid', error: null },
+      })
+    ).count;
+
+    // Histórico de comunicações: destinatário e assunto.
+    const logs = await tx.communicationLog.findMany({ where: { accountId } });
+    for (const log of logs)
+      await tx.communicationLog.update({
+        where: { id: log.id },
+        data: { recipient: null, subject: scrub(log.subject) },
+      });
+    summary.comunicacoes = logs.length;
+
+    // Arquivos de execução ligados ao projeto, à ordem de serviço, ao comissionamento etc.
+    const linked = await tx.document.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { entityType: 'WorkOrder', entityId: { in: orders.map((o) => o.id) } },
+          { entityType: 'WorkOrderSignature', entityId: { in: orders.map((o) => o.id) } },
+          { entityType: 'CommissioningRecord', entityId: { in: records.map((r) => r.id) } },
+          { entityType: 'PortalUpload', entityId: { in: projectIds } },
+          { entityType: 'Project', entityId: { in: projectIds } },
+        ],
+      },
+      select: { id: true },
+    });
+    linked.forEach((d) => docs.add(d.id));
+    void now;
+    return { summary, documentIds: [...docs] };
+  }
+
   // ---- Política de retenção (rotina diária) ----
 
   /** Aplica a política de cada empresa que configurou prazos. Só elimina o que passou do prazo e não está retido. */
-  async sweepAll(): Promise<{ leads: number; accounts: number }> {
+  async sweepAll(): Promise<{
+    leads: number;
+    accounts: number;
+    photos: number;
+    geolocation: number;
+  }> {
     const tenants = await this.prisma.system.tenant.findMany({
       select: { id: true, settings: true },
     });
-    const total = { leads: 0, accounts: 0 };
+    const total = { leads: 0, accounts: 0, photos: 0, geolocation: 0 };
     for (const tenant of tenants) {
       const policy = this.policyFrom(tenant.settings);
-      if (policy.unconvertedLeadsMonths === null && policy.lostOpportunitiesMonths === null)
+      if (
+        policy.unconvertedLeadsMonths === null &&
+        policy.lostOpportunitiesMonths === null &&
+        policy.fieldPhotosMonths === null &&
+        policy.geolocationMonths === null
+      )
         continue;
       const done = await this.context.run({ tenantId: tenant.id }, () => this.sweepTenant(policy));
       total.leads += done.leads;
       total.accounts += done.accounts;
+      total.photos += done.photos;
+      total.geolocation += done.geolocation;
     }
+    return total;
+  }
+
+  /** Fotos de campo mais antigas que o prazo: arquivo apagado e a linha (legenda, local) esvaziada. */
+  private async sweepFieldPhotos(months: number, now: number): Promise<number> {
+    const cutoff = new Date(now - months * MONTH);
+    const photos = await this.prisma.db.workOrderPhoto.findMany({
+      where: { takenAt: { lt: cutoff } },
+      take: 500,
+    });
+    if (photos.length === 0) return 0;
+    const docs = await this.prisma.db.document.findMany({
+      where: { id: { in: photos.map((p) => p.documentId) }, deletedAt: null },
+    });
+    await this.prisma.db.$transaction(async (tx) => {
+      await tx.document.updateMany({
+        where: { id: { in: docs.map((d) => d.id) } },
+        data: { deletedAt: new Date(now) },
+      });
+      await tx.workOrderPhoto.deleteMany({ where: { id: { in: photos.map((p) => p.id) } } });
+      await this.audit.record(
+        {
+          action: 'privacy.field_photos_expired',
+          entity: 'Tenant',
+          entityId: this.context.requireTenantId(),
+          actorId: null,
+          after: { photos: photos.length, olderThanMonths: months },
+        },
+        tx,
+      );
+    });
+    for (const doc of docs)
+      await this.s3
+        .remove(doc.storageKey)
+        .catch((error: unknown) =>
+          this.logger.error(
+            { err: error, key: doc.storageKey },
+            'Não foi possível apagar o arquivo',
+          ),
+        );
+    return photos.length;
+  }
+
+  /** Geolocalização do app de campo mais antiga que o prazo: coordenadas das fotos e das ordens zeradas. */
+  private async sweepGeolocation(months: number, now: number): Promise<number> {
+    const cutoff = new Date(now - months * MONTH);
+    const photos = await this.prisma.db.workOrderPhoto.updateMany({
+      where: {
+        takenAt: { lt: cutoff },
+        OR: [{ latitude: { not: null } }, { longitude: { not: null } }],
+      },
+      data: { latitude: null, longitude: null, accuracy: null },
+    });
+    const orders = await this.prisma.db.workOrder.findMany({
+      where: { createdAt: { lt: cutoff }, NOT: { geo: { equals: [] } } },
+      select: { id: true },
+      take: 500,
+    });
+    if (orders.length)
+      await this.prisma.db.workOrder.updateMany({
+        where: { id: { in: orders.map((o) => o.id) } },
+        data: { geo: [] },
+      });
+    const total = photos.count + orders.length;
+    if (total > 0)
+      await this.audit.record({
+        action: 'privacy.geolocation_expired',
+        entity: 'Tenant',
+        entityId: this.context.requireTenantId(),
+        actorId: null,
+        after: { photos: photos.count, workOrders: orders.length, olderThanMonths: months },
+      });
     return total;
   }
 
   private async sweepTenant(
     policy: RetentionPolicyInput,
-  ): Promise<{ leads: number; accounts: number }> {
+  ): Promise<{ leads: number; accounts: number; photos: number; geolocation: number }> {
     const now = Date.now();
-    const done = { leads: 0, accounts: 0 };
+    const done = { leads: 0, accounts: 0, photos: 0, geolocation: 0 };
+    if (policy.fieldPhotosMonths !== null)
+      done.photos = await this.sweepFieldPhotos(policy.fieldPhotosMonths, now);
+    if (policy.geolocationMonths !== null)
+      done.geolocation = await this.sweepGeolocation(policy.geolocationMonths, now);
     if (policy.unconvertedLeadsMonths !== null) {
       const cutoff = new Date(now - policy.unconvertedLeadsMonths * MONTH);
       const leads = await this.prisma.db.lead.findMany({

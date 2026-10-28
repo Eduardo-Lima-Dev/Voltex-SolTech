@@ -598,18 +598,22 @@ describe('Rules Engine e dados de referência (e2e)', () => {
   });
 
   describe('regras de teste interno', () => {
-    it('ativa as cinco regras (Engine e Off-Grid) marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
+    it('ativa as sete regras (Engine, Off-Grid e Operação) marcadas como teste, sem revisor falso, e não sobrescreve nada', async () => {
       const other = await seedTenant(t.prisma, 'rulestest');
       const owner = await tokenFor(t.http, other.admin);
       const first = await seedInternalTestRules(t.prisma.system, other.id);
-      expect(first).toHaveLength(5);
+      expect(first).toHaveLength(7);
       expect(first.every((line) => /ativada como TESTE INTERNO/.test(line))).toBe(true);
 
       const list = await t.http.get(`${API}/rules`).set(bearer(owner));
       const engine = list.body.filter(
-        (x: { key: string }) => x.key.startsWith('engine.') || x.key.startsWith('offgrid.'),
+        (x: { key: string }) =>
+          x.key.startsWith('engine.') || x.key.startsWith('offgrid.') || x.key.startsWith('ops.'),
       );
-      expect(engine).toHaveLength(5);
+      expect(engine).toHaveLength(7);
+      expect(engine.map((x: { key: string }) => x.key)).toEqual(
+        expect.arrayContaining(['ops.commissioning', 'ops.monitoring']),
+      );
       for (const rule of engine) {
         expect(rule.status).toBe('ACTIVE');
         expect(isInternalTestRule(rule)).toBe(true);
@@ -631,9 +635,10 @@ describe('Rules Engine e dados de referência (e2e)', () => {
       const after = await t.http.get(`${API}/rules`).set(bearer(owner));
       expect(
         after.body.filter(
-          (x: { key: string }) => x.key.startsWith('engine.') || x.key.startsWith('offgrid.'),
+          (x: { key: string }) =>
+            x.key.startsWith('engine.') || x.key.startsWith('offgrid.') || x.key.startsWith('ops.'),
         ),
-      ).toHaveLength(5);
+      ).toHaveLength(7);
     });
   });
 });

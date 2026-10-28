@@ -94,6 +94,15 @@ export const TENANT_SCOPED_MODELS = [
   'CommissionPolicy',
   'Commission',
   'CreditApplication',
+  'PlantMonitoringLink',
+  'MonitoringDaily',
+  'MonitoringSnapshot',
+  'MonitoringAlarm',
+  'PortalAccess',
+  'PortalMagicLink',
+  'PortalSession',
+  'PortalUpload',
+  'SignatureRequest',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

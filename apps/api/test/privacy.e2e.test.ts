@@ -301,6 +301,8 @@ describe('Privacidade — eliminação de dados e retenção (e2e)', () => {
       expect(def.policy).toEqual({
         unconvertedLeadsMonths: null,
         lostOpportunitiesMonths: null,
+        fieldPhotosMonths: null,
+        geolocationMonths: null,
         signedContractsMonths: 60,
       });
       expect(def.floors.signedContractsMonths).toBe(60);
@@ -326,11 +328,15 @@ describe('Privacidade — eliminação de dados e retenção (e2e)', () => {
       const saved = await put('/privacy/retention', owner, {
         unconvertedLeadsMonths: 24,
         lostOpportunitiesMonths: 36,
+        fieldPhotosMonths: null,
+        geolocationMonths: null,
         signedContractsMonths: 72,
       });
       expect(saved.body.policy).toEqual({
         unconvertedLeadsMonths: 24,
         lostOpportunitiesMonths: 36,
+        fieldPhotosMonths: null,
+        geolocationMonths: null,
         signedContractsMonths: 72,
       });
       expect((await auditOf(t, a.id, 'privacy.retention_updated')).length).toBeGreaterThan(0);

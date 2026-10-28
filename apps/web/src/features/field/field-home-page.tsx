@@ -89,7 +89,7 @@ export function FieldHomePage() {
         {scheduled.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {state.lastSyncAt
-              ? 'Nenhuma ordem agendada para você.'
+              ? 'Nenhuma ordem agendada para você. Ordens aparecem aqui quando o escritório agenda uma equipe com você ou escala você diretamente.'
               : 'Conecte-se à internet uma vez para baixar as suas ordens.'}
           </p>
         ) : (

@@ -135,9 +135,13 @@ function Providers({ providers }: { providers: IntegrationProviderDto[] | undefi
                     </Badge>
                   </TableCell>
                   <TableCell className="align-top">
-                    <Badge variant={p.enabled ? 'green' : 'outline'}>
-                      {p.enabled ? 'Ligado' : 'Desligado'}
-                    </Badge>
+                    {p.available ? (
+                      <Badge variant={p.enabled ? 'green' : 'outline'}>
+                        {p.enabled ? 'Ligado' : 'Desligado'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Sem adaptador</Badge>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -444,7 +448,16 @@ function Connections({ providers }: { providers: IntegrationProviderDto[] | unde
                             </Button>
                           </>
                         ) : (
-                          <Button size="sm" disabled={run.isPending} onClick={() => activate(c)}>
+                          <Button
+                            size="sm"
+                            disabled={run.isPending || !c.providerAvailable}
+                            title={
+                              c.providerAvailable
+                                ? undefined
+                                : 'O adaptador deste provedor ainda não foi implementado'
+                            }
+                            onClick={() => activate(c)}
+                          >
                             Ligar
                           </Button>
                         )}
