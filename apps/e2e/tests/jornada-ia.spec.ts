@@ -81,4 +81,20 @@ test.describe.serial('Jornada do assistente de IA', () => {
     await expect(page.getByTestId('assistant-message').last()).toBeVisible();
     await snap(page, info, '6-copiloto-financeiro');
   });
+
+  test('insights, previsões e prazo das conversas aparecem nas telas', async ({ page }, info) => {
+    await loginAs(page, USERS.owner);
+    await page.goto('/admin/inteligencia');
+    await page.getByRole('button', { name: 'Rodar a rotina agora' }).click();
+    await expect(page.getByText(/Rotina concluída/).first()).toBeVisible();
+
+    // Sem histórico suficiente, a previsão diz "dados insuficientes" em vez de inventar número.
+    await page.goto('/operations/financeiro');
+    await expect(page.getByText('Quanto deve entrar nos próximos 90 dias')).toBeVisible();
+    await expect(page.getByText(/Dados insuficientes: há \d+ no histórico/)).toBeVisible();
+    await snap(page, info, '7-previsao-dados-insuficientes');
+
+    await page.goto('/admin/privacidade');
+    await expect(page.getByLabel('Conversas com o assistente de IA (meses)')).toBeVisible();
+  });
 });

@@ -12,6 +12,7 @@ const policy = (over = {}) => ({
     lostOpportunitiesMonths: null,
     fieldPhotosMonths: null,
     geolocationMonths: null,
+    aiConversationsMonths: null,
     signedContractsMonths: 60,
     ...over,
   },
@@ -20,6 +21,7 @@ const policy = (over = {}) => ({
     signedContractsMonths: 'CTN e CDC: 5 anos. Confirme com o seu jurídico.',
     fieldPhotosMonths: 'Sem prazo legal conhecido: decisão da empresa.',
     geolocationMonths: 'Guarde só pelo tempo necessário.',
+    aiConversationsMonths: 'Conversas mascaradas.',
     accessLogs: 'Marco Civil: 6 meses de registros de acesso.',
   },
 });
@@ -82,6 +84,7 @@ describe('Administração · Privacidade (LGPD)', () => {
         lostOpportunitiesMonths: null,
         fieldPhotosMonths: 36,
         geolocationMonths: null,
+        aiConversationsMonths: null,
         signedContractsMonths: 72,
       }),
     );

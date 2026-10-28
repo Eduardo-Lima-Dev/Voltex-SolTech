@@ -413,6 +413,78 @@ describe('Administração → Catálogo técnico', () => {
     expect(dry).toBe('true');
   });
 
+  it('preços com IA: mostra a prévia com a origem de cada linha e só importa o que a pessoa confirma', async () => {
+    let confirmed: { rows: Array<Record<string, unknown>> } | null = null;
+    const extraction = {
+      id: 'e-1',
+      filename: 'tabela.pdf',
+      status: 'PENDING_REVIEW',
+      discardedCount: 2,
+      truncated: false,
+      removed: { EMAIL: 1 },
+      model: 'x',
+      createdAt: '2026-10-26T10:00:00.000Z',
+      importedAt: null,
+      rows: [
+        {
+          index: 0,
+          manufacturer: 'Fab',
+          model: 'M1',
+          description: '',
+          supplier: 'Dist',
+          sku: '',
+          priceReais: 612.5,
+          validFrom: '01/10/2026',
+          validTo: '',
+          excerpt: 'Módulo Fab M1 R$ 612,50',
+          match: { equipmentId: 'eq', label: 'Fab M1' },
+          problems: [],
+        },
+        {
+          index: 1,
+          manufacturer: '',
+          model: '',
+          description: 'Estrutura',
+          supplier: '',
+          sku: '',
+          priceReais: 85.9,
+          validFrom: '',
+          validTo: '',
+          excerpt: 'Estrutura R$ 85,90',
+          match: null,
+          problems: ['Informe o fornecedor.'],
+        },
+      ],
+    };
+    base(
+      http.post(`${API}/ai/procurement/extractions`, () => HttpResponse.json(extraction)),
+      http.post(`${API}/ai/procurement/extractions/e-1/import`, async ({ request }) => {
+        confirmed = (await request.json()) as typeof confirmed;
+        return HttpResponse.json({
+          extraction: { ...extraction, status: 'IMPORTED' },
+          result: { rowsRead: 1, created: 1, unmatched: [], errors: [], dryRun: false },
+        });
+      }),
+    );
+    renderApp('/engine/catalogo');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Preços' }));
+    await user.upload(
+      await screen.findByLabelText('Documento (PDF ou CSV)'),
+      new File(['%PDF'], 'tabela.pdf', { type: 'application/pdf' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Ler com IA' }));
+    expect(await screen.findByText('Módulo Fab M1 R$ 612,50')).toBeInTheDocument();
+    expect(screen.getByText(/2 linha\(s\) da IA foram descartadas/)).toBeInTheDocument();
+    expect(screen.getByText(/Dados pessoais removidos/)).toBeInTheDocument();
+    expect(screen.getByText('Informe o fornecedor.')).toBeInTheDocument();
+    // A linha com problema vem desmarcada; só a primeira é importada.
+    expect(screen.getByLabelText('Importar linha 2')).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Importar 1 linha(s)' }));
+    await waitFor(() => expect(confirmed?.rows).toHaveLength(1));
+    expect(confirmed!.rows[0]).toMatchObject({ index: 0, priceReais: 612.5, supplier: 'Dist' });
+  });
+
   it('referências externas: explica por que a lista está vazia e permite adotar com os campos que faltam', async () => {
     let adopted: unknown;
     base(

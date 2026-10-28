@@ -37,6 +37,8 @@ import { CalculatorModule } from './products/calculator/calculator.module';
 import { CrmModule } from './products/crm/crm.module';
 import { AiModule } from './platform/ai/ai.module';
 import { AssistantModule } from './platform/ai/assistant/assistant.module';
+import { ProcurementModule } from './platform/ai/procurement/procurement.module';
+import { InsightsModule } from './platform/ai/insights/insights.module';
 import { AiToolsModule } from './platform/ai/tools/ai-tools.module';
 import { AnalyticsModule } from './platform/analytics/analytics.module';
 import { FeatureGuard } from './platform/tenancy/feature.guard';
@@ -122,6 +124,8 @@ import { UsersModule } from './platform/users/users.module';
     AiModule,
     AiToolsModule,
     AssistantModule,
+    InsightsModule,
+    ProcurementModule,
     AnalyticsModule,
     NotificationsModule,
     CatalogModule,

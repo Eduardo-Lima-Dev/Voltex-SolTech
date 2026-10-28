@@ -1,4 +1,9 @@
 import type {
+  Forecast,
+  FunnelForecast,
+  GenerationForecast,
+  InstallationForecast,
+  ReceivablesForecast,
   SaveQuoteInput,
   UpdateQuoteInput,
   CalculationSessionDto,
@@ -16,6 +21,11 @@ import type {
   AiDiagnosticsDto,
   AiStatusDto,
   AiUsageDto,
+  ConfirmPriceExtractionInput,
+  PriceExtractionDto,
+  InsightDto,
+  InsightRunResultDto,
+  UpdateInsightInput,
   UpdateAiSettingsInput,
   LeadScoringConfig,
   LeadScoringConfigInput,
@@ -1417,6 +1427,13 @@ export function createEndpoints(client: ApiClient) {
     aneel: {
       import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
     },
+    forecasts: {
+      receivables: () => client.get<Forecast<ReceivablesForecast>>('/forecasts/receivables'),
+      funnel: () => client.get<Forecast<FunnelForecast>>('/forecasts/funnel'),
+      installations: () => client.get<Forecast<InstallationForecast>>('/forecasts/installations'),
+      generation: (projectCode: string) =>
+        client.get<Forecast<GenerationForecast>>(`/forecasts/generation/${projectCode}`),
+    },
     ai: {
       status: () => client.get<AiStatusDto>('/ai/status'),
       /** Pergunta em fluxo: `onEvent` recebe o progresso e, no fim, a resposta ou o erro com a mensagem pronta. */
@@ -1427,6 +1444,26 @@ export function createEndpoints(client: ApiClient) {
       removeConversation: (id: string) => client.delete<void>(`/ai/conversations/${id}`),
       feedback: (messageId: string, input: { helpful: boolean; reason?: string }) =>
         client.post<void>(`/ai/messages/${messageId}/feedback`, input),
+      procurement: {
+        extract: (file: File) => {
+          const form = new FormData();
+          form.append('file', file);
+          return client.upload<PriceExtractionDto>('/ai/procurement/extractions', form);
+        },
+        confirm: (id: string, input: ConfirmPriceExtractionInput) =>
+          client.post<{ extraction: PriceExtractionDto; result: PriceImportResultDto }>(
+            `/ai/procurement/extractions/${id}/import`,
+            input,
+          ),
+        discard: (id: string) =>
+          client.post<PriceExtractionDto>(`/ai/procurement/extractions/${id}/discard`),
+      },
+      insights: {
+        list: () => client.get<InsightDto[]>('/ai/insights'),
+        update: (id: string, input: UpdateInsightInput) =>
+          client.patch<InsightDto>(`/ai/insights/${id}`, input),
+        run: () => client.post<InsightRunResultDto>('/ai/insights/run'),
+      },
       admin: {
         settings: () => client.get<AiAdminSettingsDto>('/ai/admin/settings'),
         update: (input: UpdateAiSettingsInput) =>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { ReceivablesForecastCard } from '@/features/forecasts/forecast-cards';
 import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { COMMISSION_BASES, type CommissionBase } from '@voltex/shared';
 import {
@@ -184,6 +185,9 @@ export function FinancePage() {
           Parcelas, inadimplência e comissões. Tudo é registro manual, sem gateway de pagamento.
         </p>
       </header>
+      <Can permission="crm.finance.read">
+        <ReceivablesForecastCard />
+      </Can>
       {overview.isPending ? <Skeleton className="h-28 w-full" /> : null}
       {overview.isError ? (
         <p className="text-sm text-destructive">Não foi possível carregar o financeiro.</p>

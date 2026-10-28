@@ -2,7 +2,7 @@
 
 Decisões: [ADR-0029](../04-arquitetura/adr/0029-ia-provedor-trocavel-custo-zero.md) e [ADR-0030](../04-arquitetura/adr/0030-assistente-ferramentas-leitura-e-fatos.md). Plano completo: [plano da Fase 12](../09-roadmap/plano-fase-12.md). Parecer jurídico: [roteiro](../governanca/ia-roteiro-juridico.md).
 
-> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos), 12C (camada analítica), 12D (catálogo de ferramentas), 12E (assistente de ponta a ponta) e 12F (telas). Insights, compras e previsões (12G a 12I) ainda não existem. **Roteiro para ver na tela:** [roteiro-fase-12.md](roteiro-fase-12.md).
+> **Estado:** sub-fases 12A (fundações), 12B (privacidade e fatos), 12C (camada analítica), 12D (catálogo de ferramentas), 12E (assistente de ponta a ponta) e 12F (telas). 12G (insights), 12H (procurement assistido), 12I (previsões) e 12J (LGPD e fechamento) também estão entregues. **Roteiro para ver na tela:** [roteiro-fase-12.md](roteiro-fase-12.md).
 
 ## Ligar a IA no ambiente
 
@@ -130,3 +130,39 @@ Código em `apps/web/src/features/ai/` e `features/admin/intelligence/`.
 - **Copiloto nas fichas:** botão "Resumir com IA" no projeto, na planta e no financeiro abre o painel numa conversa nova com a pergunta pronta (e o código do projeto no contexto).
 - **Administração → Inteligência** (`ai.admin.manage`): liga/desliga com aceite dos termos aqui registrado, situação e cotas do dia, uso dos últimos 30 dias e teste do modelo. Avisa quando falta o parecer jurídico (a IA só funciona em empresa de demonstração).
 - Testes: `features/ai/assistant.test.tsx` e `features/admin/intelligence/intelligence.test.tsx` (MSW); Playwright `apps/e2e/tests/jornada-ia.spec.ts` (`pnpm jornada`), com `AI_PROVIDER=demo` no servidor de teste e a empresa marcada como demonstração em `prepare-db.mjs`.
+
+## Insights proativos (12G)
+
+Código em `apps/api/src/platform/ai/insights/`. Uma rotina diária (fila `ai-insights`, `AI_INSIGHTS_INTERVAL_MS`, 24 h; 0 desliga) roda para cada empresa com a IA ligada. **Detectores determinísticos** (`insight-detectors.ts`, funções puras) leem o sistema e viram `Insight`; a IA só **redige a frase** a partir dos fatos (`{{F#}}`, mesmo validador do assistente), com a **cota própria de insights** (150 neurons/dia/empresa), e o texto padrão do detector aparece sempre que a IA não está disponível ou a frase reprova.
+
+| Detector                | Regra                                                                                      | Quem vê                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| `OVERDUE_RECEIVABLES`   | parcelas vencidas há 7 dias ou mais (**padrão do sistema**, `INSIGHT_DEFAULTS`)            | `crm.finance.read`                                |
+| `STALLED_OPPORTUNITIES` | oportunidades paradas (prazo `stalledDays` da empresa), **um achado por dono da carteira** | `crm.opportunity.read`; vendedor/SDR só o próprio |
+| `OVERDUE_INSTALLATIONS` | instalações atrasadas                                                                      | `ops.installation.read`                           |
+| `WARRANTIES_EXPIRING`   | só com o prazo de aviso de garantia configurado pela empresa                               | `ops.warranty.manage`                             |
+| `BREACHED_TICKETS`      | chamados fora do prazo (SLA da empresa)                                                    | `ops.ticket.read`                                 |
+
+Regras de ciclo de vida: o mesmo problema não vira dois insights (`dedupeKey`); se o problema some, o insight se **resolve sozinho** e reabre se voltar; “não relevante” ou “resolvido” por uma pessoa silencia por 30 dias. Rotas: `GET /ai/insights`, `PATCH /ai/insights/:id` (`ai.insights.read`), `POST /ai/insights/run` (`ai.admin.manage`; também na tela Inteligência). Cartão “O que a IA notou hoje” no início.
+
+## Procurement assistido (12H)
+
+Código em `apps/api/src/platform/ai/procurement/`. Em Administração → Catálogo → Preços, “Ler tabela de preços com IA” (permissão `procurement.price.extract` + `platform.catalog.manage`):
+
+1. Envia PDF ou CSV (até 10 MB). O texto é extraído no servidor, passa pelos detectores de dado pessoal (o que parecer pessoal é removido) e é dividido em até 3 pedaços.
+2. O modelo devolve JSON (fabricante, modelo, descrição, fornecedor, SKU, preço, vigência, **trecho exato do documento**). O servidor **descarta** toda linha cujo trecho não esteja no documento ou não contenha o preço (`confirmsInSource`), remove repetidas e valida por zod.
+3. A prévia mostra cada linha com a origem, o casamento com o catálogo aprovado e os problemas (fornecedor, vigência, equipamento desconhecido). A pessoa corrige e escolhe as linhas.
+4. “Importar” gera o CSV no modelo existente e chama a **mesma rotina** `PriceListService.import`, com a fonte “extraído por IA, conferido por {nome}: arquivo”. Nada é gravado antes disso. Sem IA, a importação manual por CSV continua igual.
+
+Comparação de fornecedores: em Operação → Instalação → Materiais → “Comparar ofertas” agora aparece também o **total da lista inteira por fornecedor** (itens cobertos, itens sem oferta, validade e menor total entre quem cobre tudo).
+
+## Previsões (12I)
+
+Funções puras no motor (`packages/solar-engine/src/forecast/`), memorial em [previsoes.md](../06-calculos/previsoes.md). Rotas `GET /forecasts/{receivables,funnel,installations,generation/:projectCode}` e ferramentas `previsoes_*` do assistente. Abaixo do mínimo de amostra (parâmetros da empresa), a resposta é `INSUFFICIENT_SAMPLE` e a tela diz “Dados insuficientes: há X e o mínimo é Y”. Cartões em Financeiro, Painel comercial, Painel da operação e ficha da planta.
+
+## LGPD das conversas e dos novos dados (12J)
+
+- **Retenção:** Administração → Privacidade → “Conversas com o assistente de IA (meses)” (`aiConversationsMonths`; em branco = até a pessoa apagar). A rotina diária de retenção apaga conversas e mensagens sem atividade além do prazo.
+- **Eliminação do titular:** eliminar um lead ou uma conta apaga as conversas cujos pseudônimos citam essa pessoa (o resumo traz `conversasDaIa`).
+- **Exportação da empresa:** inclui conversas e mensagens (sem o texto com marcadores e sem o mapa de pseudônimos), insights e extrações de preço.
+- **Textos públicos:** Política de Privacidade e Termos v1.2 (IA, suboperador, finalidade, dado mascarado, conversas) e a landing (seção “Seus dados” e pergunta “O que a IA faz? E o que ela não faz?”). A revisão do advogado continua pendente: [roteiro](../governanca/ia-roteiro-juridico.md).

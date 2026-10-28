@@ -10,6 +10,14 @@ const empty = { data: [], meta: { page: 1, pageSize: 5, total: 0 } };
  */
 const homeDefaults = [
   http.get(`${API}/tasks`, () => HttpResponse.json(empty)),
+  http.get(`${API}/ai/insights`, () => HttpResponse.json([])),
+  // Previsões: por padrão, "dados insuficientes" (cada teste troca por números quando precisa).
+  http.get(`${API}/forecasts/:name`, () =>
+    HttpResponse.json({ status: 'INSUFFICIENT_SAMPLE', sample: 0, required: 20 }),
+  ),
+  http.get(`${API}/forecasts/generation/:code`, () =>
+    HttpResponse.json({ status: 'INSUFFICIENT_SAMPLE', sample: 0, required: 14 }),
+  ),
   http.get(`${API}/operations/field/work-orders`, () => HttpResponse.json([])),
   http.get(`${API}/dashboard/commercial`, () =>
     HttpResponse.json({

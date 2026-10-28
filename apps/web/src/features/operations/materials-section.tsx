@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import type { InstallationDetailDto, MaterialItemDto } from '@voltex/shared';
+import {
+  summarizeSuppliers,
+  type InstallationDetailDto,
+  type MaterialItemDto,
+} from '@voltex/shared';
 import {
   Badge,
   Button,
@@ -223,32 +227,51 @@ function Quotes({ installationId }: { installationId: string }) {
         Nenhum item pendente tem equipamento do catálogo com tabela de preços vigente.
       </p>
     );
+  const suppliers = summarizeSuppliers(quotes.data ?? []);
   return (
-    <ul className="space-y-3 text-sm" aria-label="Ofertas por item">
-      {quotes.data?.map((q) => (
-        <li key={q.materialItemId}>
-          <div className="font-medium">
-            {q.description} · {q.quantity} {q.unit}
-            {q.plannedUnitCostCents !== null
-              ? ` · previsto ${formatCents(q.plannedUnitCostCents)}/un`
-              : ''}
-          </div>
-          {q.offers.length === 0 ? (
-            <div className="text-muted-foreground">Sem oferta vigente.</div>
-          ) : (
-            <ul className="ml-4 list-disc">
-              {q.offers.map((o) => (
-                <li key={o.priceListItemId}>
-                  {o.supplier}: {formatCents(o.unitPriceCents)}/un · total{' '}
-                  {formatCents(o.totalCents)}
-                  {o.best ? ' (menor preço)' : ''}
-                </li>
-              ))}
-            </ul>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-4">
+      <div>
+        <h4 className="mb-1 text-sm font-medium">Lista inteira por fornecedor</h4>
+        <ul className="space-y-1 text-sm" aria-label="Total por fornecedor">
+          {suppliers.map((s) => (
+            <li key={s.supplier}>
+              <span className="font-medium">{s.supplier}</span>: {formatCents(s.coveredTotalCents)}{' '}
+              em {s.coveredCount} {s.coveredCount === 1 ? 'item' : 'itens'}
+              {s.missingCount > 0
+                ? ` · faltam ${s.missingCount} ${s.missingCount === 1 ? 'item' : 'itens'} (sem oferta)`
+                : ' · cobre todos os itens'}
+              {s.validUntil ? ` · ofertas valem até ${formatDate(s.validUntil)}` : ''}
+              {s.best ? ' (menor total)' : ''}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <ul className="space-y-3 text-sm" aria-label="Ofertas por item">
+        {quotes.data?.map((q) => (
+          <li key={q.materialItemId}>
+            <div className="font-medium">
+              {q.description} · {q.quantity} {q.unit}
+              {q.plannedUnitCostCents !== null
+                ? ` · previsto ${formatCents(q.plannedUnitCostCents)}/un`
+                : ''}
+            </div>
+            {q.offers.length === 0 ? (
+              <div className="text-muted-foreground">Sem oferta vigente.</div>
+            ) : (
+              <ul className="ml-4 list-disc">
+                {q.offers.map((o) => (
+                  <li key={o.priceListItemId}>
+                    {o.supplier}: {formatCents(o.unitPriceCents)}/un · total{' '}
+                    {formatCents(o.totalCents)}
+                    {o.best ? ' (menor preço)' : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

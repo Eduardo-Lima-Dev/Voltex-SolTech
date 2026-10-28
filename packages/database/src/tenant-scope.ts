@@ -106,6 +106,8 @@ export const TENANT_SCOPED_MODELS = [
   'AiUsage',
   'AiConversation',
   'AiMessage',
+  'Insight',
+  'PriceExtraction',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
