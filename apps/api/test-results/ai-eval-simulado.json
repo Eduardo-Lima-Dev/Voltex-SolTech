@@ -37,7 +37,7 @@
     "SMALL_SAMPLE": {
       "total": 4,
       "passed": 4,
-      "grounded": 0,
+      "grounded": 4,
       "kinds": {
         "CANNOT_ANSWER": 4
       }

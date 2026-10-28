@@ -26,7 +26,7 @@ import { revealPolicy } from '../tools/reveal-policy';
 import { AiToolRegistry } from '../tools/tool-registry.service';
 import { accessDeniedAnswer } from './areas';
 import { AiConversationsService } from './conversations.service';
-import { plainText, splitParts, toFactDto, toolLabel } from './parts';
+import { plainText, sampleExplanation, splitParts, toFactDto, toolLabel } from './parts';
 import { SYSTEM_PROMPT, contextLine } from './system-prompt';
 import { selectTools } from './tool-selection';
 
@@ -327,8 +327,14 @@ export class AssistantService {
       }
       if (final.ok) {
         const facts = new Map(session.facts.all().map((f) => [f.id, f]));
-        const parts: AiMessagePart[] =
-          final.kind === 'CANNOT_ANSWER'
+        // Amostra pequena: em vez de "faltaria 1; 10", diz quantos registros há e quantos são exigidos.
+        const sample =
+          final.kind === 'CANNOT_ANSWER' && final.cannotAnswerReason === 'INSUFFICIENT_SAMPLE'
+            ? sampleExplanation(turnFacts())
+            : null;
+        const parts: AiMessagePart[] = sample
+          ? sample.parts
+          : final.kind === 'CANNOT_ANSWER'
             ? [{ type: 'text', text: final.text }]
             : splitParts(final.maskedText, facts, session.pseudonyms, canSee);
         return finish(
@@ -337,7 +343,7 @@ export class AssistantService {
             cannotAnswerReason: final.cannotAnswerReason,
             maskedText: final.maskedText,
             parts,
-            factsShown: final.factsUsed,
+            factsShown: sample ? sample.used : final.factsUsed,
             followUps: final.followUps,
           },
           model,

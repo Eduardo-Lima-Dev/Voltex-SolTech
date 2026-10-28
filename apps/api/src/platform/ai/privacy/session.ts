@@ -78,7 +78,10 @@ export class AiPrivacySession {
 
     if (parsed.kind === 'CANNOT_ANSWER') {
       // O texto da recusa é do sistema; o que o modelo diz que falta só entra se passar nas mesmas regras.
-      const missing = safe(parsed.missing).map((s) => this.render(s, canSee));
+      // "Faltaria" é só texto em português: item com referência a valor (`{{F1}}`) viraria "1; 10" sem sentido.
+      const missing = safe(parsed.missing.filter((m) => !/\{\{/.test(m))).map((m) =>
+        this.render(m, canSee),
+      );
       return {
         ok: true,
         kind: 'CANNOT_ANSWER',

@@ -113,11 +113,9 @@ export function MessageView({ message, onFollowUp, onFeedback, disabled }: Props
         </div>
       ) : null}
 
-      {message.kind === 'FALLBACK' || (message.kind === 'ANSWER' && message.facts.length >= 2) ? (
-        <FactCards facts={message.facts} />
-      ) : null}
+      {message.kind === 'FALLBACK' ? <FactCards facts={message.facts} /> : null}
 
-      {message.facts.length > 0 ? (
+      {message.facts.length > 0 && message.kind !== 'FALLBACK' ? (
         <div>
           <button
             type="button"

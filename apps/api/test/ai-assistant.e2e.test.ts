@@ -369,6 +369,36 @@ describe('IA · assistente (e2e)', () => {
       expect(roles[afterTool + 2]).toBe('user');
     });
 
+    it('amostra pequena: diz quantos registros há e quantos são exigidos, sem "faltaria 1; 10"', async () => {
+      fake.enqueue(callTool('clientes_potencial'), (r) =>
+        say({
+          kind: 'CANNOT_ANSWER',
+          cannotAnswerReason: 'INSUFFICIENT_SAMPLE',
+          missing: (() => {
+            const data = JSON.parse(lastTool(r)?.content ?? '{}') as {
+              insufficient: Record<string, { ref: string }>;
+            };
+            return [data.insufficient.sampleCount!.ref, data.insufficient.minimumCount!.ref];
+          })(),
+        }),
+      );
+      const res = await chat(owner, { question: 'Quais clientes têm mais potencial?' });
+      const msg = res.body.message;
+      expect(msg).toMatchObject({
+        kind: 'CANNOT_ANSWER',
+        cannotAnswerReason: 'INSUFFICIENT_SAMPLE',
+      });
+      expect(msg.text).toMatch(
+        /há poucos registros para essa análise\. Encontrei \d+ e o mínimo para uma análise confiável é \d+\./,
+      );
+      expect(msg.text).not.toMatch(/Faltaria/);
+      expect(msg.parts.filter((p: { type: string }) => p.type === 'fact')).toHaveLength(2);
+      expect(msg.facts.map((f: { field: string }) => f.field)).toEqual([
+        'insufficient.sampleCount',
+        'insufficient.minimumCount',
+      ]);
+    });
+
     it('cada pergunta entra na contagem de uso: perguntas, média de pontos, quantas ainda cabem e teto da plataforma', async () => {
       const before = (await get('/ai/admin/usage', owner)).body;
       fake.enqueue(callTool('financeiro_visao'), (r) =>
