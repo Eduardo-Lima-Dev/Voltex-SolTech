@@ -33,7 +33,7 @@ export class ClientsTools implements AiToolSet {
         name: 'clientes_ranking',
         area: 'clientes',
         description:
-          'Ranking de clientes (contas com projeto) por margem real, valor recebido, valor contratado, inadimplência, número de projetos ou chamados. Valores financeiros só aparecem se o perfil tiver acesso ao financeiro.',
+          'Ranking de clientes (contas com projeto) por margem real, valor recebido, valor contratado, inadimplência, número de projetos ou chamados. Valores financeiros só aparecem se o perfil tiver acesso ao financeiro. Não use para perguntas de perfil dos melhores clientes, potencial ou chance de fechar: para isso use clientes_potencial.',
         permissions: ['crm.account.read'],
         mirrors: { controller: AnalyticsController, handler: 'clients' },
         params: z.object({
@@ -73,7 +73,7 @@ export class ClientsTools implements AiToolSet {
         name: 'clientes_potencial',
         area: 'clientes com mais potencial',
         description:
-          'Leads e contas em negociação que mais se parecem com os melhores clientes da empresa, com a explicação de cada atributo. É semelhança, não probabilidade de fechar. Sem clientes suficientes, informa a amostra.',
+          'Use SEMPRE que perguntarem pelo perfil dos melhores clientes, por clientes em potencial, por quem tem mais chance de fechar ou por leads parecidos com os melhores clientes. Devolve leads e contas em negociação que mais se parecem com os melhores clientes, com a explicação de cada atributo; é semelhança, não probabilidade de fechar. Sem clientes suficientes, informa a amostra insuficiente (então responda INSUFFICIENT_SAMPLE).',
         permissions: ['crm.account.read', 'crm.finance.read'],
         mirrors: { controller: AnalyticsController, handler: 'potential' },
         params: z.object({ limit: limitParam(20, 10) }),

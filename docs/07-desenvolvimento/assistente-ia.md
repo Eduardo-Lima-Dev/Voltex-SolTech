@@ -118,9 +118,18 @@ Rotas: `POST /ai/chat` (JSON, ou fluxo SSE com `Accept: text/event-stream`, even
 
 ### Avaliação de 70 perguntas
 
-`apps/api/test/ai-eval.e2e.test.ts`: 30 respondíveis, 10 sem dado, 8 sem acesso, 8 fora de escopo, 4 amostra pequena, 6 injeção de instrução e 4 com dado pessoal. Em CI roda com o provedor simulado e **exige 70/70**. Com o modelo real (`AI_EVAL_REAL=1 pnpm ai:eval`, opcional `AI_EVAL_MODEL`; gasta cota) os relatórios ficam em `apps/api/test-results/` (fora do git).
+`apps/api/test/ai-eval.e2e.test.ts`: 29 respondíveis, 11 sem dado, 8 sem acesso, 8 fora de escopo, 4 amostra pequena, 6 injeção de instrução e 4 com dado pessoal. Em CI roda com o provedor simulado e **exige 70/70**. Com o modelo real (`AI_EVAL_REAL=1 pnpm ai:eval`, opcional `AI_EVAL_MODEL`; gasta cota) os relatórios ficam em `apps/api/test-results/` (fora do git).
 
-Medido com o `qwen3` em 2026-10-25: **58 de 70** passaram. Recusas corretas (sem dado, sem acesso, fora de escopo, injeção): 32 de 32; dado pessoal: 3 de 4 (a falha foi resposta vazia do modelo, sem vazamento); amostra pequena: 2 de 4 (um caso respondeu onde devia recusar); respondíveis: 21 de 30 (as falhas foram respostas vazias do modelo, recusas indevidas e três respostas só com dados). **Nenhum vazamento de dado pessoal em nenhuma execução.**
+Medido com o `qwen3` (modelo padrão):
+
+| Data       | Resultado           | Observação                                                                                           |
+| ---------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| 2026-10-25 | 58 de 70            | respostas vazias, recusas indevidas, resposta de memória sem consultar nada                          |
+| 2026-10-28 | 66 de 69 concluídas | depois da instrução `2026-10-28.1`, da trava "sem consulta" e da revisão das ferramentas de clientes |
+
+As falhas que sobram mudam de uma rodada para outra (o modelo não é determinístico): na última foram uma resposta só com dados (`FALLBACK`), uma recusa por "amostra insuficiente" e uma recusa por falta de dado em perguntas respondíveis. **Nenhum vazamento de dado pessoal em nenhuma execução.** Duas perguntas do conjunto foram corrigidas por depender dos dados de teste: "resultado por vendedor" (a empresa de teste tem um vendedor, amostra pequena demais) virou "oportunidades por etapa", e "regras ativas" (sem regras ativas na empresa de teste) virou caso de "sem dado". Para rodar só algumas perguntas: `AI_EVAL_ONLY=a01,s04`; para ver o que o modelo respondeu em cada chamada: `AI_EVAL_TRACE=1` (grava `trace.log` ao lado do relatório).
+
+**O que mudou no assistente por causa da avaliação:** (1) a instrução manda chamar uma ferramenta **antes** de responder e só pedir esclarecimento quando nenhuma ferramenta resolve (período omitido usa o padrão da ferramenta); (2) resposta `ANSWER` sem ter consultado nada e sem citar nenhum valor é reprovada, o modelo é mandado consultar e, se insistir, a recusa fixa `NO_TOOL` aparece; (3) as descrições de `clientes_ranking` e `clientes_potencial` deixam claro quando usar cada uma, e "perfil", "chance" e "parecem" selecionam `clientes_potencial`.
 
 ## Telas (12F)
 
@@ -128,7 +137,7 @@ Código em `apps/web/src/features/ai/` e `features/admin/intelligence/`.
 
 - **Pergunte ao Voltex:** botão no cabeçalho (só com `ai.assistant.use`) abre o painel lateral (tela cheia no celular). Mostra o progresso do fluxo, a resposta com os valores como **chips** (clique para ver a consulta, o campo e a hora de onde veio), "Ver os dados", o selo "Gerado por IA a partir dos dados do sistema. Confira antes de decidir.", sugestões por tela, perguntas de seguimento, avaliação útil/não útil com motivo, nova conversa e histórico com apagar. Os estados (indisponível, cota esgotada, recusa, só dados, erro) mostram a mensagem pronta do servidor.
 - **Copiloto nas fichas:** botão "Resumir com IA" no projeto, na planta e no financeiro abre o painel numa conversa nova com a pergunta pronta (e o código do projeto no contexto).
-- **Administração → Inteligência** (`ai.admin.manage`): liga/desliga com aceite dos termos aqui registrado, situação e cotas do dia, uso dos últimos 30 dias e teste do modelo. Avisa quando falta o parecer jurídico (a IA só funciona em empresa de demonstração).
+- **Administração → Inteligência** (`ai.admin.manage`): liga/desliga com aceite dos termos aqui registrado, situação e cotas do dia, uso dos últimos 30 dias, teste do modelo e, para quem administra a empresa (`platform.tenant.manage`), os **parâmetros de análise e previsão** (mínimos de amostra e dias para uma oportunidade ser dada como parada). As **cotas diárias** de custo continuam fora da tela de propósito: são controle de custo da plataforma, ajustadas pela CLI `set-tenant-ai`. Avisa quando falta o parecer jurídico (a IA só funciona em empresa de demonstração).
 - Testes: `features/ai/assistant.test.tsx` e `features/admin/intelligence/intelligence.test.tsx` (MSW); Playwright `apps/e2e/tests/jornada-ia.spec.ts` (`pnpm jornada`), com `AI_PROVIDER=demo` no servidor de teste e a empresa marcada como demonstração em `prepare-db.mjs`.
 
 ## Insights proativos (12G)

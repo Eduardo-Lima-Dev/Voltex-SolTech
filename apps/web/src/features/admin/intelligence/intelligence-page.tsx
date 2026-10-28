@@ -11,6 +11,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Input,
+  Label,
   Skeleton,
   Switch,
   Table,
@@ -21,6 +23,7 @@ import {
   TableRow,
   toast,
 } from '@voltex/ui';
+import { Can } from '@/app/guards';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -284,6 +287,120 @@ function InsightsRunCard() {
   );
 }
 
+const SAMPLE_FIELDS = [
+  ['receivablesPaid', 'Parcelas pagas (previsão de recebimentos)'],
+  ['funnelClosed', 'Oportunidades encerradas (previsão do funil)'],
+  ['installationsDone', 'Instalações concluídas (previsão de conclusão)'],
+  ['generationDays', 'Dias com leitura (previsão de geração)'],
+  ['potentialClients', 'Clientes com margem (clientes com mais potencial)'],
+  ['groupSize', 'Registros por grupo (rankings e comparações)'],
+  ['simpleAverage', 'Registros para médias simples'],
+] as const;
+
+/** Mínimos de amostra e prazo de "parada": parâmetros da empresa (nunca norma). Abaixo do mínimo, o sistema diz "dados insuficientes". */
+function AnalysisSettingsCard() {
+  const queryClient = useQueryClient();
+  const settings = useQuery({
+    queryKey: ['analytics', 'settings'],
+    queryFn: () => endpoints.analyticsSettings.get(),
+  });
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string>();
+
+  const save = useMutation({
+    mutationFn: (input: Parameters<typeof endpoints.analyticsSettings.update>[0]) =>
+      endpoints.analyticsSettings.update(input),
+    onSuccess: async () => {
+      toast.success('Parâmetros salvos');
+      setEdits({});
+      await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      await queryClient.invalidateQueries({ queryKey: ['forecast'] });
+    },
+    onError: (e) => setError(errorMessage(e)),
+  });
+
+  if (settings.isPending) return <Skeleton className="h-40 w-full" />;
+  if (settings.isError) return null;
+  const data = settings.data;
+  const value = (key: string, current: number) => edits[key] ?? String(current);
+
+  const submit = () => {
+    const minSamples: Record<string, number> = {};
+    for (const [key] of SAMPLE_FIELDS) {
+      const n = Number(value(key, data.minSamples[key]));
+      if (!Number.isInteger(n) || n < 3 || n > 1000)
+        return setError('Os mínimos de amostra são números inteiros de 3 a 1.000.');
+      minSamples[key] = n;
+    }
+    const stalled = Number(value('stalledDays', data.stalledDays));
+    if (!Number.isInteger(stalled) || stalled < 3 || stalled > 180)
+      return setError('Os dias para uma oportunidade ser dada como parada vão de 3 a 180.');
+    setError(undefined);
+    save.mutate({
+      minSamples,
+      stalledDays: stalled,
+      bestClientShare: data.bestClientShare,
+      bestClientCriterion: data.bestClientCriterion,
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Parâmetros de análise e previsão</CardTitle>
+        <CardDescription>
+          Quantos registros a empresa exige antes de aceitar um número. Abaixo do mínimo o sistema
+          mostra “dados insuficientes” em vez de arriscar.{' '}
+          {data.usingDefaults
+            ? 'Hoje valem os padrões do sistema, que são prudência estatística, não norma.'
+            : 'Valores definidos pela sua empresa.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          noValidate
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          {SAMPLE_FIELDS.map(([key, label]) => (
+            <div key={key} className="grid gap-1">
+              <Label htmlFor={`min-${key}`}>{label}</Label>
+              <Input
+                id={`min-${key}`}
+                inputMode="numeric"
+                value={value(key, data.minSamples[key])}
+                onChange={(e) => setEdits({ ...edits, [key]: e.target.value })}
+              />
+            </div>
+          ))}
+          <div className="grid gap-1">
+            <Label htmlFor="min-stalled">Dias para uma oportunidade ser dada como parada</Label>
+            <Input
+              id="min-stalled"
+              inputMode="numeric"
+              value={value('stalledDays', data.stalledDays)}
+              onChange={(e) => setEdits({ ...edits, stalledDays: e.target.value })}
+            />
+          </div>
+          {error ? (
+            <p role="alert" className="text-sm text-destructive sm:col-span-2">
+              {error}
+            </p>
+          ) : null}
+          <div className="sm:col-span-2">
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? 'Salvando…' : 'Salvar parâmetros'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function IntelligencePage() {
   return (
     <div className="space-y-6">
@@ -295,6 +412,9 @@ export function IntelligencePage() {
       </div>
       <SettingsCard />
       <InsightsRunCard />
+      <Can permission="platform.tenant.manage">
+        <AnalysisSettingsCard />
+      </Can>
       <UsageCard />
       <DiagnosticsCard />
     </div>

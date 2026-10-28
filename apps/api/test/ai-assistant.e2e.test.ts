@@ -292,10 +292,36 @@ describe('IA · assistente (e2e)', () => {
     });
 
     it('só o primeiro nome também é trocado; sem acesso às contas, a resposta volta neutra', async () => {
-      fake.enqueue(say({ kind: 'ANSWER', text: 'Falando de [CLIENTE_1].' }));
+      fake.enqueue(callTool('financeiro_visao'), (r) =>
+        say({
+          kind: 'ANSWER',
+          text: `Falando de [CLIENTE_1]: o total vencido é ${refOf(r, 'totalOverdueCents')}.`,
+        }),
+      );
       const res = await chat(owner, { question: 'E a Helena?' });
       expect(JSON.stringify(fake.calls[0]!.messages)).not.toContain('Helena');
-      expect(res.body.message.text).toBe(`Falando de ${PERSONAL_NAMES[0]}.`);
+      expect(res.body.message.text).toMatch(new RegExp(`^Falando de ${PERSONAL_NAMES[0]}: `));
+    });
+
+    it('resposta sobre dados da empresa sem consultar nada é reprovada: o modelo é mandado consultar, e se insistir a recusa é a padrão', async () => {
+      fake.enqueue(
+        say({ kind: 'ANSWER', text: 'Os clientes estão indo muito bem.' }),
+        say({ kind: 'ANSWER', text: 'Tudo certo com a carteira.' }),
+      );
+      const refused = await chat(owner, { question: 'Como vão os clientes?' });
+      expect(refused.body.message).toMatchObject({
+        kind: 'CANNOT_ANSWER',
+        cannotAnswerReason: 'NO_TOOL',
+      });
+      expect(fake.calls).toHaveLength(2);
+      expect(JSON.stringify(fake.calls[1]!.messages)).toMatch(/sem consultar nenhuma ferramenta/);
+      fake.reset();
+      fake.enqueue(say({ kind: 'ANSWER', text: 'Tudo bem.' }), callTool('financeiro_visao'), (r) =>
+        say({ kind: 'ANSWER', text: `Vencido: ${refOf(r, 'totalOverdueCents')}.` }),
+      );
+      const ok = await chat(owner, { question: 'Quanto está vencido?' });
+      expect(ok.body.message).toMatchObject({ kind: 'ANSWER' });
+      expect(ok.body.message.text).toMatch(/Vencido: R\$\s?3\.000,00\./);
     });
 
     it('CPF, e-mail e telefone digitados são removidos; o aviso diz o quê, e o provedor nunca os recebe', async () => {

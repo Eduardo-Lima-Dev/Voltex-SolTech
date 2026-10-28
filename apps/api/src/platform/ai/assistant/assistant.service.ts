@@ -17,6 +17,7 @@ import { AiUnavailableError } from '../ai-errors';
 import type { AiMessage } from '../ai-provider';
 import { findMentions, type NamedEntity } from '../privacy/mentions';
 import { AiPrivacySession } from '../privacy/session';
+import { cannotAnswerText } from '../privacy/structured-answer';
 import { formatFact, type Fact } from '../privacy/facts';
 import { revealPolicy } from '../tools/reveal-policy';
 import { AiToolRegistry } from '../tools/tool-registry.service';
@@ -324,6 +325,24 @@ export class AssistantService {
 
       emit({ type: 'progress', label: 'Redigindo a resposta…' });
       const final = session.finalize(result.text, canSee);
+      // Resposta sobre os dados da empresa sem ter consultado nada e sem citar nenhum valor: o modelo estaria
+      // falando de memória. Pede para consultar; se insistir, recusa com o texto fixo.
+      if (final.ok && final.kind === 'ANSWER' && rounds === 0 && final.factsUsed.length === 0) {
+        this.logger.warn('Resposta da IA sem consulta aos dados');
+        if (retried)
+          return finish(
+            fixed(cannotAnswerText('NO_TOOL', []), 'CANNOT_ANSWER', 'NO_TOOL'),
+            model,
+            neurons,
+          );
+        retried = true;
+        messages.push({
+          role: 'user',
+          content:
+            'Você respondeu sem consultar nenhuma ferramenta. Chame a ferramenta adequada para obter os dados da empresa e só então responda. Se nenhuma ferramenta serve para a pergunta, responda com kind CANNOT_ANSWER e cannotAnswerReason NO_TOOL.',
+        });
+        continue;
+      }
       if (final.ok) {
         const facts = new Map(session.facts.all().map((f) => [f.id, f]));
         const parts: AiMessagePart[] =
