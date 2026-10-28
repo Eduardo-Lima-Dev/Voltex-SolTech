@@ -42,11 +42,28 @@ export interface AiUsageDayDto {
   neurons: number;
   calls: number;
   failures: number;
+  /** Perguntas feitas ao assistente no dia (só na finalidade `CHAT`). */
+  questions: number;
+}
+
+/** Resumo de hoje (dia UTC): quanto já foi e quantas perguntas ainda cabem nas cotas. */
+export interface AiUsageTodayDto {
+  questions: number;
+  neurons: number;
+  /** Média de pontos por pergunta na empresa (últimos 30 dias); `null` sem perguntas. */
+  averageNeuronsPerQuestion: number | null;
+  /** Quantas perguntas ainda cabem hoje, pela média; `null` sem média. Menor entre empresa, plataforma e (para você) a sua cota. */
+  estimatedQuestionsLeft: number | null;
+  /** Uso da plataforma inteira hoje contra o teto diário (protege o plano grátis do provedor). */
+  platform: { used: number; limit: number };
+  /** Insights: pontos usados hoje e o limite. */
+  insights: { used: number; limit: number };
 }
 
 export interface AiUsageDto {
   days: AiUsageDayDto[];
-  totals: { neurons: number; calls: number; failures: number };
+  totals: { neurons: number; calls: number; failures: number; questions: number };
+  today: AiUsageTodayDto;
 }
 
 export interface AiDiagnosticsDto {

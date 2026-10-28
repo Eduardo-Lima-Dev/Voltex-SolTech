@@ -175,3 +175,19 @@ Funções puras no motor (`packages/solar-engine/src/forecast/`), memorial em [p
 - **Eliminação do titular:** eliminar um lead ou uma conta apaga as conversas cujos pseudônimos citam essa pessoa (o resumo traz `conversasDaIa`).
 - **Exportação da empresa:** inclui conversas e mensagens (sem o texto com marcadores e sem o mapa de pseudônimos), insights e extrações de preço.
 - **Textos públicos:** Política de Privacidade e Termos v1.2 (IA, suboperador, finalidade, dado mascarado, conversas) e a landing (seção “Seus dados” e pergunta “O que a IA faz? E o que ela não faz?”). A revisão do advogado continua pendente: [roteiro](../governanca/ia-roteiro-juridico.md).
+
+## Publicar com a IA (produção/demonstração na nuvem)
+
+Quando algo é mesclado na `main`, o fluxo `deploy-demo.yml` publica a API na Render, aplica as migrations no Supabase e repassa as variáveis da IA. **A IA só funciona depois destes passos únicos** (nenhum valor secreto vai para o repositório):
+
+1. **Cloudflare:** conta **sem cartão** (no plano grátis a chamada falha em vez de cobrar), com o token de Workers AI (Leitura e Edição).
+2. **GitHub → Settings → Environments → `demo`:**
+   - **Secrets:** `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN`. O fluxo os envia à Render a cada publicação, sem imprimir o valor.
+   - **Variables:** `AI_ENABLED=true` e `AI_PROVIDER=cloudflare` (o `render.yaml` já traz esses dois como padrão, mas a variável do ambiente tem prioridade). Opcionais: `AI_MODEL_DEFAULT`, `AI_MODEL_FALLBACK`, `AI_DAILY_NEURONS_GLOBAL`.
+   - **Variable `AI_DEMO_TENANT_SLUG`** (ex.: `voltex-demo`): o fluxo marca essa empresa como **demonstração**, o que libera a IA nela mesmo sem o parecer jurídico.
+3. **Parecer jurídico (empresas reais):** depois do parecer, defina a variável `AI_LEGAL_REVIEWED_AT` (ex.: `2026-11-15`). Sem ela, empresa que não é de demonstração continua com a IA bloqueada.
+4. **Ligar na empresa:** o administrador entra em **Administração → Inteligência**, aceita os termos e clica em "Ligar a IA". Use "Testar a IA" para conferir credencial, prazo e custo.
+
+**Antes de publicar, confira:** `REDIS_URL` configurado na Render (a rotina de insights usa uma fila; ela gasta pouquíssimos comandos, 1 execução por dia, e `AI_INSIGHTS_INTERVAL_MS=0` a desliga) e o `NODE_ENV=production` (o provedor simulado `fake`/`demo` é recusado em produção, de propósito).
+
+**Acompanhar o uso e as cotas:** Administração → Inteligência → "Uso do assistente" mostra perguntas hoje, pontos gastos, média de pontos por pergunta, **quantas perguntas ainda cabem hoje**, o uso da plataforma contra o teto diário (9.000 de 10.000 do plano grátis) e a tabela dos últimos 30 dias com perguntas por dia. As cotas por empresa e por pessoa (padrão 1.500 e 300 pontos/dia, cerca de 10 perguntas por pessoa) aparecem no painel do assistente para cada usuário e se alteram pela CLI `set-tenant-ai`. Se a cota acabar, o sistema avisa com a hora em que volta (meia-noite UTC = 21h em Brasília) e os dados continuam acessíveis.

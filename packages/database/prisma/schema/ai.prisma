@@ -22,6 +22,8 @@ model AiUsage {
   neurons   Float          @default(0)
   calls     Int            @default(0)
   failures  Int            @default(0)
+  /// Perguntas feitas ao assistente (uma pergunta pode usar de 1 a 3 chamadas ao modelo).
+  questions Int            @default(0)
   updatedAt DateTime       @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id])

@@ -324,6 +324,24 @@ describe('IA · assistente (e2e)', () => {
       expect(ok.body.message.text).toMatch(/Vencido: R\$\s?3\.000,00\./);
     });
 
+    it('cada pergunta entra na contagem de uso: perguntas, média de pontos, quantas ainda cabem e teto da plataforma', async () => {
+      const before = (await get('/ai/admin/usage', owner)).body;
+      fake.enqueue(callTool('financeiro_visao'), (r) =>
+        say({ kind: 'ANSWER', text: `Vencido: ${refOf(r, 'totalOverdueCents')}.` }),
+      );
+      await chat(owner, { question: 'Quanto está vencido?' });
+      const usage = (await get('/ai/admin/usage', owner)).body;
+      expect(usage.today.questions).toBe(before.today.questions + 1);
+      expect(usage.totals.questions).toBe(before.totals.questions + 1);
+      expect(usage.today.averageNeuronsPerQuestion).toBeGreaterThan(0);
+      expect(usage.today.estimatedQuestionsLeft).toBeGreaterThan(0);
+      expect(usage.today.platform.limit).toBe(10_000_000);
+      expect(usage.today.platform.used).toBeGreaterThan(0);
+      // Perguntas e custo aparecem por dia, sem repetir a linha por usuário.
+      const chatDays = usage.days.filter((d: { purpose: string }) => d.purpose === 'CHAT');
+      expect(new Set(chatDays.map((d: { day: string }) => d.day)).size).toBe(chatDays.length);
+    });
+
     it('CPF, e-mail e telefone digitados são removidos; o aviso diz o quê, e o provedor nunca os recebe', async () => {
       fake.enqueue(say({ kind: 'CANNOT_ANSWER', cannotAnswerReason: 'NO_DATA' }));
       const S = PERSONAL_DATA_SAMPLES;

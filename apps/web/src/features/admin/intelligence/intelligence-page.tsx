@@ -163,17 +163,30 @@ function SettingsCard() {
   );
 }
 
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-lg font-semibold tabular-nums">{value}</dd>
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+
 function UsageCard() {
   const usage = useQuery({ queryKey: usageKey, queryFn: () => endpoints.ai.admin.usage() });
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Uso dos últimos 30 dias</CardTitle>
+        <CardTitle className="text-base">Uso do assistente</CardTitle>
         <CardDescription>
-          Pontos (neurons) gastos, chamadas e falhas por dia e finalidade.
+          Perguntas feitas e pontos (neurons) gastos. Os pontos são a cota diária do provedor; o dia
+          vira à meia-noite UTC (21h em Brasília).
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {usage.isPending ? <Skeleton className="h-24 w-full" /> : null}
         {usage.isError ? (
           <Alert variant="destructive">
@@ -181,39 +194,81 @@ function UsageCard() {
           </Alert>
         ) : null}
         {usage.data ? (
-          usage.data.days.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum uso registrado.</p>
-          ) : (
-            <>
-              <p className="mb-3 text-sm">
-                Total: <strong className="tabular-nums">{usage.data.totals.neurons}</strong> pontos
-                em <strong className="tabular-nums">{usage.data.totals.calls}</strong> chamadas (
-                {usage.data.totals.failures} falhas).
-              </p>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Dia</TableHead>
-                    <TableHead>Finalidade</TableHead>
-                    <TableHead className="text-right">Pontos</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">Falhas</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {usage.data.days.map((row) => (
-                    <TableRow key={`${row.day}-${row.purpose}`}>
-                      <TableCell>{formatDate(row.day)}</TableCell>
-                      <TableCell>{PURPOSE_LABEL[row.purpose]}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.neurons}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.calls}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.failures}</TableCell>
+          <>
+            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Uso de hoje">
+              <Stat label="Perguntas hoje" value={number.format(usage.data.today.questions)} />
+              <Stat
+                label="Pontos gastos hoje"
+                value={number.format(usage.data.today.neurons)}
+                hint={
+                  usage.data.today.insights.used > 0
+                    ? `Insights: ${number.format(usage.data.today.insights.used)} de ${number.format(usage.data.today.insights.limit)}`
+                    : undefined
+                }
+              />
+              <Stat
+                label="Ainda cabem hoje"
+                value={
+                  usage.data.today.estimatedQuestionsLeft === null
+                    ? '—'
+                    : `~${number.format(usage.data.today.estimatedQuestionsLeft)} perguntas`
+                }
+                hint={
+                  usage.data.today.averageNeuronsPerQuestion === null
+                    ? 'Aparece depois das primeiras perguntas'
+                    : `Média de ${number.format(usage.data.today.averageNeuronsPerQuestion)} pontos por pergunta`
+                }
+              />
+              <Stat
+                label="Plataforma hoje"
+                value={`${number.format(usage.data.today.platform.used)} de ${number.format(usage.data.today.platform.limit)}`}
+                hint="Teto diário que protege o plano grátis do provedor"
+              />
+            </dl>
+            {usage.data.days.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum uso registrado.</p>
+            ) : (
+              <>
+                <p className="text-sm">
+                  Últimos 30 dias:{' '}
+                  <strong className="tabular-nums">{usage.data.totals.questions}</strong> perguntas,{' '}
+                  <strong className="tabular-nums">
+                    {number.format(usage.data.totals.neurons)}
+                  </strong>{' '}
+                  pontos em <strong className="tabular-nums">{usage.data.totals.calls}</strong>{' '}
+                  chamadas ao modelo ({usage.data.totals.failures} falhas).
+                </p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dia</TableHead>
+                      <TableHead>Finalidade</TableHead>
+                      <TableHead className="text-right">Perguntas</TableHead>
+                      <TableHead className="text-right">Pontos</TableHead>
+                      <TableHead className="text-right">Chamadas</TableHead>
+                      <TableHead className="text-right">Falhas</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
-          )
+                  </TableHeader>
+                  <TableBody>
+                    {usage.data.days.map((row) => (
+                      <TableRow key={`${row.day}-${row.purpose}`}>
+                        <TableCell>{formatDate(row.day)}</TableCell>
+                        <TableCell>{PURPOSE_LABEL[row.purpose]}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.purpose === 'CHAT' ? row.questions : '—'}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {number.format(row.neurons)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{row.calls}</TableCell>
+                        <TableCell className="text-right tabular-nums">{row.failures}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            )}
+          </>
         ) : null}
       </CardContent>
     </Card>
