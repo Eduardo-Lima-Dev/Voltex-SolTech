@@ -191,8 +191,12 @@ describe('IA · assistente (e2e)', () => {
       expect(res.body.message.kind).toBe('FALLBACK');
       expect(res.body.message.text).toMatch(/Não consegui redigir uma explicação confiável/);
       expect(res.body.message.text).not.toMatch(/3000 reais/);
-      expect(res.body.message.text).toMatch(/Total vencido: R\$\s?3\.000,00/);
-      expect(res.body.message.facts.length).toBeGreaterThan(0);
+      // Os valores vão nos cartões (`facts`), com rótulo legível e origem; o texto é só a abertura.
+      const vencido = res.body.message.facts.find(
+        (f: { field: string }) => f.field === 'totalOverdueCents',
+      );
+      expect(vencido).toMatchObject({ label: 'Total vencido' });
+      expect(vencido.text).toMatch(/R\$\s?3\.000,00/);
     });
 
     it('a IA cai depois de a consulta já ter dados: entrega os dados, sem tela de erro', async () => {
@@ -202,8 +206,11 @@ describe('IA · assistente (e2e)', () => {
       const res = await chat(owner, { question: 'Quanto está vencido?' });
       expect(res.status).toBe(200);
       expect(res.body.message.kind).toBe('FALLBACK');
-      expect(res.body.message.text).toMatch(/ficou indisponível no meio da consulta/);
-      expect(res.body.message.text).toMatch(/R\$\s?3\.000,00/);
+      // A mensagem diz o motivo (o código da falha do provedor) e os dados já consultados seguem nos cartões.
+      expect(res.body.message.text).toMatch(
+        /indisponível no momento.*Veja os dados que já encontrei/,
+      );
+      expect(JSON.stringify(res.body.message.facts)).toMatch(/R\$\s?3\.000,00/);
     });
 
     it('um modelo que insiste em chamar ferramentas é limitado a poucas rodadas', async () => {
@@ -322,6 +329,44 @@ describe('IA · assistente (e2e)', () => {
       const ok = await chat(owner, { question: 'Quanto está vencido?' });
       expect(ok.body.message).toMatchObject({ kind: 'ANSWER' });
       expect(ok.body.message.text).toMatch(/Vencido: R\$\s?3\.000,00\./);
+    });
+
+    it('o modelo repete o período da pergunta ("30 dias") sem ser reprovado, e não duplica o "R$" do valor', async () => {
+      fake.enqueue(callTool('financeiro_visao'), (r) =>
+        say({
+          kind: 'ANSWER',
+          text: `Nos últimos 30 dias a empresa recebeu R$ ${refOf(r, 'receivedLast30DaysCents')}.`,
+        }),
+      );
+      const res = await chat(owner, { question: 'Quanto recebi nos últimos 30 dias?' });
+      expect(res.body.message.kind).toBe('ANSWER');
+      expect(fake.calls).toHaveLength(2);
+      expect(res.body.message.text).toMatch(
+        /^Nos últimos 30 dias a empresa recebeu R\$\s?[\d.,]+\.$/,
+      );
+      expect(res.body.message.text).not.toMatch(/R\$\s*R\$/);
+      // Um número que NÃO veio da pergunta continua sendo reprovado.
+      fake.reset();
+      fake.enqueue(
+        callTool('financeiro_visao'),
+        say({ kind: 'ANSWER', text: 'Nos últimos 45 dias entrou muito.' }),
+        say({ kind: 'ANSWER', text: 'Nos últimos 45 dias entrou muito.' }),
+      );
+      const bad = await chat(owner, { question: 'Quanto recebi nos últimos 30 dias?' });
+      expect(bad.body.message.kind).toBe('FALLBACK');
+    });
+
+    it('depois de reprovar, a conversa segue a ordem que os modelos exigem (assistente entre a ferramenta e a correção)', async () => {
+      fake.enqueue(
+        callTool('financeiro_visao'),
+        say({ kind: 'ANSWER', text: 'Vencido: 3000 reais.' }),
+        (r) => say({ kind: 'ANSWER', text: `Vencido: ${refOf(r, 'totalOverdueCents')}.` }),
+      );
+      await chat(owner, { question: 'Quanto está vencido?' });
+      const roles = fake.calls[2]!.messages.map((m) => m.role);
+      const afterTool = roles.indexOf('tool');
+      expect(roles[afterTool + 1]).toBe('assistant');
+      expect(roles[afterTool + 2]).toBe('user');
     });
 
     it('cada pergunta entra na contagem de uso: perguntas, média de pontos, quantas ainda cabem e teto da plataforma', async () => {

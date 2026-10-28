@@ -91,6 +91,8 @@ export interface AiFactDto {
   toolLabel: string;
   /** Caminho do campo no resultado (`totalReceivedCents`). */
   field: string;
+  /** Nome legível do campo ("Total recebido"). */
+  label: string;
   queriedAt: string;
 }
 

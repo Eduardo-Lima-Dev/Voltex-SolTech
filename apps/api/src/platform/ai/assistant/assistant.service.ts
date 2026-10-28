@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type {
-  AiAnswerKind,
-  AiChatEvent,
-  AiChatRequest,
-  AiChatResponseDto,
-  AiMessagePart,
+import {
+  AI_UNAVAILABLE_MESSAGES,
+  type AiUnavailableCode,
+  type AiAnswerKind,
+  type AiChatEvent,
+  type AiChatRequest,
+  type AiChatResponseDto,
+  type AiMessagePart,
 } from '@voltex/shared';
 import { RequestContext } from '../../../common/context/request-context';
 import type { RequestUser } from '../../../common/context/request-user';
@@ -19,7 +21,7 @@ import type { AiMessage } from '../ai-provider';
 import { findMentions, type NamedEntity } from '../privacy/mentions';
 import { AiPrivacySession } from '../privacy/session';
 import { cannotAnswerText } from '../privacy/structured-answer';
-import { formatFact, type Fact } from '../privacy/facts';
+import type { Fact } from '../privacy/facts';
 import { revealPolicy } from '../tools/reveal-policy';
 import { AiToolRegistry } from '../tools/tool-registry.service';
 import { accessDeniedAnswer } from './areas';
@@ -42,32 +44,10 @@ const REMOVED_LABELS: Record<string, string> = {
   LONG_NUMBER: 'número de documento',
 };
 
-const FIELD_LABELS: Record<string, string> = {
-  totalReceivedCents: 'Total recebido',
-  totalOpenCents: 'Total a receber',
-  totalOverdueCents: 'Total vencido',
-  totalCostsCents: 'Custos realizados',
-  marginCents: 'Margem real',
-  marginPct: 'Margem real (%)',
-  valueCents: 'Valor do contrato',
-  receivedLast30DaysCents: 'Recebido nos últimos 30 dias',
-  commissionsPendingCents: 'Comissões pendentes',
-  overdueInstallmentsCount: 'Parcelas vencidas',
-  totalCount: 'Total',
-  openCount: 'Em aberto',
-  overdueCount: 'Atrasadas',
-  slaBreachedCount: 'Com primeiro contato atrasado',
-  stalledCount: 'Paradas',
-  mrrCents: 'Receita recorrente mensal',
-};
-
-const fieldLabel = (path: string): string => {
-  const last =
-    path
-      .split('.')
-      .pop()
-      ?.replace(/\[\d+\]/g, '') ?? path;
-  return FIELD_LABELS[last] ?? path;
+/** Marca a resposta descartada (o texto dela não volta ao modelo). */
+const DISCARDED: AiMessage = {
+  role: 'assistant',
+  content: '(resposta anterior descartada pelo sistema)',
 };
 
 interface TurnOutcome {
@@ -245,25 +225,23 @@ export class AssistantService {
     let rounds = 0;
     let retried = false;
 
-    const fallback = (reason: 'TIMEOUT' | 'FAILED' | 'UNVERIFIED'): TurnOutcome => {
+    const fallback = (
+      reason: 'TIMEOUT' | 'FAILED' | 'UNVERIFIED',
+      code?: AiUnavailableCode,
+    ): TurnOutcome => {
       const facts = turnFacts().slice(0, MAX_FALLBACK_FACTS);
       const intro =
-        reason === 'TIMEOUT'
-          ? 'A IA demorou demais para responder; aqui estão os dados que encontrei:'
-          : reason === 'FAILED'
-            ? 'O assistente de IA ficou indisponível no meio da consulta; aqui estão os dados que encontrei:'
-            : 'Não consegui redigir uma explicação confiável; estes são os dados que encontrei:';
+        reason === 'UNVERIFIED'
+          ? 'Não consegui redigir uma explicação confiável, mas encontrei estes dados:'
+          : `${code ? AI_UNAVAILABLE_MESSAGES[code] : 'O assistente de IA ficou indisponível no meio da consulta.'} Veja os dados que já encontrei:`;
       if (facts.length === 0)
         return fixed(
           'Não consegui consultar os dados agora. Tente de novo em instantes.',
           'FALLBACK',
           null,
         );
+      // Só a frase de abertura: os valores vão para os cartões da tela (`facts`), com rótulo e origem.
       const parts: AiMessagePart[] = [{ type: 'text', text: intro }];
-      for (const f of facts) {
-        parts.push({ type: 'text', text: `\n• ${fieldLabel(f.path)}: ` });
-        parts.push({ type: 'fact', factId: f.id, text: formatFact(f) });
-      }
       return {
         kind: 'FALLBACK',
         cannotAnswerReason: null,
@@ -295,7 +273,7 @@ export class AssistantService {
           error.aiCode !== 'PRIVACY_BLOCKED'
         )
           return finish(
-            fallback(error.aiCode === 'TIMEOUT' ? 'TIMEOUT' : 'FAILED'),
+            fallback(error.aiCode === 'TIMEOUT' ? 'TIMEOUT' : 'FAILED', error.aiCode),
             model,
             neurons,
           );
@@ -339,6 +317,7 @@ export class AssistantService {
             neurons,
           );
         retried = true;
+        messages.push(DISCARDED);
         messages.push({
           role: 'user',
           content:
@@ -371,7 +350,9 @@ export class AssistantService {
       );
       if (retried) return finish(fallback('UNVERIFIED'), model, neurons);
       retried = true;
-      // Nunca devolve ao modelo o texto reprovado (pode ter dado pessoal): só a instrução de correção.
+      // Nunca devolve ao modelo o texto reprovado (pode ter dado pessoal): só a instrução de correção. A mensagem
+      // intermediária mantém a ordem exigida por alguns modelos (depois de uma ferramenta vem o assistente, não o usuário).
+      messages.push(DISCARDED);
       messages.push({ role: 'user', content: final.retryInstruction });
     }
   }

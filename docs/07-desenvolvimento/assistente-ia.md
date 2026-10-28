@@ -131,6 +131,10 @@ As falhas que sobram mudam de uma rodada para outra (o modelo não é determiní
 
 **O que mudou no assistente por causa da avaliação:** (1) a instrução manda chamar uma ferramenta **antes** de responder e só pedir esclarecimento quando nenhuma ferramenta resolve (período omitido usa o padrão da ferramenta); (2) resposta `ANSWER` sem ter consultado nada e sem citar nenhum valor é reprovada, o modelo é mandado consultar e, se insistir, a recusa fixa `NO_TOOL` aparece; (3) as descrições de `clientes_ranking` e `clientes_potencial` deixam claro quando usar cada uma, e "perfil", "chance" e "parecem" selecionam `clientes_potencial`.
 
+## Por que a IA "ficou indisponível no meio da consulta" (corrigido em 2026-10-28)
+
+A mensagem aparecia quando a IA falhava depois de a consulta já ter dados. Duas causas reais, achadas com `AI_EVAL_TRACE=1`: (1) o modelo padrão (`qwen3`) às vezes devolve resposta **vazia** (`EMPTY_RESPONSE`), e o sistema então tenta o modelo reserva; (2) o reserva (`mistral`) **rejeitava** a conversa com "Unexpected role 'user' after role 'tool'" (HTTP 400), porque a instrução de correção vinha logo depois do resultado da ferramenta. Agora uma mensagem de assistente ("resposta anterior descartada") fica entre os dois, e o reserva funciona. Também: o modelo pode **repetir o período da pergunta** ("últimos 30 dias") sem ser reprovado por "número fora de referência", e o "R$" duplicado ("R$ R$ 4.620,00") é removido. Quando a IA realmente cai, a mensagem diz o **motivo** (a mesma mensagem fixa do código de erro) e mostra os dados em **cartões** com rótulo legível, em vez de um parágrafo corrido.
+
 ## Telas (12F)
 
 Código em `apps/web/src/features/ai/` e `features/admin/intelligence/`.
