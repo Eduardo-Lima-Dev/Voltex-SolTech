@@ -9,6 +9,7 @@ import {
   Input,
   Skeleton,
 } from '@voltex/ui';
+import { FunnelForecastCard } from '@/features/forecasts/forecast-cards';
 import { LEAD_SOURCE_LABELS, STAGE_LABELS } from '@/i18n/labels';
 import { queryKeys } from '@/features/admin/query-keys';
 import { endpoints } from '@/lib/api/endpoints';
@@ -162,6 +163,8 @@ export function DashboardPage() {
               />
             </CardContent>
           </Card>
+
+          <FunnelForecastCard />
 
           <Card>
             <CardHeader>

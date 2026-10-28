@@ -20,6 +20,7 @@ const provider = (overrides: Partial<IntegrationProviderDto> = {}): IntegrationP
   official: true,
   docsUrl: 'https://docs.exemplo.test',
   licenseStatus: 'CLEARED',
+  available: true,
   notes: null,
   credentialFields: [
     { name: 'apiKey', label: 'Chave da API', secret: true, required: true, hint: null },
@@ -37,6 +38,7 @@ const connection = (
   id: 'c-1',
   provider: 'fake',
   providerLabel: 'Monitor oficial',
+  providerAvailable: true,
   kind: 'MONITORING',
   label: 'Conta da empresa',
   status: 'DISABLED',
@@ -199,5 +201,23 @@ describe('Administração → Integrações', () => {
     expect(within(list).getByText('3 tentativa(s)', { exact: false })).toBeInTheDocument();
     await userEvent.setup().click(within(list).getByRole('button', { name: 'Reprocessar' }));
     await waitFor(() => expect(retried).toBe(1));
+  });
+
+  it('provedor sem adaptador aparece como tal e a conexão dele não pode ser ligada', async () => {
+    server.use(
+      http.get(`${API}/integrations/providers`, () =>
+        HttpResponse.json([
+          provider({ key: 'sma', label: 'SMA', available: false, enabled: false }),
+        ]),
+      ),
+      http.get(`${API}/integrations/connections`, () =>
+        HttpResponse.json([connection({ provider: 'sma', providerAvailable: false })]),
+      ),
+      http.get(`${API}/integrations/runs`, () => HttpResponse.json([])),
+      http.get(`${API}/integrations/dead-letters`, () => HttpResponse.json([])),
+    );
+    renderApp('/admin/integracoes', { session: makeSession('ADMIN') });
+    expect(await screen.findByText('Sem adaptador')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Ligar' })).toBeDisabled();
   });
 });

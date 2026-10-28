@@ -30,6 +30,11 @@ export interface LeadDto {
   state: string | null;
   notes: string | null;
   utm: Utm | null;
+  monthlyBillCents: number | null;
+  /** 0–100 pelos critérios da empresa; nulo quando a empresa não definiu critérios ou nenhum se aplica. */
+  score: number | null;
+  scoreBreakdown: { key: string; weight: number; points: number }[] | null;
+  scoredAt: string | null;
   status: LeadStatus;
   ownerId: string | null;
   ownerName: string | null;
@@ -54,6 +59,8 @@ export interface ConvertLeadResult {
 export interface AccountDto {
   id: string;
   tenantId: string;
+  ownerId: string | null;
+  ownerName: string | null;
   type: AccountType;
   name: string;
   document: string | null;

@@ -28,12 +28,16 @@ import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../../platform/audit/audit.service';
 import { EventBus } from '../../platform/events/event-bus.service';
+import { isOwnershipRestricted } from '../../platform/prisma/ownership-scope';
 import { PrismaService } from '../../platform/prisma/prisma.service';
+import { UserDirectory } from './support/user-directory.service';
 import { DomainEvent } from '@voltex/shared';
 
-const toAccount = (r: Account): AccountDto => ({
+const toAccount = (r: Account, ownerName: string | null = null): AccountDto => ({
   id: r.id,
   tenantId: r.tenantId,
+  ownerId: r.ownerId,
+  ownerName,
   type: r.type,
   name: r.name,
   document: r.document,
@@ -92,6 +96,7 @@ export class AccountsService {
     private readonly context: RequestContext,
     private readonly audit: AuditService,
     private readonly events: EventBus,
+    private readonly users: UserDirectory,
   ) {}
 
   // ---- Contas ----
@@ -100,6 +105,7 @@ export class AccountsService {
     const digits = query.search?.replace(/\D/g, '') ?? '';
     const where = {
       deletedAt: null,
+      ...(query.ownerId ? { ownerId: query.ownerId } : {}),
       ...(query.search
         ? {
             OR: [
@@ -117,7 +123,12 @@ export class AccountsService {
       this.prisma.db.account.findMany({ where, orderBy: { name: 'asc' }, ...toSkipTake(query) }),
       this.prisma.db.account.count({ where }),
     ]);
-    return toPaginated(rows.map(toAccount), total, query);
+    const names = await this.users.names(rows.map((r) => r.ownerId));
+    return toPaginated(
+      rows.map((r) => toAccount(r, r.ownerId ? (names.get(r.ownerId) ?? null) : null)),
+      total,
+      query,
+    );
   }
 
   async get(id: string): Promise<AccountDetailDto> {
@@ -137,8 +148,9 @@ export class AccountsService {
         orderBy: { number: 'asc' },
       }),
     ]);
+    const names = await this.users.names([account.ownerId]);
     return {
-      ...toAccount(account),
+      ...toAccount(account, account.ownerId ? (names.get(account.ownerId) ?? null) : null),
       contacts: contacts.map(toContact),
       sites: sites.map(toSite),
       consumerUnits: units.map(toUnit),
@@ -146,22 +158,15 @@ export class AccountsService {
   }
 
   async create(input: CreateAccountData): Promise<AccountDto> {
+    this.users.assertCanAssignPortfolio(input.ownerId);
+    await this.users.assertActive(input.ownerId, 'responsável');
     const documentNormalized = normalizeDocument(input.document);
-    if (documentNormalized) {
-      const duplicate = await this.prisma.db.account.findFirst({
-        where: { documentNormalized, deletedAt: null },
-      });
-      if (duplicate)
-        throw new ConflictException({
-          message: `Já existe uma conta com este documento (${duplicate.name})`,
-          code: 'DUPLICATE_ACCOUNT',
-          data: { matchedAccountId: duplicate.id },
-        });
-    }
+    if (documentNormalized) await this.assertNoDuplicateDocument(documentNormalized);
     const row = await this.prisma.db.$transaction(async (tx) => {
       const created = await tx.account.create({
         data: {
           tenantId: this.context.requireTenantId(),
+          ownerId: input.ownerId ?? this.context.userId ?? null,
           type: input.type,
           name: input.name,
           document: input.document ?? null,
@@ -188,19 +193,11 @@ export class AccountsService {
 
   async update(id: string, input: UpdateAccountData): Promise<AccountDto> {
     const before = await this.findOrThrow(id);
+    this.users.assertCanAssignPortfolio(input.ownerId);
+    await this.users.assertActive(input.ownerId, 'responsável');
     const documentNormalized =
       input.document === undefined ? undefined : normalizeDocument(input.document);
-    if (documentNormalized) {
-      const duplicate = await this.prisma.db.account.findFirst({
-        where: { documentNormalized, deletedAt: null, id: { not: id } },
-      });
-      if (duplicate)
-        throw new ConflictException({
-          message: `Já existe uma conta com este documento (${duplicate.name})`,
-          code: 'DUPLICATE_ACCOUNT',
-          data: { matchedAccountId: duplicate.id },
-        });
-    }
+    if (documentNormalized) await this.assertNoDuplicateDocument(documentNormalized, id);
     const row = await this.prisma.db.$transaction(async (tx) => {
       const updated = await tx.account.update({
         where: { id },
@@ -493,6 +490,37 @@ export class AccountsService {
   }
 
   // ---- Internos ----
+
+  /**
+   * Documento já usado por outra conta da empresa. Quem trabalha só com a própria carteira também é barrado pela
+   * duplicidade com a carteira dos outros, mas sem ver de quem é (ADR-0028).
+   */
+  private async assertNoDuplicateDocument(
+    documentNormalized: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const where = {
+      documentNormalized,
+      deletedAt: null,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    };
+    const duplicate = await this.prisma.db.account.findFirst({ where });
+    if (duplicate)
+      throw new ConflictException({
+        message: `Já existe uma conta com este documento (${duplicate.name})`,
+        code: 'DUPLICATE_ACCOUNT',
+        data: { matchedAccountId: duplicate.id },
+      });
+    if (
+      isOwnershipRestricted(this.context.role) &&
+      (await this.context.withoutOwnership(() => this.prisma.db.account.count({ where }))) > 0
+    )
+      throw new ConflictException({
+        message:
+          'Já existe uma conta com este documento na carteira de outro responsável. Fale com a gestão.',
+        code: 'DUPLICATE_ACCOUNT',
+      });
+  }
 
   private async findOrThrow(id: string) {
     const row = await this.prisma.db.account.findFirst({ where: { id, deletedAt: null } });

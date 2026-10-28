@@ -77,6 +77,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'platform.catalog.manage': 'Gerenciar o catálogo técnico',
   'platform.integration.read': 'Ver integrações e execuções',
   'platform.integration.manage': 'Gerenciar integrações e credenciais',
+  'ai.assistant.use': 'Usar o assistente de IA',
+  'ai.insights.read': 'Ver os insights da IA',
+  'ai.admin.manage': 'Gerenciar a IA da empresa (ligar, cotas e uso)',
+  'procurement.price.extract': 'Extrair preços de documentos de fornecedores com IA',
   'platform.communication.send': 'Enviar comunicações ao cliente',
   'ops.installation.read': 'Ver instalações',
   'ops.installation.write': 'Gerenciar instalações, materiais e equipes',
@@ -118,6 +122,9 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'crm.project.read': 'Ver projetos',
   'crm.project.write': 'Criar e editar projetos',
   'crm.finance.read': 'Ver o financeiro dos projetos',
+  'crm.finance.write': 'Lançar parcelas, custos, crédito e comissões',
+  'crm.portal.manage': 'Liberar o portal do cliente',
+  'crm.lead-scoring.manage': 'Configurar a pontuação e a distribuição de leads',
   'crm.dashboard.read': 'Ver o painel comercial',
   'calculator.session.read': 'Ver cálculos',
   'calculator.session.create': 'Criar cálculos',
@@ -142,6 +149,8 @@ export const PERMISSION_GROUPS: { id: string; label: string; prefix: string }[] 
   { id: 'engine', label: PRODUCT_LABELS.ENGINE, prefix: 'engine.' },
   { id: 'offgrid', label: PRODUCT_LABELS.OFFGRID, prefix: 'offgrid.' },
   { id: 'ops', label: PRODUCT_LABELS.OPERATIONS, prefix: 'ops.' },
+  { id: 'ai', label: 'Inteligência artificial', prefix: 'ai.' },
+  { id: 'procurement', label: 'Compras e preços', prefix: 'procurement.' },
 ];
 
 export const permissionsOfGroup = (prefix: string): Permission[] =>
@@ -518,6 +527,8 @@ export const TIMELINE_TYPE_LABELS: Record<TimelineEventType, string> = {
   PROJECT_STATUS_CHANGED: 'Homologação',
   INSTALLATION_STATUS_CHANGED: 'Instalação',
   PLANT_ACTIVATED: 'Planta ativada',
+  RECEIVABLE_PAID: 'Parcela recebida',
+  CREDIT_STATUS_CHANGED: 'Crédito atualizado',
 };
 
 export const ROOF_TYPE_LABELS: Record<RoofType, string> = {

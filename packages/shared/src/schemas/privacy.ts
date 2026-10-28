@@ -6,6 +6,12 @@ import { RETENTION_FLOORS } from '../constants/retention.js';
 export const retentionPolicySchema = z.object({
   unconvertedLeadsMonths: z.number().int().min(1).max(240).nullable(),
   lostOpportunitiesMonths: z.number().int().min(1).max(240).nullable(),
+  /** Fotos de campo (instalação e comissionamento); `null` = não eliminar sozinho. */
+  fieldPhotosMonths: z.number().int().min(1).max(240).nullable().default(null),
+  /** Pontos de geolocalização do app de campo; `null` = não eliminar sozinho. */
+  geolocationMonths: z.number().int().min(1).max(240).nullable().default(null),
+  /** Conversas com o assistente de IA; `null` = guardar até a pessoa apagar. */
+  aiConversationsMonths: z.number().int().min(1).max(240).nullable().default(null),
   signedContractsMonths: z
     .number()
     .int()

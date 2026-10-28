@@ -25,6 +25,8 @@ export interface IntegrationProviderDto {
   official: boolean;
   docsUrl: string | null;
   licenseStatus: 'PENDING_REVIEW' | 'CLEARED' | 'BLOCKED';
+  /** `false` = o adaptador ainda não existe (falta documentação ou contrato do provedor): não dá para ligar. */
+  available: boolean;
   notes: string | null;
   credentialFields: IntegrationCredentialFieldDto[];
   /** Ligado no servidor (`INTEGRATIONS_ENABLED_PROVIDERS`). Desligado: nada é consultado na internet. */
@@ -46,6 +48,8 @@ export interface IntegrationConnectionDto {
   id: string;
   provider: string;
   providerLabel: string;
+  /** `false` = o adaptador do provedor ainda não existe: a conexão guarda as credenciais, mas não liga. */
+  providerAvailable: boolean;
   kind: IntegrationKind;
   label: string;
   status: IntegrationStatus;

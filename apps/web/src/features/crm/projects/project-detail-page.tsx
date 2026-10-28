@@ -25,6 +25,7 @@ import {
 } from '@voltex/ui';
 import type { ProjectChecklistItemDto, ProjectDto, ProjectStatus } from '@voltex/shared';
 import { Can } from '@/app/guards';
+import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { Field } from '@/components/field';
 import { queryKeys } from '@/features/admin/query-keys';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -39,6 +40,8 @@ import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage, isApiError } from '@/lib/api/errors';
 import { formatCents, formatDate, formatDateTime } from '@/lib/format';
 import { PROJECT_STATUS_BADGE } from './projects-page';
+import { PortalUploadsCard } from './portal-uploads-card';
+import { ProjectFinanceSection } from './project-finance';
 
 /** Próximos passos da homologação (espelha as transições do servidor). */
 const NEXT: Record<
@@ -385,6 +388,12 @@ export function ProjectDetailPage() {
           <h2 className="text-2xl font-semibold tracking-tight">{p.title}</h2>
           <Badge variant={PROJECT_STATUS_BADGE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge>
           {p.overdue ? <Badge variant="red">Prazo vencido</Badge> : null}
+          <AskAssistantButton
+            label="Resumir com IA"
+            question={`Resuma a situação do projeto ${p.projectCode}`}
+            projectCode={p.projectCode}
+            screen="projeto"
+          />
         </div>
         <p className="text-muted-foreground">
           {p.accountName} · <span className="font-mono">{p.projectCode}</span> ·{' '}
@@ -495,6 +504,14 @@ export function ProjectDetailPage() {
           </ul>
         </CardContent>
       </Card>
+
+      <Can permission="crm.portal.manage">
+        <PortalUploadsCard projectId={p.id} />
+      </Can>
+
+      <Can permission="crm.finance.read">
+        <ProjectFinanceSection projectId={p.id} accountName={p.accountName} />
+      </Can>
 
       <StatusDialog project={p} target={target} onClose={() => setTarget(null)} />
     </div>

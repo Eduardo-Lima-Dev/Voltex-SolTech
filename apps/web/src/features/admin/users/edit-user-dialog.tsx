@@ -59,6 +59,13 @@ export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
     setNameError(null);
   }, [user]);
 
+  const resetMfa = useMutation({
+    mutationFn: (id: string) => endpoints.auth.mfa.resetUser(id),
+    onSuccess: () =>
+      toast.success('Verificação em duas etapas removida. A pessoa pode cadastrar de novo.'),
+    onError: (error) => toast.error(errorMessage(error, 'Não foi possível remover.')),
+  });
+
   const mutation = useMutation({
     mutationFn: (input: UpdateUserInput) => endpoints.users.update((user as UserSummary).id, input),
     onSuccess: async () => {
@@ -193,6 +200,27 @@ export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
               disabled={isSelf}
             />
           </div>
+
+          {!isSelf && user ? (
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label>Verificação em duas etapas</Label>
+                <p className="text-xs text-muted-foreground">
+                  Se a pessoa perdeu o celular e os códigos de recuperação, remova para ela
+                  cadastrar de novo.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={resetMfa.isPending}
+                onClick={() => resetMfa.mutate(user.id)}
+              >
+                Remover
+              </Button>
+            </div>
+          ) : null}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

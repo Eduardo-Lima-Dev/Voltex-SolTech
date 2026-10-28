@@ -50,6 +50,11 @@ export class TenancyService {
                 ...input.settings,
                 plan: (before.settings as Record<string, unknown> | null)?.plan,
                 operations: (before.settings as Record<string, unknown> | null)?.operations,
+                mfa: (before.settings as Record<string, unknown> | null)?.mfa,
+                leadScoring: (before.settings as Record<string, unknown> | null)?.leadScoring,
+                // Inteligência: ligar é pela tela própria (com aceite dos termos) e `demo` é do operador da plataforma.
+                ai: (before.settings as Record<string, unknown> | null)?.ai,
+                demo: (before.settings as Record<string, unknown> | null)?.demo,
               } as object,
             }
           : {}),

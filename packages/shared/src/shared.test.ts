@@ -6,6 +6,7 @@ import {
   PERMISSIONS,
   ROLE_PERMISSIONS,
   Role,
+  summarizeSuppliers,
   ROUTES,
   changeStageSchema,
   createLeadSchema,
@@ -170,5 +171,53 @@ describe('signatário do projeto de engenharia', () => {
       }),
     ).toEqual([]);
     expect(signatoryMissing({ signatoryName: '  ' })).toContain('signatoryName');
+  });
+});
+
+describe('summarizeSuppliers', () => {
+  const offer = (supplier: string, totalCents: number, validTo: string | null = null) => ({
+    priceListItemId: `${supplier}-${totalCents}`,
+    supplier,
+    sku: null,
+    unitPriceCents: totalCents,
+    totalCents,
+    validTo,
+    best: false,
+  });
+  const item = (id: string, offers: ReturnType<typeof offer>[]) => ({
+    materialItemId: id,
+    description: id,
+    quantity: 1,
+    unit: 'un',
+    plannedUnitCostCents: null,
+    offers,
+  });
+
+  it('soma por fornecedor, conta o que falta e marca o melhor entre quem cobre tudo', () => {
+    const rows = summarizeSuppliers([
+      item('a', [offer('X', 100, '2026-12-31'), offer('Y', 90)]),
+      item('b', [offer('X', 200, '2026-11-30'), offer('Y', 150)]),
+      item('c', [offer('X', 50)]),
+    ]);
+    expect(rows.map((r) => r.supplier)).toEqual(['X', 'Y']);
+    expect(rows[0]).toMatchObject({
+      coveredCount: 3,
+      missingCount: 0,
+      coveredTotalCents: 350,
+      validUntil: '2026-11-30',
+      best: true,
+    });
+    expect(rows[1]).toMatchObject({
+      coveredCount: 2,
+      missingCount: 1,
+      coveredTotalCents: 240,
+      best: false,
+    });
+  });
+
+  it('sem fornecedor que cubra tudo, ninguém é "melhor"; sem ofertas, lista vazia', () => {
+    const rows = summarizeSuppliers([item('a', [offer('X', 10)]), item('b', [offer('Y', 5)])]);
+    expect(rows.every((r) => !r.best)).toBe(true);
+    expect(summarizeSuppliers([])).toEqual([]);
   });
 });

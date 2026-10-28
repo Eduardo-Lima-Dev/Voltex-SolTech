@@ -43,12 +43,18 @@ function RetentionCard() {
   const [leads, setLeads] = useState<string | null>(null);
   const [lost, setLost] = useState<string | null>(null);
   const [contracts, setContracts] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string | null>(null);
+  const [geo, setGeo] = useState<string | null>(null);
+  const [aiChats, setAiChats] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
   const data = policy.data;
   const leadsText = leads ?? data?.policy.unconvertedLeadsMonths?.toString() ?? '';
   const lostText = lost ?? data?.policy.lostOpportunitiesMonths?.toString() ?? '';
   const contractsText = contracts ?? data?.policy.signedContractsMonths.toString() ?? '';
+  const photosText = photos ?? data?.policy.fieldPhotosMonths?.toString() ?? '';
+  const geoText = geo ?? data?.policy.geolocationMonths?.toString() ?? '';
+  const aiChatsText = aiChats ?? data?.policy.aiConversationsMonths?.toString() ?? '';
 
   const save = useMutation({
     mutationFn: (input: RetentionPolicyInput) => endpoints.privacy.updatePolicy(input),
@@ -57,6 +63,8 @@ function RetentionCard() {
       setLeads(null);
       setLost(null);
       setContracts(null);
+      setPhotos(null);
+      setGeo(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.retentionPolicy });
     },
     onError: (e) => setError(errorMessage(e, 'Não foi possível salvar os prazos.')),
@@ -76,10 +84,25 @@ function RetentionCard() {
       return setError(
         'Informe os meses de negócios perdidos como um número inteiro, ou deixe em branco.',
       );
+    if (photosText.trim() !== '' && toNumber(photosText) === null)
+      return setError(
+        'Informe os meses das fotos de campo como um número inteiro, ou deixe em branco.',
+      );
+    if (geoText.trim() !== '' && toNumber(geoText) === null)
+      return setError(
+        'Informe os meses da geolocalização como um número inteiro, ou deixe em branco.',
+      );
+    if (aiChatsText.trim() !== '' && toNumber(aiChatsText) === null)
+      return setError(
+        'Informe os meses das conversas com a IA como um número inteiro, ou deixe em branco.',
+      );
     setError(undefined);
     save.mutate({
       unconvertedLeadsMonths: toNumber(leadsText),
       lostOpportunitiesMonths: toNumber(lostText),
+      fieldPhotosMonths: toNumber(photosText),
+      geolocationMonths: toNumber(geoText),
+      aiConversationsMonths: toNumber(aiChatsText),
       signedContractsMonths: contractsMonths,
     });
   };
@@ -144,6 +167,45 @@ function RetentionCard() {
                 inputMode="numeric"
                 value={contractsText}
                 onChange={(e) => setContracts(e.target.value)}
+              />
+            </Field>
+            <Field
+              id="ret-photos"
+              label="Fotos de campo (meses)"
+              hint={policy.data.sources.fieldPhotosMonths}
+            >
+              <Input
+                id="ret-photos"
+                inputMode="numeric"
+                placeholder="Em branco = nunca apagar"
+                value={photosText}
+                onChange={(e) => setPhotos(e.target.value)}
+              />
+            </Field>
+            <Field
+              id="ret-geo"
+              label="Geolocalização do app de campo (meses)"
+              hint={policy.data.sources.geolocationMonths}
+            >
+              <Input
+                id="ret-geo"
+                inputMode="numeric"
+                placeholder="Em branco = nunca apagar"
+                value={geoText}
+                onChange={(e) => setGeo(e.target.value)}
+              />
+            </Field>
+            <Field
+              id="ret-ai"
+              label="Conversas com o assistente de IA (meses)"
+              hint={policy.data.sources.aiConversationsMonths}
+            >
+              <Input
+                id="ret-ai"
+                inputMode="numeric"
+                placeholder="Em branco = até a pessoa apagar"
+                value={aiChatsText}
+                onChange={(e) => setAiChats(e.target.value)}
               />
             </Field>
             <p className="text-xs text-muted-foreground">{policy.data.sources.accessLogs}</p>

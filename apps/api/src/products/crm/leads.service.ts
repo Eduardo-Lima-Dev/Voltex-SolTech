@@ -20,6 +20,7 @@ import {
   type CreateLeadData,
   type ImportLeadsResult,
   type LeadDto,
+  type LeadScoringConfig,
   type ListLeadsQuery,
   type PublicLeadData,
   type UpdateLeadData,
@@ -29,8 +30,10 @@ import { RequestContext } from '../../common/context/request-context';
 import { toPaginated, toSkipTake } from '../../common/pagination';
 import { AuditService } from '../../platform/audit/audit.service';
 import { EventBus } from '../../platform/events/event-bus.service';
+import { isOwnershipRestricted } from '../../platform/prisma/ownership-scope';
 import { PrismaService } from '../../platform/prisma/prisma.service';
 import { OpportunitiesService } from './opportunities.service';
+import { LeadScoringService } from './lead-scoring.service';
 import { UserDirectory } from './support/user-directory.service';
 
 export const DEFAULT_LEAD_SLA_MINUTES = 30;
@@ -65,6 +68,7 @@ export class LeadsService {
     private readonly events: EventBus,
     private readonly users: UserDirectory,
     private readonly opportunities: OpportunitiesService,
+    private readonly scoring: LeadScoringService,
   ) {}
 
   // ---- Consulta ----
@@ -105,7 +109,13 @@ export class LeadsService {
     const [rows, total] = await Promise.all([
       this.prisma.db.lead.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy:
+          query.sort === 'score'
+            ? [
+                { score: { sort: 'desc' as const, nulls: 'last' as const } },
+                { createdAt: 'desc' as const },
+              ]
+            : { createdAt: 'desc' as const },
         ...toSkipTake(query),
       }),
       this.prisma.db.lead.count({ where }),
@@ -126,15 +136,21 @@ export class LeadsService {
   // ---- Criação, edição, exclusão ----
 
   async create(data: CreateLeadData, options: { ownerFallback?: boolean } = {}): Promise<LeadDto> {
-    const ownerId =
+    let ownerId =
       data.ownerId ?? (options.ownerFallback === false ? null : (this.context.userId ?? null));
+    this.users.assertCanAssignPortfolio(data.ownerId);
     await this.users.assertActive(data.ownerId, 'responsável');
     const keys = keysOf(data);
     const duplicate = await this.findDuplicate(keys);
     if (duplicate) this.throwDuplicate(duplicate);
+    const config = await this.scoring.getConfig();
 
     const row = await this.prisma.db.$transaction(async (tx) => {
-      const created = await tx.lead.create({ data: await this.toCreateData(data, keys, ownerId) });
+      // Sem responsável definido, a regra de distribuição da empresa escolhe (se houver).
+      ownerId ??= await this.scoring.pickOwner(config, { state: data.state ?? null }, tx);
+      const created = await tx.lead.create({
+        data: await this.toCreateData(data, keys, ownerId, config),
+      });
       await this.audit.record(
         {
           action: 'lead.created',
@@ -167,6 +183,7 @@ export class LeadsService {
     if (before.status === LeadStatus.CONVERTED)
       throw new ConflictException('Lead já convertido: edite a conta ou a oportunidade');
     const { status, disqualifiedReason, ...fields } = input;
+    this.users.assertCanAssignPortfolio(fields.ownerId);
     await this.users.assertActive(fields.ownerId, 'responsável');
 
     const merged = {
@@ -184,10 +201,23 @@ export class LeadsService {
         ? before.firstContactAt === null
         : false;
 
+    const rescore =
+      fields.segment !== undefined ||
+      fields.state !== undefined ||
+      fields.monthlyBillCents !== undefined
+        ? this.scoring.scoreFields(await this.scoring.getConfig(), {
+            source: before.source,
+            segment: fields.segment ?? before.segment,
+            state: fields.state ?? before.state,
+            monthlyBillCents: fields.monthlyBillCents ?? before.monthlyBillCents,
+          })
+        : {};
+
     const row = await this.prisma.db.$transaction(async (tx) => {
       const updated = await tx.lead.update({
         where: { id },
         data: {
+          ...rescore,
           ...fields,
           utm: fields.utm === undefined ? undefined : (fields.utm as object),
           emailNormalized: keys.email,
@@ -238,6 +268,7 @@ export class LeadsService {
   async import(rows: CreateLeadData[]): Promise<ImportLeadsResult> {
     const result: ImportLeadsResult = { created: 0, duplicates: 0, duplicateRows: [] };
     const seen = new Map<string, number>(); // chave de dedup dentro do arquivo → posição da primeira linha
+    const config = await this.scoring.getConfig();
 
     await this.prisma.db.$transaction(
       async (tx) => {
@@ -262,6 +293,7 @@ export class LeadsService {
           for (const k of ['email', 'phone', 'document'] as const)
             if (keys[k]) seen.set(`${k}:${keys[k]}`, position);
 
+          this.users.assertCanAssignPortfolio(data.ownerId);
           const created = await tx.lead.create({
             data: await this.toCreateData(
               {
@@ -269,7 +301,11 @@ export class LeadsService {
                 source: data.source === LeadSource.MANUAL ? LeadSource.CSV_IMPORT : data.source,
               },
               keys,
-              data.ownerId ?? null,
+              data.ownerId ??
+                (this.context.role === 'SALESPERSON'
+                  ? (this.context.userId ?? null)
+                  : await this.scoring.pickOwner(config, { state: data.state ?? null }, tx)),
+              config,
             ),
           });
           await this.events.publish(
@@ -319,11 +355,27 @@ export class LeadsService {
             where: { documentNormalized: lead.documentNormalized, deletedAt: null },
           })
         : null;
+      if (
+        !existingAccount &&
+        lead.documentNormalized &&
+        isOwnershipRestricted(this.context.role) &&
+        (await this.context.withoutOwnership(() =>
+          tx.account.count({
+            where: { documentNormalized: lead.documentNormalized, deletedAt: null },
+          }),
+        )) > 0
+      )
+        throw new ConflictException({
+          message:
+            'Já existe uma conta com este documento na carteira de outro responsável. Fale com a gestão.',
+          code: 'DUPLICATE_ACCOUNT',
+        });
       const account =
         existingAccount ??
         (await tx.account.create({
           data: {
             tenantId: this.context.requireTenantId(),
+            ownerId: lead.ownerId ?? this.context.userId ?? null,
             type: dto.accountType,
             name: lead.name,
             document: lead.document,
@@ -425,7 +477,9 @@ export class LeadsService {
     await this.context.run({ tenantId: tenant.id }, async () => {
       const keys = keysOf(input);
       if (await this.findDuplicate(keys)) return;
+      const config = await this.scoring.getConfig();
       await this.prisma.db.$transaction(async (tx) => {
+        const ownerId = await this.scoring.pickOwner(config, { state: input.state ?? null }, tx);
         const lead = await tx.lead.create({
           data: await this.toCreateData(
             {
@@ -440,7 +494,8 @@ export class LeadsService {
               source: input.utm?.source ? LeadSource.CAMPAIGN : LeadSource.LANDING_PAGE,
             } as CreateLeadData,
             keys,
-            null,
+            ownerId,
+            config,
           ),
         });
         await this.audit.record(
@@ -457,7 +512,12 @@ export class LeadsService {
           {
             type: DomainEvent.LEAD_CREATED,
             actorId: null,
-            payload: { leadId: lead.id, source: lead.source, state: lead.state, ownerId: null },
+            payload: {
+              leadId: lead.id,
+              source: lead.source,
+              state: lead.state,
+              ownerId: lead.ownerId,
+            },
           },
           tx,
         );
@@ -477,8 +537,14 @@ export class LeadsService {
     return typeof value === 'number' && value > 0 ? value : DEFAULT_LEAD_SLA_MINUTES;
   }
 
-  private async toCreateData(data: CreateLeadData, keys: Keys, ownerId: string | null) {
+  private async toCreateData(
+    data: CreateLeadData,
+    keys: Keys,
+    ownerId: string | null,
+    scoringConfig?: LeadScoringConfig,
+  ) {
     const minutes = await this.slaMinutes();
+    const config = scoringConfig ?? (await this.scoring.getConfig());
     return {
       tenantId: this.context.requireTenantId(),
       name: data.name,
@@ -495,16 +561,39 @@ export class LeadsService {
       state: data.state ?? null,
       notes: data.notes ?? null,
       utm: (data.utm ?? undefined) as object | undefined,
+      monthlyBillCents: data.monthlyBillCents ?? null,
+      ...this.scoring.scoreFields(config, {
+        source: data.source,
+        segment: data.segment ?? null,
+        state: data.state ?? null,
+        monthlyBillCents: data.monthlyBillCents ?? null,
+      }),
       ownerId,
       firstContactDueAt: new Date(Date.now() + minutes * 60_000),
     };
   }
 
-  /** Procura outro lead com o mesmo e-mail, telefone ou documento (normalizados). */
+  /**
+   * Procura outro lead com o mesmo e-mail, telefone ou documento (normalizados). Quem trabalha só com a própria
+   * carteira também é avisado de duplicidade com a carteira dos outros, mas sem ver quem é (`foreign`).
+   */
   private async findDuplicate(
     keys: Keys,
     excludeId?: string,
     client: Pick<PrismaService['db'], 'lead'> = this.prisma.db,
+  ) {
+    const own = await this.findDuplicateIn(keys, excludeId, client);
+    if (own || !isOwnershipRestricted(this.context.role)) return own;
+    const foreign = await this.context.withoutOwnership(() =>
+      this.findDuplicateIn(keys, excludeId, client),
+    );
+    return foreign ? { id: '', name: '', matchedBy: foreign.matchedBy, foreign: true } : null;
+  }
+
+  private async findDuplicateIn(
+    keys: Keys,
+    excludeId: string | undefined,
+    client: Pick<PrismaService['db'], 'lead'>,
   ) {
     const or = [
       ...(keys.email ? [{ emailNormalized: keys.email }] : []),
@@ -529,7 +618,18 @@ export class LeadsService {
     return { id: found.id, name: found.name, matchedBy };
   }
 
-  private throwDuplicate(duplicate: { id: string; name: string; matchedBy: string[] }): never {
+  private throwDuplicate(duplicate: {
+    id: string;
+    name: string;
+    matchedBy: string[];
+    foreign?: boolean;
+  }): never {
+    if (duplicate.foreign)
+      throw new ConflictException({
+        message: `Já existe um lead com o mesmo ${duplicate.matchedBy.join(' e ')} na carteira de outro responsável. Fale com a gestão.`,
+        code: 'DUPLICATE_LEAD',
+        data: { matchedBy: duplicate.matchedBy },
+      });
     throw new ConflictException({
       message: `Já existe um lead com o mesmo ${duplicate.matchedBy.join(' e ')} (${duplicate.name})`,
       code: 'DUPLICATE_LEAD',
@@ -563,6 +663,10 @@ export class LeadsService {
       state: row.state,
       notes: row.notes,
       utm: (row.utm as LeadDto['utm']) ?? null,
+      monthlyBillCents: row.monthlyBillCents,
+      score: row.score,
+      scoreBreakdown: (row.scoreBreakdown as LeadDto['scoreBreakdown']) ?? null,
+      scoredAt: row.scoredAt?.toISOString() ?? null,
       status: row.status,
       ownerId: row.ownerId,
       ownerName: row.ownerId ? (names.get(row.ownerId) ?? null) : null,

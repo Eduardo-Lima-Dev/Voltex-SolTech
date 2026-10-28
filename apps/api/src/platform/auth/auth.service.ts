@@ -7,11 +7,17 @@ import {
   permissionsForRole,
   type CurrentUser,
   type LoginInput,
+  type MfaChallengeDto,
+  type MfaLoginConfirmInput,
+  type MfaRecoveryDto,
+  type MfaSetupDto,
+  type MfaVerifyInput,
 } from '@voltex/shared';
 import type { Prisma } from '@voltex/database';
 import type { Env } from '../../config/env';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MfaService } from './mfa.service';
 import { PasswordService } from './password.service';
 import { generateOpaqueToken, hashToken } from './tokens';
 
@@ -46,9 +52,11 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<Env, true>,
+    private readonly mfa: MfaService,
   ) {}
 
-  async login(input: LoginInput, meta: ClientMeta): Promise<Session> {
+  /** Senha certa devolve a sessão, ou o desafio do segundo fator quando o usuário o usa ou a empresa o exige. */
+  async login(input: LoginInput, meta: ClientMeta): Promise<Session | MfaChallengeDto> {
     const user = await this.prisma.system.user.findFirst({
       where: { email: input.email, deletedAt: null },
       include: { tenant: true },
@@ -70,6 +78,14 @@ export class AuthService {
       throw new UnauthorizedException(INVALID_CREDENTIALS);
     }
 
+    // Segundo fator: quem já o usa confirma o código; quem a empresa obriga a usar cadastra o aplicativo agora.
+    if (user.mfaEnabled && user.mfaSecret) return this.mfa.challenge(user, false);
+    if (this.mfa.isRequiredFor(user.tenant.settings, user.role))
+      return this.mfa.challenge(user, true);
+    return this.finishLogin(user, meta);
+  }
+
+  private async finishLogin(user: UserWithTenant, meta: ClientMeta, mfa = false): Promise<Session> {
     await this.prisma.system.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
@@ -80,8 +96,31 @@ export class AuthService {
       action: 'auth.login',
       entity: 'User',
       entityId: user.id,
+      ...(mfa ? { after: { mfa: true } } : {}),
     });
     return this.issueSession(user, meta);
+  }
+
+  /** Segunda etapa do login: confere o código (aplicativo ou recuperação) e abre a sessão. */
+  async completeMfa(input: MfaVerifyInput, meta: ClientMeta): Promise<Session> {
+    const user = await this.mfa.resolveChallenge(input.mfaToken, false);
+    await this.mfa.verifyLoginCode(user, input.code);
+    return this.finishLogin(user, meta, true);
+  }
+
+  /** Empresa que exige o segundo fator: o usuário ainda sem aplicativo começa o cadastro no próprio login. */
+  async loginSetup(mfaToken: string): Promise<MfaSetupDto> {
+    const user = await this.mfa.resolveChallenge(mfaToken, true);
+    return this.mfa.startSetup(user);
+  }
+
+  async loginConfirm(
+    input: MfaLoginConfirmInput,
+    meta: ClientMeta,
+  ): Promise<{ session: Session; recovery: MfaRecoveryDto }> {
+    const user = await this.mfa.resolveChallenge(input.mfaToken, true);
+    const recovery = await this.mfa.confirmSetup(user, input.code);
+    return { session: await this.finishLogin(user, meta, true), recovery };
   }
 
   async refresh(rawToken: string, meta: ClientMeta): Promise<Session> {

@@ -134,7 +134,7 @@ model CreditApplication {
   /// Instituição financeira (ex: "Itaú", "Caixa", "Específico").
   institution   String
   status        CreditApplicationStatus  @default(SIMULATED)
-  /// Taxa de juros mensais (em %, ex: 1.5).
+  /// Taxa de juros anual (em %, como informada pela instituição).
   annualRatePct Float?                   @map("annual_rate_pct")
   /// Prazo em meses.
   termMonths    Int?                     @map("term_months")

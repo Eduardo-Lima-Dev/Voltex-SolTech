@@ -20,6 +20,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "pnpm infra:up && turbo run test:e2e",
+    "ai:eval": "pnpm --filter @voltex/api ai:eval",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @voltex/database db:generate",

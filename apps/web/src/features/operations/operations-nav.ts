@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  Banknote,
   FileText,
   LifeBuoy,
   ShieldCheck,
@@ -22,6 +23,7 @@ export interface OperationsTab {
     | 'chamados'
     | 'garantias'
     | 'contratos'
+    | 'financeiro'
     | 'campo';
   label: string;
   icon: LucideIcon;
@@ -38,6 +40,7 @@ export const OPERATIONS_TABS: readonly OperationsTab[] = [
   { path: 'chamados', label: 'Chamados', icon: LifeBuoy, permission: 'ops.ticket.read' },
   { path: 'garantias', label: 'Garantias', icon: ShieldCheck, permission: 'ops.plant.read' },
   { path: 'contratos', label: 'O&M e manutenção', icon: FileText, permission: 'ops.plant.read' },
+  { path: 'financeiro', label: 'Financeiro', icon: Banknote, permission: 'crm.finance.read' },
   { path: 'campo', label: 'App de campo', icon: Smartphone, permission: 'ops.field.execute' },
 ];
 

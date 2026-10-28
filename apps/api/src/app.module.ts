@@ -27,6 +27,7 @@ import { CatalogModule } from './platform/catalog/catalog.module';
 import { EngineeringModule } from './products/engine/engineering.module';
 import { OffgridModule } from './products/offgrid/offgrid.module';
 import { OperationsModule } from './products/operations/operations.module';
+import { PortalModule } from './products/portal/portal.module';
 import { DataHubModule } from './platform/data-hub/data-hub.module';
 import { IntegrationsModule } from './platform/integrations/integrations.module';
 import { NotificationsModule } from './platform/notifications/notifications.module';
@@ -34,6 +35,12 @@ import { ReferenceDataModule } from './platform/reference-data/reference-data.mo
 import { RulesModule } from './platform/rules/rules.module';
 import { CalculatorModule } from './products/calculator/calculator.module';
 import { CrmModule } from './products/crm/crm.module';
+import { AiModule } from './platform/ai/ai.module';
+import { AssistantModule } from './platform/ai/assistant/assistant.module';
+import { ProcurementModule } from './platform/ai/procurement/procurement.module';
+import { InsightsModule } from './platform/ai/insights/insights.module';
+import { AiToolsModule } from './platform/ai/tools/ai-tools.module';
+import { AnalyticsModule } from './platform/analytics/analytics.module';
 import { FeatureGuard } from './platform/tenancy/feature.guard';
 import { TenancyModule } from './platform/tenancy/tenancy.module';
 import { UsersModule } from './platform/users/users.module';
@@ -114,11 +121,18 @@ import { UsersModule } from './platform/users/users.module';
     ReferenceDataModule,
     DataHubModule,
     IntegrationsModule,
+    AiModule,
+    AiToolsModule,
+    AssistantModule,
+    InsightsModule,
+    ProcurementModule,
+    AnalyticsModule,
     NotificationsModule,
     CatalogModule,
     EngineeringModule,
     OffgridModule,
     OperationsModule,
+    PortalModule,
     CalculatorModule,
     CrmModule,
     HealthModule,

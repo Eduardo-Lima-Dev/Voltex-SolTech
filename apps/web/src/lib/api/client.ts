@@ -93,6 +93,52 @@ export class ApiClient {
     return this.request<T>('POST', path, { ...options, formData });
   }
 
+  /**
+   * POST que responde em fluxo (SSE, linhas `data: {json}`). Chama `onEvent` a cada evento e devolve quando o
+   * servidor encerra. Erros HTTP antes do fluxo viram `ApiError`. Renova a sessão em 401 como `request`.
+   */
+  async postStream<E>(
+    path: string,
+    body: unknown,
+    onEvent: (event: E) => void,
+    options: Pick<RequestOptions, 'signal'> = {},
+  ): Promise<void> {
+    const open = () => this.send('POST', path, { ...options, body }, 'text/event-stream');
+    let response = await open();
+    if (response.status === 401) {
+      const session = await this.refreshSession();
+      if (session) response = await open();
+      else this.config.onUnauthenticated();
+    }
+    if (!response.ok) throw await toApiError(response);
+    if (!response.body) {
+      throw new ApiError(0, 'NETWORK_ERROR', 'Não foi possível conectar ao sistema');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const flush = (frame: string) => {
+      const data = frame
+        .split('\n')
+        .filter((line) => line.startsWith('data:'))
+        .map((line) => line.slice(5).trim())
+        .join('');
+      if (data) onEvent(JSON.parse(data) as E);
+    };
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let cut = buffer.indexOf('\n\n');
+      while (cut >= 0) {
+        flush(buffer.slice(0, cut));
+        buffer = buffer.slice(cut + 2);
+        cut = buffer.indexOf('\n\n');
+      }
+    }
+    if (buffer.trim()) flush(buffer);
+  }
+
   /** Baixa um arquivo (PDF, SVG, DXF) de rota autenticada. */
   async getBlob(
     path: string,
@@ -141,8 +187,13 @@ export class ApiClient {
     }
   }
 
-  private async send(method: string, path: string, options: RequestOptions): Promise<Response> {
-    const headers: Record<string, string> = { Accept: 'application/json' };
+  private async send(
+    method: string,
+    path: string,
+    options: RequestOptions,
+    accept = 'application/json',
+  ): Promise<Response> {
+    const headers: Record<string, string> = { Accept: accept };
     const token = options.auth === false ? null : this.config.getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
 

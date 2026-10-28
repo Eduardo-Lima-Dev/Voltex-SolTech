@@ -23,6 +23,8 @@ import {
   toast,
 } from '@voltex/ui';
 import { Can } from '@/app/guards';
+import { GenerationForecastCard } from '@/features/forecasts/forecast-cards';
+import { AskAssistantButton } from '@/features/ai/ask-assistant-button';
 import { endpoints } from '@/lib/api/endpoints';
 import { errorMessage } from '@/lib/api/errors';
 import { formatCents, formatDateTime, formatKwp } from '@/lib/format';
@@ -34,6 +36,7 @@ import {
   daysLeftLabel,
   formatDay,
 } from './aftersales-labels';
+import { PlantMonitoringSection } from './plant-monitoring';
 import { NewTicketDialog, TicketDialog, TicketRows } from './tickets-page';
 
 function AddAssetDialog({ plantId, onClose }: { plantId: string; onClose: () => void }) {
@@ -171,7 +174,15 @@ export function PlantPage() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{p.name}</CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-3">
+            {p.name}
+            <AskAssistantButton
+              label="Resumir com IA"
+              question={`Resuma a situação da planta do projeto ${p.projectCode}`}
+              projectCode={p.projectCode}
+              screen="planta"
+            />
+          </CardTitle>
           <CardDescription>
             <Link
               to={`/operations/instalacoes/${p.installationId}`}
@@ -213,6 +224,10 @@ export function PlantPage() {
           )}
         </CardContent>
       </Card>
+
+      <PlantMonitoringSection plantId={p.id} />
+
+      <GenerationForecastCard projectCode={p.projectCode} />
 
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">

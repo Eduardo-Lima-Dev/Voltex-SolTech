@@ -1,4 +1,4 @@
-import { CloudOff, RefreshCw, Wifi } from 'lucide-react';
+import { CloudOff, House, RefreshCw, Wifi } from 'lucide-react';
 import { Link, Navigate, Outlet } from 'react-router';
 import { Badge, Button, Logo } from '@voltex/ui';
 import { ForbiddenPage } from '@/app/pages/forbidden-page';
@@ -36,6 +36,11 @@ function FieldFrame() {
               {state.pending} p/ enviar
             </Badge>
           ) : null}
+          <Button size="icon" variant="secondary" aria-label="Voltar ao sistema" asChild>
+            <Link to="/">
+              <House aria-hidden="true" />
+            </Link>
+          </Button>
           <Button
             size="icon"
             variant="secondary"

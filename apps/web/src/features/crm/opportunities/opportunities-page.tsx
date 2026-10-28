@@ -24,6 +24,7 @@ import { Can } from '@/app/guards';
 import { Pagination } from '@/components/pagination';
 import { queryKeys } from '@/features/admin/query-keys';
 import { useAuth } from '@/features/auth/auth-provider';
+import { usePortfolioScope } from '@/features/auth/portfolio';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { OPPORTUNITY_STATUS_LABELS } from '@/i18n/labels';
 import { endpoints } from '@/lib/api/endpoints';
@@ -215,6 +216,7 @@ function BoardView({ search, status, ownerId }: Filters) {
 
 export function OpportunitiesPage() {
   const { can, user } = useAuth();
+  const portfolio = usePortfolioScope();
   const [view, setView] = useState<View>(readView);
   const [searchText, setSearchText] = useState('');
   const [status, setStatus] = useState<'' | OpportunityStatus>('');
@@ -244,7 +246,12 @@ export function OpportunitiesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Oportunidades</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Oportunidades</h1>
+          {portfolio.note ? (
+            <p className="text-sm text-muted-foreground">{portfolio.note}</p>
+          ) : null}
+        </div>
         <Can permission="crm.opportunity.write">
           <Button onClick={() => setCreating(true)}>
             <Plus /> Nova oportunidade
@@ -307,24 +314,26 @@ export function OpportunitiesPage() {
             ))}
           </NativeSelect>
         </div>
-        <div className="w-52">
-          <NativeSelect
-            aria-label="Vendedor"
-            className="h-9"
-            value={seller}
-            onChange={(e) => setSeller(e.target.value)}
-          >
-            <option value="all">Todos os vendedores</option>
-            <option value="mine">Só as minhas</option>
-            {(users.data?.data ?? [])
-              .filter((u) => u.id !== user?.id)
-              .map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-          </NativeSelect>
-        </div>
+        {portfolio.restricted ? null : (
+          <div className="w-52">
+            <NativeSelect
+              aria-label="Vendedor"
+              className="h-9"
+              value={seller}
+              onChange={(e) => setSeller(e.target.value)}
+            >
+              <option value="all">Todos os vendedores</option>
+              <option value="mine">Só as minhas</option>
+              {(users.data?.data ?? [])
+                .filter((u) => u.id !== user?.id)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+            </NativeSelect>
+          </div>
+        )}
         <Can permission="crm.pipeline.manage">
           <Button
             variant="outline"

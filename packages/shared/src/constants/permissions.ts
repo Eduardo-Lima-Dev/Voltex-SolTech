@@ -22,6 +22,11 @@ export const PERMISSIONS = [
   'platform.integration.read',
   /** Integration Hub: cadastrar credenciais, ligar, testar e reprocessar. */
   'platform.integration.manage',
+  // Inteligência (Fase 12)
+  'ai.assistant.use',
+  'ai.insights.read',
+  'ai.admin.manage',
+  'procurement.price.extract',
   /** Registrar o envio de uma comunicação (e-mail, link do WhatsApp, link copiado). */
   'platform.communication.send',
   // CRM
@@ -51,6 +56,12 @@ export const PERMISSIONS = [
   'crm.project.read',
   'crm.project.write',
   'crm.finance.read',
+  /** Lançar parcelas, custos, crédito e comissões do projeto; dar baixa manual nos recebimentos. */
+  'crm.finance.write',
+  /** Liberar e revogar o acesso do cliente ao portal (link mágico). */
+  'crm.portal.manage',
+  /** Critérios de pontuação e regras de distribuição de leads. */
+  'crm.lead-scoring.manage',
   'crm.dashboard.read',
   // Solar Calculator
   'calculator.session.read',
@@ -108,6 +119,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   [Role.OWNER]: ALL,
   [Role.ADMIN]: ALL.filter((p) => p !== 'crm.margin.approve'),
   [Role.SALES_MANAGER]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'ops.plant.read',
     'ops.ticket.read',
     'ops.installation.read',
@@ -123,12 +136,16 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     ),
     'crm.pipeline.manage',
     'crm.project.read',
+    'crm.portal.manage',
+    'crm.lead-scoring.manage',
     ...startsWith('calculator.'),
     'platform.user.read',
     'platform.document.read',
     'platform.document.write',
   ],
   [Role.SDR]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'crm.lead.read',
     'crm.lead.write',
     'crm.account.read',
@@ -143,7 +160,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.SALESPERSON]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'platform.communication.send',
+    'crm.portal.manage',
     'crm.lead.read',
     'crm.lead.write',
     'crm.account.read',
@@ -168,6 +188,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.ENGINEERING]: [
+    'ai.assistant.use',
+    'ai.insights.read',
+    'procurement.price.extract',
     'ops.plant.read',
     'ops.ticket.read',
     'ops.commissioning.read',
@@ -191,6 +214,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.TECHNICAL_LEAD]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'ops.plant.read',
     'ops.ticket.read',
     'ops.commissioning.read',
@@ -211,6 +236,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.OPERATIONS]: [
+    'ai.assistant.use',
+    'ai.insights.read',
+    'procurement.price.extract',
     'ops.plant.read',
     'ops.ticket.read',
     'ops.ticket.write',
@@ -241,9 +269,13 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.write',
   ],
   [Role.FINANCE]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'ops.plant.read',
     'platform.communication.send',
+    'crm.account.read',
     'crm.finance.read',
+    'crm.finance.write',
     'crm.margin.read',
     'crm.guard.read',
     'crm.opportunity.read',
@@ -253,6 +285,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'platform.document.read',
   ],
   [Role.OM]: [
+    'ai.assistant.use',
+    'ai.insights.read',
     'ops.plant.read',
     'ops.plant.write',
     'ops.ticket.read',

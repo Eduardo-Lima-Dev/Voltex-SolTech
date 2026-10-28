@@ -10,12 +10,18 @@ const policy = (over = {}) => ({
   policy: {
     unconvertedLeadsMonths: null,
     lostOpportunitiesMonths: null,
+    fieldPhotosMonths: null,
+    geolocationMonths: null,
+    aiConversationsMonths: null,
     signedContractsMonths: 60,
     ...over,
   },
   floors: { signedContractsMonths: 60 },
   sources: {
     signedContractsMonths: 'CTN e CDC: 5 anos. Confirme com o seu jurídico.',
+    fieldPhotosMonths: 'Sem prazo legal conhecido: decisão da empresa.',
+    geolocationMonths: 'Guarde só pelo tempo necessário.',
+    aiConversationsMonths: 'Conversas mascaradas.',
     accessLogs: 'Marco Civil: 6 meses de registros de acesso.',
   },
 });
@@ -70,11 +76,15 @@ describe('Administração · Privacidade (LGPD)', () => {
     await user.clear(contracts);
     await user.type(contracts, '72');
     await user.type(screen.getByLabelText('Contatos que não viraram cliente (meses)'), '24');
+    await user.type(screen.getByLabelText('Fotos de campo (meses)'), '36');
     await user.click(screen.getByRole('button', { name: 'Salvar prazos' }));
     await waitFor(() =>
       expect(body).toEqual({
         unconvertedLeadsMonths: 24,
         lostOpportunitiesMonths: null,
+        fieldPhotosMonths: 36,
+        geolocationMonths: null,
+        aiConversationsMonths: null,
         signedContractsMonths: 72,
       }),
     );

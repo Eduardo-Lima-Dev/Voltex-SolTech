@@ -76,6 +76,21 @@ jobs:
         run: pnpm --filter @voltex/database exec prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+      # IA em empresa de demonstração: sem o parecer jurídico, a IA só funciona em empresa marcada como demonstração.
+      # Defina a variável AI_DEMO_TENANT_SLUG (ex.: voltex-demo) no ambiente "demo" para marcá-la. Só marca; quem liga
+      # a IA (e aceita os termos) é o administrador da empresa, em Administração → Inteligência.
+      - name: Marcar a empresa de demonstração para a IA
+        if: ${{ vars.AI_DEMO_TENANT_SLUG != '' }}
+        run: |
+          # O psql só troca :'slug' quando o comando vem pela entrada padrão (não com -c).
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v slug="$AI_DEMO_TENANT_SLUG" <<'SQL'
+          UPDATE tenants
+             SET settings = COALESCE(settings, '{}'::jsonb) || '{"demo": true}'::jsonb
+           WHERE slug = :'slug';
+          SQL
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+          AI_DEMO_TENANT_SLUG: ${{ vars.AI_DEMO_TENANT_SLUG }}
       # O Supabase expõe o esquema public numa API pública: este script a mantém fechada (é seguro repetir).
       - name: Fechar a API pública do Supabase
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f deploy/nuvem/supabase-travar-api.sql
@@ -102,6 +117,17 @@ jobs:
           # Fontes externas ligadas na demonstração: clima, tarifas e as fontes de equipamentos (Techlux e CEC/SAM).
           # Para mudar sem alterar o código, defina a variável DATA_HUB_ENABLED_SOURCES no ambiente "demo".
           DATA_HUB_ENABLED_SOURCES: ${{ vars.DATA_HUB_ENABLED_SOURCES || 'nasa-power,pvgis,aneel-tariffs,techlux,cec-library' }}
+          # Assistente de IA (guia: docs/07-desenvolvimento/assistente-ia.md, "Publicar com a IA").
+          # Variáveis do ambiente "demo": AI_ENABLED, AI_PROVIDER (cloudflare), AI_LEGAL_REVIEWED_AT (só após o parecer).
+          # Segredos do ambiente "demo": CLOUDFLARE_ACCOUNT_ID e CLOUDFLARE_API_TOKEN. Sem eles, a IA fica desligada.
+          AI_ENABLED: ${{ vars.AI_ENABLED }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+          AI_LEGAL_REVIEWED_AT: ${{ vars.AI_LEGAL_REVIEWED_AT }}
+          AI_MODEL_DEFAULT: ${{ vars.AI_MODEL_DEFAULT }}
+          AI_MODEL_FALLBACK: ${{ vars.AI_MODEL_FALLBACK }}
+          AI_DAILY_NEURONS_GLOBAL: ${{ vars.AI_DAILY_NEURONS_GLOBAL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   front:
     name: Site e aplicação (Vercel)

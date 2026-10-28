@@ -1,90 +1,164 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
-import type {
-  CreateCreditApplicationInput,
-  CreateReceivableInput,
-  ProjectFinancialSummaryDto,
+import {
+  cancelReceivableSchema,
+  createCommissionPolicySchema,
+  createCostEntrySchema,
+  createCreditApplicationSchema,
+  createReceivableSchema,
+  markCommissionPaidSchema,
+  markReceivablePaidSchema,
+  updateCreditStatusSchema,
 } from '@voltex/shared';
 import { RequirePermissions } from '../../../common/decorators';
 import { FinanceService } from './finance.service';
 
-class CreateReceivableDto extends createZodDto(
-  // Would use CreateReceivableInput schema here but we're using inline for now
-  class {} as any,
-) {}
+class CreateReceivableDto extends createZodDto(createReceivableSchema) {}
+class MarkReceivablePaidDto extends createZodDto(markReceivablePaidSchema) {}
+class CancelReceivableDto extends createZodDto(cancelReceivableSchema) {}
+class CreateCostEntryDto extends createZodDto(createCostEntrySchema) {}
+class CreateCreditDto extends createZodDto(createCreditApplicationSchema) {}
+class UpdateCreditStatusDto extends createZodDto(updateCreditStatusSchema) {}
+class MarkCommissionPaidDto extends createZodDto(markCommissionPaidSchema) {}
+class CreateCommissionPolicyDto extends createZodDto(createCommissionPolicySchema) {}
 
-class CreateCreditApplicationDto extends createZodDto(
-  // Would use CreateCreditApplicationInput schema here
-  class {} as any,
-) {}
-
-/**
- * Financeiro por projeto: recebíveis, custos, comissões, crédito.
- * Rotas sob `/projects/:projectId/finance`.
- */
+/** Financeiro por projeto: parcelas, custos, crédito e comissões. Registro manual, sem gateway (ADR-0024). */
+@ApiTags('CRM · Financeiro')
+@ApiBearerAuth()
 @Controller('projects/:projectId/finance')
-@RequirePermissions('crm.finance.read')
 export class FinanceController {
   constructor(private readonly finance: FinanceService) {}
 
-  // --- recebíveis ---------------------------------------------------------------
+  @Get('summary')
+  @RequirePermissions('crm.finance.read')
+  summary(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.finance.summary(projectId);
+  }
 
   @Get('receivables')
-  async listReceivables(@Param('projectId', new ParseUUIDPipe()) projectId: string) {
-    return await this.finance.listReceivables(projectId);
+  @RequirePermissions('crm.finance.read')
+  receivables(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.finance.listReceivables(projectId);
   }
 
   @Post('receivables')
   @RequirePermissions('crm.finance.write')
-  async createReceivable(
-    @Param('projectId', new ParseUUIDPipe()) projectId: string,
-    @Body() input: CreateReceivableInput,
+  createReceivable(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() body: CreateReceivableDto,
   ) {
-    return await this.finance.createReceivable(projectId, input);
+    return this.finance.createReceivable(projectId, body);
   }
 
-  @Post('receivables/:receivableId/mark-paid')
+  @Post('receivables/:receivableId/pay')
+  @HttpCode(200)
   @RequirePermissions('crm.finance.write')
-  async markReceivableAsPaid(
-    @Param('projectId', new ParseUUIDPipe()) projectId: string,
-    @Param('receivableId', new ParseUUIDPipe()) receivableId: string,
-    @Body() input: { paymentMethod: string },
+  pay(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('receivableId', ParseUUIDPipe) receivableId: string,
+    @Body() body: MarkReceivablePaidDto,
   ) {
-    return await this.finance.markAsPaid(projectId, receivableId, input.paymentMethod);
+    return this.finance.markPaid(projectId, receivableId, body);
   }
 
-  // --- resumo financeiro -------------------------------------------------------
-
-  @Get('summary')
-  async getFinancialSummary(
-    @Param('projectId', new ParseUUIDPipe()) projectId: string,
-  ): Promise<ProjectFinancialSummaryDto> {
-    return await this.finance.getFinancialSummary(projectId);
+  @Post('receivables/:receivableId/cancel')
+  @HttpCode(200)
+  @RequirePermissions('crm.finance.write')
+  cancel(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('receivableId', ParseUUIDPipe) receivableId: string,
+    @Body() body: CancelReceivableDto,
+  ) {
+    return this.finance.cancelReceivable(projectId, receivableId, body);
   }
 
-  // --- crédito ------------------------------------------------------------------
+  @Post('costs')
+  @RequirePermissions('crm.finance.write')
+  addCost(@Param('projectId', ParseUUIDPipe) projectId: string, @Body() body: CreateCostEntryDto) {
+    return this.finance.addCost(projectId, body);
+  }
+
+  @Delete('costs/:costId')
+  @HttpCode(204)
+  @RequirePermissions('crm.finance.write')
+  removeCost(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('costId', ParseUUIDPipe) costId: string,
+  ) {
+    return this.finance.removeCost(projectId, costId);
+  }
 
   @Post('credit-applications')
   @RequirePermissions('crm.finance.write')
-  async createCreditApplication(
-    @Param('projectId', new ParseUUIDPipe()) projectId: string,
-    @Body() input: CreateCreditApplicationInput,
+  createCredit(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() body: CreateCreditDto,
   ) {
-    return await this.finance.createCreditApplication(projectId, input);
+    return this.finance.createCredit(projectId, body);
   }
 
   @Post('credit-applications/:creditId/status')
+  @HttpCode(200)
   @RequirePermissions('crm.finance.write')
-  async updateCreditStatus(
-    @Param('projectId', new ParseUUIDPipe()) projectId: string,
-    @Param('creditId', new ParseUUIDPipe()) creditId: string,
-    @Body() input: { status: 'SENT' | 'PENDING' | 'APPROVED' | 'REJECTED'; pendencies?: string[] },
+  creditStatus(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('creditId', ParseUUIDPipe) creditId: string,
+    @Body() body: UpdateCreditStatusDto,
   ) {
-    return await this.finance.updateCreditApplicationStatus(
-      projectId,
-      creditId,
-      input.status,
-      input.pendencies,
-    );
+    return this.finance.updateCreditStatus(projectId, creditId, body);
+  }
+
+  @Post('commissions/recalculate')
+  @HttpCode(200)
+  @RequirePermissions('crm.finance.write')
+  recalculate(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.finance.recalculateCommissions(projectId);
+  }
+
+  @Post('commissions/:commissionId/pay')
+  @HttpCode(200)
+  @RequirePermissions('crm.finance.write')
+  payCommission(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('commissionId', ParseUUIDPipe) commissionId: string,
+    @Body() body: MarkCommissionPaidDto,
+  ) {
+    return this.finance.markCommissionPaid(projectId, commissionId, body);
+  }
+}
+
+/** Visão da empresa e política de comissão (a política é da empresa, não do projeto). */
+@ApiTags('CRM · Financeiro')
+@ApiBearerAuth()
+@Controller('finance')
+export class FinanceOverviewController {
+  constructor(private readonly finance: FinanceService) {}
+
+  @Get('overview')
+  @RequirePermissions('crm.finance.read')
+  overview() {
+    return this.finance.overview();
+  }
+
+  @Get('commission-policies')
+  @RequirePermissions('crm.finance.read')
+  policies() {
+    return this.finance.listPolicies();
+  }
+
+  @Post('commission-policies')
+  @RequirePermissions('crm.finance.write')
+  createPolicy(@Body() body: CreateCommissionPolicyDto) {
+    return this.finance.createPolicy(body);
   }
 }
