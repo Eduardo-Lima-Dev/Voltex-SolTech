@@ -13,6 +13,7 @@ import type { Env } from '../../../config/env';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiGateService } from '../ai-gate.service';
 import { AiGatewayService } from '../ai-gateway.service';
+import { AiUsageService } from '../ai-usage.service';
 import { AiUnavailableError } from '../ai-errors';
 import type { AiMessage } from '../ai-provider';
 import { findMentions, type NamedEntity } from '../privacy/mentions';
@@ -92,6 +93,7 @@ export class AssistantService {
     private readonly context: RequestContext,
     private readonly gate: AiGateService,
     private readonly gateway: AiGatewayService,
+    private readonly usage: AiUsageService,
     private readonly registry: AiToolRegistry,
     private readonly conversations: AiConversationsService,
     private readonly config: ConfigService<Env, true>,
@@ -224,6 +226,7 @@ export class AssistantService {
     if (denied) return finish(fixed(denied, 'CANNOT_ANSWER', 'ACCESS_DENIED'), null, null);
 
     // 4) Conversa com o modelo: ferramentas de leitura e redação validada.
+    await this.usage.recordQuestion().catch(() => undefined);
     const specs = selectTools(request.question, this.registry.specsFor(user));
     const history = (stored?.history ?? []).map((h): AiMessage => ({
       role: h.role === 'USER' ? 'user' : 'assistant',

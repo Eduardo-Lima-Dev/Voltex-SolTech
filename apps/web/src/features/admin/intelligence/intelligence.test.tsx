@@ -27,7 +27,18 @@ describe('administração: inteligência', () => {
     server.use(
       http.get(`${API}/ai/admin/settings`, () => HttpResponse.json(settings(false))),
       http.get(`${API}/ai/admin/usage`, () =>
-        HttpResponse.json({ days: [], totals: { neurons: 0, calls: 0, failures: 0 } }),
+        HttpResponse.json({
+          days: [],
+          totals: { neurons: 0, calls: 0, failures: 0, questions: 0 },
+          today: {
+            questions: 0,
+            neurons: 0,
+            averageNeuronsPerQuestion: null,
+            estimatedQuestionsLeft: null,
+            platform: { used: 0, limit: 9000 },
+            insights: { used: 0, limit: 150 },
+          },
+        }),
       ),
       http.put(`${API}/ai/admin/settings`, async ({ request }) => {
         body = await request.json();
@@ -49,8 +60,25 @@ describe('administração: inteligência', () => {
       http.get(`${API}/ai/admin/settings`, () => HttpResponse.json(settings(true, true))),
       http.get(`${API}/ai/admin/usage`, () =>
         HttpResponse.json({
-          days: [{ day: '2026-10-25', purpose: 'CHAT', neurons: 120, calls: 4, failures: 1 }],
-          totals: { neurons: 120, calls: 4, failures: 1 },
+          days: [
+            {
+              day: '2026-10-25',
+              purpose: 'CHAT',
+              neurons: 120,
+              calls: 4,
+              failures: 1,
+              questions: 3,
+            },
+          ],
+          totals: { neurons: 120, calls: 4, failures: 1, questions: 3 },
+          today: {
+            questions: 3,
+            neurons: 120,
+            averageNeuronsPerQuestion: 40,
+            estimatedQuestionsLeft: 34,
+            platform: { used: 1200, limit: 9000 },
+            insights: { used: 0, limit: 150 },
+          },
         }),
       ),
       http.post(`${API}/ai/admin/diagnostics`, () =>
@@ -69,6 +97,11 @@ describe('administração: inteligência', () => {
     renderApp('/admin/inteligencia', { session: makeSession('OWNER') });
     expect(await screen.findByText('Empresa de demonstração')).toBeInTheDocument();
     expect(await screen.findByText('Assistente')).toBeInTheDocument();
+    const today = screen.getByLabelText('Uso de hoje');
+    expect(today).toHaveTextContent('Perguntas hoje');
+    expect(today).toHaveTextContent('~34 perguntas');
+    expect(today).toHaveTextContent('Média de 40 pontos por pergunta');
+    expect(today).toHaveTextContent('1.200 de 9.000');
     await user.click(screen.getByRole('button', { name: 'Testar a IA' }));
     expect(await screen.findByText(/Funcionou em 420 ms/)).toBeInTheDocument();
   });
@@ -100,7 +133,18 @@ describe('administração: parâmetros de análise', () => {
     server.use(
       http.get(`${API}/ai/admin/settings`, () => HttpResponse.json(settings(true, true))),
       http.get(`${API}/ai/admin/usage`, () =>
-        HttpResponse.json({ days: [], totals: { neurons: 0, calls: 0, failures: 0 } }),
+        HttpResponse.json({
+          days: [],
+          totals: { neurons: 0, calls: 0, failures: 0, questions: 0 },
+          today: {
+            questions: 0,
+            neurons: 0,
+            averageNeuronsPerQuestion: null,
+            estimatedQuestionsLeft: null,
+            platform: { used: 0, limit: 9000 },
+            insights: { used: 0, limit: 150 },
+          },
+        }),
       ),
       http.get(`${API}/analytics/settings`, () => HttpResponse.json(current)),
       http.put(`${API}/analytics/settings`, async ({ request }) => {
