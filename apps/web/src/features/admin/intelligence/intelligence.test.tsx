@@ -78,3 +78,49 @@ describe('administração: inteligência', () => {
     expect(await screen.findByText(/sem acesso|Sem acesso/)).toBeInTheDocument();
   });
 });
+
+describe('administração: parâmetros de análise', () => {
+  it('mostra os padrões, valida e salva os mínimos de amostra da empresa', async () => {
+    let body: { minSamples: Record<string, number>; stalledDays: number } | null = null;
+    const current = {
+      minSamples: {
+        potentialClients: 25,
+        groupSize: 5,
+        funnelClosed: 30,
+        receivablesPaid: 20,
+        installationsDone: 10,
+        generationDays: 14,
+        simpleAverage: 5,
+      },
+      bestClientShare: 0.2,
+      bestClientCriterion: 'MARGIN',
+      stalledDays: 14,
+      usingDefaults: true,
+    };
+    server.use(
+      http.get(`${API}/ai/admin/settings`, () => HttpResponse.json(settings(true, true))),
+      http.get(`${API}/ai/admin/usage`, () =>
+        HttpResponse.json({ days: [], totals: { neurons: 0, calls: 0, failures: 0 } }),
+      ),
+      http.get(`${API}/analytics/settings`, () => HttpResponse.json(current)),
+      http.put(`${API}/analytics/settings`, async ({ request }) => {
+        body = (await request.json()) as typeof body;
+        return HttpResponse.json({ ...current, usingDefaults: false });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp('/admin/inteligencia', { session: makeSession('OWNER') });
+    const field = await screen.findByLabelText(/Parcelas pagas/);
+    expect(field).toHaveValue('20');
+    expect(screen.getByText(/padrões do sistema/)).toBeInTheDocument();
+    await user.clear(field);
+    await user.type(field, '2');
+    await user.click(screen.getByRole('button', { name: 'Salvar parâmetros' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/de 3 a 1\.000/);
+    await user.clear(field);
+    await user.type(field, '12');
+    await user.click(screen.getByRole('button', { name: 'Salvar parâmetros' }));
+    await waitFor(() => expect(body?.minSamples.receivablesPaid).toBe(12));
+    expect(body!.stalledDays).toBe(14);
+  });
+});

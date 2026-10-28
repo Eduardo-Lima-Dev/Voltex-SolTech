@@ -3,19 +3,19 @@
   "total": 70,
   "byCategory": {
     "ANSWERABLE": {
-      "total": 30,
-      "passed": 30,
-      "grounded": 30,
+      "total": 29,
+      "passed": 29,
+      "grounded": 29,
       "kinds": {
-        "ANSWER": 30
+        "ANSWER": 29
       }
     },
     "NO_DATA": {
-      "total": 10,
-      "passed": 10,
+      "total": 11,
+      "passed": 11,
       "grounded": 0,
       "kinds": {
-        "CANNOT_ANSWER": 10
+        "CANNOT_ANSWER": 11
       }
     },
     "NO_ACCESS": {

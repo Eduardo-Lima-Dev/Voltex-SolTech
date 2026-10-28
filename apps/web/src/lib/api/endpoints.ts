@@ -13,6 +13,8 @@ import type {
   QuickCalculationSnapshotDto,
 } from '@voltex/solar-engine';
 import type {
+  AnalyticsSettingsDto,
+  AnalyticsSettingsInput,
   AiAdminSettingsDto,
   AiChatEvent,
   AiChatRequest,
@@ -1426,6 +1428,11 @@ export function createEndpoints(client: ApiClient) {
     },
     aneel: {
       import: () => client.post<AneelImportResult>('/reference-data/aneel/import'),
+    },
+    analyticsSettings: {
+      get: () => client.get<AnalyticsSettingsDto>('/analytics/settings'),
+      update: (input: AnalyticsSettingsInput) =>
+        client.put<AnalyticsSettingsDto>('/analytics/settings', input),
     },
     forecasts: {
       receivables: () => client.get<Forecast<ReceivablesForecast>>('/forecasts/receivables'),

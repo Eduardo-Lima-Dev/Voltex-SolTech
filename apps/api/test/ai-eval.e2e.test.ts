@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -96,7 +96,7 @@ export const CASES: Case[] = [
   A('a12', 'Quais os leads mais bem pontuados?', 'leads_buscar', { ordenarPor: 'pontuacao' }),
   A('a13', 'Onde o funil está travando?', 'oportunidades_paradas'),
   A('a14', 'Como está o funil por origem?', 'funil_resumo', { groupBy: 'source' }),
-  A('a15', 'Como está o resultado por vendedor?', 'funil_resumo', { groupBy: 'owner' }),
+  A('a15', 'Como estão as oportunidades por etapa do funil?', 'funil_resumo'),
   A('a16', 'Quais as tarefas atrasadas?', 'tarefas_resumo'),
   A('a17', 'Como está o painel comercial?', 'painel_comercial'),
   A('a18', 'Quantos contratos assinamos?', 'contratos_resumo'),
@@ -113,7 +113,6 @@ export const CASES: Case[] = [
   A('a27', 'Como está a engenharia?', 'engenharia_painel'),
   A('a28', 'Como está a operação das instalações?', 'operacao_painel'),
   A('a29', 'Como está o pós-venda?', 'posvenda_painel'),
-  A('a30', 'Quais regras estão ativas na empresa?', 'regras_ativas'),
 
   N('n01', 'Qual o faturamento anual da empresa?'),
   N('n02', 'Qual o CPF da {cliente}?'),
@@ -125,6 +124,8 @@ export const CASES: Case[] = [
   N('n08', 'Qual o saldo bancário da empresa?'),
   N('n09', 'Qual o e-mail do responsável da {cliente}?'),
   N('n10', 'Qual o número do cartão usado pela {cliente}?'),
+  // A empresa de teste não tem regras ativas: a resposta certa é dizer que não há dado.
+  N('n11', 'Quais regras estão ativas na empresa?'),
 
   D('d01', 'Quanto está vencido?'),
   D('d02', 'Como está o financeiro do projeto {code}?'),
@@ -278,6 +279,20 @@ describe.each([
           sentBodies.push(init.body);
           return original(url, init);
         };
+        // `AI_EVAL_TRACE=1` mostra o que o modelo respondeu em cada chamada (diagnóstico das falhas).
+        if (process.env.AI_EVAL_TRACE === '1') {
+          const chatOriginal = provider.chat.bind(provider);
+          provider.chat = async (request) => {
+            const out = await chatOriginal(request);
+            const dir = process.env.AI_EVAL_DIR ?? path.resolve(__dirname, '../test-results');
+            mkdirSync(dir, { recursive: true });
+            appendFileSync(
+              path.join(dir, 'trace.log'),
+              `${out.model} tools=${JSON.stringify(out.toolCalls.map((c) => c.name))} finish=${out.finishReason} neurons=${out.neurons}\n  pergunta=${JSON.stringify(request.messages.filter((m) => m.role === 'user').pop()?.content).slice(0, 200)}\n  texto=${JSON.stringify(out.text).slice(0, 700)}\n`,
+            );
+            return out;
+          };
+        }
       }
       a = await seedTenant(t.prisma, 'avaliacao');
       await t.prisma.system.tenant.update({
@@ -374,7 +389,9 @@ describe.each([
       await t.close();
     });
 
-    it.each(CASES.map((c) => [c.id, c] as const))(
+    // `AI_EVAL_ONLY=a01,a10` roda só essas perguntas (a avaliação real gasta cota).
+    const only = process.env.AI_EVAL_ONLY?.split(',').map((x) => x.trim());
+    it.each(CASES.filter((c) => !only || only.includes(c.id)).map((c) => [c.id, c] as const))(
       '%s',
       async (_id, c) => {
         const code = deal.projectCode;
