@@ -283,7 +283,18 @@ describe.each([
         if (process.env.AI_EVAL_TRACE === '1') {
           const chatOriginal = provider.chat.bind(provider);
           provider.chat = async (request) => {
-            const out = await chatOriginal(request);
+            let out;
+            try {
+              out = await chatOriginal(request);
+            } catch (error) {
+              const dir0 = process.env.AI_EVAL_DIR ?? path.resolve(__dirname, '../test-results');
+              mkdirSync(dir0, { recursive: true });
+              appendFileSync(
+                path.join(dir0, 'trace.log'),
+                `ERRO ${request.model} ${(error as { code?: string }).code ?? ''} ${(error as Error).message}\n`,
+              );
+              throw error;
+            }
             const dir = process.env.AI_EVAL_DIR ?? path.resolve(__dirname, '../test-results');
             mkdirSync(dir, { recursive: true });
             appendFileSync(

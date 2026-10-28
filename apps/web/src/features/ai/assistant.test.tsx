@@ -43,6 +43,7 @@ const answer = (overrides: Partial<AiChatResponseDto> = {}): AiChatResponseDto =
         tool: 'finance_overview',
         toolLabel: 'Visão do financeiro',
         field: 'receivedLast30DaysCents',
+        label: 'Recebido nos últimos 30 dias',
         queriedAt: '2026-10-25T12:00:00.000Z',
       },
     ],
@@ -96,7 +97,7 @@ describe('assistente de IA', () => {
 
     await user.click(screen.getByRole('button', { name: /R\$ 5\.940,00: ver de onde veio/ }));
     expect(screen.getByRole('note')).toHaveTextContent('Visão do financeiro');
-    expect(screen.getByRole('note')).toHaveTextContent('receivedLast30DaysCents');
+    expect(screen.getByRole('note')).toHaveTextContent('Recebido nos últimos 30 dias');
 
     await user.click(screen.getByRole('button', { name: 'Ver os dados' }));
     expect(screen.getByRole('button', { name: 'Ocultar os dados' })).toBeInTheDocument();
@@ -195,6 +196,68 @@ describe('assistente de IA', () => {
     expect(await screen.findByText('Funil de vendas')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Apagar a conversa Funil de vendas/ }));
     expect(await screen.findByText('Nenhuma conversa ainda.')).toBeInTheDocument();
+  });
+});
+
+describe('resposta só com os dados (falha da IA no meio)', () => {
+  const fact = (id: string, field: string, label: string, text: string) => ({
+    id,
+    text,
+    type: 'MONEY',
+    tool: 'financeiro_visao',
+    toolLabel: 'Consulta de financeiro',
+    field,
+    label,
+    queriedAt: '2026-10-28T12:00:00.000Z',
+  });
+
+  it('mostra o motivo e os números em cartões com rótulo, sem despejar tudo num parágrafo', async () => {
+    const message = answer().message;
+    server.use(
+      http.get(`${API}/ai/status`, () => HttpResponse.json(status())),
+      http.post(`${API}/ai/chat`, () =>
+        stream([
+          {
+            type: 'answer',
+            data: answer({
+              message: {
+                ...message,
+                kind: 'FALLBACK',
+                text: 'A IA não conseguiu montar uma resposta. Veja os dados que já encontrei:',
+                parts: [
+                  {
+                    type: 'text',
+                    text: 'A IA não conseguiu montar uma resposta. Veja os dados que já encontrei:',
+                  },
+                ],
+                facts: [
+                  fact('F1', 'totalOpenCents', 'Total a receber', 'R$ 4.620,00'),
+                  fact('F2', 'totalOverdueCents', 'Total vencido', 'R$ 2.310,00'),
+                  fact('F3', 'meta.queriedAt', 'Data da consulta', '28/10/2026'),
+                ],
+              },
+            }),
+          },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp('/');
+    await user.click(await screen.findByRole('button', { name: 'Pergunte ao Voltex' }));
+    const box = await screen.findByLabelText('Sua pergunta');
+    await waitFor(() => expect(box).toBeEnabled());
+    await user.type(box, 'Quanto recebi?');
+    await user.click(screen.getByRole('button', { name: 'Enviar pergunta' }));
+
+    expect(await screen.findByText(/Veja os dados que já encontrei/)).toBeInTheDocument();
+    expect(screen.getByText('Só com os dados')).toBeInTheDocument();
+    const cards = screen.getByLabelText('Números da resposta');
+    expect(within(cards).getByText('Total a receber')).toBeInTheDocument();
+    expect(within(cards).getByText('R$ 2.310,00')).toBeInTheDocument();
+    // A data da consulta não é resultado: não vira cartão.
+    expect(within(cards).queryByText('Data da consulta')).not.toBeInTheDocument();
+    await user.click(within(cards).getByRole('button', { name: /Total vencido/ }));
+    expect(screen.getByRole('note')).toHaveTextContent('De onde veio: Consulta de financeiro');
   });
 });
 

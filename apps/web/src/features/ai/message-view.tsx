@@ -1,7 +1,7 @@
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button } from '@voltex/ui';
-import type { AiMessageDto } from '@voltex/shared';
+import type { AiFactDto, AiMessageDto } from '@voltex/shared';
 import { formatDateTime } from '@/lib/format';
 
 interface Props {
@@ -9,6 +9,49 @@ interface Props {
   onFollowUp: (question: string) => void;
   onFeedback: (message: AiMessageDto, helpful: boolean, reason?: string) => void;
   disabled?: boolean;
+}
+
+/** Nome do campo: o legível vindo do servidor; em conversas antigas (sem rótulo), o caminho do campo. */
+const labelOf = (fact: AiFactDto): string => fact.label ?? fact.field;
+
+/** Cartões com os números da resposta: rótulo, valor em destaque e, ao clicar, de onde veio. */
+function FactCards({ facts }: { facts: AiFactDto[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  // A data da própria consulta não é um resultado: fica só no "Ver os dados".
+  const shown = facts.filter((f) => f.field.split('.').pop() !== 'queriedAt').slice(0, 8);
+  if (shown.length === 0) return null;
+  const open = shown.find((f) => f.id === openId) ?? null;
+  return (
+    <div className="space-y-2">
+      <ul className="grid grid-cols-2 gap-2" aria-label="Números da resposta">
+        {shown.map((fact) => (
+          <li key={fact.id}>
+            <button
+              type="button"
+              onClick={() => setOpenId(openId === fact.id ? null : fact.id)}
+              aria-expanded={openId === fact.id}
+              aria-label={`${labelOf(fact)}: ${fact.text}. Ver de onde veio`}
+              className="w-full rounded-lg border bg-muted/40 px-3 py-2 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="block text-[11px] leading-tight text-muted-foreground">
+                {labelOf(fact)}
+              </span>
+              <span className="block text-base font-semibold tabular-nums">{fact.text}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {open ? (
+        <p role="note" className="rounded-md border bg-muted/50 px-3 py-2 text-xs">
+          <span className="font-medium">{labelOf(open)}</span>
+          <span className="text-muted-foreground">
+            {' '}
+            · De onde veio: {open.toolLabel} · {formatDateTime(open.queriedAt)}
+          </span>
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 /** Uma mensagem da conversa. Os valores citados pelo assistente viram chips que mostram de onde vieram. */
@@ -33,7 +76,11 @@ export function MessageView({ message, onFollowUp, onFeedback, disabled }: Props
     <div className="mr-auto w-full max-w-[95%] space-y-2">
       <div
         className={`rounded-lg border px-3 py-2 text-sm leading-relaxed ${
-          refusal ? 'bg-muted/60' : 'bg-card'
+          refusal
+            ? 'bg-muted/60'
+            : message.kind === 'FALLBACK'
+              ? 'border-yellow-500/40 bg-yellow-500/10'
+              : 'bg-card'
         }`}
         data-testid="assistant-message"
       >
@@ -57,11 +104,17 @@ export function MessageView({ message, onFollowUp, onFeedback, disabled }: Props
 
       {fact ? (
         <div role="note" className="rounded-md border bg-muted/50 px-3 py-2 text-xs">
-          <p className="font-medium">De onde veio {fact.text}</p>
+          <p className="font-medium">
+            {labelOf(fact)}: {fact.text}
+          </p>
           <p className="text-muted-foreground">
-            Consulta: {fact.toolLabel} · campo {fact.field} · {formatDateTime(fact.queriedAt)}
+            De onde veio: {fact.toolLabel} · {formatDateTime(fact.queriedAt)}
           </p>
         </div>
+      ) : null}
+
+      {message.kind === 'FALLBACK' || (message.kind === 'ANSWER' && message.facts.length >= 2) ? (
+        <FactCards facts={message.facts} />
       ) : null}
 
       {message.facts.length > 0 ? (
@@ -81,7 +134,7 @@ export function MessageView({ message, onFollowUp, onFeedback, disabled }: Props
                   <span className="font-medium tabular-nums">{item.text}</span>
                   <span className="text-muted-foreground">
                     {' '}
-                    · {item.toolLabel} ({item.field}) · {formatDateTime(item.queriedAt)}
+                    · {labelOf(item)} · {item.toolLabel} · {formatDateTime(item.queriedAt)}
                   </span>
                 </li>
               ))}

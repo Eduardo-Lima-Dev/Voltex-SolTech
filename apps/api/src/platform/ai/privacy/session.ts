@@ -4,7 +4,7 @@ import { FactTable, type Fact } from './facts';
 import { Pseudonymizer, type PseudonymEntry } from './pseudonymizer';
 import { refsIn, renderFacts } from './renderer';
 import { cannotAnswerText, parseModelAnswer } from './structured-answer';
-import { retryInstruction, validateAnswer, type AnswerIssue } from './validator';
+import { periodsIn, retryInstruction, validateAnswer, type AnswerIssue } from './validator';
 
 export type FinalizedAnswer =
   | {
@@ -27,6 +27,8 @@ export type FinalizedAnswer =
 export class AiPrivacySession {
   readonly pseudonyms: Pseudonymizer;
   readonly facts: FactTable;
+  /** Períodos escritos na pergunta atual (o modelo pode repeti-los). */
+  private echo: string[] = [];
 
   constructor(opts: { pseudonyms?: readonly PseudonymEntry[]; facts?: readonly Fact[] } = {}) {
     this.pseudonyms = new Pseudonymizer(opts.pseudonyms);
@@ -38,6 +40,7 @@ export class AiPrivacySession {
     text: string;
     removed: Partial<Record<PersonalDataType, number>>;
   } {
+    this.echo = periodsIn(text);
     return redactPersonalData(this.pseudonyms.scrub(text));
   }
 
@@ -70,7 +73,7 @@ export class AiPrivacySession {
       return { ok: false, issues, retryInstruction: retryInstruction(issues) };
     }
     const safe = (items: readonly string[]): string[] =>
-      items.filter((s) => validateAnswer(s, this.facts, this.pseudonyms).length === 0);
+      items.filter((s) => validateAnswer(s, this.facts, this.pseudonyms, this.echo).length === 0);
     const followUps = safe(parsed.followUps).map((s) => this.render(s, canSee));
 
     if (parsed.kind === 'CANNOT_ANSWER') {
@@ -87,7 +90,8 @@ export class AiPrivacySession {
       };
     }
 
-    const issues = validateAnswer(parsed.text, this.facts, this.pseudonyms);
+    parsed.text = this.tidy(parsed.text);
+    const issues = validateAnswer(parsed.text, this.facts, this.pseudonyms, this.echo);
     if (issues.length > 0) return { ok: false, issues, retryInstruction: retryInstruction(issues) };
     const used = refsIn(parsed.text).flatMap((id) => {
       const f = this.facts.get(id);
@@ -102,6 +106,14 @@ export class AiPrivacySession {
       factsUsed: used,
       followUps,
     };
+  }
+
+  /** O valor formatado já traz "R$": tira o "R$" que o modelo escreveu antes da referência (evita "R$ R$ 4.620,00"). */
+  private tidy(text: string): string {
+    return text.replace(/R\$\s*(\{\{\s*F\d+\s*\}\})/g, (whole, ref: string) => {
+      const id = /F\d+/.exec(ref)?.[0];
+      return id && this.facts.get(id)?.type === 'MONEY' ? ref : whole;
+    });
   }
 
   private render(text: string, canSee: (entry: PseudonymEntry) => boolean): string {

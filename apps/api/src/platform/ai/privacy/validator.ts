@@ -94,10 +94,17 @@ export function looksPortuguese(text: string): boolean {
  * Confere a redação do modelo ANTES de mostrar ao usuário (ADR-0030). Reprova número fora de `{{F#}}`, referência ou
  * pseudônimo inexistente, dado pessoal e texto fora do português. Nenhum texto reprovado chega à tela.
  */
+/** Períodos que a própria pessoa escreveu na pergunta ("30 dias", "6 meses"): repeti-los não é inventar número. */
+const PERIOD = /\b\d{1,3}\s*(?:dias?|semanas?|mes(?:es)?|mês|anos?|horas?)\b/gi;
+export const periodsIn = (question: string): string[] => [
+  ...new Set((question.match(PERIOD) ?? []).map((p) => p.replace(/\s+/g, ' ').toLowerCase())),
+];
+
 export function validateAnswer(
   text: string,
   facts: FactTable,
   pseudonyms: Pseudonymizer,
+  echo: readonly string[] = [],
 ): AnswerIssue[] {
   const issues: AnswerIssue[] = [];
   if (!text.trim()) return [{ code: 'EMPTY', detail: 'resposta vazia' }];
@@ -108,7 +115,11 @@ export function validateAnswer(
   for (const alias of pseudonyms.unknownAliases(text))
     issues.push({ code: 'UNKNOWN_PSEUDONYM', detail: `${alias} não existe nesta conversa` });
 
-  const withoutRefs = text.replace(REF, ' ').replace(ALIAS, ' ').replace(LIST_MARKER, ' ');
+  let withoutRefs = text.replace(REF, ' ').replace(ALIAS, ' ').replace(LIST_MARKER, ' ');
+  // Só vale o período idêntico ao da pergunta, com a mesma unidade (o "30" de "30 dias").
+  withoutRefs = withoutRefs.replace(PERIOD, (found) =>
+    echo.includes(found.replace(/\s+/g, ' ').toLowerCase()) ? ' ' : found,
+  );
   const loose = withoutRefs.match(/\d+(?:[.,]\d+)*/g);
   if (loose)
     issues.push({

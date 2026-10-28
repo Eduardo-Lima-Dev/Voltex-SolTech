@@ -35,6 +35,56 @@ export function splitParts(
 export const plainText = (parts: readonly AiMessagePart[]): string =>
   parts.map((p) => p.text).join('');
 
+const FIELD_LABELS: Record<string, string> = {
+  totalReceivedCents: 'Total recebido',
+  totalOpenCents: 'Total a receber',
+  totalOverdueCents: 'Total vencido',
+  totalCostsCents: 'Custos realizados',
+  marginCents: 'Margem real',
+  marginPct: 'Margem real (%)',
+  valueCents: 'Valor do contrato',
+  receivedLast30DaysCents: 'Recebido nos últimos 30 dias',
+  commissionsPendingCents: 'Comissões pendentes',
+  overdueInstallmentsCount: 'Parcelas vencidas',
+  totalCount: 'Total',
+  openCount: 'Em aberto',
+  overdueCount: 'Atrasadas',
+  slaBreachedCount: 'Com primeiro contato atrasado',
+  stalledCount: 'Paradas',
+  stalledAfterDays: 'Parada a partir de (dias)',
+  withoutOpenTaskCount: 'Sem tarefa aberta',
+  noMovementCount: 'Sem movimento',
+  mrrCents: 'Receita recorrente mensal',
+  queriedAt: 'Data da consulta',
+  scheduledCount: 'Agendadas',
+  awaitingMaterialCount: 'Aguardando material',
+  openIssuesCount: 'Pendências de campo',
+  reworkCount: 'Retrabalho',
+  openTicketsCount: 'Chamados abertos',
+  breachedTicketsCount: 'Chamados fora do prazo',
+  plantsCount: 'Usinas',
+  powerKwp: 'Potência instalada',
+  overallWinRate: 'Taxa de ganho',
+  openCents: 'Em aberto',
+  sampleCount: 'Base da previsão',
+};
+
+/** Nome legível do campo de uma consulta ("receivedLast30DaysCents" → "Recebido nos últimos 30 dias"). */
+export function fieldLabel(path: string): string {
+  const last =
+    path
+      .split('.')
+      .pop()
+      ?.replace(/\[\d+\]/g, '') ?? path;
+  if (FIELD_LABELS[last]) return FIELD_LABELS[last];
+  const words = last
+    .replace(/(Cents|Count|Days|Pct|Rate|Kwh|Kwp)$/, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : last;
+}
+
 export function toFactDto(fact: Fact, labelOf: (tool: string) => string): AiFactDto {
   return {
     id: fact.id,
@@ -43,6 +93,7 @@ export function toFactDto(fact: Fact, labelOf: (tool: string) => string): AiFact
     tool: fact.source.tool,
     toolLabel: labelOf(fact.source.tool),
     field: fact.path,
+    label: fieldLabel(fact.path),
     queriedAt: fact.source.at,
   };
 }
