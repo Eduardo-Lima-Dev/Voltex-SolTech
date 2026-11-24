@@ -162,6 +162,10 @@ jobs:
           LEGAL_PRIVACY_EMAIL: ${{ vars.LEGAL_PRIVACY_EMAIL }}
           LEGAL_DPO: ${{ vars.LEGAL_DPO }}
           LEGAL_FORUM: ${{ vars.LEGAL_FORUM }}
+          # Contatos da página de links (/links, a do QR code); vazias = o item não aparece.
+          CONTACT_WHATSAPP: ${{ vars.CONTACT_WHATSAPP }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          LINKEDIN_URL: ${{ vars.LINKEDIN_URL }}
 
   verificar:
     name: Conferir a demonstração no ar
