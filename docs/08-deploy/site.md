@@ -19,14 +19,15 @@ O site chama a API **na mesma origem**: em desenvolvimento o Vite encaminha `/ap
 
 ## Variáveis (`.env` da raiz; veja também [variáveis de ambiente](variaveis-de-ambiente.md))
 
-| Variável        | Onde vale | Para quê                                                                                                                                                                                      |
-| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_APP_URL`  | site      | Endereço da aplicação. Padrão em dev: `http://localhost:5173`. Gravado na **compilação**.                                                                                                     |
-| `VITE_SITE_URL` | web       | Endereço do site, para o "Voltar ao site". Opcional.                                                                                                                                          |
-| `VITE_LEAD_KEY` | site      | Chave de captação da empresa que recebe os contatos. Sem ela o formulário avisa que não pôde enviar.                                                                                          |
-| `VITE_LEGAL_*`  | site      | Dados da empresa nas páginas `/privacidade` e `/termos` (`COMPANY`, `CNPJ`, `ADDRESS`, `PRIVACY_EMAIL`, `DPO`, `FORUM`). Gravados na **compilação**; sem valor, a página mostra "a informar". |
-| `SITE_PORT`     | compose   | Porta do host do site em produção (padrão 8081).                                                                                                                                              |
-| `SITE_LEAD_KEY` | compose   | Valor de `VITE_LEAD_KEY` na imagem de produção.                                                                                                                                               |
+| Variável                                                           | Onde vale | Para quê                                                                                                                                                                                      |
+| ------------------------------------------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_APP_URL`                                                     | site      | Endereço da aplicação. Padrão em dev: `http://localhost:5173`. Gravado na **compilação**.                                                                                                     |
+| `VITE_SITE_URL`                                                    | web       | Endereço do site, para o "Voltar ao site". Opcional.                                                                                                                                          |
+| `VITE_LEAD_KEY`                                                    | site      | Chave de captação da empresa que recebe os contatos. Sem ela o formulário avisa que não pôde enviar.                                                                                          |
+| `VITE_LEGAL_*`                                                     | site      | Dados da empresa nas páginas `/privacidade` e `/termos` (`COMPANY`, `CNPJ`, `ADDRESS`, `PRIVACY_EMAIL`, `DPO`, `FORUM`). Gravados na **compilação**; sem valor, a página mostra "a informar". |
+| `VITE_CONTACT_WHATSAPP`, `VITE_CONTACT_EMAIL`, `VITE_LINKEDIN_URL` | site      | Contatos da página de links (`/links`). Sem valor, o item não aparece e "Entrar em contato" leva ao formulário. No `publicar-front.sh`: `CONTACT_WHATSAPP`, `CONTACT_EMAIL`, `LINKEDIN_URL`.  |
+| `SITE_PORT`                                                        | compose   | Porta do host do site em produção (padrão 8081).                                                                                                                                              |
+| `SITE_LEAD_KEY`                                                    | compose   | Valor de `VITE_LEAD_KEY` na imagem de produção.                                                                                                                                               |
 
 Para receber os contatos: crie a empresa dona da plataforma (`create-owner`), entre no CRM Solar → Leads, copie a chave de captação e coloque em `VITE_LEAD_KEY` (dev) ou `SITE_LEAD_KEY` (produção). Como `VITE_*` é gravada na compilação, **gere a imagem de novo** ao trocar um endereço ou a chave.
 
@@ -37,6 +38,14 @@ Para receber os contatos: crie a empresa dona da plataforma (`create-owner`), en
 ## Produção
 
 `pnpm docker:build && pnpm docker:up` inclui o serviço `site` (porta `SITE_PORT`, padrão 8081). Aponte o domínio principal para ele e o subdomínio da aplicação para o serviço `web`, cada um com o seu certificado/proxy reverso. `WEB_URL` precisa ser o endereço público da **aplicação**: é com ele que o site monta o botão Entrar.
+
+## Página de links (`/links`) e QR code
+
+Página de "link na bio" da empresa, para apresentações, cartões e Instagram: sobre, entrar em contato (WhatsApp ou formulário), pedir demonstração, Instagram oficial `@voltexsoltech`, LinkedIn e e-mail (se configurados), equipe e acesso à plataforma.
+
+- Conteúdo fixo em `apps/site/links.html`; **equipe** na lista `TEAM` de `apps/site/src/links.ts` (nome, cargo, foto opcional em `public/`, LinkedIn opcional; sem foto, mostra as iniciais).
+- O pedido de demonstração repassa os `utm_*` de quem chegou ao formulário: quem entra pelo QR code vira lead com `utm_source=qrcode`.
+- QR code em `docs/assets/brand/qrcode-links.svg` e `.png`, com o símbolo da marca no centro (correção de erro H, conferido com leitor em 160 a 1024 px). Se o endereço do site mudar, gere de novo: `node scripts/build-qrcode.mjs https://novo-endereco/links?utm_source=qrcode`.
 
 ## Como o site é feito
 

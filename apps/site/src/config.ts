@@ -12,6 +12,46 @@ export interface SiteEnv {
   VITE_LEGAL_PRIVACY_EMAIL?: string;
   VITE_LEGAL_DPO?: string;
   VITE_LEGAL_FORUM?: string;
+  /** Contatos da página de links (`/links`). Sem valor, o item correspondente não aparece. */
+  VITE_CONTACT_WHATSAPP?: string;
+  VITE_CONTACT_EMAIL?: string;
+  VITE_LINKEDIN_URL?: string;
+}
+
+/** Perfil oficial no Instagram (o mesmo do briefing de marketing). */
+export const INSTAGRAM = {
+  handle: 'voltexsoltech',
+  url: 'https://www.instagram.com/voltexsoltech/',
+};
+
+const WHATSAPP_MESSAGE = 'Olá! Vim pela Voltex SolTech e quero saber mais sobre a plataforma.';
+
+/**
+ * Contatos da página de links. O WhatsApp aceita o número em qualquer formato (com ou sem +55, espaços e traços)
+ * e vira um link `wa.me` com uma mensagem pronta. Número com menos de 10 dígitos é descartado.
+ */
+export function contactLinks(env: SiteEnv) {
+  const digits = env.VITE_CONTACT_WHATSAPP?.replace(/\D/g, '') ?? '';
+  const phone = digits.length >= 12 ? digits : digits.length >= 10 ? `55${digits}` : null;
+  const email = env.VITE_CONTACT_EMAIL?.trim() || null;
+  const linkedin = env.VITE_LINKEDIN_URL?.trim() || null;
+  return {
+    whatsapp: phone ? `https://wa.me/${phone}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` : null,
+    email: email ? `mailto:${email}` : null,
+    linkedin: linkedin && /^https:\/\//.test(linkedin) ? linkedin : null,
+  };
+}
+
+/**
+ * Link do pedido de demonstração a partir da página de links: leva os `utm_*` de quem chegou (ex.: o QR code das
+ * apresentações) até o formulário, para o lead registrar a origem. Sem campanha na entrada, marca `link-bio`.
+ */
+export function demoHref(search: string): string {
+  const incoming = new URLSearchParams(search);
+  const params = new URLSearchParams();
+  for (const [key, value] of incoming) if (key.startsWith('utm_')) params.set(key, value);
+  if (!params.has('utm_source')) params.set('utm_source', 'link-bio');
+  return `/?${params.toString()}#contato`;
 }
 
 const trimSlash = (url: string): string => url.replace(/\/+$/, '');

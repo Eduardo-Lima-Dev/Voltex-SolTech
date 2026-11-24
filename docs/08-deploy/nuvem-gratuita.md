@@ -176,6 +176,8 @@ No repositório: _Settings → Environments → New environment_ chamado **`demo
 
 **Páginas legais.** Defina, como variáveis do ambiente `demo`, `LEGAL_COMPANY`, `LEGAL_CNPJ`, `LEGAL_ADDRESS`, `LEGAL_PRIVACY_EMAIL`, `LEGAL_DPO` e `LEGAL_FORUM` (razão social, CNPJ, endereço, e-mail de privacidade, encarregado e comarca do foro). Elas são gravadas **na compilação do site**; vazias, as páginas mostram "a informar" em destaque. Depois de mudar, publique de novo o site. Veja [páginas legais](paginas-legais.md).
 
+**Página de links (QR code).** Defina `CONTACT_WHATSAPP` (ex.: `88 99223-3989`), `CONTACT_EMAIL` e, se quiser, `LINKEDIN_URL` no ambiente `demo`. Também são gravadas na compilação do site; vazias, o item some e "Entrar em contato" leva ao formulário. Veja [site](site.md#página-de-links-links-e-qr-code).
+
 ```bash
 gh variable set LEGAL_COMPANY --env demo --body "Razão social Ltda"   # idem para as demais
 ```

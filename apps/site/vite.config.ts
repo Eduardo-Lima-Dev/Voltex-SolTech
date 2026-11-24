@@ -19,12 +19,13 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: true,
       target: 'es2022',
-      // Além da página inicial, as páginas legais (privacidade e termos).
+      // Além da página inicial, as páginas legais (privacidade e termos) e a página de links (QR code).
       rollupOptions: {
         input: {
           main: path.resolve(here, 'index.html'),
           privacidade: path.resolve(here, 'privacidade.html'),
           termos: path.resolve(here, 'termos.html'),
+          links: path.resolve(here, 'links.html'),
         },
       },
     },
