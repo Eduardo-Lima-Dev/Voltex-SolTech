@@ -473,6 +473,9 @@ describe('wizard a partir da oportunidade', () => {
       latitude: -3.73,
     });
     await waitFor(() => expect(router.state.location.pathname).toBe('/crm/oportunidades/opp-1'));
+    // Espera a página da oportunidade carregar: senão as buscas dela (oportunidade, funil) saem depois do fim do
+    // teste e caem no seguinte, já sem handler (falha intermitente na CI).
+    expect(await screen.findByRole('heading', { name: /Casa da Maria/ })).toBeInTheDocument();
   });
 
   it('sem fatura validada avisa que o consumo precisa ser informado à mão', async () => {
