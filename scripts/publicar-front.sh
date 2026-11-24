@@ -34,10 +34,13 @@ if [[ "$alvo" == "app" ]]; then
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-app.json.template > "$pasta/vercel.json"
 else
   # As páginas legais leem VITE_LEGAL_* na compilação; sem valor, mostram "a informar" (nada é inventado).
+  # A página de links lê VITE_CONTACT_* e VITE_LINKEDIN_URL; sem valor, o item não aparece.
   VITE_APP_URL="${APP_URL:?defina APP_URL (endereço público da aplicação)}" VITE_LEAD_KEY="${LEAD_KEY:-}" \
     VITE_LEGAL_COMPANY="${LEGAL_COMPANY:-}" VITE_LEGAL_CNPJ="${LEGAL_CNPJ:-}" \
     VITE_LEGAL_ADDRESS="${LEGAL_ADDRESS:-}" VITE_LEGAL_PRIVACY_EMAIL="${LEGAL_PRIVACY_EMAIL:-}" \
     VITE_LEGAL_DPO="${LEGAL_DPO:-}" VITE_LEGAL_FORUM="${LEGAL_FORUM:-}" \
+    VITE_CONTACT_WHATSAPP="${CONTACT_WHATSAPP:-}" VITE_CONTACT_EMAIL="${CONTACT_EMAIL:-}" \
+    VITE_LINKEDIN_URL="${LINKEDIN_URL:-}" \
     pnpm turbo run build --filter=@voltex/site
   cp -r apps/site/dist/. "$pasta/"
   sed "s|__API_HOST__|$api_host|g" deploy/nuvem/vercel-site.json.template > "$pasta/vercel.json"
